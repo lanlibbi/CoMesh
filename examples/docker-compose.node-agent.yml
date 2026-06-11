@@ -1,0 +1,45 @@
+# Beispiel docker-compose.yml für Node-Agent
+#
+# Kopiere diese Datei in dein node-agent/ Verzeichnis,
+# passe die .env an, dann:
+#   docker compose up -d
+
+services:
+  agent:
+    build: .
+    container_name: gpu-pool-agent
+    restart: unless-stopped
+
+    # Tailscale-IP dieses Hosts (vom .env)
+    environment:
+      - TAILSCALE_IP=${TAILSCALE_IP}
+      - AGENT_PORT=${AGENT_PORT:-8080}
+      - PORTAL_URL=${PORTAL_URL}
+      - HEARTBEAT_INTERVAL_SECONDS=${HEARTBEAT_INTERVAL_SECONDS:-5}
+      - PRICE_PER_1K_TOKENS=${PRICE_PER_1K_TOKENS:-0.0005}
+      - OLLAMA_URL=${OLLAMA_URL}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+
+    ports:
+      - "${AGENT_PORT:-8080}:8080"
+
+    # GPU-Passthrough (NVIDIA)
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+    # host.docker.internal für Linux: lokales Ollama erreichbar machen
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+    # Health-Check
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
