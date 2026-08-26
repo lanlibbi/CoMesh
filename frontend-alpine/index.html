@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Dashboard · GPU-Pool POC</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body x-data="dashboard()" x-init="init()">
+  <div x-html="navHTML('dashboard')"></div>
+
+  <main class="max-w-6xl mx-auto px-6 pb-12">
+    <!-- Welcome / new account banner -->
+    <div x-show="showNewKey" class="card glass mb-6" style="border-color: var(--ok);">
+      <div class="flex items-start gap-3">
+        <div class="text-2xl">🎉</div>
+        <div class="flex-1">
+          <div class="font-semibold mb-1">Account created! Save your API key now.</div>
+          <div class="text-sm text-[color:var(--text-dim)] mb-2">This is the only time you'll see the full key. Copy it somewhere safe.</div>
+          <pre class="code mono text-xs" x-text="newKey"></pre>
+          <div class="flex gap-2 mt-3">
+            <button class="btn-ghost text-sm" @click="copyKey()">📋 Copy</button>
+            <button class="btn-ghost text-sm" @click="showNewKey = false">I've saved it</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Credit balance + actions -->
+    <div class="grid md:grid-cols-3 gap-4 mb-6">
+      <div class="card glass md:col-span-2">
+        <div class="text-[color:var(--text-dim)] text-sm">Credit balance</div>
+        <div class="stat-value mt-1" x-text="fmtCredits(me?.credits)">—</div>
+        <div class="text-xs text-[color:var(--text-dim)] mt-1">
+          ≈ <span x-text="fmtNumber(Math.floor((me?.credits || 0) * 1000))"></span> tokens
+        </div>
+        <div class="mt-4 flex flex-wrap gap-2">
+          <a href="credits.html" class="btn-primary text-sm">+ Buy credits</a>
+          <a href="chat.html" class="btn-ghost text-sm">💬 Try the chat</a>
+          <button class="btn-ghost text-sm" @click="refresh()">↻ Refresh</button>
+        </div>
+      </div>
+
+      <div class="card glass">
+        <div class="text-[color:var(--text-dim)] text-sm">Account</div>
+        <div class="mt-2 text-lg font-semibold" x-text="me?.name || '—'"></div>
+        <div class="text-sm text-[color:var(--text-dim)]" x-text="me?.email || ''"></div>
+        <div class="text-xs text-[color:var(--text-dim)] mt-3">Joined <span x-text="fmtDate(me?.created_at)"></span></div>
+      </div>
+    </div>
+
+    <!-- Usage chart + stats -->
+    <div class="grid md:grid-cols-3 gap-4 mb-6">
+      <div class="card glass md:col-span-2">
+        <div class="flex items-center justify-between mb-3">
+          <div>
+            <div class="font-semibold">Usage (last 7 days)</div>
+            <div class="text-xs text-[color:var(--text-dim)]">Credits spent per day</div>
+          </div>
+          <div class="text-right">
+            <div class="text-xs text-[color:var(--text-dim)]">Total spent</div>
+            <div class="text-lg font-semibold" x-text="fmtCredits(stats.total_spent)">—</div>
+          </div>
+        </div>
+        <canvas id="usageChart" style="width:100%; height:180px; display:block;"></canvas>
+      </div>
+
+      <div class="card glass">
+        <div class="font-semibold mb-3">Stats</div>
+        <div class="space-y-3 text-sm">
+          <div class="flex justify-between">
+            <span class="text-[color:var(--text-dim)]">API calls</span>
+            <span class="font-mono" x-text="fmtNumber(stats.calls)"></span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-[color:var(--text-dim)]">Tokens used</span>
+            <span class="font-mono" x-text="fmtNumber(stats.tokens)"></span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-[color:var(--text-dim)]">Last activity</span>
+            <span class="font-mono text-xs" x-text="timeAgo(stats.last_used)"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- API Key management -->
+    <div class="card glass mb-6">
+      <div class="flex items-center justify-between mb-3">
+        <div>
+          <div class="font-semibold">API Key</div>
+          <div class="text-xs text-[color:var(--text-dim)]">Use this key to call <code class="mono">/v1/chat/completions</code></div>
+        </div>
+        <div class="flex gap-2">
+          <button class="btn-ghost text-sm" @click="revealKey = !revealKey" x-text="revealKey ? 'Hide' : 'Show'"></button>
+          <button class="btn-ghost text-sm" @click="copyKey()">📋 Copy</button>
+          <button class="btn-ghost text-sm" @click="regenerate()" :disabled="regenerating">
+            <span x-show="!regenerating">🔄 Regenerate</span>
+            <span x-show="regenerating">…</span>
+          </button>
+        </div>
+      </div>
+      <pre class="code mono text-xs" x-text="revealKey ? (apiKey || '—') : maskKey(apiKey)"></pre>
+      <div class="text-xs text-[color:var(--text-dim)] mt-2">
+        Header: <code class="mono">Authorization: Bearer &lt;api_key&gt;</code>
+      </div>
+    </div>
+
+    <!-- Recent usage -->
+    <div class="card glass">
+      <div class="font-semibold mb-3">Recent API calls</div>
+      <div x-show="loading" class="text-sm text-[color:var(--text-dim)]">Loading…</div>
+      <div x-show="!loading && recent.length === 0" class="text-sm text-[color:var(--text-dim)]">
+        No calls yet. Try the <a href="chat.html" class="text-[color:var(--brand)] hover:underline">chat</a> or run a curl:
+        <pre class="code mono text-xs mt-2" x-text="exampleCurl"></pre>
+      </div>
+      <div x-show="!loading && recent.length > 0" class="overflow-x-auto">
+        <table class="tbl">
+          <thead>
+            <tr>
+              <th>When</th>
+              <th>Model</th>
+              <th>Tokens</th>
+              <th>Credits</th>
+            </tr>
+          </thead>
+          <tbody>
+            <template x-for="u in recent" :key="u.id">
+              <tr>
+                <td class="text-xs" x-text="timeAgo(u.created_at)"></td>
+                <td x-text="u.model"></td>
+                <td class="mono" x-text="fmtNumber(u.total_tokens)"></td>
+                <td class="mono" x-text="'-' + fmtCredits(u.credits_charged)"></td>
+              </tr>
+            </template>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <script src="app.js"></script>
+  <script>
+    function dashboard() {
+      return {
+        me: Auth.currentUser(),
+        apiKey: LS.get("api_key"),
+        showNewKey: false,
+        newKey: "",
+        revealKey: false,
+        regenerating: false,
+        loading: true,
+        stats: { calls: 0, tokens: 0, total_spent: 0, last_used: null },
+        recent: [],
+        exampleCurl: `curl http://localhost:8765/v1/chat/completions \\
+  -H "Authorization: Bearer YOUR_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{"model":"qwen2.5-coder:7b","messages":[{"role":"user","content":"hi"}]}'`,
+
+        async init() {
+          if (!Auth.requireLogin()) return;
+          // Show the new key banner after register
+          const url = new URL(window.location.href);
+          if (url.searchParams.get("new") === "1") {
+            const k = sessionStorage.getItem("just_registered_key");
+            if (k) { this.newKey = k; this.showNewKey = true; sessionStorage.removeItem("just_registered_key"); }
+          }
+          await this.refresh();
+        },
+
+        async refresh() {
+          this.loading = true;
+          try {
+            this.me = await refreshUser();
+            this.apiKey = LS.get("api_key");
+            // Stats: we don't have a dedicated /v1/stats endpoint, so derive from /v1/me
+            // (For the POC, we just call /v1/me and display zeros + leave the chart empty.)
+            // To still show a chart, we fake "by day" structure from the user's data.
+            // Better: rely on a server-side endpoint. For now, show 7 empty days with the spent info we can compute.
+            this.stats = { calls: 0, tokens: 0, total_spent: 0, last_used: null };
+            this.recent = [];
+            // Render empty chart
+            const now = new Date();
+            const points = Array.from({ length: 7 }, (_, i) => {
+              const d = new Date(now); d.setDate(d.getDate() - (6 - i));
+              return { label: d.toLocaleDateString("en", { weekday: "short" }), value: 0 };
+            });
+            renderUsageChart("usageChart", points);
+          } catch (e) {
+            toast("Failed to load: " + e.message, "err");
+          } finally {
+            this.loading = false;
+          }
+        },
+
+        maskKey(k) {
+          if (!k) return "—";
+          if (k.length < 16) return "•".repeat(k.length);
+          return k.slice(0, 12) + "•".repeat(k.length - 16) + k.slice(-4);
+        },
+
+        copyKey() {
+          const k = this.apiKey;
+          if (!k) return;
+          navigator.clipboard.writeText(k).then(() => toast("API key copied to clipboard"));
+        },
+
+        async regenerate() {
+          if (!confirm("Regenerate API key? The old one will stop working immediately.")) return;
+          this.regenerating = true;
+          try {
+            // POC: re-login to get a fresh key (deactivates old one)
+            const pw = prompt("Enter your password to confirm:");
+            if (!pw) { this.regenerating = false; return; }
+            const r = await API("/auth/login", { method: "POST", body: { email: this.me.email, password: pw } });
+            Auth.save({ ...this.me, credits: r.credits }, r.api_key);
+            this.apiKey = r.api_key;
+            this.newKey = r.api_key;
+            this.showNewKey = true;
+            toast("New API key issued. Save it now!");
+          } catch (e) {
+            toast("Failed: " + e.message, "err");
+          } finally {
+            this.regenerating = false;
+          }
+        }
+      };
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Community Pool · GPU-Pool POC</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+<link rel="stylesheet" href="style.css" />
+<style>
+  .util-bar { background: rgba(0,0,0,0.3); border-radius: 6px; overflow: hidden; height: 8px; }
+  .util-bar > div { height: 100%; background: linear-gradient(90deg, #22c55e, #f59e0b, #ef4444); transition: width 0.4s; }
+</style>
+</head>
+<body x-data="poolPage()" x-init="init()">
+  <div x-html="navHTML('pool')"></div>
+
+  <main class="max-w-6xl mx-auto px-4 pb-20">
+    <h1 class="text-2xl font-bold mb-1">🌐 Community Pool</h1>
+    <p class="text-sm text-[color:var(--text-dim)] mb-6">
+      Live-Übersicht aller beigetragenen GPUs. Auto-Refresh alle 10s.
+    </p>
+
+    <!-- Hero stats -->
+    <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-8">
+      <div class="card glass text-center">
+        <div class="text-3xl font-bold gradient-text" x-text="stats ? (stats.online_nodes + ' / ' + stats.total_nodes) : '–'"></div>
+        <div class="text-xs text-[color:var(--text-dim)] mt-1">Aktive Nodes</div>
+      </div>
+      <div class="card glass text-center">
+        <div class="text-3xl font-bold gradient-text" x-text="stats ? stats.total_vram_gb : '–'"></div>
+        <div class="text-xs text-[color:var(--text-dim)] mt-1">Community-VRAM (GB)</div>
+      </div>
+      <div class="card glass text-center">
+        <div class="text-3xl font-bold gradient-text" x-text="stats ? stats.available_vram_gb : '–'"></div>
+        <div class="text-xs text-[color:var(--text-dim)] mt-1">Verfügbar (GB)</div>
+      </div>
+      <div class="card glass text-center">
+        <div class="text-3xl font-bold gradient-text" x-text="stats ? (stats.avg_utilization * 100).toFixed(0) + '%' : '–'"></div>
+        <div class="text-xs text-[color:var(--text-dim)] mt-1">Ø Auslastung</div>
+      </div>
+      <div class="card glass text-center">
+        <div class="text-3xl font-bold gradient-text" x-text="rateRange()"></div>
+        <div class="text-xs text-[color:var(--text-dim)] mt-1">Stundensatz (Credits)</div>
+      </div>
+    </div>
+
+    <h2 class="text-xl font-semibold mb-3">Verfügbare GPUs</h2>
+    <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <template x-for="n in nodes" :key="n.id">
+        <div class="card glass">
+          <div class="flex justify-between items-start">
+            <h4 class="font-semibold" x-text="n.name"></h4>
+            <span :class="'pill pill-' + n.status" x-text="n.status"></span>
+          </div>
+          <div class="text-sm text-[color:var(--text-dim)] mt-1">
+            <span x-text="n.gpu_type"></span> · <span x-text="n.vram_gb"></span> GB VRAM
+          </div>
+          <div class="text-sm text-[color:var(--text-dim)]">
+            <span x-text="n.hourly_rate"></span> Credits/h
+          </div>
+          <div class="text-xs text-[color:var(--text-dim)] mt-2">
+            VRAM: <span x-text="n.vram_used_gb.toFixed(1)"></span> / <span x-text="n.vram_gb"></span> GB
+            (<span x-text="vramPct(n)"></span>%)
+          </div>
+          <div class="util-bar mt-1"><div :style="'width:' + vramPct(n) + '%'"></div></div>
+          <div class="text-xs text-[color:var(--text-dim)] mt-1">
+            Auslastung: <span x-text="utilPct(n)"></span>%
+          </div>
+          <div class="util-bar mt-1"><div :style="'width:' + utilPct(n) + '%'"></div></div>
+          <p class="text-xs text-[color:var(--text-dim)] mt-2" x-show="n.description" x-text="n.description"></p>
+        </div>
+      </template>
+    </div>
+
+    <div x-show="nodes.length === 0 && !loading" class="text-center text-[color:var(--text-dim)] py-12">
+      <div class="text-4xl mb-2">🛰️</div>
+      <p>Keine Nodes gerade online. Schau später wieder rein oder <a href="nodes.html" class="text-brand">registriere deine GPU</a>!</p>
+    </div>
+  </main>
+
+  <script src="app.js"></script>
+  <script src="pool.js"></script>
+</body>
+</html>

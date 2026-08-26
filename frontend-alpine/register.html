@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Register · GPU-Pool POC</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<main class="min-h-screen flex items-center justify-center px-4 py-8">
+  <div class="card glass w-full max-w-lg" x-data="registerForm()">
+    <div class="text-center mb-6">
+      <h1 class="text-2xl font-bold gradient-text">⚡ GPU-Pool</h1>
+      <p class="text-[color:var(--text-dim)] mt-1 text-sm">Create your account · Get 100 free credits</p>
+    </div>
+
+    <form @submit.prevent="submit()" class="space-y-4">
+      <div>
+        <label class="label">Name</label>
+        <input class="input" x-model="name" required placeholder="Ada Lovelace" />
+      </div>
+      <div>
+        <label class="label">Email</label>
+        <input class="input" type="email" x-model="email" required autocomplete="email" placeholder="you@example.com" />
+      </div>
+      <div>
+        <label class="label">Password</label>
+        <input class="input" type="password" x-model="password" required minlength="6" autocomplete="new-password" placeholder="At least 6 characters" />
+      </div>
+
+      <div>
+        <label class="label">Rolle</label>
+        <div class="space-y-2 mt-1">
+          <label class="flex items-start gap-2 cursor-pointer">
+            <input type="radio" name="role" value="consumer" x-model="role" class="mt-1" />
+            <span>
+              <span class="font-semibold">Nur Consumer</span>
+              <span class="block text-xs text-[color:var(--text-dim)]">Nur API nutzen, keine Nodes registrieren. Für schwache PCs.</span>
+            </span>
+          </label>
+          <label class="flex items-start gap-2 cursor-pointer">
+            <input type="radio" name="role" value="provider" x-model="role" class="mt-1" />
+            <span>
+              <span class="font-semibold">Nur Provider</span>
+              <span class="block text-xs text-[color:var(--text-dim)]">Eigene GPU(s) teilen, keine API-Calls.</span>
+            </span>
+          </label>
+          <label class="flex items-start gap-2 cursor-pointer">
+            <input type="radio" name="role" value="both" x-model="role" class="mt-1" />
+            <span>
+              <span class="font-semibold">Beides</span>
+              <span class="block text-xs text-[color:var(--text-dim)]">GPU teilen UND API nutzen (Default).</span>
+            </span>
+          </label>
+        </div>
+      </div>
+
+      <details class="border border-white/10 rounded p-3">
+        <summary class="cursor-pointer text-sm font-semibold">
+          Modelle, die du nutzen möchtest
+          <span class="text-xs text-[color:var(--text-dim)] font-normal">(optional — leer = Standard: alle lokal, keine Cloud)</span>
+        </summary>
+        <div class="mt-3 space-y-2">
+          <div class="border border-white/10 rounded p-2 max-h-48 overflow-y-auto space-y-1">
+            <template x-for="m in availableModels" :key="m.name">
+              <label class="flex items-center gap-2 text-sm cursor-pointer hover:bg-white/5 px-1 rounded">
+                <input type="checkbox" :checked="selectedModels.includes(m.name)" @change="toggleModel(m.name)" />
+                <span x-text="m.name" class="flex-1"></span>
+                <span x-show="m.is_cloud" class="pill pill-busy text-[10px]">cloud</span>
+                <span x-text="(m.size_gb || 0) + ' GB'" class="text-xs text-[color:var(--text-dim)]"></span>
+              </label>
+            </template>
+            <div x-show="availableModels.length === 0" class="text-xs text-[color:var(--text-dim)]">Lade Modelle…</div>
+          </div>
+          <label class="flex items-center gap-2 text-sm">
+            <input type="checkbox" x-model="allowCloud" />
+            <span>Cloud-Modelle erlauben (z.B. wenn du im Urlaub bist und deine lokalen Tokens nicht nutzt)</span>
+          </label>
+          <p class="text-xs text-[color:var(--text-dim)]">
+            Du kannst das später im <a href="profile.html" class="text-brand">Profil</a> jederzeit ändern.
+          </p>
+        </div>
+      </details>
+
+      <div x-show="error" class="text-sm text-[color:var(--err)]" x-text="error"></div>
+
+      <button type="submit" class="btn-primary w-full justify-center" :disabled="loading">
+        <span x-show="!loading">Create account</span>
+        <span x-show="loading">Creating…</span>
+      </button>
+    </form>
+
+    <p class="text-center text-sm text-[color:var(--text-dim)] mt-6">
+      Already have an account?
+      <a href="login.html" class="text-[color:var(--brand)] hover:underline">Sign in</a>
+    </p>
+  </div>
+</main>
+
+<script src="app.js"></script>
+<script>
+function registerForm() {
+  return {
+    name: "",
+    email: "",
+    password: "",
+    role: "both",
+    selectedModels: [],
+    allowCloud: false,
+    availableModels: [],
+    loading: false,
+    error: "",
+
+    async init() {
+      // Best-effort model list load. The page works even if this fails.
+      try {
+        const r = await fetch(API_BASE + "/v1/available-models");
+        if (r.ok) {
+          const d = await r.json();
+          this.availableModels = d.models || [];
+        }
+      } catch (e) { /* ignore */ }
+    },
+
+    toggleModel(name) {
+      const i = this.selectedModels.indexOf(name);
+      if (i >= 0) this.selectedModels.splice(i, 1);
+      else this.selectedModels.push(name);
+    },
+
+    async submit() {
+      this.loading = true;
+      this.error = "";
+      try {
+        const body = {
+          name: this.name,
+          email: this.email,
+          password: this.password,
+          role: this.role,
+          allowed_models: this.selectedModels.length > 0 ? this.selectedModels : null,
+          allow_cloud: this.allowCloud,
+          initial_credits: 100,
+        };
+        const r = await API("/auth/register", { method: "POST", body });
+        Auth.save({
+          id: r.user_id, email: r.email, name: r.name,
+          credits: r.credits, role: r.role, allowed_models: r.allowed_models,
+        }, r.api_key);
+        sessionStorage.setItem("just_registered_key", r.api_key);
+        toast("Account created! 100 credits granted.");
+        setTimeout(() => { window.location.href = "index.html?new=1"; }, 500);
+      } catch (e) {
+        this.error = e.message || "Registration failed";
+      } finally {
+        this.loading = false;
+      }
+    },
+  };
+}
+</script>
+</body>
+</html>

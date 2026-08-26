@@ -1,0 +1,373 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <title>GPU-Pool POC – Dokumentation</title>
+  <link rel="stylesheet" href="/static/app.css" />
+  <style>
+    .docs-container { max-width: 900px; margin: 0 auto; padding: 2rem; }
+    .docs-section { margin-bottom: 3rem; }
+    .docs-section h2 { color: #4fc3f7; border-bottom: 2px solid #4fc3f7; padding-bottom: 0.5rem; }
+    .docs-section h3 { color: #81d4fa; margin-top: 1.5rem; }
+    .docs-section p, .docs-section li { line-height: 1.7; }
+    .docs-section ul { padding-left: 1.5rem; }
+    .docs-section code {
+      background: #1a1a2e;
+      padding: 0.2rem 0.4rem;
+      border-radius: 4px;
+      font-family: 'Courier New', monospace;
+      color: #c3e88d;
+    }
+    .docs-section pre {
+      background: #1a1a2e;
+      padding: 1rem;
+      border-radius: 8px;
+      overflow-x: auto;
+      border-left: 3px solid #4fc3f7;
+    }
+    .docs-section pre code { background: none; padding: 0; }
+    .role-box {
+      background: rgba(79, 195, 247, 0.1);
+      border: 1px solid #4fc3f7;
+      border-radius: 8px;
+      padding: 1rem;
+      margin: 1rem 0;
+    }
+    .role-box h4 { margin-top: 0; color: #4fc3f7; }
+    .step-box {
+      background: rgba(129, 212, 250, 0.1);
+      border-left: 4px solid #81d4fa;
+      padding: 1rem;
+      margin: 1rem 0;
+      border-radius: 0 8px 8px 0;
+    }
+    .warning-box {
+      background: rgba(255, 193, 7, 0.1);
+      border-left: 4px solid #ffc107;
+      padding: 1rem;
+      margin: 1rem 0;
+      border-radius: 0 8px 8px 0;
+    }
+    .success-box {
+      background: rgba(76, 175, 80, 0.1);
+      border-left: 4px solid #4caf50;
+      padding: 1rem;
+      margin: 1rem 0;
+      border-radius: 0 8px 8px 0;
+    }
+    table { width: 100%; border-collapse: collapse; margin: 1rem 0; }
+    th, td { padding: 0.5rem; text-align: left; border-bottom: 1px solid #333; }
+    th { color: #4fc3f7; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>📚 GPU-Pool POC Dokumentation</h1>
+    <nav>
+      <a href="/">Login</a>
+      <a href="/chat">Chat</a>
+      <a href="/credits">Credits</a>
+      <a href="/pool">Pool</a>
+      <a href="/nodes">Meine Nodes</a>
+      <a href="/earnings">Earnings</a>
+      <a href="/docs">Doku</a>
+    </nav>
+    <div id="who" class="muted"></div>
+  </header>
+
+  <main class="docs-container">
+    <h1>📖 GPU-Pool Community Plattform – Benutzerhandbuch</h1>
+    <p class="muted">Version 1.0 | Letztes Update: 6. Juni 2026</p>
+
+    <!-- ÜBERSICHT -->
+    <section class="docs-section">
+      <h2>🚀 Was ist der GPU-Pool?</h2>
+      <p>Der <strong>GPU-Pool</strong> ist eine dezentrale Plattform, auf der die Community GPU-Leistung teilen kann. Als Nutzer kannst du:</p>
+      <ul>
+        <li><strong>KI-Modelle nutzen</strong> – Chat mit verschiedenen KI-Modellen über unsere API</li>
+        <li><strong>GPU-Leistung teilen</strong> – Deine Grafikkarte der Community zur Verfügung stellen und dafür verdienen</li>
+        <li><strong>Credits kaufen</strong> – Mit Stripe, PayPal oder Krypto bezahlen</li>
+        <li><strong>Passives Einkommen generieren</strong> – Für jede berechnete Anfrage Credits verdienen</li>
+      </ul>
+
+      <div class="role-box">
+        <h4>👤 Als Nutzer (User)</h4>
+        <p>Du willst KI-Modelle nutzen? Registriere dich, kaufe Credits und starte den Chat. Deine Anfragen werden automatisch an verfügbare GPUs im Pool weitergeleitet.</p>
+      </div>
+
+      <div class="role-box">
+        <h4>💻 Als GPU-Anbieter (Provider)</h4>
+        <p>Du hast eine leistungsstarke GPU? Registriere deine Node, installiere den Agenten und lasse die Community deine GPU nutzen. Du verdienst Credits für jede Berechnung.</p>
+      </div>
+    </section>
+
+    <!-- SCHNELLSTART USER -->
+    <section class="docs-section">
+      <h2>👤 Schnellstart: Als Nutzer</h2>
+
+      <h3>Schritt 1: Registrierung</h3>
+      <div class="step-box">
+        <ol>
+          <li>Besuche <a href="/">die Startseite</a></li>
+          <li>Fülle das Registrierungsformular aus (Name, E-Mail, Passwort)</li>
+          <li>Alternativ: Login mit bestehendem Account</li>
+        </ol>
+      </div>
+
+      <h3>Schritt 2: Credits kaufen</h3>
+      <div class="step-box">
+        <ol>
+          <li>Klicke auf <a href="/credits">"Credits"</a></li>
+          <li>Wähle einen Paket: <code>Basic (10€)</code>, <code>Pro (25€)</code>, <code>Max (50€)</code></li>
+          <li>Wähle Zahlungsmethode: Stripe, PayPal, oder Krypto</li>
+          <li>Zahlung abschließen – Credits werden sofort gutgeschrieben</li>
+        </ol>
+      </div>
+
+      <h3>Schritt 3: Chat starten</h3>
+      <div class="step-box">
+        <ol>
+          <li>Gehe zu <a href="/chat">"Chat"</a></li>
+          <li>Wähle ein KI-Modell aus der Liste</li>
+          <li>Tippe deine Nachricht und drücke Enter</li>
+          <li>Die Antwort kommt in Echtzeit – gestreamed!</li>
+        </ol>
+      </div>
+
+      <div class="warning-box">
+        <strong>⚠️ Wichtig:</strong> Credits werden pro Anfrage abgerechnet. Die Kosten hängen vom Modell und der Token-Anzahl ab. Standard: 1 Credit ≈ 0.001€ pro 1K Tokens.
+      </div>
+    </section>
+
+    <!-- SCHNELLSTART PROVIDER -->
+    <section class="docs-section">
+      <h2>💻 Schnellstart: Als GPU-Anbieter</h2>
+
+      <h3>Voraussetzungen</h3>
+      <ul>
+        <li>GPU mit CUDA-Unterstützung (NVIDIA empfohlen)</li>
+        <li>Ollama installiert (<a href="https://ollama.com" target="_blank">ollama.com</a>)</li>
+        <li>Docker (empfohlen) oder Python 3.11+</li>
+        <li>Tailscale oder VPN-Zugang (für sichere Verbindung)</li>
+      </ul>
+
+      <h3>Schritt 1: Node registrieren</h3>
+      <div class="step-box">
+        <ol>
+          <li>Registriere dich als User (siehe oben)</li>
+          <li>Gehe zu <a href="/nodes">"Meine Nodes"</a></li>
+          <li>Klicke "Neue Node registrieren"</li>
+          <li>Gib an:
+            <ul>
+              <li><strong>Tailscale IP</strong> – Deine IP im VPN (z.B. <code>100.x.x.x</code>)</li>
+              <li><strong>Port</strong> – Standard <code>11435</code></li>
+              <li><strong>GPU-Modell</strong> – z.B. "RTX 3080 10GB"</li>
+              <li><strong>VRAM</strong> – z.B. <code>10240</code> (in MB)</li>
+              <li><strong>Maximale Jobs</strong> – Wie viele parallele Anfragen? (z.B. 2)</li>
+            </ul>
+          </li>
+        </ol>
+      </div>
+
+      <h3>Schritt 2: Agent installieren (Docker – empfohlen)</h3>
+      <div class="step-box">
+        <p>Speichere folgende <code>docker-compose.yml</code>:</p>
+        <pre><code>version: '3.8'
+
+services:
+  gpu-pool-agent:
+    image: gpu-pool-node-agent:latest
+    container_name: gpu-pool-agent
+    restart: unless-stopped
+    runtime: nvidia
+    environment:
+      - PORTAL_URL=http://100.126.79.111:8765
+      - NODE_ID=DEINE_NODE_ID
+      - NODE_API_KEY=DEIN_API_KEY
+      - OLLAMA_URL=http://localhost:11434
+      - AGENT_PORT=11435
+      - HEARTBEAT_SEC=30
+    ports:
+      - "11435:11435"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]</code></pre>
+        <p>Starte den Agenten:</p>
+        <pre><code>docker-compose up -d</code></pre>
+      </div>
+
+      <h3>Schritt 3: Agent ohne Docker (Alternative)</h3>
+      <div class="step-box">
+        <pre><code># Abhängigkeiten installieren
+pip install fastapi uvicorn httpx psutil pynvml
+
+# Umgebungsvariablen setzen
+export PORTAL_URL=http://100.126.79.111:8765
+export NODE_ID=DEINE_NODE_ID
+export NODE_API_KEY=DEIN_API_KEY
+export OLLAMA_URL=http://localhost:11434
+
+# Agent starten
+python agent.py</code></pre>
+      </div>
+
+      <h3>Schritt 4: Node verifizieren</h3>
+      <div class="success-box">
+        <ol>
+          <li>Der Agent sendet automatisch Heartbeats alle 30 Sekunden</li>
+          <li>Gehe zu <a href="/nodes">"Meine Nodes"</a> – Status sollte "online" sein</li>
+          <li>Teste die Verbindung: <code>curl http://DEINE_IP:11435/health</code></li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- API DOKU -->
+    <section class="docs-section">
+      <h2>🔌 API-Dokumentation</h2>
+
+      <h3>OpenAI-kompatible Endpunkte</h3>
+      <p>Die API ist vollständig OpenAI-kompatibel. Du kannst bestehende Clients verwenden.</p>
+
+      <h4>Authentifizierung</h4>
+      <p>Alle Requests brauchen einen <code>Authorization: Bearer API_KEY</code> Header.</p>
+      <pre><code>curl http://100.126.79.111:8765/v1/chat/completions \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "qwen2.5-coder:7b",
+    "messages": [{"role": "user", "content": "Hallo Welt!"}],
+    "stream": true
+  }'</code></pre>
+
+      <h4>Wichtige Endpunkte</h4>
+      <table>
+        <tr><th>Methode</th><th>Endpunkt</th><th>Beschreibung</th></tr>
+        <tr><td>POST</td><td><code>/v1/chat/completions</code></td><td>Chat mit KI-Modell (streamed)</td></tr>
+        <tr><td>GET</td><td><code>/v1/models</code></td><td>Verfügbare Modelle listen</td></tr>
+        <tr><td>GET</td><td><code>/v1/me</code></td><td>Eigenes Profil + Credits</td></tr>
+        <tr><td>POST</td><td><code>/nodes/register</code></td><td>Neue GPU-Node registrieren</td></tr>
+        <tr><td>POST</td><td><code>/nodes/{id}/heartbeat</code></td><td>Heartbeat (Agent → Portal)</td></tr>
+        <tr><td>GET</td><td><code>/pool/status</code></td><td>Pool-Status + verfügbare GPUs</td></tr>
+        <tr><td>GET</td><td><code>/earnings</code></td><td>Earnings-Übersicht</td></tr>
+      </table>
+    </section>
+
+    <!-- CREDITS & PAYMENTS -->
+    <section class="docs-section">
+      <h2>💰 Credits & Bezahlung</h2>
+
+      <h3>Preismodell</h3>
+      <table>
+        <tr><th>Paket</th><th>Preis</th><th>Credits</th><th>Bonus</th></tr>
+        <tr><td>Basic</td><td>10€</td><td>1.000</td><td>–</td></tr>
+        <tr><td>Pro</td><td>25€</td><td>2.750</td><td>+10%</td></tr>
+        <tr><td>Max</td><td>50€</td><td>6.000</td><td>+20%</td></tr>
+      </table>
+
+      <h3>Zahlungsmethoden</h3>
+      <ul>
+        <li><strong>Stripe</strong> – Kreditkarte, Sofort, Klarna</li>
+        <li><strong>PayPal</strong> – Direktzahlung</li>
+        <li><strong>Krypto (geplant)</strong> – Solana/SOL Einzahlung → Credits</li>
+      </ul>
+
+      <h3>Verdienen als Provider</h3>
+      <p>Für jede erfolgreich berechnete Anfrage auf deiner GPU erhältst du Credits gutgeschrieben. Die Verteilung:</p>
+      <ul>
+        <li><strong>70%</strong> – Geht an den GPU-Anbieter (du)</li>
+        <li><strong>20%</strong> – Plattform-Gebühr</li>
+        <li><strong>10%</strong> – Community-Pool / Incentives</li>
+      </ul>
+    </section>
+
+    <!-- TROUBLESHOOTING -->
+    <section class="docs-section">
+      <h2>🛠️ Troubleshooting</h2>
+
+      <h3>Node zeigt "offline"</h3>
+      <ul>
+        <li>Prüfe: Läuft der Agent? <code>docker ps | grep gpu-pool</code></li>
+        <li>Prüfe: Tailscale verbunden? <code>tailscale status</code></li>
+        <li>Prüfe: Firewall-Port 11435 offen? <code>ufw allow 11435/tcp</code></li>
+        <li>Prüfe: Logs <code>docker logs gpu-pool-agent</code></li>
+      </ul>
+
+      <h3>Ollama nicht erreichbar</h3>
+      <ul>
+        <li>Ist Ollama gestartet? <code>ollama serve</code></li>
+        <li>Läuft Ollama auf dem richtigen Port? Standard: <code>11434</code></li>
+        <li>Teste: <code>curl http://localhost:11434/api/tags</code></li>
+      </ul>
+
+      <h3>Keine Credits nach Zahlung</h3>
+      <ul>
+        <li>Stripe/PayPal im Testmodus? Credits werden trotzdem gutgeschrieben (Demo)</li>
+        <li>Prüfe Zahlungsstatus im <a href="/credits">Credits-Bereich</a></li>
+        <li>Kontaktiere Support bei Problemen</li>
+      </ul>
+
+      <h3>Langsame Antworten</h3>
+      <ul>
+        <li>Pool überlastet? Prüfe <a href="/pool">Pool-Status</a></li>
+        <li>Node überlastet? Reduziere <code>max_concurrent_jobs</code></li>
+        <li>Modell zu groß für GPU? Wähle kleineres Modell</li>
+      </ul>
+    </section>
+
+    <!-- SICHERHEIT -->
+    <section class="docs-section">
+      <h2>🔒 Sicherheit & Datenschutz</h2>
+      <ul>
+        <li><strong>Keine öffentlichen Ports</strong> – Nutze Tailscale/VPN für Agent-Verbindungen</li>
+        <li><strong>API-Keys</strong> – Werden sicher in localStorage gespeichert, nicht auf dem Server</li>
+        <li><strong>Passwörter</strong> – Gehasht mit bcrypt, nie im Klartext</li>
+        <li><strong>Zahlungen</strong> – Alle Zahlungsanbieter sind PCI-DSS konform</li>
+        <li><strong>Daten</strong> – Chat-Verlauf bleibt lokal, keine Speicherung auf dem Portal</li>
+      </ul>
+    </section>
+
+    <!-- FAQ -->
+    <section class="docs-section">
+      <h2>❓ FAQ</h2>
+
+      <h3>Muss ich meine GPU exklusiv freigeben?</h3>
+      <p>Nein! Der Agent liest nur GPU-Statistiken und leitet Anfragen weiter. Dein System läuft normal weiter – du kannst parallel zocken, rendern, etc.</p>
+
+      <h3>Werden meine Daten gespeichert?</h3>
+      <p>Chat-Nachrichten werden nicht persistent gespeichert. Nur Metadaten (Token-Anzahl, Kosten) für die Abrechnung.</p>
+
+      <h3>Kann ich meine Credits auszahlen lassen?</h3>
+      <p>Aktuell noch nicht – Auszahlung über Krypto ist für Phase 2 geplant.</p>
+
+      <h3>Welche GPUs werden unterstützt?</h3>
+      <p>Alle CUDA-fähigen NVIDIA GPUs. AMD über ROCm ist experimentell. Minimum: 4GB VRAM.</p>
+
+      <h3>Was kostet es als Provider?</h3>
+      <p>Nichts! Du verdienst Credits. Stromkosten trägst du natürlich selbst – rechnet sich aber durch Earnings.</p>
+    </section>
+
+    <!-- KONTAKT -->
+    <section class="docs-section">
+      <h2>📧 Support & Kontakt</h2>
+      <ul>
+        <li><strong>Discord:</strong> GPU-Pool Community Server (Link folgt)</li>
+        <li><strong>E-Mail:</strong> support@opencode-poc.de</li>
+        <li><strong>GitHub:</strong> github.com/opencode/gpu-pool (geplant)</li>
+        <li><strong>Telegram:</strong> @opencode_support</li>
+      </ul>
+    </section>
+
+    <footer class="muted" style="text-align: center; margin-top: 3rem; padding-top: 2rem; border-top: 1px solid #333;">
+      <p>GPU-Pool POC – Community GPU-Sharing Plattform</p>
+      <p>Built with ❤️ by the OpenCode Community</p>
+    </footer>
+  </main>
+
+  <script src="/static/app.js"></script>
+  <script>API.refreshMe();</script>
+</body>
+</html>

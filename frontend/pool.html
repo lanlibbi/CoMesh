@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>GPU-Pool — Community Pool</title>
+  <link rel="stylesheet" href="/static/app.css" />
+  <style>
+    .hero {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 16px; margin: 16px 0;
+    }
+    .stat { background: linear-gradient(135deg, #1c1c24, #252533); border: 1px solid #333; border-radius: 12px; padding: 18px; }
+    .stat .v { font-size: 1.9em; font-weight: bold; color: #4ade80; }
+    .stat .l { color: #94a3b8; font-size: 0.9em; margin-top: 4px; }
+    .node-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+    .node-card { background: #1c1c24; border: 1px solid #333; border-radius: 12px; padding: 14px; }
+    .node-card h4 { margin: 0 0 6px 0; }
+    .node-card .meta { color: #94a3b8; font-size: 0.85em; }
+    .util-bar { background: #0e0e14; border-radius: 6px; overflow: hidden; height: 8px; margin: 6px 0; }
+    .util-bar > div { height: 100%; background: linear-gradient(90deg, #4ade80, #facc15, #f87171); }
+    .pill { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 0.8em; font-weight: 600; }
+    .pill-online { background: #166534; color: #dcfce7; }
+    .pill-busy { background: #854d0e; color: #fef3c7; }
+    .pill-offline { background: #4b5563; color: #e5e7eb; }
+    .empty { text-align: center; padding: 40px; color: #94a3b8; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🌐 Community Pool</h1>
+    <nav>
+      <a href="/">Login</a>
+      <a href="/chat">Chat</a>
+      <a href="/credits">Credits</a>
+      <a href="/pool">Pool</a>
+      <a href="/nodes">Meine Nodes</a>
+      <a href="/earnings">Earnings</a>
+      <a href="/agent">Agent</a>
+      <a href="/docs">Doku</a>
+    </nav>
+    <div id="who" class="muted"></div>
+  </header>
+
+  <main>
+    <section>
+      <h2>Live-Übersicht</h2>
+      <div class="hero" id="hero">
+        <div class="stat"><div class="v" id="stat-nodes">–</div><div class="l">Aktive Nodes</div></div>
+        <div class="stat"><div class="v" id="stat-vram">–</div><div class="l">Community-VRAM (GB)</div></div>
+        <div class="stat"><div class="v" id="stat-avail">–</div><div class="l">Verfügbar (GB)</div></div>
+        <div class="stat"><div class="v" id="stat-util">–</div><div class="l">Ø Auslastung</div></div>
+        <div class="stat"><div class="v" id="stat-rate">–</div><div class="l">Stundensatz (Credits)</div></div>
+      </div>
+      <p class="muted">Auto-Refresh alle 10s. Routing: <code>local → community → cloud (stub)</code></p>
+    </section>
+
+    <section>
+      <h2>Verfügbare GPUs</h2>
+      <div id="nodes" class="node-grid"></div>
+    </section>
+  </main>
+
+  <script src="/static/app.js"></script>
+  <script src="/static/pool.js"></script>
+</body>
+</html>

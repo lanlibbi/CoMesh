@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Node-Agent Setup · GPU-Pool POC</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body x-data="agentPage()" x-init="init()">
+  <div x-html="navHTML('agent')"></div>
+
+  <main class="max-w-4xl mx-auto px-4 pb-20">
+    <h1 class="text-2xl font-bold mb-1">🐳 Node-Agent Setup</h1>
+    <p class="text-sm text-[color:var(--text-dim)] mb-6">
+      Drei Schritte: Node registrieren → Agent bauen → starten. Sobald der Agent den ersten
+      Heartbeat schickt, wird deine GPU im <a href="pool.html" class="text-brand">Community-Pool</a> sichtbar.
+    </p>
+
+    <div class="card glass mb-4">
+      <h3 class="font-semibold mb-2">1) Node registrieren</h3>
+      <p class="text-sm text-[color:var(--text-dim)]">
+        Auf <a href="nodes.html" class="text-brand">/nodes</a> ausfüllen. Du bekommst nach dem Registrieren
+        einen <span class="mono">agent_api_key</span>.
+      </p>
+    </div>
+
+    <div class="card glass mb-4">
+      <h3 class="font-semibold mb-2">2) Agent-Image bauen</h3>
+      <p class="text-sm text-[color:var(--text-dim)] mb-2">
+        Klone das Repo (oder kopiere den <span class="mono">node-agent/</span>-Ordner) und baue das Image:
+      </p>
+      <pre class="bg-black/40 p-3 rounded text-xs overflow-x-auto"><code>cd node-agent
+docker build -t gpu-pool-node-agent .</code></pre>
+    </div>
+
+    <div class="card glass mb-4">
+      <h3 class="font-semibold mb-2">3) Agent starten</h3>
+      <p class="text-sm text-[color:var(--text-dim)] mb-2">
+        Ersetze <span class="mono">NODE_ID</span> und <span class="mono">NODE_API_KEY</span> mit den Werten aus Schritt 1:
+      </p>
+      <pre class="bg-black/40 p-3 rounded text-xs overflow-x-auto"><code x-text="cmd"></code></pre>
+      <p class="text-sm text-[color:var(--text-dim)] mt-3 mb-1">Logs checken:</p>
+      <pre class="bg-black/40 p-3 rounded text-xs overflow-x-auto"><code>docker logs -f gpu-pool-agent</code></pre>
+      <p class="text-sm text-[color:var(--text-dim)] mt-3 mb-1">Health check:</p>
+      <pre class="bg-black/40 p-3 rounded text-xs overflow-x-auto"><code>curl http://&lt;tailscale-ip&gt;:11435/health | jq</code></pre>
+    </div>
+
+    <div class="card glass">
+      <h3 class="font-semibold mb-2">4) Verifizieren</h3>
+      <p class="text-sm text-[color:var(--text-dim)]">
+        Sobald dein Node im Pool auftaucht, bist du live. Anfragen werden automatisch an deine GPU
+        geroutet, du bekommst 70% der Job-Kosten als Credits auf dein Konto.
+      </p>
+    </div>
+  </main>
+
+  <script src="app.js"></script>
+  <script src="agent.js"></script>
+</body>
+</html>

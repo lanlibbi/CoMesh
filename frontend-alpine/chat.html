@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Chat · GPU-Pool POC</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body x-data="chatPage()" x-init="init()">
+  <div x-html="navHTML('chat')"></div>
+
+  <main class="max-w-4xl mx-auto px-4 pb-32">
+    <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+      <div>
+        <h1 class="text-2xl font-bold">Chat</h1>
+        <p class="text-sm text-[color:var(--text-dim)]">
+          Balance:
+          <span class="font-semibold gradient-text" x-text="fmtCredits(me?.credits)"></span> credits
+        </p>
+      </div>
+      <div class="flex items-center gap-2">
+        <label class="text-sm text-[color:var(--text-dim)]">Model</label>
+        <select class="input" x-model="model" style="width:auto; min-width:220px;" :disabled="models.length === 0">
+          <option value="" disabled>Loading…</option>
+          <template x-for="m in models" :key="m.name">
+            <option :value="m.name" x-text="m.name + (m.size ? ' (' + (m.size/1e9).toFixed(1) + ' GB)' : '')"></option>
+          </template>
+        </select>
+        <button class="btn-ghost text-sm" @click="loadModels()" title="Refresh models">↻</button>
+      </div>
+    </div>
+
+    <!-- Chat thread -->
+    <div class="card glass" style="min-height: 480px;">
+      <div x-show="messages.length === 0 && !loading" class="text-center text-[color:var(--text-dim)] py-12">
+        <div class="text-4xl mb-2">💬</div>
+        <p>Start a conversation. Try asking the model something.</p>
+        <div class="mt-4 flex flex-wrap gap-2 justify-center">
+          <button class="btn-ghost text-sm" @click="messages.push({role:'user', content:'Explain quantum computing in 3 sentences.'})">Explain quantum computing</button>
+          <button class="btn-ghost text-sm" @click="messages.push({role:'user', content:'Write a Python hello-world with type hints.'})">Python hello-world</button>
+          <button class="btn-ghost text-sm" @click="messages.push({role:'user', content:'Give me 3 ideas for a side project.'})">Side-project ideas</button>
+        </div>
+      </div>
+
+      <div class="flex flex-col gap-3" x-show="messages.length > 0 || loading">
+        <template x-for="(m, idx) in messages" :key="idx">
+          <div class="flex" :class="m.role === 'user' ? 'justify-end' : 'justify-start'">
+            <div class="chat-bubble" :class="m.role === 'user' ? 'chat-user' : 'chat-assistant'" x-text="m.content"></div>
+          </div>
+        </template>
+        <div x-show="loading" class="flex justify-start">
+          <div class="chat-bubble chat-assistant">
+            <span class="inline-flex gap-1">
+              <span class="animate-bounce" style="animation-delay:0s">●</span>
+              <span class="animate-bounce" style="animation-delay:0.2s">●</span>
+              <span class="animate-bounce" style="animation-delay:0.4s">●</span>
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Input -->
+    <form @submit.prevent="send()" class="mt-4 flex gap-2 items-end">
+      <textarea
+        class="input"
+        rows="2"
+        x-model="input"
+        @keydown.enter.exact.prevent="send()"
+        placeholder="Type a message and press Enter…"
+        :disabled="loading"
+      ></textarea>
+      <button type="submit" class="btn-primary" :disabled="loading || !input.trim() || !model">
+        <span x-show="!loading">Send</span>
+        <span x-show="loading">…</span>
+      </button>
+    </form>
+
+    <!-- Last usage info -->
+    <div x-show="lastUsage" class="text-xs text-[color:var(--text-dim)] mt-2 text-right">
+      <span x-show="lastUsage">
+        Last reply: <span class="mono" x-text="fmtNumber(lastUsage?.total_tokens)"></span> tokens ·
+        cost <span class="mono" x-text="fmtCredits(lastUsage?.credits_used)"></span> credits
+      </span>
+    </div>
+  </main>
+
+  <script src="app.js"></script>
+  <script>
+    function chatPage() {
+      return {
+        me: Auth.currentUser(),
+        models: [],
+        model: "",
+        messages: [],
+        input: "",
+        loading: false,
+        lastUsage: null,
+
+        async init() {
+          if (!Auth.requireLogin()) return;
+          await this.loadModels();
+          try { this.me = await refreshUser(); } catch {}
+        },
+
+        async loadModels() {
+          try {
+            const r = await API("/v1/models", { auth: true });
+            this.models = r.models || [];
+            if (this.models.length > 0) {
+              this.model = this.model || this.models[0].name;
+            }
+          } catch (e) {
+            toast("Failed to load models: " + e.message, "err");
+          }
+        },
+
+        async send() {
+          const text = this.input.trim();
+          if (!text || !this.model || this.loading) return;
+          this.input = "";
+          this.messages.push({ role: "user", content: text });
+          this.loading = true;
+          this.lastUsage = null;
+          // Pre-check credit balance
+          if (this.me && this.me.credits != null && this.me.credits < 0.01) {
+            this.loading = false;
+            toast("Insufficient credits. Please top up.", "err", 5000);
+            return;
+          }
+          try {
+            // Send all messages so the model has context.
+            // For very long sessions you'd trim; for POC we send everything.
+            const r = await API("/v1/chat/completions", {
+              method: "POST",
+              auth: true,
+              body: {
+                model: this.model,
+                messages: this.messages.map(m => ({ role: m.role, content: m.content })),
+                temperature: 0.7,
+                max_tokens: 512,
+              },
+            });
+            const reply = r.choices?.[0]?.message?.content || "(no response)";
+            this.messages.push({ role: "assistant", content: reply });
+            this.lastUsage = {
+              total_tokens: r.usage?.total_tokens || 0,
+              credits_used: (r.usage?.total_tokens || 0) / 1000 * 0.001,
+            };
+            // Refresh balance
+            this.me = await refreshUser();
+          } catch (e) {
+            toast("Chat error: " + e.message, "err", 5000);
+            // Roll back the user message? Keep it - lets them retry.
+          } finally {
+            this.loading = false;
+          }
+        },
+      };
+    }
+  </script>
+</body>
+</html>

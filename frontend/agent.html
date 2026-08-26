@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>GPU-Pool — Node-Agent Setup</title>
+  <link rel="stylesheet" href="/static/app.css" />
+  <style>
+    pre { background: #0e0e14; border: 1px solid #333; padding: 12px; border-radius: 8px; overflow-x: auto; }
+    code { background: #0e0e14; padding: 1px 4px; border-radius: 3px; }
+    .step { background: #1c1c24; border: 1px solid #333; border-radius: 12px; padding: 16px; margin: 12px 0; }
+    .step h3 { margin-top: 0; }
+    .needs-login { background: #1c1c24; border: 1px solid #333; border-radius: 12px; padding: 20px; }
+    .muted { color: #94a3b8; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🐳 Node-Agent Setup</h1>
+    <nav>
+      <a href="/">Login</a>
+      <a href="/chat">Chat</a>
+      <a href="/credits">Credits</a>
+      <a href="/pool">Pool</a>
+      <a href="/nodes">Meine Nodes</a>
+      <a href="/earnings">Earnings</a>
+      <a href="/agent">Agent</a>
+      <a href="/docs">Doku</a>
+    </nav>
+    <div id="who" class="muted"></div>
+  </header>
+
+  <main>
+    <div id="needs-login" class="needs-login" style="display:none;">
+      <p>Bitte <a href="/">einloggen</a>, um den Agent-Setup zu sehen.</p>
+    </div>
+
+    <div id="app" style="display:none;">
+      <p class="muted">Drei Schritte: Node registrieren → Agent bauen → starten. Sobald der Agent
+      den ersten Heartbeat schickt, wird deine GPU im <a href="/pool">Community-Pool</a> sichtbar.</p>
+
+      <div class="step">
+        <h3>1) Node registrieren</h3>
+        <p>Auf <a href="/nodes">/nodes</a> ausfüllen. Du bekommst nach dem Registrieren einen <code>agent_api_key</code>.</p>
+        <div id="reg-result"></div>
+      </div>
+
+      <div class="step">
+        <h3>2) Agent-Image bauen</h3>
+        <p>Klone das Repo (oder kopiere den <code>node-agent/</code>-Ordner) und baue das Image:</p>
+<pre>cd node-agent
+docker build -t gpu-pool-node-agent .</pre>
+      </div>
+
+      <div class="step">
+        <h3>3) Agent starten</h3>
+        <p>Ersetze <code>NODE_ID</code> und <code>NODE_API_KEY</code> mit den Werten aus Schritt 1:</p>
+<pre id="cmd"></pre>
+        <p>Logs checken:</p>
+<pre>docker logs -f gpu-pool-agent</pre>
+        <p>Health check:</p>
+<pre>curl http://&lt;tailscale-ip&gt;:11435/health | jq</pre>
+      </div>
+
+      <div class="step">
+        <h3>4) Verifizieren</h3>
+        <p>Sobald dein Node im Pool auftaucht, bist du live. Anfragen werden automatisch an deine GPU geroutet,
+        du bekommst 70% der Job-Kosten als Credits auf dein Konto.</p>
+      </div>
+    </div>
+  </main>
+
+  <script src="/static/app.js"></script>
+  <script src="/static/agent.js"></script>
+</body>
+</html>

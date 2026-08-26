@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Login · GPU-Pool POC</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<canvas id="bg-particles" class="bg-particles" aria-hidden="true"></canvas>
+<main class="min-h-screen flex items-center justify-center px-4 relative">
+  <div class="card glass w-full max-w-md" x-data="loginForm()">
+    <div class="text-center mb-6">
+      <h1 class="text-2xl font-bold gradient-text">⚡ GPU-Pool</h1>
+      <p class="text-[color:var(--text-dim)] mt-1 text-sm">Sign in to your account</p>
+    </div>
+
+    <form @submit.prevent="submit()" class="space-y-4">
+      <div>
+        <label class="label">Email</label>
+        <input class="input" type="email" x-model="email" required autocomplete="email" placeholder="you@example.com" />
+      </div>
+      <div>
+        <label class="label">Password</label>
+        <input class="input" type="password" x-model="password" required autocomplete="current-password" placeholder="••••••••" />
+      </div>
+
+      <div x-show="error" class="text-sm text-[color:var(--err)]" x-text="error"></div>
+
+      <button type="submit" class="btn-primary w-full justify-center" :disabled="loading">
+        <span x-show="!loading">Sign in</span>
+        <span x-show="loading">Signing in…</span>
+      </button>
+    </form>
+
+    <p class="text-center text-sm text-[color:var(--text-dim)] mt-6">
+      No account?
+      <a href="register.html" class="text-[color:var(--brand)] hover:underline">Create one</a>
+    </p>
+  </div>
+</main>
+
+<script src="app.js"></script>
+<script src="particles.js"></script>
+<script>
+function loginForm() {
+  return {
+    email: "",
+    password: "",
+    loading: false,
+    error: "",
+    async submit() {
+      this.loading = true;
+      this.error = "";
+      try {
+        const r = await API("/auth/login", { method: "POST", body: { email: this.email, password: this.password } });
+        Auth.save({ id: r.user_id, email: r.email, name: r.name, credits: r.credits }, r.api_key);
+        toast("Welcome back, " + r.name + "!");
+        setTimeout(() => { window.location.href = "index.html"; }, 400);
+      } catch (e) {
+        this.error = e.message || "Login failed";
+      } finally {
+        this.loading = false;
+      }
+    }
+  };
+}
+</script>
+</body>
+</html>

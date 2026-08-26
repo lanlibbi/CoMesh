@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Buy Credits · GPU-Pool POC</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body x-data="creditsPage()" x-init="init()">
+  <div x-html="navHTML('credits')"></div>
+
+  <main class="max-w-6xl mx-auto px-6 pb-12">
+    <div class="mb-6">
+      <h1 class="text-2xl font-bold">Buy credits</h1>
+      <p class="text-[color:var(--text-dim)] mt-1 text-sm">
+        Current balance:
+        <span class="font-semibold gradient-text" x-text="fmtCredits(me?.credits)"></span> credits
+      </p>
+    </div>
+
+    <!-- Packs -->
+    <div class="grid md:grid-cols-3 gap-4 mb-8">
+      <template x-for="pack in packs" :key="pack.id">
+        <div class="card glass flex flex-col"
+             :style="pack.id === 'pro' ? 'border-color: var(--brand); transform: translateY(-4px);' : ''">
+          <div x-show="pack.id === 'pro'"
+               class="text-xs uppercase tracking-wider text-[color:var(--brand)] font-semibold mb-2">Most popular</div>
+          <div class="text-xl font-bold" x-text="pack.name"></div>
+          <div class="text-3xl font-bold mt-3 gradient-text" x-text="pack.price_eur + ' €'"></div>
+          <div class="text-[color:var(--text-dim)] text-sm mt-1" x-text="fmtNumber(pack.credits) + ' credits'"></div>
+          <ul class="text-sm text-[color:var(--text-dim)] mt-4 space-y-1 flex-1">
+            <template x-for="f in pack.features" :key="f">
+              <li>✓ <span x-text="f"></span></li>
+            </template>
+          </ul>
+          <button class="btn-primary mt-5 justify-center" @click="buy(pack)" :disabled="busy === pack.id">
+            <span x-show="busy !== pack.id">Buy now</span>
+            <span x-show="busy === pack.id">…</span>
+          </button>
+        </div>
+      </template>
+    </div>
+
+    <!-- Manual top-up request -->
+    <div class="card glass mb-6">
+      <h2 class="text-lg font-semibold mb-2">Or request a manual top-up</h2>
+      <p class="text-sm text-[color:var(--text-dim)] mb-4">
+        For the POC we don't process real payments. Submit a request and the admin will credit your account.
+      </p>
+      <form @submit.prevent="requestTopup()" class="flex flex-wrap items-end gap-3">
+        <div class="flex-1 min-w-[180px]">
+          <label class="label">Amount (credits)</label>
+          <input class="input" type="number" min="10" max="10000" step="1" x-model.number="topupAmount" required />
+        </div>
+        <div class="flex-1 min-w-[220px]">
+          <label class="label">Note (optional)</label>
+          <input class="input" x-model="topupNote" placeholder="e.g. invoice ref" />
+        </div>
+        <button class="btn-ghost" type="submit" :disabled="topupBusy">
+          <span x-show="!topupBusy">Submit request</span>
+          <span x-show="topupBusy">…</span>
+        </button>
+      </form>
+      <div x-show="topupMsg" class="mt-3 text-sm" :class="topupOk ? 'text-[color:var(--ok)]' : 'text-[color:var(--err)]'" x-text="topupMsg"></div>
+    </div>
+
+    <!-- Pending requests -->
+    <div class="card glass">
+      <h2 class="text-lg font-semibold mb-3">Your top-up requests</h2>
+      <div x-show="requests.length === 0" class="text-sm text-[color:var(--text-dim)]">No requests yet.</div>
+      <div x-show="requests.length > 0" class="overflow-x-auto">
+        <table class="tbl">
+          <thead>
+            <tr>
+              <th>When</th>
+              <th>Amount</th>
+              <th>Status</th>
+              <th>Note</th>
+            </tr>
+          </thead>
+          <tbody>
+            <template x-for="r in requests" :key="r.id">
+              <tr>
+                <td class="text-xs" x-text="fmtDate(r.created_at)"></td>
+                <td class="mono" x-text="fmtNumber(r.amount)"></td>
+                <td>
+                  <span class="text-xs px-2 py-0.5 rounded"
+                        :style="r.status === 'approved' ? 'background: rgba(34,197,94,0.15); color: var(--ok);' : (r.status === 'rejected' ? 'background: rgba(239,68,68,0.15); color: var(--err);' : 'background: rgba(245,158,11,0.15); color: var(--warn);')"
+                        x-text="r.status"></span>
+                </td>
+                <td class="text-sm" x-text="r.note || '—'"></td>
+              </tr>
+            </template>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <script src="app.js"></script>
+  <script>
+    function creditsPage() {
+      return {
+        me: Auth.currentUser(),
+        busy: null,
+        topupBusy: false,
+        topupAmount: 100,
+        topupNote: "",
+        topupMsg: "",
+        topupOk: false,
+        requests: [],
+        packs: [
+          {
+            id: "starter", name: "Starter", price_eur: 10, credits: 10_000,
+            features: ["~10M tokens", "All models", "Standard support"],
+          },
+          {
+            id: "pro", name: "Pro", price_eur: 45, credits: 50_000,
+            features: ["~50M tokens", "All models", "Priority queue", "Email support"],
+          },
+          {
+            id: "business", name: "Business", price_eur: 160, credits: 200_000,
+            features: ["~200M tokens", "All models", "Top priority", "Custom limits", "SLA"],
+          },
+        ],
+
+        async init() {
+          if (!Auth.requireLogin()) return;
+          await this.refresh();
+        },
+
+        async refresh() {
+          try {
+            this.me = await refreshUser();
+          } catch (e) {
+            toast("Failed: " + e.message, "err");
+          }
+        },
+
+        async buy(pack) {
+          this.busy = pack.id;
+          try {
+            // POC: no real Stripe. Show a fake checkout confirmation.
+            const ok = confirm(
+              `POC: simulate buying ${pack.name} (${pack.price_eur} €) for ${fmtNumber(pack.credits)} credits.\n\n` +
+              `In production this would open Stripe Checkout (test mode).\n\nClick OK to fake the payment and credit your account.`
+            );
+            if (!ok) { this.busy = null; return; }
+            // No real endpoint - simulate by recording a "fake" request
+            // and immediately asking the admin to approve it via /admin endpoint is out of scope.
+            // For demo, just push a pending request that the admin would see.
+            await this.simulatePendingRequest(pack);
+            toast(`${pack.name} purchased (simulated). Refresh in a moment after admin approval.`, "ok", 5000);
+          } catch (e) {
+            toast("Purchase failed: " + e.message, "err");
+          } finally {
+            this.busy = null;
+          }
+        },
+
+        async simulatePendingRequest(pack) {
+          // No backend endpoint for this in the POC. We store the request in localStorage
+          // and the user can re-submit it as a manual top-up request.
+          const list = JSON.parse(localStorage.getItem("topup_requests") || "[]");
+          list.unshift({
+            id: Date.now(),
+            created_at: new Date().toISOString(),
+            amount: pack.credits,
+            status: "pending",
+            note: `simulated-purchase:${pack.id} (${pack.price_eur}€)`,
+          });
+          localStorage.setItem("topup_requests", JSON.stringify(list));
+          this.requests = list;
+        },
+
+        async requestTopup() {
+          this.topupBusy = true;
+          this.topupMsg = "";
+          try {
+            // POC: no backend endpoint - just store locally.
+            const list = JSON.parse(localStorage.getItem("topup_requests") || "[]");
+            list.unshift({
+              id: Date.now(),
+              created_at: new Date().toISOString(),
+              amount: this.topupAmount,
+              status: "pending",
+              note: this.topupNote || "manual top-up",
+            });
+            localStorage.setItem("topup_requests", JSON.stringify(list));
+            this.requests = list;
+            this.topupOk = true;
+            this.topupMsg = "Request submitted. The admin will credit your account soon.";
+            this.topupNote = "";
+          } catch (e) {
+            this.topupOk = false;
+            this.topupMsg = e.message;
+          } finally {
+            this.topupBusy = false;
+          }
+        },
+
+        loadLocalRequests() {
+          this.requests = JSON.parse(localStorage.getItem("topup_requests") || "[]");
+        },
+      };
+    }
+  </script>
+  <script>
+    // Patch: load local requests on init (Alpine init runs after the function is defined)
+    document.addEventListener("alpine:initialized", () => {
+      const root = document.querySelector("[x-data]");
+      if (root && root._x_dataStack) {
+        const data = root._x_dataStack[0];
+        if (data && typeof data.loadLocalRequests === "function") data.loadLocalRequests();
+      }
+    });
+  </script>
+</body>
+</html>

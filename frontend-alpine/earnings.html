@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Earnings · GPU-Pool POC</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body x-data="earningsPage()" x-init="init()">
+  <div x-html="navHTML('earnings')"></div>
+
+  <main class="max-w-6xl mx-auto px-4 pb-20">
+    <h1 class="text-2xl font-bold mb-1">💰 Earnings</h1>
+    <p class="text-sm text-[color:var(--text-dim)] mb-6">
+      Einnahmen aus Jobs, die andere User auf deinen Nodes ausgeführt haben.
+    </p>
+
+    <div x-show="error" class="card glass mb-6 text-err" x-text="error"></div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-8">
+      <div class="card glass">
+        <div class="text-3xl font-bold gradient-text" x-text="fmtCredits(total)"></div>
+        <div class="text-xs text-[color:var(--text-dim)] mt-1">Gesamt-Earnings (Credits)</div>
+      </div>
+      <div class="card glass">
+        <div class="text-3xl font-bold gradient-text" x-text="byNode.length"></div>
+        <div class="text-xs text-[color:var(--text-dim)] mt-1">Beitragende Nodes</div>
+      </div>
+      <div class="card glass">
+        <div class="text-3xl font-bold gradient-text">70 / 20 / 10</div>
+        <div class="text-xs text-[color:var(--text-dim)] mt-1">Owner / Platform / Treasury</div>
+      </div>
+    </div>
+
+    <h2 class="text-xl font-semibold mb-3">Pro Node</h2>
+    <div class="card glass mb-8">
+      <table class="w-full text-sm">
+        <thead><tr class="text-left text-[color:var(--text-dim)]">
+          <th class="py-2">Node</th><th>Earnings</th>
+        </tr></thead>
+        <tbody>
+          <template x-for="n in byNode" :key="n.node_id">
+            <tr class="border-t border-white/5">
+              <td class="py-2" x-text="n.name"></td>
+              <td x-text="fmtCredits(n.earnings_total)"></td>
+            </tr>
+          </template>
+          <tr x-show="byNode.length === 0"><td colspan="2" class="py-3 text-[color:var(--text-dim)]">Noch keine Nodes.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2 class="text-xl font-semibold mb-3">Letzte Job-Earnings</h2>
+    <div class="card glass">
+      <table class="w-full text-sm">
+        <thead><tr class="text-left text-[color:var(--text-dim)]">
+          <th class="py-2">Wann</th><th>Node</th>
+          <th>Job-Kosten</th><th>Owner (70%)</th><th>Platform (20%)</th><th>Treasury (10%)</th>
+        </tr></thead>
+        <tbody>
+          <template x-for="e in events" :key="e.id">
+            <tr class="border-t border-white/5">
+              <td class="py-2" x-text="fmtDate(e.created_at)"></td>
+              <td x-text="nodeMap[e.node_id] || ('#' + e.node_id)"></td>
+              <td x-text="fmtCredits(e.job_cost)"></td>
+              <td x-text="fmtCredits(e.owner_share)"></td>
+              <td x-text="fmtCredits(e.platform_share)"></td>
+              <td x-text="fmtCredits(e.treasury_share)"></td>
+            </tr>
+          </template>
+          <tr x-show="events.length === 0"><td colspan="6" class="py-3 text-[color:var(--text-dim)]">Noch keine Job-Earnings.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </main>
+
+  <script src="app.js"></script>
+  <script src="earnings.js"></script>
+</body>
+</html>

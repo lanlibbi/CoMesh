@@ -2,9 +2,27 @@
 
 Ein dezentraler GPU-Pool, der lokale und entfernte Ollama-Instanzen zu einer gemeinsamen Inference-Schicht zusammenführt. User schicken ihre Anfragen an ein **Portal**, das Portal verteilt sie an den am besten geeigneten **Node-Agent** im Pool.
 
-> **Status:** Proof of Concept (POC). Funktioniert end-to-end mit Portal, Node-Agents, Load-Balancing und Earnings-Tracking.
+> **Status:** Proof of Concept (POC). Funktioniert end-to-end mit Portal, Node-Agents, Load-Balancing und Earnings-Tracking. Dieses Repo enthält **Code + Doku** (zuvor getrennt in `gpu-pool-server`).
 
 ---
+
+## Repo-Struktur
+
+```
+├── main.py               # FastAPI-Portal (API, Pool-Logik, Auth)
+├── models.py             # SQLAlchemy-Modelle (User, GpuNode, Earnings…)
+├── nodes.py              # Node-Registrierung / Heartbeats / CRUD
+├── pool.py               # Load-Balancing + Node-Auswahl
+├── ws.py                 # WebSocket-Transport (Phase 1/2)
+├── payments.py           # Stripe/PayPal (Mock-Modus)
+├── frontend/             # Ältere Jinja2-UI
+├── frontend-alpine/      # Alpine.js+Tailwind UI (Partikel-Effekt, empfohlen)
+├── node-agent/           # Contributor-Agent (Backend-abstrakt: Ollama/OpenAI-kompatibel)
+│   └── setup.py          # Interaktiver Installer mit Backend-Auswahl
+├── docker-compose.yml    # Portal + Frontend Stack
+├── docs/                 # Architektur / API / Node-Agent / Tailscale
+└── examples/             # Beispiel-Client + Node-Agent-Compose
+```
 
 ## Architektur (Überblick)
 

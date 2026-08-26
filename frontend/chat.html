@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>GPU-Pool Chat</title>
+  <link rel="stylesheet" href="/static/app.css" />
+</head>
+<body>
+  <header>
+    <h1>💬 GPU-Pool Chat</h1>
+    <nav>
+      <a href="/">Login</a>
+      <a href="/chat">Chat</a>
+      <a href="/credits">Buy Credits</a>
+      <a href="/pool">Pool</a>
+      <a href="/nodes">Meine Nodes</a>
+      <a href="/earnings">Earnings</a>
+      <a href="/agent">Agent</a>
+      <a href="/docs">Doku</a>
+    </nav>
+    <div id="who" class="muted"></div>
+  </header>
+
+  <main>
+    <section>
+      <p class="muted">
+        Type a prompt. Each request deducts credits based on token usage.
+        Need more credits? <a href="/credits">Buy a package</a>.
+      </p>
+      <textarea id="prompt" rows="4" placeholder="Ask the model something..."></textarea>
+      <button id="send">Send</button>
+      <pre id="out" class="output"></pre>
+    </section>
+  </main>
+
+  <script src="/static/app.js"></script>
+  <script>
+    renderWho();
+
+    document.getElementById("send").addEventListener("click", async () => {
+      const prompt = document.getElementById("prompt").value.trim();
+      if (!prompt) return;
+      const out = document.getElementById("out");
+      out.textContent = "Thinking...";
+      try {
+        const resp = await API.post("/v1/chat/completions", {
+          model: null,
+          messages: [{ role: "user", content: prompt }],
+        });
+        out.textContent = resp.choices[0].message.content +
+          "\n\n-- tokens: " + JSON.stringify(resp.usage);
+        API.refreshMe();
+      } catch (err) {
+        out.textContent = "Error: " + err.message;
+      }
+    });
+  </script>
+</body>
+</html>

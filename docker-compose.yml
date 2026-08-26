@@ -1,0 +1,76 @@
+version: "3.9"
+
+services:
+  api:
+    build: .
+    container_name: gpu-pool-api
+    restart: unless-stopped
+    ports:
+      # 8000 already used by Portainer on this host -> use 8765
+      - "8765:8000"
+    environment:
+      - OLLAMA_URL=http://host.docker.internal:11434
+      - DEFAULT_MODEL=qwen2.5-coder:7b
+      - DATA_DIR=/data
+      - DOCKER_ENV=1
+    volumes:
+      - sqlite_data:/data
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    # ----------------------------------------------------------------
+    # Single-Worker-Policy (Phase 1+2)
+    # ----------------------------------------------------------------
+    # `_WS_REGISTRY` and the pending-job futures map in ws.py are
+    # PROCESS-LOCAL. Running with --workers > 1 would split the WS
+    # connection endpoint and the request handler across processes,
+    # so the dispatcher could not find the agent's WS. The HTTP
+    # fallback would silently take over and we'd never notice — bad.
+    # We pin workers=1 explicitly. Phase 3+ will swap in Redis pub/sub
+    # and allow multiple workers; until then, do NOT bump this.
+    command: ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1"]
+
+  frontend:
+    build: ./frontend-alpine
+    container_name: gpu-pool-frontend
+    restart: unless-stopped
+    ports:
+      - "8767:80"
+    depends_on:
+      - api
+    # The nginx config inside the container proxies /api/* to http://api:8000
+    # by referencing the service name "api" - that works because they're in the
+    # same docker-compose network.
+
+  # ----------------------------------------------------------------
+  # node-agent (community GPU contributors)
+  # ----------------------------------------------------------------
+  # This service is OPTIONAL and intended as documentation. In production
+  # the agent runs on each contributor's own machine, NOT on the portal
+  # host. To run the agent locally for testing, uncomment the block below
+  # and provide NODE_ID + NODE_API_KEY (issued by POST /nodes/register).
+  #
+  #  node-agent:
+  #    build: ./node-agent
+  #    container_name: gpu-pool-node-agent
+  #    restart: unless-stopped
+  #    environment:
+  #      - PORTAL_URL=http://api:8000           # talk to the portal over the docker network
+  #      - NODE_ID=1
+  #      - NODE_API_KEY=node_xxxxxxxx
+  #      - OLLAMA_URL=http://host.docker.internal:11434
+  #      - AGENT_PORT=11435
+  #    ports:
+  #      - "11435:11435"
+  #    extra_hosts:
+  #      - "host.docker.internal:host-gateway"
+  #    deploy:
+  #      resources:
+  #        reservations:
+  #          devices:
+  #            - driver: nvidia
+  #              count: 1
+  #              capabilities: [gpu]
+
+volumes:
+  sqlite_data:
+    driver: local

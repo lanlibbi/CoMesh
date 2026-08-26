@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>GPU-Pool — Buy Credits</title>
+  <link rel="stylesheet" href="/static/app.css" />
+  <style>
+    .package-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+      margin: 16px 0;
+    }
+    .package {
+      border: 1px solid #444;
+      border-radius: 12px;
+      padding: 16px;
+      background: #1c1c24;
+    }
+    .package h3 { margin: 0 0 4px 0; }
+    .package .price { font-size: 1.4em; font-weight: bold; color: #4ade80; }
+    .package .credits { color: #cbd5e1; }
+    .package .bonus { color: #facc15; font-size: 0.9em; }
+    .provider-row { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+    .pay-btn {
+      flex: 1 1 90px;
+      padding: 8px 4px;
+      border: 0;
+      border-radius: 6px;
+      cursor: pointer;
+      color: #fff;
+      font-weight: 600;
+      font-size: 0.85em;
+    }
+    .pay-stripe   { background: #635bff; }
+    .pay-paypal   { background: #0070ba; }
+    .pay-alipay   { background: #1677ff; }
+    .pay-applepay { background: #000; }
+    .pay-btn:disabled { background: #555; cursor: not-allowed; }
+    .history { margin-top: 24px; }
+    .history table { width: 100%; border-collapse: collapse; }
+    .history th, .history td { padding: 6px 8px; border-bottom: 1px solid #333; text-align: left; }
+    .badge {
+      display: inline-block; padding: 2px 8px; border-radius: 4px;
+      font-size: 0.8em; font-weight: bold;
+    }
+    .badge-succeeded { background: #166534; color: #dcfce7; }
+    .badge-pending   { background: #854d0e; color: #fef3c7; }
+    .badge-failed    { background: #991b1b; color: #fee2e2; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>💳 Buy Credits</h1>
+    <nav>
+      <a href="/">Login</a>
+      <a href="/chat">Chat</a>
+      <a href="/credits">Buy Credits</a>
+      <a href="/pool">Pool</a>
+      <a href="/nodes">Meine Nodes</a>
+      <a href="/earnings">Earnings</a>
+      <a href="/agent">Agent</a>
+      <a href="/docs">Doku</a>
+    </nav>
+    <div id="who" class="muted"></div>
+  </header>
+
+  <main>
+    <section>
+      <p class="muted" id="mode-banner">Loading payment configuration...</p>
+      <div class="package-grid" id="packages"></div>
+
+      <h3>Transaction history</h3>
+      <div class="history">
+        <table id="history">
+          <thead>
+            <tr><th>#</th><th>Provider</th><th>Amount</th><th>Credits</th><th>Status</th><th>When</th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <script src="/static/app.js"></script>
+  <script>
+    let CONFIG = null;
+
+    async function loadConfig() {
+      try {
+        CONFIG = await API.get("/payments/config");
+      } catch (err) {
+        document.getElementById("mode-banner").textContent = "Failed to load payment config: " + err.message;
+        return;
+      }
+      const mode = CONFIG.mode === "test" ? "TEST MODE — no real money" : "LIVE";
+      document.getElementById("mode-banner").textContent =
+        `${mode}. Cards: ${CONFIG.providers.stripe.test_cards.visa} | PayPal: ${CONFIG.providers.paypal.sandbox_buyer}`;
+
+      const grid = document.getElementById("packages");
+      grid.innerHTML = "";
+      for (const p of CONFIG.packages) {
+        const card = document.createElement("div");
+        card.className = "package";
+        card.innerHTML = `
+          <h3>${p.name}</h3>
+          <div class="credits">${p.credits.toLocaleString()} credits</div>
+          ${p.bonus ? `<div class="bonus">+ ${p.bonus.toLocaleString()} bonus</div>` : ""}
+          <div class="price">€${p.price_eur}</div>
+          <div class="muted">Total: ${p.total_credits.toLocaleString()}</div>
+          <div class="provider-row">
+            <button class="pay-btn pay-stripe"   data-pkg="${p.id}" data-prov="stripe">💳 Card</button>
+            <button class="pay-btn pay-paypal"   data-pkg="${p.id}" data-prov="paypal">🅿️ PayPal</button>
+            <button class="pay-btn pay-alipay"   data-pkg="${p.id}" data-prov="alipay">🟦 Alipay</button>
+            <button class="pay-btn pay-applepay" data-pkg="${p.id}" data-prov="applepay">🍎 Apple Pay</button>
+          </div>
+        `;
+        grid.appendChild(card);
+      }
+
+      for (const btn of document.querySelectorAll(".pay-btn")) {
+        btn.addEventListener("click", () => startCheckout(btn.dataset.pkg, btn.dataset.prov));
+      }
+    }
+
+    async function startCheckout(pkgId, provider) {
+      try {
+        const resp = await API.post(`/payments/${provider}/checkout`, {
+          package_id: pkgId, provider: provider,
+        });
+        if (resp.checkout_url || resp.approval_url || resp.payment_url) {
+          // Real or mock redirect URL
+          const url = resp.checkout_url || resp.approval_url || resp.payment_url;
+          if (resp.mock) {
+            if (!confirm(`[MOCK] ${resp.message || 'Simulate success?'}\n\nOpen mock success URL?`)) {
+              return;
+            }
+          }
+          window.open(url, "_blank");
+          // In mock mode, the success page itself will credit the account.
+          // Poll for a few seconds to update history.
+          setTimeout(refreshHistory, 4000);
+        } else if (resp.client_secret) {
+          // Apple Pay: real PaymentIntent client_secret
+          alert(`Apple Pay client_secret: ${resp.client_secret}\n(In production, hand this to Stripe.js PaymentRequest on iOS/Safari.)`);
+        } else {
+          alert("Unexpected response: " + JSON.stringify(resp));
+        }
+      } catch (err) {
+        alert("Checkout failed: " + err.message);
+      }
+    }
+
+    async function refreshHistory() {
+      try {
+        const rows = await API.get("/payments/history");
+        const tb = document.querySelector("#history tbody");
+        tb.innerHTML = rows.map(r => `
+          <tr>
+            <td>${r.id}</td>
+            <td>${r.provider}</td>
+            <td>€${r.amount_eur.toFixed(2)}</td>
+            <td>${r.credits_added.toLocaleString()}</td>
+            <td><span class="badge badge-${r.status}">${r.status}</span></td>
+            <td class="muted">${new Date(r.created_at).toLocaleString()}</td>
+          </tr>
+        `).join("");
+        API.refreshMe();
+      } catch (err) {
+        console.warn("history fetch failed:", err);
+      }
+    }
+
+    renderWho();
+    loadConfig().then(refreshHistory);
+    setInterval(refreshHistory, 8000);
+  </script>
+</body>
+</html>

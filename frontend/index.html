@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>GPU-Pool POC</title>
+  <link rel="stylesheet" href="/static/app.css" />
+</head>
+<body>
+  <header>
+    <h1>🚀 GPU-Pool POC</h1>
+    <nav>
+      <a href="/">Login</a>
+      <a href="/chat">Chat</a>
+      <a href="/credits">Buy Credits</a>
+      <a href="/pool">Pool</a>
+      <a href="/nodes">Meine Nodes</a>
+      <a href="/earnings">Earnings</a>
+      <a href="/agent">Agent</a>
+      <a href="/docs">Doku</a>
+    </nav>
+    <div id="who" class="muted"></div>
+  </header>
+
+  <main>
+    <section id="auth">
+      <h2>Login</h2>
+      <form id="login-form">
+        <label>Email <input name="email" type="email" required value="test@example.com" /></label>
+        <label>Password <input name="password" type="password" required value="password123" /></label>
+        <button type="submit">Login</button>
+      </form>
+      <div id="login-msg" class="muted"></div>
+
+      <h3>Or register</h3>
+      <form id="register-form">
+        <label>Email <input name="email" type="email" required /></label>
+        <label>Name <input name="name" type="text" required /></label>
+        <label>Password <input name="password" type="password" required /></label>
+        <button type="submit">Register</button>
+      </form>
+      <div id="register-msg" class="muted"></div>
+    </section>
+  </main>
+
+  <script src="/static/app.js"></script>
+  <script>
+    document.getElementById("login-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const fd = new FormData(e.target);
+      try {
+        const resp = await API.post("/auth/login", {
+          email: fd.get("email"),
+          password: fd.get("password"),
+        });
+        API.setKey(resp.api_key);
+        API.setUser(resp);
+        document.getElementById("login-msg").textContent =
+          `Logged in as ${resp.email} — balance: ${resp.credits} credits. Redirecting...`;
+        setTimeout(() => location.href = "/chat", 700);
+      } catch (err) {
+        document.getElementById("login-msg").textContent = "Login failed: " + err.message;
+      }
+    });
+
+    document.getElementById("register-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const fd = new FormData(e.target);
+      try {
+        const resp = await API.post("/auth/register", {
+          email: fd.get("email"),
+          name: fd.get("name"),
+          password: fd.get("password"),
+        });
+        API.setKey(resp.api_key);
+        API.setUser(resp);
+        document.getElementById("register-msg").textContent =
+          `Account created for ${resp.email} — balance: ${resp.credits} credits. Redirecting...`;
+        setTimeout(() => location.href = "/chat", 700);
+      } catch (err) {
+        document.getElementById("register-msg").textContent = "Register failed: " + err.message;
+      }
+    });
+
+    renderWho();
+  </script>
+</body>
+</html>

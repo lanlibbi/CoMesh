@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Local SQLite (live data, not source)
+/data/gpu_pool.db
+/data/seed_api_key.txt
+
+# Test artifacts
+/tmp/ws_test_setup.py
+*.tmp

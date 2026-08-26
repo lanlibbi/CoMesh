@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>GPU-Pool — Earnings</title>
+  <link rel="stylesheet" href="/static/app.css" />
+  <style>
+    .hero { display: flex; gap: 16px; margin: 16px 0; flex-wrap: wrap; }
+    .stat { background: linear-gradient(135deg, #1c1c24, #252533); border: 1px solid #333; border-radius: 12px; padding: 18px; min-width: 200px; }
+    .stat .v { font-size: 1.9em; font-weight: bold; color: #facc15; }
+    .stat .l { color: #94a3b8; font-size: 0.9em; margin-top: 4px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+    th, td { padding: 6px 8px; border-bottom: 1px solid #333; text-align: left; }
+    .muted { color: #94a3b8; }
+    .needs-login { background: #1c1c24; border: 1px solid #333; border-radius: 12px; padding: 20px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>💰 Earnings</h1>
+    <nav>
+      <a href="/">Login</a>
+      <a href="/chat">Chat</a>
+      <a href="/credits">Credits</a>
+      <a href="/pool">Pool</a>
+      <a href="/nodes">Meine Nodes</a>
+      <a href="/earnings">Earnings</a>
+      <a href="/agent">Agent</a>
+      <a href="/docs">Doku</a>
+    </nav>
+    <div id="who" class="muted"></div>
+  </header>
+
+  <main>
+    <div id="needs-login" class="needs-login" style="display:none;">
+      <p>Bitte <a href="/">einloggen</a>, um deine Earnings zu sehen.</p>
+    </div>
+
+    <div id="app" style="display:none;">
+      <div class="hero">
+        <div class="stat"><div class="v" id="total">–</div><div class="l">Gesamt-Earnings (Credits)</div></div>
+        <div class="stat"><div class="v" id="nodes-count">–</div><div class="l">Beitragende Nodes</div></div>
+        <div class="stat"><div class="v" id="split">70/20/10</div><div class="l">Owner / Platform / Treasury</div></div>
+      </div>
+
+      <h3>Pro Node</h3>
+      <table id="by-node">
+        <thead><tr><th>Node</th><th>Earnings</th></tr></thead>
+        <tbody></tbody>
+      </table>
+
+      <h3>Letzte Job-Earnings</h3>
+      <table id="events">
+        <thead><tr><th>Wann</th><th>Node</th><th>Job-Kosten</th><th>Owner (70%)</th><th>Platform (20%)</th><th>Treasury (10%)</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </main>
+
+  <script src="/static/app.js"></script>
+  <script src="/static/earnings.js"></script>
+</body>
+</html>
