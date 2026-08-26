@@ -45,12 +45,23 @@ docker compose up -d
 
 ```bash
 cd node-agent/
-cp .env.example .env
-# TAILSCE_IP, PRICE_PER_1K_TOKENS etc. setzen
+python3 setup.py          # interaktiv: Backend wählen (Ollama / LM Studio / LiteLLM / OpenAI-kompatibel)
+# .env mit NODE_ID + NODE_API_KEY aus dem Portal setzen
 docker compose up -d
 ```
 
 Der Agent meldet sich automatisch beim Portal an und ist nach ~5 Sekunden verfügbar.
+
+**Backend-Auswahl:** Der Setup-Installer generiert die passende `.env` + `docker-compose.yml` für dein Self-Hosting-Backend:
+
+| Backend | Protokoll | Hinweis |
+|---------|-----------|---------|
+| **Ollama** | `/api/chat` (nativ) | Standard, lokal |
+| **LM Studio** | `/v1/chat/completions` (OpenAI) | Server-Flag aktivieren |
+| **LiteLLM** | `/v1/chat/completions` (OpenAI) | Proxy vor beliebigem Modell |
+| **Andere OpenAI-kompatible Server** | `/v1/chat/completions` | vLLM, llama.cpp, … |
+
+Der Node-Agent übersetzt bei Bedarf selbst: `BACKEND=ollama` spricht nativ Ollama, `BACKEND=openai` spricht jedes OpenAI-kompatible Backend.
 
 ### 3. Erste Anfrage schicken
 
