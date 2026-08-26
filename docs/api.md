@@ -2,7 +2,7 @@
 
 Komplette Referenz aller HTTP-Endpoints des GPU-Pool-Portals.
 
-**Base-URL:** `http://ai-lanlibbi:8765` (oder via Tailscale-MagicDNS)
+**Base-URL:** `http://portal-host:8765` (oder via Tailscale-MagicDNS)
 **Content-Type:** `application/json` (außer bei File-Uploads)
 
 ---
@@ -46,7 +46,7 @@ OpenAI-kompatibler Endpoint. Wird automatisch an den besten Node verteilt.
 ```
 
 **Response-Header:**
-- `x-pool-node: 100.120.250.36` — IP des gewählten Nodes (oder `local`)
+- `x-pool-node: node-ip` — IP des gewählten Nodes (oder `local`)
 - `x-pool-tokens-in: 42` — Input-Token-Count
 - `x-pool-tokens-out: 128` — Output-Token-Count
 - `x-pool-cost-usd: 0.0001` — Geschätzte Kosten
@@ -90,7 +90,7 @@ Liste aller registrierten Nodes.
 [
   {
     "id": 1,
-    "tailscale_ip": "100.126.79.111",
+    "tailscale_ip": "portal-ip",
     "port": 8080,
     "gpu_model": "RTX 4090",
     "vram_gb": 24,
@@ -116,7 +116,7 @@ Manuelle Registrierung. Normalerweise macht das der Agent automatisch.
 **Request-Body:**
 ```json
 {
-  "tailscale_ip": "100.120.250.36",
+  "tailscale_ip": "node-ip",
   "port": 8080,
   "gpu_model": "RTX 4090",
   "vram_gb": 24,
@@ -128,7 +128,7 @@ Manuelle Registrierung. Normalerweise macht das der Agent automatisch.
 ```json
 {
   "id": 3,
-  "tailscale_ip": "100.120.250.36",
+  "tailscale_ip": "node-ip",
   "...": "..."
 }
 ```
@@ -143,7 +143,7 @@ Wird vom Node-Agent alle 5s aufgerufen. Erstellt automatisch einen Node, falls n
 **Request-Body:**
 ```json
 {
-  "tailscale_ip": "100.120.250.36",
+  "tailscale_ip": "node-ip",
   "cpu_pct": 23.4,
   "ram_pct": 41.2,
   "gpu_util_pct": 78.5,
@@ -213,13 +213,13 @@ Aktueller Pool-Status.
   "avg_load_pct": 45.2,
   "cheapest_node": {
     "id": 1,
-    "tailscale_ip": "100.126.79.111",
+    "tailscale_ip": "portal-ip",
     "price_per_1k_tokens": 0.0003,
     "load_pct": 12.1
   },
   "best_node": {
     "id": 1,
-    "tailscale_ip": "100.126.79.111",
+    "tailscale_ip": "portal-ip",
     "score": [12.1, 0.0003]
   }
 }
@@ -274,7 +274,7 @@ Aggregierte Earnings pro Node.
 [
   {
     "node_id": 1,
-    "tailscale_ip": "100.126.79.111",
+    "tailscale_ip": "portal-ip",
     "total_tokens": 1234567,
     "total_jobs": 234,
     "total_usd": 0.6173

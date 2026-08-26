@@ -181,7 +181,7 @@ services:
     restart: unless-stopped
     runtime: nvidia
     environment:
-      - PORTAL_URL=http://100.126.79.111:8765
+      - PORTAL_URL=http://localhost:8765
       - NODE_ID=DEINE_NODE_ID
       - NODE_API_KEY=DEIN_API_KEY
       - OLLAMA_URL=http://localhost:11434
@@ -206,7 +206,7 @@ services:
 pip install fastapi uvicorn httpx psutil pynvml
 
 # Umgebungsvariablen setzen
-export PORTAL_URL=http://100.126.79.111:8765
+export PORTAL_URL=http://localhost:8765
 export NODE_ID=DEINE_NODE_ID
 export NODE_API_KEY=DEIN_API_KEY
 export OLLAMA_URL=http://localhost:11434
@@ -234,7 +234,7 @@ python agent.py</code></pre>
 
       <h4>Authentifizierung</h4>
       <p>Alle Requests brauchen einen <code>Authorization: Bearer API_KEY</code> Header.</p>
-      <pre><code>curl http://100.126.79.111:8765/v1/chat/completions \
+      <pre><code>curl http://localhost:8765/v1/chat/completions \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{

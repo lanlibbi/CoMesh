@@ -1,6 +1,6 @@
 # Community GPU-Pool — POC Extension (v0.3.0)
 
-This extends the GPU-Pool POC on `ai-lanlibbi` with **community GPU-sharing**.
+This extends the GPU-Pool POC on `portal-host` with **community GPU-sharing**.
 GPU-owners can register their machines, the portal load-balances
 OpenAI-compatible chat requests across the pool, and earnings are split
 70/20/10 (owner / platform / treasury).
@@ -54,7 +54,7 @@ agent runs on each contributor's machine — it's not on the portal host.
 
 ```
 ┌──────────────────────────────────────────────────────────────────┐
-│  Portal (ai-lanlibbi:8765)                                       │
+│  Portal (portal-host:8765)                                       │
 │  ┌─────────────────────┐                                         │
 │  │ /v1/chat/completions│                                         │
 │  └──────────┬──────────┘                                         │
@@ -264,7 +264,7 @@ All 23 checks passed against http://localhost:8765
 Plus the existing v1 feature suite (`tests/test_features.py`) still
 passes 24/24. Real-agent end-to-end check (start `python3 agent.py
 --transport=ws` against a registered node) was also verified manually
-on `ai-lanlibbi`: the agent connected, received the welcome, pinged,
+on `portal-host`: the agent connected, received the welcome, pinged,
 and on timeout the portal flipped the node to `disconnected` cleanly.
 
 ### Design decision: WS test uses Python `websockets` client, not the agent binary

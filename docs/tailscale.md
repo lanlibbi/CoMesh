@@ -16,8 +16,8 @@ Tailscale-Coordinator (controlplane.tailscale.com)
        │
        │ Schlüsselaustausch, ACLs
        │
-       ├─── ai-lanlibbi (100.126.79.111)     [Portal]
-       ├─── rbpi5 (100.120.250.36)           [Node-Agent]
+       ├─── portal-host (portal-ip)     [Portal]
+       ├─── node-host (node-ip)           [Node-Agent]
        ├─── gaming-pc (100.x.x.x)            [Node-Agent]
        ├─── workstation (100.x.x.x)          [Node-Agent]
        └─── laptop (100.x.x.x)               [Node-Agent]
@@ -33,7 +33,7 @@ WireGuard-Tunnel zwischen jedem Paar.
 1. Account auf [tailscale.com](https://tailscale.com) erstellen
 2. Im Admin-Panel: **Access Controls** → MagicDNS aktivieren
 
-### 2. Portal-Host (`ai-lanlibbi`)
+### 2. Portal-Host (`portal-host`)
 
 ```bash
 # Installieren
@@ -43,11 +43,11 @@ curl -fsSL https://tailscale.com/install.sh | sh
 sudo tailscale up
 
 # MagicDNS-Hostname setzen
-sudo tailscale set --hostname=ai-lanlibbi
+sudo tailscale set --hostname=portal-host
 
 # Status prüfen
 tailscale ip -4
-# 100.126.79.111
+# portal-ip
 tailscale status
 ```
 
@@ -58,7 +58,7 @@ Auf jedem Contributor-Host gleich:
 ```bash
 curl -fsSL https://tailscale.com/install.sh | sh
 sudo tailscale up
-sudo tailscale set --hostname=rbpi5  # eindeutig pro Host!
+sudo tailscale set --hostname=node-host  # eindeutig pro Host!
 ```
 
 > **Wichtig:** Jeder Host braucht einen eindeutigen MagicDNS-Namen. Sonst gibt's Konflikte.
@@ -110,25 +110,25 @@ Tags müssen im Admin-Panel **approviert** werden, bevor sie wirken.
 
 ```bash
 tailscale status
-# 100.126.79.111   ai-lanlibbi      admin@   linux   active; direct 100.0.0.1, tx 15820 rx 9456
-# 100.120.250.36   rbpi5            admin@   linux   active; direct 100.0.0.2, tx 9456 rx 7892
+# portal-ip   portal-host      admin@   linux   active; direct 100.0.0.1, tx 15820 rx 9456
+# node-ip   node-host            admin@   linux   active; direct 100.0.0.2, tx 9456 rx 7892
 # 100.x.x.x        gaming-pc        admin@   linux   active; relayed via fra
 ```
 
 ### Ping zwischen Hosts
 
 ```bash
-# Auf ai-lanlibbi:
-tailscale ping rbpi5
-# pong from rbpi5 (100.120.250.36) via direct in 12ms
+# Auf portal-host:
+tailscale ping node-host
+# pong from node-host (node-ip) via direct in 12ms
 ```
 
 ### MagicDNS testen
 
 ```bash
 # Auf jedem Host:
-ping ai-lanlibbi
-ping rbpi5
+ping portal-host
+ping node-host
 # Sollte via 100.x.x.x auflösen
 ```
 
@@ -162,10 +162,10 @@ Falls dein Netzwerk restriktiv ist (z. B. öffentliches WLAN):
 
 ```bash
 # Vom Node-Agent-Host:
-curl http://ai-lanlibbi:8765/health
+curl http://portal-host:8765/health
 # Falls Timeout:
 tailscale status  # Portal online?
-ping ai-lanlibbi
+ping portal-host
 ```
 
 ### Portal sieht Node nicht

@@ -1,13 +1,13 @@
 # GPU-Pool POC - Build Report
 
 **Date:** 2026-06-05 22:58 - 23:05 (Europe/Berlin)
-**Host:** `ai-lanlibbi` (100.126.79.111)
+**Host:** `portal-host` (portal-ip)
 **Status:** ✅ RUNNING — all tests pass
 
 ## What was built
 
 A FastAPI-based GPU-sharing POC at `/home/christian/projects/opencode-poc/`
-on `ai-lanlibbi`, exposing an **OpenAI-compatible** `/v1/chat/completions`
+on `portal-host`, exposing an **OpenAI-compatible** `/v1/chat/completions`
 endpoint that proxies to the host's existing Ollama instance.
 
 ### Files created (all 8)
@@ -75,10 +75,10 @@ All on the named Docker volume `opencode-poc_sqlite_data` — survives restarts.
 
 ```bash
 # Health
-curl http://100.126.79.111:8765/health
+curl http://portal-ip:8765/health
 
 # Chat
-curl -X POST http://100.126.79.111:8765/v1/chat/completions \
+curl -X POST http://portal-ip:8765/v1/chat/completions \
   -H "Authorization: Bearer gpu_ScOgpgvZWQDh2OgPY_XmsRI2uELsUud8tWQyEvPn2bs" \
   -H "Content-Type: application/json" \
   -d '{
@@ -87,12 +87,12 @@ curl -X POST http://100.126.79.111:8765/v1/chat/completions \
   }'
 
 # Create more users
-curl -X POST http://100.126.79.111:8765/admin/users \
+curl -X POST http://portal-ip:8765/admin/users \
   -H "Content-Type: application/json" \
   -d '{"email":"alice@example.com","name":"Alice","initial_credits":50}'
 
 # Top up existing user
-curl -X POST 'http://100.126.79.111:8765/admin/users/1/topup?amount=25.0'
+curl -X POST 'http://portal-ip:8765/admin/users/1/topup?amount=25.0'
 ```
 
 ## Caveats / next steps
@@ -104,7 +104,7 @@ curl -X POST 'http://100.126.79.111:8765/admin/users/1/topup?amount=25.0'
 3. **No streaming yet** — `stream: true` is accepted in the request schema
    but ignored; `/v1/chat/completions` always returns a complete response.
 4. **No rate limiting** — would be a sensible next addition.
-5. **OpenCode** is not installed on `ai-lanlibbi` (only `docker`, `docker-compose`,
+5. **OpenCode** is not installed on `portal-host` (only `docker`, `docker-compose`,
    `python3.12` confirmed). The POC was built by hand-written code; for future
    iterations we could install OpenCode and use it for code generation.
 
@@ -159,6 +159,6 @@ Three HTML pages served by FastAPI itself:
 - `/chat`     — chat UI
 - `/credits`  — buy credit packages (4 buttons per package, transaction history)
 
-Open http://100.126.79.111:8765/credits in a browser, log in with
+Open http://portal-ip:8765/credits in a browser, log in with
 `test@example.com` / `password123`, and click any payment button to test
 the full flow.

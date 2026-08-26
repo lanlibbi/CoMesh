@@ -177,7 +177,7 @@ def find_best_node(model: str) -> Optional[GpuNode]:
 
 ### Lokales Ollama als Fallback im Portal
 
-- ✅ Portal kann auf `ai-lanlibbi` selbst laufen und antworten, wenn keine externen Nodes verfügbar sind
+- ✅ Portal kann auf `portal-host` selbst laufen und antworten, wenn keine externen Nodes verfügbar sind
 - ❌ Verhalten inkonsistent (manchmal lokal, manchmal remote)
 - **Beibehalten:** Funktioniert als "Garantie-Verfügbarkeit" für kleine Workloads.
 

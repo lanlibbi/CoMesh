@@ -1,6 +1,6 @@
 # Portal
 
-Das Portal ist die zentrale API- und UI-Instanz des GPU-Pool-POC. Es läuft im POC auf `ai-lanlibbi` (Tailscale-IP `100.126.79.111`).
+Das Portal ist die zentrale API- und UI-Instanz des GPU-Pool-POC. Es läuft im POC auf `portal-host` (Tailscale-IP `portal-ip`).
 
 ## Setup
 
@@ -30,7 +30,7 @@ docker compose up -d
 ### Health-Check
 
 ```bash
-curl http://ai-lanlibbi:8765/health
+curl http://portal-host:8765/health
 # {"status": "ok", "nodes_online": 3, "local_ollama": "ok"}
 ```
 
@@ -84,7 +84,7 @@ OpenAI-kompatibel. Verteilt automatisch an den besten Node.
 
 **Beispiel:**
 ```bash
-curl -X POST http://ai-lanlibbi:8765/v1/chat/completions \
+curl -X POST http://portal-host:8765/v1/chat/completions \
   -H "Content-Type: application/json" \
   -d '{
     "model": "qwen2.5-coder:14b",
@@ -97,7 +97,7 @@ curl -X POST http://ai-lanlibbi:8765/v1/chat/completions \
 Liste aller registrierten Nodes.
 
 ```bash
-curl http://ai-lanlibbi:8765/nodes/
+curl http://portal-host:8765/nodes/
 ```
 
 ### `POST /nodes/register`
@@ -105,10 +105,10 @@ curl http://ai-lanlibbi:8765/nodes/
 Manuelle Registrierung (normalerweise macht das der Agent).
 
 ```bash
-curl -X POST http://ai-lanlibbi:8765/nodes/register \
+curl -X POST http://portal-host:8765/nodes/register \
   -H "Content-Type: application/json" \
   -d '{
-    "tailscale_ip": "100.120.250.36",
+    "tailscale_ip": "node-ip",
     "port": 8080,
     "gpu_model": "RTX 4090",
     "vram_gb": 24,
@@ -121,10 +121,10 @@ curl -X POST http://ai-lanlibbi:8765/nodes/register \
 Wird vom Node-Agent alle 5s aufgerufen.
 
 ```bash
-curl -X POST http://ai-lanlibbi:8765/nodes/heartbeat \
+curl -X POST http://portal-host:8765/nodes/heartbeat \
   -H "Content-Type: application/json" \
   -d '{
-    "tailscale_ip": "100.120.250.36",
+    "tailscale_ip": "node-ip",
     "cpu_pct": 23.4,
     "ram_pct": 41.2,
     "gpu_util_pct": 78.5,
@@ -137,7 +137,7 @@ curl -X POST http://ai-lanlibbi:8765/nodes/heartbeat \
 Aktueller Pool-Status.
 
 ```bash
-curl http://ai-lanlibbi:8765/pool/
+curl http://portal-host:8765/pool/
 # {"total_nodes": 5, "online_nodes": 4, "avg_load_pct": 45.2, "cheapest_node": "..."}
 ```
 
@@ -146,7 +146,7 @@ curl http://ai-lanlibbi:8765/pool/
 Earnings pro Node (default letzte 24h).
 
 ```bash
-curl http://ai-lanlibbi:8765/earnings/?hours=24
+curl http://portal-host:8765/earnings/?hours=24
 ```
 
 ## UI
@@ -157,10 +157,10 @@ Das Portal bringt zwei UIs mit (gleiche Daten, anderes Stack):
 
 Server-side gerendert mit Jinja2 + Alpine.js. URLs:
 
-- `http://ai-lanlibbi:8765/ui/nodes` — Node-Übersicht
-- `http://ai-lanlibbi:8765/ui/pool` — Pool-Status
-- `http://ai-lanlibbi:8765/ui/earnings` — Earnings-Charts
-- `http://ai-lanlibbi:8765/ui/agent` — Agent-Setup-Anleitung
+- `http://portal-host:8765/ui/nodes` — Node-Übersicht
+- `http://portal-host:8765/ui/pool` — Pool-Status
+- `http://portal-host:8765/ui/earnings` — Earnings-Charts
+- `http://portal-host:8765/ui/agent` — Agent-Setup-Anleitung
 
 ### Alpine-UI (`:3000`)
 

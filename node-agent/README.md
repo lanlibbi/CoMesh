@@ -19,7 +19,7 @@ their GPU to the GPU-Pool community.
 
 | Variable      | Required | Default                          | Notes                                        |
 |---------------|----------|----------------------------------|----------------------------------------------|
-| `PORTAL_URL`  | yes      | `http://100.126.79.111:8765`     | Base URL of the GPU-Pool portal              |
+| `PORTAL_URL`  | yes      | `http://portal-ip:8765`     | Base URL of the GPU-Pool portal              |
 | `NODE_ID`     | yes      | (empty)                          | Numeric id returned by `POST /nodes/register`|
 | `NODE_API_KEY`| yes      | (empty)                          | `agent_api_key` from registration            |
 | `OLLAMA_URL`  | no       | `http://localhost:11434`         | Local Ollama daemon                          |
@@ -32,7 +32,7 @@ their GPU to the GPU-Pool community.
 docker run -d --name gpu-pool-agent \
   --gpus all \
   --restart unless-stopped \
-  -e PORTAL_URL=http://100.126.79.111:8765 \
+  -e PORTAL_URL=http://portal-ip:8765 \
   -e NODE_ID=1 \
   -e NODE_API_KEY=node_xxxxx... \
   -p 11435:11435 \
@@ -46,7 +46,7 @@ GPU stats — it does **not** need to share the GPU exclusively.
 
 ```bash
 pip install -r requirements.txt
-NODE_ID=1 NODE_API_KEY=node_xxx PORTAL_URL=http://100.126.79.111:8765 \
+NODE_ID=1 NODE_API_KEY=node_xxx PORTAL_URL=http://portal-ip:8765 \
   python agent.py
 ```
 

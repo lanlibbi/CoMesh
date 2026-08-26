@@ -7,7 +7,7 @@ Visuelle Übersicht der GPU-Pool-Komponenten und Datenflüsse.
 ```
                 ┌───────────────────────────────────────────────┐
                 │              GPU-Pool Portal                  │
-                │              (ai-lanlibbi)                    │
+                │              (portal-host)                    │
                 │                                               │
                 │   ┌─────────┐   ┌─────────┐   ┌─────────┐    │
                 │   │  /v1/   │   │  /pool/ │   │ /nodes/ │    │
@@ -36,7 +36,7 @@ Visuelle Übersicht der GPU-Pool-Komponenten und Datenflüsse.
        ▼                   ▼           ▼           ▼                   ▼
   ┌─────────┐         ┌─────────┐ ┌─────────┐ ┌─────────┐         ┌─────────┐
   │Node 1   │         │Node 2   │ │Node 3   │ │Node 4   │  ...    │Node N   │
-  │(rbpi5)  │         │(Desktop)│ │(Gaming) │ │(Workstn)│         │(Laptop) │
+  │(Node 1) │         │(Desktop)│ │(Gaming) │ │(Workstn)│         │(Laptop) │
   │         │         │         │ │         │ │         │         │         │
   │ Agent   │         │ Agent   │ │ Agent   │ │ Agent   │         │ Agent   │
   │ :8080   │         │ :8080   │ │ :8080   │ │ :8080   │         │ :8080   │

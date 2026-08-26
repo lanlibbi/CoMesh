@@ -17,7 +17,7 @@ from typing import Optional
 
 import httpx
 
-PORTAL_URL = os.getenv("PORTAL_URL", "http://ai-lanlibbi:8765")
+PORTAL_URL = os.getenv("PORTAL_URL", "http://portal-host:8765")
 DEFAULT_MODEL = os.getenv("DEFAULT_MODEL", "qwen2.5-coder:14b")
 DEFAULT_PROMPT = "Erkläre in zwei Sätzen, was ein GPU-Pool ist."
 

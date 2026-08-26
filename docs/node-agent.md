@@ -65,13 +65,13 @@ cp .env.example .env
 ```bash
 # Welche Tailscale-IP hat dieser Host?
 # tailscale ip -4
-TAILSCALE_IP=100.120.250.36
+TAILSCALE_IP=node-ip
 
 # Auf welchem Port lauscht der Agent?
 AGENT_PORT=8080
 
 # Portal-URL (Tailscale-IP oder MagicDNS)
-PORTAL_URL=http://100.126.79.111:8765
+PORTAL_URL=http://portal-ip:8765
 
 # Wie oft senden wir Heartbeats?
 HEARTBEAT_INTERVAL_SECONDS=5
@@ -96,7 +96,7 @@ Erwartete Ausgabe:
 ```
 [agent] Starting GPU-Pool Node-Agent
 [agent] Detected GPU: NVIDIA GeForce RTX 4090 (24 GB)
-[agent] Registering with portal at http://100.126.79.111:8765
+[agent] Registering with portal at http://portal-ip:8765
 [agent] Registered as node_id=3
 [agent] Starting heartbeat loop (interval=5s)
 [agent] Inference proxy listening on :8080
@@ -107,30 +107,30 @@ Erwartete Ausgabe:
 ### Agent läuft
 
 ```bash
-curl http://100.120.250.36:8080/health
+curl http://node-ip:8080/health
 # {"status": "ok", "agent": "running", "ollama": "ok", "gpu": "RTX 4090"}
 ```
 
 ### Portal sieht den Node
 
 ```bash
-curl http://100.126.79.111:8765/nodes/ | jq '.[] | select(.tailscale_ip=="100.120.250.36")'
+curl http://portal-ip:8765/nodes/ | jq '.[] | select(.tailscale_ip=="node-ip")'
 ```
 
 ### End-to-End-Test
 
 ```bash
 # Direkt zum Agent
-curl -X POST http://100.120.250.36:8080/v1/chat/completions \
+curl -X POST http://node-ip:8080/v1/chat/completions \
   -H "Content-Type: application/json" \
   -d '{"model":"qwen2.5-coder:14b","messages":[{"role":"user","content":"Hi"}]}'
 
 # Über das Portal (Load-Balancing)
-curl -X POST http://100.126.79.111:8765/v1/chat/completions \
+curl -X POST http://portal-ip:8765/v1/chat/completions \
   -H "Content-Type: application/json" \
   -D - \
   -d '{"model":"qwen2.5-coder:14b","messages":[{"role":"user","content":"Hi"}]}'
-# Header x-pool-node: 100.120.250.36
+# Header x-pool-node: node-ip
 ```
 
 ## Hardware-Anforderungen
@@ -156,16 +156,16 @@ curl -X POST http://100.126.79.111:8765/v1/chat/completions \
 - `gpu_temp_c` — GPU-Temperatur (TODO)
 - `power_w` — GPU-Power-Draw (TODO)
 
-Anzeige im Portal-UI: `http://ai-lanlibbi:8765/ui/nodes`
+Anzeige im Portal-UI: `http://portal-host:8765/ui/nodes`
 
 ### Eigener Node-Status
 
 ```bash
 # Letzte Heartbeats
-curl http://100.126.79.111:8765/nodes/3/heartbeats?limit=20
+curl http://portal-ip:8765/nodes/3/heartbeats?limit=20
 
 # Earnings (letzte 24h)
-curl "http://100.126.79.111:8765/earnings/?node_id=3&hours=24"
+curl "http://portal-ip:8765/earnings/?node_id=3&hours=24"
 ```
 
 ## Troubleshooting
@@ -179,7 +179,7 @@ curl "http://100.126.79.111:8765/earnings/?node_id=3&hours=24"
 # Tailscale aktiv?
 tailscale status
 # Portal erreichbar?
-curl http://100.126.79.111:8765/health
+curl http://portal-ip:8765/health
 ```
 
 ### GPU wird nicht erkannt
@@ -222,7 +222,7 @@ docker compose up -d
 
 ```bash
 # Im Portal-UI: Node auf "disabled" setzen
-curl -X PATCH http://100.126.79.111:8765/nodes/3 \
+curl -X PATCH http://portal-ip:8765/nodes/3 \
   -H "Content-Type: application/json" \
   -d '{"enabled": false}'
 ```
@@ -232,5 +232,5 @@ curl -X PATCH http://100.126.79.111:8765/nodes/3 \
 ```bash
 docker compose down -v
 # Im Portal: Node löschen
-curl -X DELETE http://100.126.79.111:8765/nodes/3
+curl -X DELETE http://portal-ip:8765/nodes/3
 ```
