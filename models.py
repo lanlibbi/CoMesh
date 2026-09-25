@@ -20,7 +20,17 @@ def _generate_api_key() -> str:
     return f"gpu_{secrets.token_urlsafe(32)}"
 
 
-VALID_ROLES = ("provider", "consumer", "both")
+# ----------------------------------------------------------------------------
+# Roles
+# ----------------------------------------------------------------------------
+# self-service roles: a user may set these for themselves (PUT /v1/me/role).
+SELF_SERVICE_ROLES = ("provider", "consumer", "both")
+# privileged role: only an existing admin can grant it (PATCH /admin/users/{id}).
+ADMIN_ROLE = "admin"
+# full set accepted by admin-managed writes and admin-side filters.
+ADMIN_MANAGED_ROLES = SELF_SERVICE_ROLES + (ADMIN_ROLE,)
+# legacy alias — the OpenAI/self-service surface (main.py) keeps using this name.
+VALID_ROLES = SELF_SERVICE_ROLES
 
 
 class User(Base):
@@ -35,6 +45,7 @@ class User(Base):
     role = Column(String, default="both", nullable=False)        # provider | consumer | both
     allowed_models = Column(Text, nullable=True)                 # JSON list or NULL = "all local, no cloud"
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=True)
 
     api_keys = relationship("ApiKey", back_populates="user", cascade="all, delete-orphan")
     usages = relationship("Usage", back_populates="user", cascade="all, delete-orphan")
@@ -315,6 +326,29 @@ class PoolJob(Base):
 
     node = relationship("GpuNode", back_populates="jobs")
     user = relationship("User")
+
+
+class AdminAuditLog(Base):
+    """Audit + idempotency record for admin-triggered mutations.
+
+    One row per successful admin mutation. `idempotency_key` is unique when
+    present, which is what makes admin POSTs replay-safe: a second request with
+    the same key returns the stored `result` instead of mutating again.
+
+    Secrets are never stored here: key-rotation results are whitelisted down to
+    metadata before they are persisted (see admin.run_idempotent).
+    """
+    __tablename__ = "admin_audit_log"
+
+    id = Column(Integer, primary_key=True, index=True)
+    admin_user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
+    action = Column(String, nullable=False, index=True)       # user.create | user.update | user.topup | node.enable | ...
+    target_type = Column(String, nullable=True)               # user | api_key | gpu_node
+    target_id = Column(Integer, nullable=True, index=True)
+    idempotency_key = Column(String, unique=True, nullable=True, index=True)
+    payload = Column(Text, nullable=True)                     # JSON: request body (no secrets)
+    result = Column(Text, nullable=True)                      # JSON: response echo (no secrets)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
 
 
 def get_user_credits(db, user_id: int) -> float:

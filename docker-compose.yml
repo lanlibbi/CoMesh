@@ -13,6 +13,12 @@ services:
       - DEFAULT_MODEL=qwen2.5-coder:7b
       - DATA_DIR=/data
       - DOCKER_ENV=1
+      # Bootstrap admin for /admin/* (see docs/api.md -> Admin).
+      # Set ADMIN_API_KEY in a .env file; leave ADMIN_EMAIL as-is.
+      - ADMIN_API_KEY=${ADMIN_API_KEY:-}
+      - ADMIN_EMAIL=${ADMIN_EMAIL:-admin@gpu-pool.local}
+      - ADMIN_NAME=${ADMIN_NAME:-Platform Admin}
+      - PROMOTE_ADMIN_EMAIL=${PROMOTE_ADMIN_EMAIL:-}
     volumes:
       - sqlite_data:/data
     extra_hosts:
