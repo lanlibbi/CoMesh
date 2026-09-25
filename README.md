@@ -13,6 +13,8 @@ which routes them to the most suitable **Node-Agent** in the pool.
 
 ```
 ├── main.py               # FastAPI portal (API, pool logic, auth)
+├── auth.py               # Token handling: API keys, session tokens, passwords
+├── ratelimit.py          # Rate limiting + login brute-force guard
 ├── models.py             # SQLAlchemy models (User, GpuNode, Earnings…)
 ├── nodes.py              # Node registration / heartbeats / CRUD
 ├── pool.py               # Load balancing + node selection
@@ -23,8 +25,32 @@ which routes them to the most suitable **Node-Agent** in the pool.
 ├── node-agent/           # Contributor agent (backend-agnostic: Ollama/OpenAI-compatible)
 │   └── setup.py          # Interactive installer with backend selection
 ├── docker-compose.yml    # Portal + frontend stack
-├── docs/                 # Architecture / API / Node-Agent / Tailscale
+├── tests/                # Feature, WS and auth-hardening suites
+├── docs/                 # Architecture / API / Auth / Node-Agent / Tailscale
 └── examples/             # Example client + node-agent compose
+```
+
+## Auth & security
+
+Token handling, rate limits and brute-force protection are documented in
+**[docs/auth.md](docs/auth.md)**. Short version:
+
+- `/auth/register` and `POST /admin/users` issue a long-lived API key (`gpu_…`);
+  `/auth/login` issues a short-lived session token (`sess_…`, TTL via
+  `SESSION_TOKEN_TTL_HOURS`) and rotates previous sessions. `POST /auth/logout`
+  revokes them.
+- Tokens are stored hashed (SHA-256), passwords are PBKDF2-HMAC-SHA256 with a
+  per-user salt; legacy POC hashes are upgraded transparently on login.
+- `/auth/login` is protected by a token bucket **and** a failure-based lockout
+  with exponential backoff, per account and per IP.
+- Per-user/per-node/per-IP rate limits return `429` with `Retry-After`.
+- `/admin/*` is default-deny: set `ADMIN_TOKEN` or `ADMIN_EMAILS` (see
+  `.env.example`).
+- The OpenAI-compatible surface is unchanged — same paths, same
+  `Authorization: Bearer <token>` contract.
+
+```bash
+python3 tests/test_auth_hardening.py   # self-contained: starts its own server + throwaway DB
 ```
 
 ## Architecture (overview)

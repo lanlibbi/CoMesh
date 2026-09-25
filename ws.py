@@ -77,12 +77,13 @@ import time
 import uuid
 from typing import Any, Dict, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, WebSocket, WebSocketDisconnect
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
+from auth import hash_api_key, parse_bearer_header, resolve_token, verify_node_key
 from database import SessionLocal, get_db
-from models import GpuNode
+from models import GpuNode, User
 
 log = logging.getLogger("gpu-pool.ws")
 
@@ -216,7 +217,13 @@ async def send_job_via_ws(
 # Helpers
 # ----------------------------------------------------------------------------
 def _authenticate_node(db: Session, node_id: int, node_key: str) -> Optional[GpuNode]:
-    """Look up the node and check its raw api_key. Returns the node on success, None on failure."""
+    """
+    Look up the node and verify its agent key.
+
+    Verification is against the stored SHA-256 hash (constant time) with a
+    fallback to the legacy plaintext column for pre-hardening rows; on a legacy
+    row the key is migrated to its hash and the plaintext is dropped.
+    """
     if not node_id or not node_key:
         return None
     try:
@@ -226,11 +233,16 @@ def _authenticate_node(db: Session, node_id: int, node_key: str) -> Optional[Gpu
     node = db.query(GpuNode).filter(GpuNode.id == nid).first()
     if not node:
         return None
-    if not node.api_key or node.api_key != node_key:
+    if not verify_node_key(node_key, node.api_key_hash, node.api_key):
         return None
     if not node.is_enabled:
         # Owner paused this node — refuse WS just like we'd refuse HTTP.
         return None
+    if not node.api_key_hash:
+        node.api_key_hash = hash_api_key(node_key)
+        node.api_key = None
+        db.commit()
+        log.info(f"WS: migrated node {node.id} to hashed agent key")
     return node
 
 
@@ -268,16 +280,42 @@ class ConnectionStateOut(BaseModel):
 # REST status endpoint (for tests + admin)
 # ----------------------------------------------------------------------------
 @router.get("/nodes/{node_id}/connection", response_model=ConnectionStateOut)
-def get_node_connection(node_id: int, db: Session = Depends(get_db)):
-    """Return the WebSocket connection state for a single node."""
+def get_node_connection(
+    node_id: int,
+    authorization: Optional[str] = Header(default=None),
+    db: Session = Depends(get_db),
+):
+    """Return the WebSocket connection state for a single node.
+
+    Public for a *connected or enabled* node (the pool dashboard uses it as a
+    liveness signal). The full record, including the session id, is only
+    returned to the node's owner or an admin: the session id is a handle for an
+    active transport and should not be world-readable.
+    """
     node = db.query(GpuNode).filter(GpuNode.id == node_id).first()
     if not node:
         raise HTTPException(status_code=404, detail="Node not found")
+
+    caller: Optional[User] = None
+    if authorization:
+        try:
+            _k, caller = resolve_token(db, parse_bearer_header(authorization), touch=False)
+        except HTTPException:
+            caller = None
+
+    privileged = bool(caller) and (
+        getattr(caller, "role", None) == "admin" or node.owner_id == caller.id
+    )
+    state = getattr(node, "connection_state", "disconnected") or "disconnected"
+
+    if not privileged and not node.is_enabled:
+        raise HTTPException(status_code=404, detail="Node not found")
+
     return ConnectionStateOut(
         node_id=node.id,
-        state=getattr(node, "connection_state", "disconnected") or "disconnected",
-        last_ws_seen=getattr(node, "last_ws_seen", None),
-        ws_session_id=getattr(node, "ws_session_id", None),
+        state=state,
+        last_ws_seen=getattr(node, "last_ws_seen", None) if privileged else None,
+        ws_session_id=getattr(node, "ws_session_id", None) if privileged else None,
         is_enabled=bool(node.is_enabled),
     )
 

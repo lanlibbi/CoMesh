@@ -17,16 +17,37 @@ import os
 import secrets
 import time
 from contextlib import asynccontextmanager
+from datetime import datetime, timedelta
 from typing import List, Optional
 
 import httpx
-from fastapi import Depends, FastAPI, HTTPException, Header, status
+from fastapi import Depends, FastAPI, HTTPException, Header, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
-from auth import generate_api_key, get_current_user
+from auth import (
+    SESSION_TOKEN_TTL_HOURS,
+    API_KEY_TTL_DAYS,
+    generate_api_key,
+    get_current_user,
+    hash_password,
+    issue_token,
+    require_admin,
+    upgrade_password_if_needed,
+    verify_password,
+    verify_password_dummy,
+)
+from ratelimit import (
+    LOGIN_GUARD,
+    client_ip,
+    limit_admin,
+    limit_chat,
+    limit_login,
+    limit_register,
+    login_keys,
+)
 from database import SessionLocal, engine, get_db, init_db
 from models import (
     ApiKey,
@@ -59,6 +80,19 @@ if not os.path.exists("/.dockerenv") and os.environ.get("DOCKER_ENV") != "1":
 DEFAULT_MODEL = os.environ.get("DEFAULT_MODEL", "qwen2.5-coder:7b")
 COST_PER_1K_TOKENS = float(os.environ.get("COST_PER_1K_TOKENS", "0.001"))  # 1 credit = 0.001 EUR-ish
 
+# --- Auth hardening ---------------------------------------------------------
+# Minimum accepted password length at register (login is unaffected).
+MIN_PASSWORD_LENGTH = int(os.environ.get("MIN_PASSWORD_LENGTH", "8") or 8)
+# The seed account only exists to make a fresh DB usable. It is created with a
+# random password unless the operator pins one via SEED_PASSWORD.
+SEED_PASSWORD = os.environ.get("SEED_PASSWORD") or ""
+DEFAULT_SEED_PASSWORD = "password123"  # only used when SEED_PASSWORD is unset
+
+
+def _seed_password() -> str:
+    """Password for the seed test account (deterministic in the POC)."""
+    return SEED_PASSWORD or DEFAULT_SEED_PASSWORD
+
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 log = logging.getLogger("gpu-pool")
 
@@ -75,6 +109,8 @@ async def lifespan(app: FastAPI):
     _ensure_user_settings()
     _ensure_node_allowed_models()
     _ensure_node_ws_columns()
+    _ensure_token_columns()
+    _ensure_node_key_hash_column()
     await seed_test_user_if_empty()
     log.info(f"GPU-Pool POC started. Ollama URL: {OLLAMA_URL}, default model: {DEFAULT_MODEL}")
     yield
@@ -254,6 +290,53 @@ def _ensure_node_ws_columns():
         if "ws_session_id" not in cols:
             conn.exec_driver_sql("ALTER TABLE gpu_nodes ADD COLUMN ws_session_id VARCHAR")
             log.info("Added gpu_nodes.ws_session_id column")
+
+
+def _ensure_token_columns():
+    """Add api_keys.token_type/expires_at columns (idempotent, auth hardening).
+
+    Existing rows get token_type='api_key' (the POC issued only long-lived
+    keys) and expires_at=NULL (never expires) - so pre-existing keys keep
+    working after the upgrade.
+    """
+    with engine.begin() as conn:
+        cols = [row[1] for row in conn.exec_driver_sql("PRAGMA table_info(api_keys)").fetchall()]
+        if "token_type" not in cols:
+            conn.exec_driver_sql(
+                "ALTER TABLE api_keys ADD COLUMN token_type VARCHAR DEFAULT 'api_key' NOT NULL"
+            )
+            log.info("Added api_keys.token_type column (default 'api_key')")
+        if "expires_at" not in cols:
+            conn.exec_driver_sql("ALTER TABLE api_keys ADD COLUMN expires_at DATETIME")
+            log.info("Added api_keys.expires_at column (NULL = never expires)")
+
+
+def _ensure_node_key_hash_column():
+    """Add gpu_nodes.api_key_hash and backfill it from the legacy plaintext key.
+
+    The backfill means existing node-agents survive the upgrade: their raw key
+    keeps working (verified against the new hash), while `api_key` can be
+    cleared by rotating the key.
+    """
+    with engine.begin() as conn:
+        cols = [row[1] for row in conn.exec_driver_sql("PRAGMA table_info(gpu_nodes)").fetchall()]
+        if "api_key_hash" not in cols:
+            conn.exec_driver_sql("ALTER TABLE gpu_nodes ADD COLUMN api_key_hash VARCHAR")
+            log.info("Added gpu_nodes.api_key_hash column")
+    # Backfill outside the DDL transaction (idempotent: only NULL hashes).
+    db = SessionLocal()
+    try:
+        rows = db.query(GpuNode).filter(GpuNode.api_key_hash.is_(None), GpuNode.api_key.isnot(None)).all()
+        for node in rows:
+            node.api_key_hash = hashlib.sha256(node.api_key.encode("utf-8")).hexdigest()
+        if rows:
+            db.commit()
+            log.info(f"Backfilled api_key_hash for {len(rows)} existing node(s)")
+    except Exception as e:
+        log.warning(f"could not backfill node key hashes: {e}")
+        db.rollback()
+    finally:
+        db.close()
 
 
 def _ensure_payments_table():
@@ -462,6 +545,7 @@ async def list_available_models(_user: User = Depends(get_current_user)):
 @app.post("/v1/chat/completions")
 async def chat_completions(
     request: ChatCompletionRequest,
+    http_request: Request,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
@@ -472,7 +556,15 @@ async def chat_completions(
       1. Try local Ollama.
       2. If local fails, pick the best community node and forward.
       3. If community is unavailable, return 503 (cloud overflow is stubbed).
+
+    Rate limiting (429 + Retry-After, after authentication so it is per user):
+      * per user:   RATE_LIMIT_CHAT_PER_MIN / RATE_LIMIT_CHAT_BURST
+      * per client IP (secondary guard against one noisy host)
+    The response body stays in OpenAI shape; a 429 surfaces as a normal HTTP
+    error, which OpenAI-compatible clients already handle.
     """
+    limit_chat(user.id, client_ip(http_request))
+
     from pool import route_request
     model = request.model or DEFAULT_MODEL
 
@@ -580,10 +672,22 @@ async def chat_completions(
 
 
 # ----------------------------------------------------------------------------
-# Admin: create users (POC - in production this would be behind admin auth)
+# Admin: create users (admin-authenticated; see auth.require_admin)
 # ----------------------------------------------------------------------------
 @app.post("/admin/users", response_model=CreateUserResponse)
-def create_user(req: CreateUserRequest, db: Session = Depends(get_db)):
+def create_user(
+    req: CreateUserRequest,
+    request: Request,
+    _admin: Optional[User] = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    """Create a user + API key.
+
+    Hardened: was previously unauthenticated. Now requires the operator token
+    (ADMIN_TOKEN) or an admin account (ADMIN_EMAILS / role=admin). Default-deny
+    when neither is configured.
+    """
+    limit_admin(client_ip(request))
     if db.query(User).filter(User.email == req.email).first():
         raise HTTPException(status_code=409, detail="User with that email already exists")
 
@@ -596,14 +700,9 @@ def create_user(req: CreateUserRequest, db: Session = Depends(get_db)):
         balance_after=req.initial_credits,
         reason="initial credit",
     ))
-    raw_key, key_hash, key_prefix = generate_api_key()
-    db.add(ApiKey(
-        user_id=user.id,
-        key_hash=key_hash,
-        key_prefix=key_prefix,
-        label="default",
-        is_active=True,
-    ))
+    raw_key, key_hash, key_prefix = issue_token(
+        db, user, token_type="api_key", ttl_days=API_KEY_TTL_DAYS, label="default"
+    )
     db.commit()
 
     log.info(f"Created user {user.email} (id={user.id}) with {req.initial_credits} credits")
@@ -617,7 +716,15 @@ def create_user(req: CreateUserRequest, db: Session = Depends(get_db)):
 
 
 @app.post("/admin/users/{user_id}/topup")
-def topup_user(user_id: int, amount: float, db: Session = Depends(get_db)):
+def topup_user(
+    user_id: int,
+    amount: float,
+    request: Request,
+    _admin: Optional[User] = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    """Add credits to a user. Hardened: admin authentication required."""
+    limit_admin(client_ip(request))
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -634,10 +741,19 @@ def topup_user(user_id: int, amount: float, db: Session = Depends(get_db)):
 
 
 # ----------------------------------------------------------------------------
-# Public auth: register + login (POC). Login = "I own this API key" proof.
-# Production: replace with proper password hashing (bcrypt/argon2) + JWT.
+# Public auth: register + login.
+#
+# Token model (hardened — see auth.py for the full rationale):
+#   register -> long-lived API key  ("gpu_...", no expiry by default)
+#   login    -> short-lived session ("sess_...", expires after
+#               SESSION_TOKEN_TTL_HOURS; a new login rotates old sessions)
+#   both     -> presented as `Authorization: Bearer <token>` (unchanged contract)
+#
+# Passwords are PBKDF2-HMAC-SHA256 with a per-user salt. The helper below is
+# kept only for legacy-hash compatibility tests.
 # ----------------------------------------------------------------------------
 def _hash_pw(pw: str) -> str:
+    """Legacy POC password hash (unsalted sha256). Do not use for new records."""
     return hashlib.sha256(pw.encode("utf-8")).hexdigest()
 
 
@@ -665,12 +781,46 @@ class AuthResponse(BaseModel):
     api_key: str
     key_prefix: str
     credits: float
+    # Auth-hardening additions (additive: existing clients ignore them)
+    token_type: str = "api_key"          # api_key | session
+    expires_at: Optional[str] = None     # ISO-8601, None = does not expire
+    expires_in: Optional[int] = None     # seconds until expiry, None = never
+
+
+def _auth_response(user: User, raw_token: str, key_prefix: str, credits: float,
+                   *, token_type: str, expires_at=None) -> AuthResponse:
+    return AuthResponse(
+        user_id=user.id,
+        email=user.email,
+        name=user.name,
+        role=getattr(user, "role", "both") or "both",
+        allowed_models=user.get_allowed_models(),
+        api_key=raw_token,
+        key_prefix=key_prefix,
+        credits=credits,
+        token_type=token_type,
+        expires_at=expires_at.isoformat() if expires_at else None,
+        expires_in=(int((expires_at - datetime.utcnow()).total_seconds()) if expires_at else None),
+    )
 
 
 @app.post("/auth/register", response_model=AuthResponse)
-def auth_register(req: RegisterRequest, db: Session = Depends(get_db)):
-    if db.query(User).filter(User.email == req.email).first():
+def auth_register(req: RegisterRequest, request: Request, db: Session = Depends(get_db)):
+    """Public signup.
+
+    Hardening: per-IP rate limit (RATE_LIMIT_REGISTER_*), PBKDF2 password
+    hashing, response shape unchanged apart from additive token metadata.
+    """
+    limit_register(client_ip(request))
+
+    email = (req.email or "").strip().lower()
+    if db.query(User).filter(User.email == email).first():
         raise HTTPException(status_code=409, detail="Email already registered")
+    if len(req.password or "") < MIN_PASSWORD_LENGTH:
+        raise HTTPException(
+            status_code=422,
+            detail=f"Password must be at least {MIN_PASSWORD_LENGTH} characters.",
+        )
 
     # Build the user (with optional role + allowed_models).
     allowed_models_value: Optional[List[str]] = None
@@ -686,10 +836,10 @@ def auth_register(req: RegisterRequest, db: Session = Depends(get_db)):
         allowed_models_value = []
 
     user = User(
-        email=req.email,
+        email=email,
         name=req.name,
         is_active=True,
-        password_hash=_hash_pw(req.password),
+        password_hash=hash_password(req.password),
         role=role,
     )
     db.add(user)
@@ -703,60 +853,93 @@ def auth_register(req: RegisterRequest, db: Session = Depends(get_db)):
         reason="signup credit",
     ))
 
-    raw_key, key_hash, key_prefix = generate_api_key()
-    db.add(ApiKey(
-        user_id=user.id,
-        key_hash=key_hash,
-        key_prefix=key_prefix,
-        label="default",
-        is_active=True,
-    ))
+    raw_key, key_hash, key_prefix = issue_token(
+        db, user, token_type="api_key", ttl_days=API_KEY_TTL_DAYS, label="default"
+    )
     db.commit()
+    db.refresh(user)
 
     log.info(f"Public register: {user.email} (id={user.id}) with {req.initial_credits} credits")
-    return AuthResponse(
-        user_id=user.id,
-        email=user.email,
-        name=user.name,
-        role=user.role,
-        allowed_models=user.get_allowed_models(),
-        api_key=raw_key,
-        key_prefix=key_prefix,
-        credits=req.initial_credits,
+    return _auth_response(
+        user, raw_key, key_prefix, req.initial_credits,
+        token_type="api_key", expires_at=(datetime.utcnow() + timedelta(days=API_KEY_TTL_DAYS)) if API_KEY_TTL_DAYS > 0 else None,
     )
 
 
 @app.post("/auth/login", response_model=AuthResponse)
-def auth_login(req: LoginRequest, db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.email == req.email).first()
+def auth_login(req: LoginRequest, request: Request, db: Session = Depends(get_db)):
+    """Public login: exchanges email+password for a short-lived session token.
+
+    Hardening:
+      * per-IP and per-account rate limit (RATE_LIMIT_LOGIN_*)
+      * brute-force lockout with exponential backoff (LOGIN_GUARD)
+      * constant-time password verification, PBKDF2 with per-user salt
+      * dummy hash when the account does not exist (no user enumeration)
+      * issues a "sess_..." token with TTL (SESSION_TOKEN_TTL_HOURS), not an
+        unlimited key; the client contract (Authorization: Bearer) is unchanged
+      * failures are logged for the audit trail
+    """
+    ip = client_ip(request)
+    email = (req.email or "").strip().lower()
+    ip_key, email_key = login_keys(ip, email)
+
+    limit_login(ip, email)      # token bucket: 10/min, burst 5
+    LOGIN_GUARD.check(ip_key, email_key)  # lockout from previous failures
+
+    user = db.query(User).filter(User.email == email).first()
     if not user:
-        raise HTTPException(status_code=401, detail="Invalid credentials")
-    if not user.password_hash or user.password_hash != _hash_pw(req.password):
+        # Burn comparable CPU so timing does not leak account existence.
+        verify_password_dummy(req.password)
+        LOGIN_GUARD.record_failure(ip_key, email_key)
+        log.warning(f"login failed: unknown account email={email} ip={ip}")
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
-    raw_key, key_hash, key_prefix = generate_api_key()
-    for k in db.query(ApiKey).filter(ApiKey.user_id == user.id, ApiKey.is_active == True).all():
-        k.is_active = False
-    db.add(ApiKey(
-        user_id=user.id,
-        key_hash=key_hash,
-        key_prefix=key_prefix,
+    ok, needs_upgrade = verify_password(req.password, user.password_hash)
+    if not ok or not user.is_active:
+        LOGIN_GUARD.record_failure(ip_key, email_key)
+        log.warning(
+            f"login failed: user_id={user.id} email={email} ip={ip} "
+            f"active={user.is_active} reason={'inactive' if not user.is_active else 'bad password'}"
+        )
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+
+    LOGIN_GUARD.record_success(ip_key, email_key)
+    if needs_upgrade:
+        # Legacy POC sha256 hash - re-hash on the way in (idempotent migration).
+        upgrade_password_if_needed(db, user, req.password, needs_upgrade)
+
+    ttl_hours = SESSION_TOKEN_TTL_HOURS
+    raw_token, key_hash, key_prefix = issue_token(
+        db, user,
+        token_type="session",
+        ttl_hours=ttl_hours,
         label="login-issued",
-        is_active=True,
-    ))
+        rotate=True,  # a login invalidates the user's previous session tokens
+    )
     db.commit()
 
     balance = get_user_credits(db, user.id)
-    return AuthResponse(
-        user_id=user.id,
-        email=user.email,
-        name=user.name,
-        role=getattr(user, "role", "both") or "both",
-        allowed_models=user.get_allowed_models(),
-        api_key=raw_key,
-        key_prefix=key_prefix,
-        credits=balance,
-    )
+    expires_at = datetime.utcnow() + timedelta(hours=ttl_hours) if ttl_hours > 0 else None
+    log.info(f"login ok: user_id={user.id} email={email} ip={ip} session_ttl_h={ttl_hours}")
+    return _auth_response(user, raw_token, key_prefix, balance,
+                          token_type="session", expires_at=expires_at)
+
+
+@app.post("/auth/logout")
+def auth_logout(
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Revoke the caller's session tokens (all of them, not just this one).
+
+    Additive endpoint: nothing existing depends on it, and it gives clients a
+    real way to end a session now that login tokens expire and are revocable.
+    """
+    from auth import revoke_tokens
+    revoked = revoke_tokens(db, user, token_type="session")
+    db.commit()
+    log.info(f"logout: user_id={user.id} revoked_sessions={revoked}")
+    return {"ok": True, "revoked": revoked}
 
 
 # ----------------------------------------------------------------------------
@@ -776,28 +959,38 @@ async def seed_test_user_if_empty():
                 reason="initial credit (seed)",
             ))
             raw_key, key_hash, key_prefix = generate_api_key()
-            user.password_hash = _hash_pw("password123")
+            user.password_hash = hash_password(_seed_password())
             db.add(ApiKey(
                 user_id=user.id,
                 key_hash=key_hash,
                 key_prefix=key_prefix,
                 label="seed-test-key",
+                token_type="api_key",
+                expires_at=None,
                 is_active=True,
             ))
             db.commit()
 
+            # Never log the seeded credential: write it to a 0600 file the
+            # operator can read, and keep the log line free of secrets.
             seed_path = os.environ.get("SEED_KEY_PATH", "/data/seed_api_key.txt")
-            with open(seed_path, "w") as f:
-                f.write(f"email: test@example.com\npassword: password123\nkey: {raw_key}\nkey_prefix: {key_prefix}\n")
-            log.info(f"=== SEED USER CREATED ===\n  email: test@example.com\n  password: password123\n  api_key: {raw_key}\n  (also written to {seed_path})")
+            try:
+                fd = os.open(seed_path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+                with os.fdopen(fd, "w") as f:
+                    f.write(
+                        f"email: test@example.com\n"
+                        f"password: {_seed_password()}\n"
+                        f"key: {raw_key}\n"
+                        f"key_prefix: {key_prefix}\n"
+                    )
+            except Exception as e:
+                log.warning(f"could not write seed credentials to {seed_path}: {e}")
+            log.info(
+                f"=== SEED USER CREATED === email=test@example.com "
+                f"key_prefix={key_prefix} credentials written to {seed_path} (mode 0600). "
+                f"Rotate or delete this account before any public deployment."
+            )
         else:
             log.info("DB already populated, skipping seed.")
-            # Make sure the test user has a password set (idempotent)
-            user = db.query(User).filter(User.email == "test@example.com").first()
-            if user:
-                if not user.password_hash:
-                    user.password_hash = _hash_pw("password123")
-                    db.commit()
-                    log.info("Set password_hash=password123 for seed user")
     finally:
         db.close()

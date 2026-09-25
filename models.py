@@ -30,9 +30,9 @@ class User(Base):
     id = Column(Integer, primary_key=True, index=True)
     email = Column(String, unique=True, index=True, nullable=False)
     name = Column(String, nullable=False)
-    password_hash = Column(String, nullable=True)  # SHA-256 hash; POC: use bcrypt/argon2 in prod
+    password_hash = Column(String, nullable=True)  # PBKDF2-SHA256 (legacy sha256 accepted once, then upgraded)
     is_active = Column(Boolean, default=True, nullable=False)
-    role = Column(String, default="both", nullable=False)        # provider | consumer | both
+    role = Column(String, default="both", nullable=False)        # provider | consumer | both | admin
     allowed_models = Column(Text, nullable=True)                 # JSON list or NULL = "all local, no cloud"
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
@@ -100,7 +100,13 @@ def _is_cloud_model_name(name: str) -> bool:
 
 
 class ApiKey(Base):
-    """An API key for a user. Keys are stored hashed; raw key shown once at creation."""
+    """An API key or session token for a user.
+
+    Keys are stored hashed (`key_hash`); the raw value is shown once at
+    creation. `token_type` separates long-lived API keys ("api_key") from
+    short-lived login tokens ("session"). `expires_at` is NULL for tokens
+    that do not expire (the default for API keys; see API_KEY_TTL_DAYS).
+    """
     __tablename__ = "api_keys"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -108,11 +114,23 @@ class ApiKey(Base):
     key_hash = Column(String, unique=True, index=True, nullable=False)
     key_prefix = Column(String, nullable=False)  # First 12 chars for display
     label = Column(String, nullable=True)
+    token_type = Column(String, default="api_key", nullable=False)  # api_key | session
+    expires_at = Column(DateTime, nullable=True)                   # NULL = never expires
     is_active = Column(Boolean, default=True, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     last_used_at = Column(DateTime, nullable=True)
 
     user = relationship("User", back_populates="api_keys")
+
+    @property
+    def is_expired(self) -> bool:
+        return self.expires_at is not None and self.expires_at <= datetime.utcnow()
+
+    @property
+    def expires_in_seconds(self) -> Optional[int]:
+        if self.expires_at is None:
+            return None
+        return int((self.expires_at - datetime.utcnow()).total_seconds())
 
 
 class CreditTransaction(Base):
@@ -186,7 +204,12 @@ class GpuNode(Base):
     # Inference backend this node exposes. "ollama" (default) talks Ollama's
     # /api/chat; "openai" talks any OpenAI-compatible server (LM Studio, LiteLLM, vLLM…).
     backend = Column(String, default="ollama", nullable=False)
-    api_key = Column(String, nullable=True)              # raw key the agent uses to call back to portal
+    # Node-agent credential. `api_key_hash` is the SHA-256 of the raw key and is
+    # authoritative; `api_key` is the legacy plaintext column kept only so
+    # pre-existing deployments keep working until the agent is restarted with a
+    # rotated key (see /nodes/{id}/rotate-key).
+    api_key = Column(String, nullable=True)              # legacy plaintext (deprecated)
+    api_key_hash = Column(String, nullable=True)         # SHA-256 of the agent key
     last_seen = Column(DateTime, nullable=True)
     total_hours = Column(Float, default=0.0, nullable=False)
     earnings_total = Column(Float, default=0.0, nullable=False)
