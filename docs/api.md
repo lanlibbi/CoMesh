@@ -5,6 +5,13 @@ Komplette Referenz aller HTTP-Endpoints des GPU-Pool-Portals.
 **Base-URL:** `http://portal-host:8765` (oder via Tailscale-MagicDNS)
 **Content-Type:** `application/json` (außer bei File-Uploads)
 
+> **Auth-Hardening (LANA-46):** Token-Modell, Rate-Limits, Brute-Force-Schutz
+> und Admin-Authentifizierung sind in **[auth.md](auth.md)** dokumentiert.
+> Kurzfassung: alle geschützten Endpoints nehmen `Authorization: Bearer <token>`,
+> wobei `/auth/register` + `POST /admin/users` einen langen API-Key (`gpu_…`)
+> und `/auth/login` ein Session-Token mit TTL (`sess_…`) ausgeben. Die
+> OpenAI-kompatible Oberfläche ist unverändert.
+
 ---
 
 ## Health
@@ -85,18 +92,26 @@ OpenAI-kompatibler Endpoint. Wird automatisch an den besten Node verteilt.
 
 Liste aller registrierten Nodes.
 
-**Response 200:**
+**Response 200:** reduzierte Projektion (öffentlich). `tailscale_ip`, `port`,
+`owner_id`, `earnings_total` und `total_hours` sind **nicht** enthalten; der
+volle Datensatz kommt über die authentifizierten Endpoints (`GET /nodes/my`,
+`GET /nodes/{id}` als Owner/Admin).
+
 ```json
 [
   {
     "id": 1,
-    "tailscale_ip": "portal-ip",
-    "port": 8080,
-    "gpu_model": "RTX 4090",
-    "vram_gb": 24,
-    "price_per_1k_tokens": 0.0005,
-    "enabled": true,
+    "name": "ai-lanlibbi (RTX 3080 + RTX 3060)",
+    "gpu_type": "NVIDIA RTX 3080 + RTX 3060",
+    "vram_gb": 22,
+    "status": "online",
+    "hourly_rate": 0.0,
+    "backend": "ollama",
     "last_seen": "2026-06-11T21:30:15",
+    "current_utilization": 0.12,
+    "vram_used_gb": 3.4,
+    "description": null,
+    "allowed_models": null,
     "created_at": "2026-06-01T10:00:00"
   },
   ...
@@ -105,7 +120,9 @@ Liste aller registrierten Nodes.
 
 ### `GET /nodes/{node_id}`
 
-Details zu einem Node.
+Details zu einem Node. Owner/Admin erhalten den vollen Datensatz (inkl.
+`tailscale_ip`, `port`, `earnings_total`), alle anderen die reduzierte
+Projektion; offline Nodes liefern für Nicht-Owner `404`.
 
 **Response 404:** Node nicht gefunden.
 
@@ -227,7 +244,9 @@ Aktueller Pool-Status.
 
 ### `GET /pool/jobs`
 
-Liste der letzten Jobs.
+Liste der letzten Jobs. **Auth:** Token erforderlich; die Liste ist auf die
+eigenen Jobs gescoped (eigene Requests **und** Jobs auf den eigenen Nodes).
+Admins sehen weiterhin alles (`ADMIN_EMAILS` / `role=admin`).
 
 **Query-Parameter:**
 - `limit` (default: 50)
