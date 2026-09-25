@@ -109,6 +109,24 @@ Credits verteilen). Jetzt gilt `auth.require_admin`:
   ausdrückliche POC-Notluke und loggt eine Warnung pro Request.
 - Zusätzlich `RATE_LIMIT_ADMIN_*` pro IP.
 
+**Deployment:** `docker-compose.yml` reicht `ADMIN_TOKEN`, `ADMIN_EMAILS` und
+`SESSION_TOKEN_TTL_HOURS` aus `./.env` an den API-Container durch. Auf dem
+Deploy-Host also `~/projects/opencode-poc/.env` (Mode `600`) anlegen:
+
+```
+ADMIN_TOKEN=<langes Zufallstoken>
+SESSION_TOKEN_TTL_HOURS=24
+```
+
+Ein Aufruf des Operator-Endpoints sieht dann so aus:
+
+```bash
+curl -X POST http://portal-host:8765/admin/users \
+  -H "X-Admin-Token: $ADMIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"email":"neu@example.com","name":"Neu","initial_credits":50}'
+```
+
 ## 6. Node-Agent-Keys
 
 - `agent_api_key` wird wie Tokens behandelt: nur `gpu_nodes.api_key_hash`

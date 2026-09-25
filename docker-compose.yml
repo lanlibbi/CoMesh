@@ -13,6 +13,14 @@ services:
       - DEFAULT_MODEL=qwen2.5-coder:7b
       - DATA_DIR=/data
       - DOCKER_ENV=1
+      # --- Auth hardening (see docs/auth.md) -------------------------------
+      # /admin/* is default-deny: without ADMIN_TOKEN or ADMIN_EMAILS every
+      # admin call is rejected with 401. Put the values in ./.env (not
+      # committed, chmod 600) - compose interpolates them here.
+      - ADMIN_TOKEN=${ADMIN_TOKEN:-}
+      - ADMIN_EMAILS=${ADMIN_EMAILS:-}
+      # TTL of the session token issued by /auth/login.
+      - SESSION_TOKEN_TTL_HOURS=${SESSION_TOKEN_TTL_HOURS:-24}
     volumes:
       - sqlite_data:/data
     extra_hosts:

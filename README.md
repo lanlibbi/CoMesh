@@ -141,6 +141,7 @@ Example client: [examples/client.py](examples/client.py)
 - [ARCHITECTURE.md](ARCHITECTURE.md) — ASCII diagram and data flows
 - [docs/architecture.md](docs/architecture.md) — deep-dive architecture
 - [docs/portal.md](docs/portal.md) — portal setup, config, API
+- [docs/auth.md](docs/auth.md) — token model, rate limits, brute-force protection, admin auth
 - [docs/node-agent.md](docs/node-agent.md) — node-agent setup, deployment, Tailscale
 - [docs/api.md](docs/api.md) — full API reference
 - [docs/tailscale.md](docs/tailscale.md) — network setup
@@ -208,6 +209,7 @@ gewählten Nodes.
 - [ARCHITECTURE.md](ARCHITECTURE.md) — ASCII-Diagramm und Datenflüsse
 - [docs/architecture.md](docs/architecture.md) — tiefer Architektur-Einblick
 - [docs/portal.md](docs/portal.md) — Portal-Setup, Konfiguration, API
+- [docs/auth.md](docs/auth.md) — Token-Modell, Rate-Limits, Brute-Force-Schutz, Admin-Auth
 - [docs/node-agent.md](docs/node-agent.md) — Node-Agent-Setup, Deployment, Tailscale
 - [docs/api.md](docs/api.md) — komplette API-Referenz
 - [docs/tailscale.md](docs/tailscale.md) — Netzwerk-Setup
