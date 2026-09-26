@@ -122,7 +122,7 @@ function navHTML(active) {
       <div class="flex items-center gap-1">
         <a href="index.html" class="nav-link ${active === "dashboard" ? "active" : ""}">Dashboard</a>
         <a href="chat.html" class="nav-link ${active === "chat" ? "active" : ""}">Chat</a>
-        <a href="credits.html" class="nav-link ${active === "credits" ? "active" : ""}">Credits</a>
+        
         <a href="pool.html" class="nav-link ${active === "pool" ? "active" : ""}">Pool</a>
         ${isProvider ? `<a href="nodes.html" class="nav-link ${active === "nodes" ? "active" : ""}">Nodes</a>` : ""}
         ${isProvider ? `<a href="earnings.html" class="nav-link ${active === "earnings" ? "active" : ""}">Earnings</a>` : ""}
