@@ -98,13 +98,57 @@
       </div>
     </div>
 
+    <!-- Bulk Actions -->
+    <div x-show="selectedNodes.length > 0" class="mb-4 p-3 bg-white/5 rounded-md">
+      <div class="flex justify-between items-center">
+        <div>
+          <span class="font-medium" x-text="selectedNodes.length"></span> Nodes ausgewählt
+        </div>
+        <div class="flex gap-2">
+          <button class="btn-primary text-xs px-3" @click="bulkToggleStatus()">Status umschalten</button>
+          <button class="btn-ghost text-xs px-3" @click="showBulkWhitelist = true">Whitelist setzen</button>
+          <button class="btn-ghost text-xs px-3" @click="clearSelection()">Auswahl aufheben</button>
+        </div>
+      </div>
+      
+      <!-- Bulk Whitelist Modal -->
+      <div x-show="showBulkWhitelist" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+        <div class="bg-white/90 rounded-xl p-6 w-full max-w-md backdrop-blur-sm">
+          <h3 class="text-xl font-bold mb-4">Bulk Whitelist setzen</h3>
+          <p class="text-sm text-[color:var(--text-dim)] mb-4">
+            Wähle Modelle aus, die für alle ausgewählten Nodes erlaubt sein sollen.
+          </p>
+          
+          <div class="border border-white/10 rounded p-3 max-h-60 overflow-y-auto space-y-1 mb-4">
+            <template x-for="m in availableModels" :key="m.name">
+              <label class="flex items-center gap-2 text-sm cursor-pointer hover:bg-white/5 px-1 rounded">
+                <input type="checkbox" :checked="bulkWhitelist.includes(m.name)" @change="toggleBulkWhitelistModel(m.name)" />
+                <span x-text="m.name" class="flex-1"></span>
+                <span x-show="m.is_cloud" class="pill pill-busy text-[10px]">cloud</span>
+                <span x-text="(m.size_gb || 0) + ' GB'" class="text-xs text-[color:var(--text-dim)]"></span>
+              </label>
+            </template>
+            <div x-show="availableModels.length === 0" class="text-xs text-[color:var(--text-dim)]">
+              Lade Modelle…
+            </div>
+          </div>
+          
+          <div class="mt-2 flex gap-2">
+            <button class="btn-primary text-xs px-4" @click="applyBulkWhitelist()">Anwenden</button>
+            <button class="btn-ghost text-xs px-4" @click="showBulkWhitelist = false">Abbrechen</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <h2 class="text-xl font-semibold mt-10 mb-3">Meine registrierten Nodes</h2>
     <div class="space-y-3">
       <template x-for="n in myNodes" :key="n.id">
         <div class="card glass">
           <div class="flex justify-between items-start gap-3">
-            <div>
-              <div class="flex items-center gap-2">
+            <div class="flex items-center gap-2">
+              <input type="checkbox" :checked="isNodeSelected(n.id)" @change="toggleNodeSelection(n.id)" class="h-4 w-4 text-primary rounded border-gray/50" />
+              <div>
                 <h4 class="font-semibold" x-text="n.name"></h4>
                 <span :class="statusPillClass(n)" x-text="n.status"></span>
                 <span x-show="!n.is_enabled" class="pill pill-disabled">paused</span>
