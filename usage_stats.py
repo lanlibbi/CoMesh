@@ -244,6 +244,48 @@ def _build_series(
     return out
 
 
+def _latency_rows(db: Session, since: Optional[datetime], user_id: Optional[int] = None):
+    """
+    Grouped latency rows from `pool_jobs` (the only place latency is stored).
+
+    Returns rows of (user_id_or_None, model, avg_ms, count). Callers that need
+    every user must pass `user_id=None` and fold with `_fold_latency` — issuing
+    this per user would degrade the admin view into N+1.
+    """
+    q = db.query(
+        PoolJob.user_id,
+        PoolJob.model,
+        func.avg(PoolJob.latency_ms),
+        func.count(PoolJob.id),
+    ).filter(PoolJob.latency_ms > 0, PoolJob.status == "succeeded")
+    if user_id is not None:
+        q = q.filter(PoolJob.user_id == user_id)
+    if since is not None:
+        q = q.filter(PoolJob.finished_at >= since)
+    return q.group_by(PoolJob.user_id, PoolJob.model).all()
+
+
+def _fold_latency(rows) -> Tuple[Dict[str, int], Optional[int]]:
+    """Reduce (user, model, avg_ms, n) rows to ({model: avg}, overall) — count-weighted."""
+    per_model: Dict[str, int] = {}
+    weighted: Dict[str, float] = {}
+    counts: Dict[str, int] = {}
+    total_weighted = 0.0
+    total_count = 0
+    for _uid, model, avg_ms, n in rows:
+        if model is None or not n:
+            continue
+        n = int(n)
+        weighted[model] = weighted.get(model, 0.0) + float(avg_ms or 0) * n
+        counts[model] = counts.get(model, 0) + n
+        total_weighted += float(avg_ms or 0) * n
+        total_count += n
+    for model, w in weighted.items():
+        per_model[model] = int(round(w / counts[model])) if counts[model] else 0
+    overall = int(round(total_weighted / total_count)) if total_count else None
+    return per_model, overall
+
+
 def _latency_by_model(db: Session, since: Optional[datetime], user_id: Optional[int] = None) -> Tuple[Dict[str, int], Optional[int]]:
     """
     Average latency per model from `pool_jobs` (the only place latency is stored).
@@ -253,27 +295,7 @@ def _latency_by_model(db: Session, since: Optional[datetime], user_id: Optional[
     that never reached a node (routing failures) have no latency and are absent
     from both sides of this average.
     """
-    q = db.query(
-        PoolJob.model,
-        func.avg(PoolJob.latency_ms),
-        func.count(PoolJob.id),
-    ).filter(PoolJob.latency_ms > 0, PoolJob.status == "succeeded")
-    if user_id is not None:
-        q = q.filter(PoolJob.user_id == user_id)
-    if since is not None:
-        q = q.filter(PoolJob.finished_at >= since)
-
-    per_model: Dict[str, int] = {}
-    weighted = 0.0
-    counted = 0
-    for model, avg_ms, n in q.group_by(PoolJob.model).all():
-        if model is None or not n:
-            continue
-        per_model[model] = int(round(float(avg_ms or 0)))
-        weighted += float(avg_ms or 0) * int(n)
-        counted += int(n)
-    overall = int(round(weighted / counted)) if counted else None
-    return per_model, overall
+    return _fold_latency(_latency_rows(db, since, user_id=user_id))
 
 
 def _model_rows(db: Session, since: Optional[datetime], user_id: Optional[int] = None):
@@ -407,8 +429,6 @@ def build_admin_usage(
     since = window_start(key)
     now = datetime.utcnow()
 
-    per_user_latency: Dict[int, Dict[str, int]] = {}
-
     # Per (user, model) aggregation: one query, grouped twice in Python.
     q = db.query(
         Usage.user_id,
@@ -429,6 +449,13 @@ def build_admin_usage(
     for row in q.all():
         grouped.setdefault(int(row[0]), []).append(row[1:])
 
+    # One latency query for all users, grouped by (user, model) — never per user.
+    latency_rows: Dict[int, List] = {}
+    for uid, model, avg_ms, n in _latency_rows(db, since, user_id=None):
+        if uid is None:
+            continue
+        latency_rows.setdefault(int(uid), []).append((uid, model, avg_ms, n))
+
     users: List[AdminUsageUserOut] = []
     if grouped:
         user_rows = db.query(User).filter(User.id.in_(list(grouped.keys()))).all()
@@ -438,8 +465,8 @@ def build_admin_usage(
             model_rows = grouped.get(u.id, [])
             # row shape here is (model, count, prompt, completion, total, credits, min, max)
             user_tokens = sum(int(r[4] or 0) for r in model_rows)
-            per_user_latency[u.id] = _latency_by_model(db, since, user_id=u.id)[0]
-            models = _model_out(model_rows, per_user_latency[u.id], user_tokens)
+            per_model_latency = _fold_latency(latency_rows.get(u.id, []))[0]
+            models = _model_out(model_rows, per_model_latency, user_tokens)
             users.append(AdminUsageUserOut(
                 user_id=u.id,
                 email=u.email,

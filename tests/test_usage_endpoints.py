@@ -293,3 +293,66 @@ def test_admin_usage_limit_and_window_validation(client, admin_headers):
     limited = client.get("/admin/usage", headers=admin_headers,
                          params={"window": "all", "limit": 1}).json()
     assert len(limited["users"]) <= 1
+
+
+def test_admin_usage_query_count_is_flat_in_user_count(db_session):
+    """
+    Regression guard: the admin view used to call the latency aggregation once
+    per user row (N+1 — 1 extra query per user). It must stay constant.
+
+    Statement counting, not timing: timings are flaky under load, a query count
+    is deterministic.
+    """
+    from sqlalchemy import event
+
+    from database import SessionLocal, engine, init_db
+    from usage_stats import build_admin_usage
+
+    # Self-sufficient: this test must not depend on another test having booted
+    # the app (the session-scoped `client` fixture is what creates the tables).
+    init_db()
+
+    def _seed(n_users, tag):
+        db = SessionLocal()
+        try:
+            now = _now()
+            for i in range(n_users):
+                u = User(email=f"nplus1-{tag}-{i}@example.com", name=f"N+1 {i}",
+                         is_active=True, role="both")
+                db.add(u)
+                db.flush()
+                db.add(Usage(user_id=u.id, api_key_id=None, model="nplus1-model",
+                             prompt_tokens=10, completion_tokens=10, total_tokens=20,
+                             credits_charged=0.00002, created_at=now - timedelta(minutes=5)))
+                db.add(PoolJob(user_id=u.id, node_id=None, model="nplus1-model",
+                               source="local", status="succeeded", prompt_tokens=0,
+                               completion_tokens=0, total_tokens=0, job_cost=0.0,
+                               latency_ms=250, started_at=now, finished_at=now))
+            db.commit()
+        finally:
+            db.close()
+
+    counts = []
+    for n_users in (2, 12):
+        _seed(n_users, f"x{n_users}")
+        counter = {"n": 0}
+
+        def _count(conn, cursor, statement, parameters, context, executemany):
+            counter["n"] += 1
+
+        event.listen(engine, "before_cursor_execute", _count)
+        db = SessionLocal()
+        try:
+            out = build_admin_usage(db, window="24h", limit=500)
+        finally:
+            db.close()
+            event.remove(engine, "before_cursor_execute", _count)
+
+        assert out.totals.requests >= n_users
+        counts.append(counter["n"])
+
+    # 10 extra users must not add a single statement.
+    assert counts[0] == counts[1], (
+        f"query count grew with user count: {counts[0]} statements for 2 users, "
+        f"{counts[1]} for 12 — the admin aggregation is N+1 again"
+    )
