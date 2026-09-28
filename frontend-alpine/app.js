@@ -142,6 +142,8 @@ const NAV_ITEMS = [
   { key: "dashboard", href: "index.html", label: "Dashboard" },
   { key: "chat", href: "chat.html", label: "Chat" },
   { key: "usage", href: "usage.html", label: "Usage" },
+  // Admin-only view of every user's consumption; the server gates /admin/usage too.
+  { key: "admin-usage", href: "admin-usage.html", label: "Admin", adminOnly: true },
   { key: "pool", href: "pool.html", label: "Pool" },
   { key: "nodes", href: "nodes.html", label: "Nodes", providerOnly: true },
   { key: "earnings", href: "earnings.html", label: "Earnings", providerOnly: true },
@@ -152,8 +154,13 @@ const NAV_ITEMS = [
 function navHTML(active) {
   const user = Auth.currentUser() || {};
   const isProvider = Auth.hasRole("provider");
+  // Deliberately NOT Auth.hasRole("admin"): that helper treats role "both" as
+  // satisfying any role, which would show the Admin tab to every normal user.
+  // Admin is a privileged role, never implied by "both".
+  const isAdmin = ((user.role || "both") || "").toLowerCase() === "admin";
   const links = NAV_ITEMS
     .filter((i) => !i.providerOnly || isProvider)
+    .filter((i) => !i.adminOnly || isAdmin)
     .map((i) => `<a href="${i.href}" class="nav-link${active === i.key ? " active" : ""}">${i.label}</a>`)
     .join("");
 
