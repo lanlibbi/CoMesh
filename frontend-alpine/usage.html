@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Usage · GPU-Pool</title>
+<meta name="color-scheme" content="dark" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="style.css" />
+</head>
+<body x-data="usagePage()" x-init="init()">
+  <div x-html="navHTML('usage')"></div>
+
+  <main class="shell">
+    <div class="page-head">
+      <div class="eyebrow">Verbrauch</div>
+      <h1>Usage</h1>
+      <p class="lede">
+        Welche Modelle du nutzt und wie viele Token dabei durchlaufen.
+        Aggregiert serverseitig aus jedem <code class="inline">/v1/chat/completions</code>-Aufruf.
+      </p>
+    </div>
+
+    <!-- Window switcher -->
+    <div class="row wrap mb-4" role="group" aria-label="Zeitraum">
+      <template x-for="w in windows" :key="w.key">
+        <button type="button"
+                class="btn-ghost btn-sm"
+                :class="window === w.key ? 'is-active' : ''"
+                :aria-pressed="window === w.key ? 'true' : 'false'"
+                @click="setWindow(w.key)"
+                x-text="w.label"></button>
+      </template>
+      <span class="hint grow right" x-text="loading ? 'Lädt…' : rangeText()"></span>
+      <button type="button" class="btn-ghost btn-sm btn-quiet" @click="load()" :disabled="loading">Aktualisieren</button>
+    </div>
+
+    <div x-show="error" x-cloak class="notice mb-4">
+      <span class="notice-icon" aria-hidden="true">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 9v4M12 17h.01"/>
+          <path d="M10.3 3.9 2.4 18a2 2 0 0 0 1.7 3h15.8a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/>
+        </svg>
+      </span>
+      <div class="grow">
+        <div class="semibold">Usage konnte nicht geladen werden</div>
+        <p class="t-sm text-dim mt-1" x-text="error"></p>
+      </div>
+    </div>
+
+    <!-- Totals -->
+    <div class="grid mb-4">
+      <div class="card span-3">
+        <div class="stat">
+          <div class="eyebrow">Token gesamt</div>
+          <div class="stat-value brass" x-text="fmtCompact(totals.total_tokens || 0)"></div>
+          <div class="stat-sub" x-text="fmtNumber(totals.total_tokens || 0) + ' Token'"></div>
+        </div>
+      </div>
+      <div class="card span-3">
+        <div class="stat">
+          <div class="eyebrow">Requests</div>
+          <div class="stat-value" x-text="fmtNumber(totals.requests || 0)"></div>
+          <div class="stat-sub" x-text="'Ø ' + tokensPerRequest(totals) + ' Token / Request'"></div>
+        </div>
+      </div>
+      <div class="card span-3">
+        <div class="stat">
+          <div class="eyebrow">Modelle</div>
+          <div class="stat-value" x-text="fmtNumber(totals.models_used || 0)"></div>
+          <div class="stat-sub">verschiedene Modelle verwendet</div>
+        </div>
+      </div>
+      <div class="card span-3">
+        <div class="stat">
+          <div class="eyebrow">Credits</div>
+          <div class="stat-value brass" x-text="fmtCredits(totals.credits || 0)"></div>
+          <div class="stat-sub" x-text="'Ø Latenz ' + fmtLatency(totals.avg_latency_ms)"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Per-model bars + series -->
+    <div class="grid mb-4">
+      <div class="card span-7">
+        <div class="panel-head">
+          <div>
+            <div class="eyebrow">Verteilung</div>
+            <h3>Token je Modell</h3>
+            <p x-text="windowLabel()"></p>
+          </div>
+          <div class="right">
+            <div class="eyebrow" style="justify-content:flex-end">Requests</div>
+            <div class="t-xl num semibold" x-text="fmtNumber(totals.requests || 0)"></div>
+          </div>
+        </div>
+
+        <div x-show="loading && !models.length" class="t-sm text-mute">Lädt…</div>
+
+        <div x-show="!loading && models.length === 0" class="empty">
+          <span class="empty-mark" aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 3v18h18"/><path d="M7 15l3-4 3 2 5-7"/>
+            </svg>
+          </span>
+          <p>In diesem Zeitraum wurde noch nichts verbraucht.</p>
+          <p class="t-sm text-dim mt-2">
+            <a href="chat.html" class="link">Chat öffnen</a> oder den Zeitraum auf „Gesamt“ stellen.
+          </p>
+        </div>
+
+        <div>
+          <template x-for="(m, i) in models" :key="m.model">
+            <div class="mb-4">
+              <div class="row wrap">
+                <span class="mono" x-text="m.model"></span>
+                <span class="grow"></span>
+                <span class="chip" x-text="sharePct(m)"></span>
+              </div>
+              <div class="meter mt-1">
+                <div :style="`width:${barPct(m)}%;background:${modelHue(i)}`"></div>
+              </div>
+              <div class="row wrap mt-1">
+                <span class="t-xs text-dim num" x-text="fmtTokens(m.total_tokens) + ' Token'"></span>
+                <span class="t-xs text-mute num" x-text="'↑ ' + fmtTokens(m.prompt_tokens) + ' · ↓ ' + fmtTokens(m.completion_tokens)"></span>
+                <span class="grow"></span>
+                <span class="t-xs text-mute num" x-text="fmtNumber(m.requests) + ' Requests'"></span>
+                <span class="t-xs text-mute num" x-text="'Ø ' + fmtLatency(m.avg_latency_ms)"></span>
+              </div>
+            </div>
+          </template>
+        </div>
+      </div>
+
+      <div class="card span-5">
+        <div class="panel-head">
+          <div>
+            <div class="eyebrow">Verlauf</div>
+            <h3>Token je <span x-text="data && data.granularity === 'hour' ? 'Stunde' : 'Tag'"></span></h3>
+            <p>Leere Abschnitte heißen: keine Anfrage.</p>
+          </div>
+        </div>
+        <canvas id="usageSeries" style="width:100%;height:200px;display:block"></canvas>
+
+        <div class="divider inset"></div>
+        <div class="stat-row">
+          <span class="k">Zeitraum</span>
+          <span class="v t-xs" x-text="rangeText()"></span>
+        </div>
+        <div class="stat-row">
+          <span class="k">Letzte Aktivität</span>
+          <span class="v t-xs" x-text="recent.length ? timeAgo(recent[0].created_at) : '—'"></span>
+        </div>
+        <div class="stat-row">
+          <span class="k">Credits verbraucht</span>
+          <span class="v" x-text="fmtCredits(totals.credits || 0)"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recent requests -->
+    <div class="card">
+      <div class="panel-head">
+        <div>
+          <div class="eyebrow">Protokoll</div>
+          <h3>Letzte Requests</h3>
+          <p x-text="'Die jüngsten ' + recent.length + ' Aufrufe in diesem Zeitraum.'"></p>
+        </div>
+      </div>
+
+      <div x-show="!loading && recent.length === 0" class="empty">
+        <p>Keine Requests in diesem Zeitraum.</p>
+      </div>
+
+      <div x-show="recent.length > 0" class="table-wrap">
+        <table class="tbl">
+          <thead>
+            <tr>
+              <th>Wann</th>
+              <th>Modell</th>
+              <th>Prompt</th>
+              <th>Completion</th>
+              <th>Token</th>
+              <th>Credits</th>
+            </tr>
+          </thead>
+          <tbody>
+            <template x-for="r in recent" :key="r.id">
+              <tr>
+                <td class="t-xs text-dim nowrap" x-text="fmtDate(r.created_at)"></td>
+                <td class="mono" x-text="r.model"></td>
+                <td class="num" x-text="fmtNumber(r.prompt_tokens)"></td>
+                <td class="num" x-text="fmtNumber(r.completion_tokens)"></td>
+                <td class="num" x-text="fmtNumber(r.total_tokens)"></td>
+                <td class="num neg" x-text="'-' + fmtCredits(r.credits)"></td>
+              </tr>
+            </template>
+          </tbody>
+        </table>
+      </div>
+
+      <p class="hint mt-3">
+        Quelle: <code class="inline">GET /v1/me/usage?window=24h|7d|30d|all</code> —
+        Aggregation pro Modell, Zeitraum und Request.
+      </p>
+    </div>
+  </main>
+
+      <script defer src="https://unpkg.com/alpinejs@3.5.1/dist/cdn.min.js"></script>
+<script src="app.js"></script>
+  <script src="usage.js"></script>
+</body>
+</html>
