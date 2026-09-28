@@ -50,6 +50,7 @@ from payments import router as payments_router
 from frontend import router as frontend_router
 from nodes import router as nodes_router
 from pool import router as pool_router, distribute_revenue
+from usage_stats import ensure_usage_indexes, router as usage_router
 from ws import router as ws_router  # Phase 1: WebSocket outbound layer
 
 # ----------------------------------------------------------------------------
@@ -93,6 +94,7 @@ async def lifespan(app: FastAPI):
     _ensure_user_settings()
     _ensure_node_allowed_models()
     _ensure_node_ws_columns()
+    ensure_usage_indexes()
     await seed_test_user_if_empty()
     await seed_admin_user()
     log.info(f"GPU-Pool POC started. Ollama URL: {OLLAMA_URL}, default model: {DEFAULT_MODEL}")
@@ -127,6 +129,7 @@ app.include_router(payments_router)
 app.include_router(frontend_router)
 app.include_router(nodes_router)
 app.include_router(pool_router)
+app.include_router(usage_router)  # GET /v1/me/usage (per-user token aggregation)
 app.include_router(ws_router)  # Phase 1: WebSocket /agent/connect + /nodes/{id}/connection
 
 

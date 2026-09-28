@@ -61,6 +61,7 @@ from models import (
     User,
     get_user_credits,
 )
+from usage_stats import AdminUsageOut, build_admin_usage
 
 log = logging.getLogger("gpu-pool.admin")
 
@@ -1112,3 +1113,26 @@ def admin_enable_node(
     )
     log.info(f"admin {admin.email}: node {node.id} is_enabled -> {result.get('is_enabled')} (owner {user_id})")
     return _build(EnableNodeResponse, result)
+
+
+# ----------------------------------------------------------------------------
+# Usage analytics (platform-wide)
+# ----------------------------------------------------------------------------
+@router.get("/usage", response_model=AdminUsageOut)
+def admin_usage(
+    window: str = Query("7d", description="24h | 7d | 30d | all"),
+    limit: int = Query(50, ge=1, le=MAX_PAGE, description="Max users returned, heaviest first"),
+    include_inactive: bool = Query(True, description="False = only active accounts"),
+    admin: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    """
+    Token/credit usage of every user, per model — the admin counterpart to
+    GET /v1/me/usage. Same aggregation, no user filter.
+    """
+    result = build_admin_usage(db, window=window, limit=limit, include_inactive=include_inactive)
+    log.info(
+        f"admin {admin.email}: usage window={result.window} users={len(result.users)} "
+        f"tokens={result.totals.total_tokens}"
+    )
+    return result
