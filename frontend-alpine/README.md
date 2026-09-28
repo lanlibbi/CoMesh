@@ -87,6 +87,7 @@ damit die Navigation nicht zwischen Seiten auseinanderläuft.
 | `/earnings.html` | Einnahmen pro Node/Event (Provider) |
 | `/profile.html` | Rolle + Modell-Whitelist |
 | `/agent.html` | Node-Agent-Setup |
+| `/usage.html` | Usage: Token/Requests/Credits je Modell, Zeitraum-Umschalter |
 
 ## Architektur
 
@@ -118,12 +119,17 @@ docker compose up -d frontend
 - `POST /api/nodes/register` · `POST /api/nodes/{id}/heartbeat`
 - `GET  /api/nodes/stats/summary` · `POST /api/nodes/{id}/enable`
 - `GET  /api/pool/earnings/mine`
+- `GET  /api/v1/me/usage?window=24h|7d|30d|all` — Aggregation pro Modell
+  (Token, Requests, Credits, Share, Ø-Latenz, Verlaufs-Serie, letzte Requests)
 
 ## POC-Grenzen
 
 - Kein echtes Stripe: die Kauf-Buttons legen nur einen Aufladewunsch an
   (localStorage), den ein Admin bestätigt.
-- Das Nutzungsdiagramm im Dashboard zeigt 7 leere Tage — es gibt noch keinen
-  `/v1/stats`-Endpunkt.
+- Das Nutzungsdiagramm liest `GET /v1/me/usage` (7-Tage-Fenster). Der
+  Zeitraum-Umschalter (24 h / 7 Tage / 30 Tage / Gesamt) lebt im
+  [Usage-Tab](/usage.html) — das Dashboard-Panel bleibt bewusst fest auf 7 Tage.
+- Die Ø-Latenz kommt aus `pool_jobs`, nicht aus `usages` — Requests, die nie an
+  eine Node geroutet wurden, tauchen in der Latenz nicht auf (Token schon).
 - Passwörter liegen als SHA-256 im Backend — für den POC okay, produktiv
   bcrypt/argon2.
