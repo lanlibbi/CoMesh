@@ -1,104 +1,139 @@
 <!doctype html>
-<html lang="en">
+<html lang="de">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Register · GPU-Pool POC</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+<title>Registrieren · GPU-Pool</title>
+<meta name="color-scheme" content="dark" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-<main class="min-h-screen flex items-center justify-center px-4 py-8">
-  <div class="card glass w-full max-w-lg" x-data="registerForm()">
-    <div class="text-center mb-6">
-      <h1 class="text-2xl font-bold gradient-text">⚡ GPU-Pool</h1>
-      <p class="text-[color:var(--text-dim)] mt-1 text-sm">Create your account · Get 100 free credits</p>
-    </div>
+<main class="auth-wrap">
+  <section class="auth-aside">
+    <a href="index.html" class="brand">
+      <span class="brand-mark" aria-hidden="true">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M13 2 4.5 13.5H11l-1 8.5 8.5-11.5H12l1-8.5Z"/>
+        </svg>
+      </span>
+      <span class="brand-text">
+        <strong>GPU-Pool</strong>
+        <span>Community Compute</span>
+      </span>
+    </a>
 
-    <form @submit.prevent="submit()" class="space-y-4">
-      <div>
-        <label class="label">Name</label>
-        <input class="input" x-model="name" required placeholder="Ada Lovelace" />
+    <h1>Konto anlegen, 100 Credits zum Start.</h1>
+    <p>
+      Ein Konto deckt beides ab: die API nutzen und eigene GPUs bereitstellen. Die Rolle
+      legt fest, was freigeschaltet wird — im Profil jederzeit änderbar.
+    </p>
+
+    <ul class="auth-points">
+      <li><span class="idx">→</span><span><b>Consumer.</b> API nutzen, keine Hardware bereitstellen. Für Rechner ohne nutzbare GPU.</span></li>
+      <li><span class="idx">→</span><span><b>Provider.</b> Nodes registrieren und Credits verdienen, keine eigenen API-Calls.</span></li>
+      <li><span class="idx">→</span><span><b>Beides.</b> Voller Zugriff — Einbringen und Nutzen gleichzeitig.</span></li>
+    </ul>
+  </section>
+
+  <section class="card auth-card" x-data="registerForm()" x-init="init()">
+    <div class="eyebrow">Neues Konto</div>
+    <h2>Registrieren</h2>
+
+    <form @submit.prevent="submit()" class="stack tight mt-4">
+      <div class="field">
+        <label class="label" for="name">Name</label>
+        <input class="input" id="name" x-model="name" required placeholder="Vor- und Nachname" />
       </div>
-      <div>
-        <label class="label">Email</label>
-        <input class="input" type="email" x-model="email" required autocomplete="email" placeholder="you@example.com" />
+      <div class="field">
+        <label class="label" for="email">E-Mail</label>
+        <input class="input" id="email" type="email" x-model="email" required
+               autocomplete="email" placeholder="name@beispiel.de" />
       </div>
-      <div>
-        <label class="label">Password</label>
-        <input class="input" type="password" x-model="password" required minlength="6" autocomplete="new-password" placeholder="At least 6 characters" />
+      <div class="field">
+        <label class="label" for="password">Passwort</label>
+        <input class="input" id="password" type="password" x-model="password" required minlength="6"
+               autocomplete="new-password" placeholder="mindestens 6 Zeichen" />
       </div>
 
-      <div>
-        <label class="label">Rolle</label>
-        <div class="space-y-2 mt-1">
-          <label class="flex items-start gap-2 cursor-pointer">
-            <input type="radio" name="role" value="consumer" x-model="role" class="mt-1" />
-            <span>
-              <span class="font-semibold">Nur Consumer</span>
-              <span class="block text-xs text-[color:var(--text-dim)]">Nur API nutzen, keine Nodes registrieren. Für schwache PCs.</span>
+      <fieldset class="field" style="border:0;padding:0;margin:0">
+        <legend class="label" style="padding:0">Rolle</legend>
+        <div class="stack" style="gap:2px;margin-top:4px">
+          <label class="check">
+            <input type="radio" name="role" value="consumer" x-model="role" />
+            <span class="check-body">
+              <span class="check-title">Nur Consumer</span>
+              <span class="check-sub">API nutzen, keine Nodes registrieren.</span>
             </span>
           </label>
-          <label class="flex items-start gap-2 cursor-pointer">
-            <input type="radio" name="role" value="provider" x-model="role" class="mt-1" />
-            <span>
-              <span class="font-semibold">Nur Provider</span>
-              <span class="block text-xs text-[color:var(--text-dim)]">Eigene GPU(s) teilen, keine API-Calls.</span>
+          <label class="check">
+            <input type="radio" name="role" value="provider" x-model="role" />
+            <span class="check-body">
+              <span class="check-title">Nur Provider</span>
+              <span class="check-sub">Eigene GPUs teilen, keine API-Calls.</span>
             </span>
           </label>
-          <label class="flex items-start gap-2 cursor-pointer">
-            <input type="radio" name="role" value="both" x-model="role" class="mt-1" />
-            <span>
-              <span class="font-semibold">Beides</span>
-              <span class="block text-xs text-[color:var(--text-dim)]">GPU teilen UND API nutzen (Default).</span>
+          <label class="check">
+            <input type="radio" name="role" value="both" x-model="role" />
+            <span class="check-body">
+              <span class="check-title">Beides</span>
+              <span class="check-sub">GPUs teilen und API nutzen — Standard.</span>
             </span>
           </label>
         </div>
-      </div>
+      </fieldset>
 
-      <details class="border border-white/10 rounded p-3">
-        <summary class="cursor-pointer text-sm font-semibold">
-          Modelle, die du nutzen möchtest
-          <span class="text-xs text-[color:var(--text-dim)] font-normal">(optional — leer = Standard: alle lokal, keine Cloud)</span>
+      <details class="disclosure">
+        <summary>
+          Modelle einschränken
+          <span class="hint">optional — leer bedeutet: alle lokalen Modelle, keine Cloud</span>
         </summary>
-        <div class="mt-3 space-y-2">
-          <div class="border border-white/10 rounded p-2 max-h-48 overflow-y-auto space-y-1">
+        <div class="mt-3 stack tight">
+          <div class="option-list">
             <template x-for="m in availableModels" :key="m.name">
-              <label class="flex items-center gap-2 text-sm cursor-pointer hover:bg-white/5 px-1 rounded">
+              <label class="check">
                 <input type="checkbox" :checked="selectedModels.includes(m.name)" @change="toggleModel(m.name)" />
-                <span x-text="m.name" class="flex-1"></span>
-                <span x-show="m.is_cloud" class="pill pill-busy text-[10px]">cloud</span>
-                <span x-text="(m.size_gb || 0) + ' GB'" class="text-xs text-[color:var(--text-dim)]"></span>
+                <span class="check-body row" style="gap:8px">
+                  <span class="grow" x-text="m.name"></span>
+                  <span x-show="m.is_cloud" class="pill pill-busy pill-flat">cloud</span>
+                  <span class="t-xs text-mute num" x-text="(m.size_gb || 0) + ' GB'"></span>
+                </span>
               </label>
             </template>
-            <div x-show="availableModels.length === 0" class="text-xs text-[color:var(--text-dim)]">Lade Modelle…</div>
+            <div x-show="availableModels.length === 0" class="t-xs text-mute" style="padding:8px 10px">
+              Modelle werden geladen…
+            </div>
           </div>
-          <label class="flex items-center gap-2 text-sm">
+          <label class="check">
             <input type="checkbox" x-model="allowCloud" />
-            <span>Cloud-Modelle erlauben (z.B. wenn du im Urlaub bist und deine lokalen Tokens nicht nutzt)</span>
+            <span class="check-body">
+              <span class="check-title">Cloud-Modelle erlauben</span>
+              <span class="check-sub">Sinnvoll, wenn die lokale Hardware gerade nicht verfügbar ist.</span>
+            </span>
           </label>
-          <p class="text-xs text-[color:var(--text-dim)]">
-            Du kannst das später im <a href="profile.html" class="text-brand">Profil</a> jederzeit ändern.
-          </p>
+          <p class="hint">Später im <a href="profile.html" class="link">Profil</a> jederzeit änderbar.</p>
         </div>
       </details>
 
-      <div x-show="error" class="text-sm text-[color:var(--err)]" x-text="error"></div>
+      <div x-show="error" class="t-sm text-err" x-text="error"></div>
 
-      <button type="submit" class="btn-primary w-full justify-center" :disabled="loading">
-        <span x-show="!loading">Create account</span>
-        <span x-show="loading">Creating…</span>
+      <button type="submit" class="btn-primary btn-block mt-1" :disabled="loading">
+        <span x-show="!loading">Konto anlegen</span>
+        <span x-show="loading">Wird angelegt…</span>
       </button>
     </form>
 
-    <p class="text-center text-sm text-[color:var(--text-dim)] mt-6">
-      Already have an account?
-      <a href="login.html" class="text-[color:var(--brand)] hover:underline">Sign in</a>
+    <p class="auth-alt">
+      Schon registriert?
+      <a href="login.html" class="link">Anmelden</a>
     </p>
-  </div>
+  </section>
 </main>
 
+<script defer src="https://unpkg.com/alpinejs@3.5.1/dist/cdn.min.js"></script>
 <script src="app.js"></script>
 <script>
 function registerForm() {
@@ -149,10 +184,10 @@ function registerForm() {
           credits: r.credits, role: r.role, allowed_models: r.allowed_models,
         }, r.api_key);
         sessionStorage.setItem("just_registered_key", r.api_key);
-        toast("Account created! 100 credits granted.");
+        toast("Konto angelegt — 100 Credits gutgeschrieben.");
         setTimeout(() => { window.location.href = "index.html?new=1"; }, 500);
       } catch (e) {
-        this.error = e.message || "Registration failed";
+        this.error = e.message || "Registrierung fehlgeschlagen";
       } finally {
         this.loading = false;
       }

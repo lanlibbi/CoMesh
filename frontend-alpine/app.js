@@ -1,7 +1,11 @@
-// GPU-Pool Frontend - shared logic
-// Vanilla JS, Alpine.js for reactivity. Talks to backend at /api/* (proxied by nginx).
+// GPU-Pool — shared client (Alpine frontend)
+// Vanilla JS + Alpine.js. Talks to the backend at /api/* (proxied by nginx).
+//
+// This file also owns the app-wide chrome: the animated background field is
+// injected here, so every view gets the identical effect and it can never
+// drift between pages.
 
-const API_BASE = "/api"; // same-origin; nginx strips /api prefix before proxying
+const API_BASE = "/api"; // same-origin; nginx strips the /api prefix before proxying
 
 // ---------- LocalStorage helpers ----------
 const LS = {
@@ -49,8 +53,8 @@ const Auth = {
     return true;
   },
   save(user, apiKey) {
-    // 'role' may or may not be present on the user object (older callers);
-    // default to 'both' so the UI treats unknown roles as fully featured.
+    // 'role' may be missing on older callers; default to 'both' so the UI
+    // treats unknown roles as fully featured.
     if (user && !user.role) user.role = "both";
     LS.set("user", user);
     LS.set("api_key", apiKey);
@@ -70,7 +74,7 @@ const Auth = {
   requireProviderOrRedirect(target = "chat.html") {
     if (!this.isLoggedIn()) { window.location.href = "login.html"; return false; }
     if (!this.hasRole("provider")) {
-      toast("Provider-Bereich — wechsle deine Rolle im Profil.", "err");
+      toast("Der Provider-Bereich braucht die Rolle „Provider" + "“ oder „beides" + "“ — im Profil umstellbar.", "err");
       window.location.href = target;
       return false;
     }
@@ -101,82 +105,170 @@ function fmtNumber(n) {
 }
 function fmtDate(s) {
   if (!s) return "—";
-  try { return new Date(s).toLocaleString("de-DE"); } catch { return s; }
+  try {
+    return new Date(s).toLocaleString("de-DE", {
+      day: "2-digit", month: "2-digit", year: "numeric",
+      hour: "2-digit", minute: "2-digit",
+    });
+  } catch { return s; }
 }
 function timeAgo(s) {
   if (!s) return "—";
   const diff = (Date.now() - new Date(s).getTime()) / 1000;
-  if (diff < 60) return `${Math.floor(diff)}s ago`;
-  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
-  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
-  return `${Math.floor(diff / 86400)}d ago`;
+  if (diff < 60) return `vor ${Math.floor(diff)}s`;
+  if (diff < 3600) return `vor ${Math.floor(diff / 60)}m`;
+  if (diff < 86400) return `vor ${Math.floor(diff / 3600)}h`;
+  return `vor ${Math.floor(diff / 86400)}d`;
 }
 
-// ---------- Nav HTML (used on protected pages) ----------
+// ---------- App-wide background field ----------
+// Rendered from JS so it is guaranteed present (and identical) on every view,
+// including new pages added later. CSS-only animation — see style.css.
+function mountBackground() {
+  if (document.querySelector(".bg-field")) return;
+  const field = document.createElement("div");
+  field.className = "bg-field";
+  field.setAttribute("aria-hidden", "true");
+  field.innerHTML = `
+    <div class="bg-grid"></div>
+    <div class="bg-glow"></div>
+    <div class="bg-grain"></div>
+  `;
+  document.body.insertBefore(field, document.body.firstChild);
+}
+
+// ---------- Chrome (topbar + footer) ----------
+const NAV_ITEMS = [
+  { key: "dashboard", href: "index.html", label: "Dashboard" },
+  { key: "chat", href: "chat.html", label: "Chat" },
+  { key: "pool", href: "pool.html", label: "Pool" },
+  { key: "nodes", href: "nodes.html", label: "Nodes", providerOnly: true },
+  { key: "earnings", href: "earnings.html", label: "Earnings", providerOnly: true },
+  { key: "agent", href: "agent.html", label: "Agent" },
+  { key: "profile", href: "profile.html", label: "Profil" },
+];
+
 function navHTML(active) {
   const user = Auth.currentUser() || {};
   const isProvider = Auth.hasRole("provider");
+  const links = NAV_ITEMS
+    .filter((i) => !i.providerOnly || isProvider)
+    .map((i) => `<a href="${i.href}" class="nav-link${active === i.key ? " active" : ""}">${i.label}</a>`)
+    .join("");
+
   return `
-    <nav class="flex items-center justify-between px-6 py-4 max-w-6xl mx-auto">
-      <a href="index.html" class="text-xl font-bold gradient-text">⚡ GPU-Pool</a>
-      <div class="flex items-center gap-1">
-        <a href="index.html" class="nav-link ${active === "dashboard" ? "active" : ""}">Dashboard</a>
-        <a href="chat.html" class="nav-link ${active === "chat" ? "active" : ""}">Chat</a>
-        
-        <a href="pool.html" class="nav-link ${active === "pool" ? "active" : ""}">Pool</a>
-        ${isProvider ? `<a href="nodes.html" class="nav-link ${active === "nodes" ? "active" : ""}">Nodes</a>` : ""}
-        ${isProvider ? `<a href="earnings.html" class="nav-link ${active === "earnings" ? "active" : ""}">Earnings</a>` : ""}
-        <a href="agent.html" class="nav-link ${active === "agent" ? "active" : ""}">Agent</a>
-        <a href="profile.html" class="nav-link ${active === "profile" ? "active" : ""}">Profil</a>
+    <header class="topbar">
+      <div class="shell topbar-inner">
+        <a href="index.html" class="brand">
+          <span class="brand-mark" aria-hidden="true">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M13 2 4.5 13.5H11l-1 8.5 8.5-11.5H12l1-8.5Z"/>
+            </svg>
+          </span>
+          <span class="brand-text">
+            <strong>GPU-Pool</strong>
+            <span>Community Compute</span>
+          </span>
+        </a>
+        <nav class="nav" aria-label="Hauptnavigation">${links}</nav>
+        <div class="topbar-right">
+          <span class="who">
+            <b>${user.email || ""}</b>
+            <em>${user.role || "both"}</em>
+          </span>
+          <button type="button" class="btn-ghost btn-sm" onclick="Auth.logout()">Logout</button>
+        </div>
       </div>
-      <div class="flex items-center gap-3 text-sm">
-        <span class="text-[color:var(--text-dim)]">${user.email || ""} <span class="text-xs opacity-60">(${user.role || "both"})</span></span>
-        <button onclick="Auth.logout()" class="btn-ghost">Logout</button>
-      </div>
-    </nav>
+    </header>
   `;
 }
 
-// ---------- Simple inline bar chart (usage by day) ----------
+function footerHTML() {
+  return `
+    <footer class="site-foot">
+      <span>GPU-Pool · selbstgehosteter Community-Compute-Pool</span>
+      <span class="mono">Owner 70 % · Platform 20 % · Treasury 10 %</span>
+    </footer>
+  `;
+}
+
+// ---------- Inline usage chart (usage by day) ----------
 function renderUsageChart(canvasId, dataPoints) {
   const canvas = document.getElementById(canvasId);
   if (!canvas) return;
   const ctx = canvas.getContext("2d");
-  const w = canvas.width = canvas.clientWidth * 2;
-  const h = canvas.height = canvas.clientHeight * 2;
-  ctx.scale(2, 2);
-  const W = canvas.clientWidth;
-  const H = canvas.clientHeight;
-  ctx.clearRect(0, 0, W, H);
+  const cssW = canvas.clientWidth || 600;
+  const cssH = canvas.clientHeight || 180;
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  canvas.width = cssW * dpr;
+  canvas.height = cssH * dpr;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, cssW, cssH);
 
-  if (!dataPoints || dataPoints.length === 0) {
-    ctx.fillStyle = "#9aa3c0";
-    ctx.font = "13px sans-serif";
+  const W = cssW, H = cssH;
+  const style = getComputedStyle(document.documentElement);
+  const dim = style.getPropertyValue("--text-mute").trim() || "#6b7580";
+  const brass = style.getPropertyValue("--brass").trim() || "#c9a24a";
+
+  const hasData = dataPoints && dataPoints.some((d) => Number(d.value) > 0);
+  if (!hasData) {
+    ctx.fillStyle = dim;
+    ctx.font = "12px 'JetBrains Mono', monospace";
     ctx.textAlign = "center";
-    ctx.fillText("No usage yet", W / 2, H / 2);
+    ctx.fillText("noch keine Nutzung erfasst", W / 2, H / 2);
     return;
   }
 
-  const max = Math.max(...dataPoints.map(d => d.value), 1);
-  const pad = 24;
-  const barW = (W - pad * 2) / dataPoints.length - 6;
-  const gradient = ctx.createLinearGradient(0, 0, 0, H);
-  gradient.addColorStop(0, "#8b5cf6");
-  gradient.addColorStop(1, "#6366f1");
+  const max = Math.max(...dataPoints.map((d) => Number(d.value)), 1);
+  const padL = 34, padR = 10, padT = 12, padB = 26;
+  const plotW = W - padL - padR;
+  const plotH = H - padT - padB;
+  const slot = plotW / dataPoints.length;
+  const barW = Math.max(6, slot - 12);
+
+  // baseline + horizontal guides
+  ctx.strokeStyle = "rgba(255,255,255,0.07)";
+  ctx.lineWidth = 1;
+  for (let g = 0; g <= 3; g++) {
+    const y = padT + (plotH / 3) * g + 0.5;
+    ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(W - padR, y); ctx.stroke();
+    ctx.fillStyle = dim;
+    ctx.font = "10px 'JetBrains Mono', monospace";
+    ctx.textAlign = "right";
+    ctx.fillText(fmtShort(max - (max / 3) * g), padL - 7, y + 3);
+  }
 
   dataPoints.forEach((d, i) => {
-    const x = pad + i * ((W - pad * 2) / dataPoints.length) + 3;
-    const barH = (d.value / max) * (H - 40);
-    const y = H - 20 - barH;
-    ctx.fillStyle = gradient;
-    ctx.beginPath();
-    ctx.roundRect ? ctx.roundRect(x, y, barW, barH, 4) : ctx.fillRect(x, y, barW, barH);
-    ctx.fill();
-    ctx.fillStyle = "#9aa3c0";
-    ctx.font = "10px sans-serif";
+    const v = Number(d.value) || 0;
+    const barH = (v / max) * plotH;
+    const x = padL + i * slot + (slot - barW) / 2;
+    const y = padT + plotH - barH;
+    if (barH > 0.5) {
+      const grad = ctx.createLinearGradient(0, y, 0, padT + plotH);
+      grad.addColorStop(0, "#e2c885");
+      grad.addColorStop(1, brass);
+      ctx.fillStyle = grad;
+      if (ctx.roundRect) {
+        ctx.beginPath();
+        ctx.roundRect(x, y, barW, barH, 3);
+        ctx.fill();
+      } else {
+        ctx.fillRect(x, y, barW, barH);
+      }
+    }
+    ctx.fillStyle = dim;
+    ctx.font = "10px 'JetBrains Mono', monospace";
     ctx.textAlign = "center";
-    ctx.fillText(d.label, x + barW / 2, H - 6);
+    ctx.fillText(String(d.label || ""), x + barW / 2, H - 8);
   });
+}
+
+function fmtShort(n) {
+  const v = Number(n) || 0;
+  if (v >= 1e6) return (v / 1e6).toFixed(1) + "M";
+  if (v >= 1e3) return (v / 1e3).toFixed(1) + "k";
+  return v.toFixed(v >= 10 ? 0 : 1);
 }
 
 // ---------- Refresh user info (call after credit changes) ----------
@@ -193,6 +285,45 @@ async function refreshUser() {
   }
 }
 
+// ---------- Bootstrap: background + footer on every page ----------
+mountBackground();
+document.addEventListener("DOMContentLoaded", () => {
+  mountBackground();
+  // The footer is appended (not templated) so pages don't each need a placeholder.
+  if (!document.querySelector(".site-foot")) {
+    const holder = document.createElement("div");
+    holder.innerHTML = footerHTML();
+    document.body.appendChild(holder.firstElementChild);
+  }
+});
+
+/**
+ * On narrow screens the nav becomes a horizontal scroller. Scroll the active
+ * link into view so the current section is never hidden off-screen.
+ * Nav markup is injected by Alpine, so watch for it instead of guessing a delay.
+ */
+function revealActiveNav() {
+  const active = document.querySelector(".nav .nav-link.active");
+  if (!active) return false;
+  const nav = active.parentElement;
+  // Nothing to do when every link already fits.
+  if (nav.scrollWidth <= nav.clientWidth + 4) return true;
+  const target = active.offsetLeft - (nav.clientWidth - active.offsetWidth) / 2;
+  nav.scrollLeft = Math.max(0, Math.min(target, nav.scrollWidth - nav.clientWidth));
+  return true;
+}
+
+if (typeof MutationObserver !== "undefined") {
+  const mo = new MutationObserver(() => {
+    if (revealActiveNav()) mo.disconnect();
+  });
+  const start = () => mo.observe(document.body, { childList: true, subtree: true });
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", start);
+  else start();
+}
+window.addEventListener("resize", revealActiveNav);
+window.addEventListener("load", revealActiveNav);
+
 // Expose helpers globally
 window.API = api;
 window.Auth = Auth;
@@ -203,5 +334,7 @@ window.fmtNumber = fmtNumber;
 window.fmtDate = fmtDate;
 window.timeAgo = timeAgo;
 window.navHTML = navHTML;
+window.footerHTML = footerHTML;
+window.mountBackground = mountBackground;
 window.renderUsageChart = renderUsageChart;
 window.refreshUser = refreshUser;

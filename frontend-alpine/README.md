@@ -1,60 +1,129 @@
-# GPU-Pool Frontend (Alpine.js + Tailwind)
+# GPU-Pool Frontend — Alpine.js (Single-File, kein Build-Step)
 
-A lightweight single-page frontend for the GPU-Pool POC, served by nginx
-in a separate Docker container on **port 3000**.
+Statisches Frontend für den GPU-Pool POC, ausgeliefert von nginx in einem
+eigenen Container auf **Port 3000**.
 
-## Tech stack
-- **HTML/CSS/JavaScript** (vanilla, no framework)
-- **Alpine.js 3** (CDN) — for reactivity
-- **Tailwind CSS** (CDN) — for styling
-- **nginx 1.27-alpine** — static file serving + reverse proxy
+## Tech-Stack
 
-## Pages
-| Path | Purpose |
-|------|---------|
-| `/` (index.html) | Dashboard: credit balance, API key management, recent calls |
-| `/login.html` | Login form |
-| `/register.html` | Registration form (gives 100 free credits) |
-| `/credits.html` | Buy credits (3 packs: Starter/Pro/Business) + manual top-up requests |
-| `/chat.html` | Chat interface with model selector |
+- **HTML/CSS/JS** — vanilla, kein Bundler, kein Build-Step
+- **Alpine.js 3** (CDN, gepinnt, `defer`) — Reaktivität
+- **nginx 1.27-alpine** — Static Serving + Reverse-Proxy
 
-## Architecture
-- All API calls go through `/api/*` which nginx proxies to the `api` service
-  (the FastAPI backend on port 8000) with the `/api` prefix stripped.
-- Auth is session-less: the backend returns a raw API key on
-  register/login; the client stores it in `localStorage` and sends it as
-  `Authorization: Bearer <key>` on every request.
+> Tailwind wurde bewusst entfernt. Es waren nach dem Redesign **0**
+> Utility-Klassen im Markup; die CDN war nur noch toter Ballast. Das komplette
+> Design steckt in `style.css`. Neue Seiten brauchen kein Tailwind — nur
+> `style.css` und `app.js`.
 
-## Files
-- `index.html`, `login.html`, `register.html`, `credits.html`, `chat.html`
-- `app.js` — shared client (API wrapper, auth helpers, formatting, nav)
-- `style.css` — project-specific styling on top of Tailwind
-- `nginx.conf` — reverse proxy + static file serving
-- `Dockerfile` — copies everything into `nginx:1.27-alpine`
+## Designsystem (Anthrazit / Messing)
 
-## How to run
+`style.css` ist das Designsystem. Die Tokens stehen oben als CSS-Custom-Properties,
+die Abschnitte sind kommentiert.
+
+| Rolle | Token | Wert |
+|---|---|---|
+| Grundfläche | `--bg` | `#0e1013` |
+| Karten/Panels | `--surface` | `#171b20` |
+| Hairline | `--line` | `rgba(255,255,255,.07)` |
+| Text / Sekundär | `--text` / `--text-dim` | `#e8ebee` / `#98a1ac` |
+| Akzent (Geld, Primäraktion) | `--brass` | `#c9a24a` |
+| Status | `--ok` / `--warn` / `--err` | `#5cb87a` / `#d9a441` / `#d1584f` |
+
+Regeln beim Erweitern:
+
+- **Messing ist der einzige Akzent** — nur für Geld/Credits und die Primäraktion.
+  Keine bunten Verläufe, keine Neon-Statusfarben, kein Gradient-Purple.
+- **Layout über 1px-Hairlines**, nicht über Schatten. Flächen bekommen ihren
+  Metall-Charakter über einen 1px-Top-Highlight.
+- **Zahlen immer in Mono mit `tabular-nums`** (`.num` / `.mono`), damit Werte in
+  Spalten ruhig stehen.
+- **Kein `backdrop-filter` auf animierten Ebenen** — kostet auf schwacher GPU
+  mehr als die Animation selbst.
+- `.grid` ist ein 12-Spalten-Raster mit `.span-1`…`.span-12`. `.g2`…`.g5` sind
+  eigenständige Raster — **nicht** mit `.span-N` kombinieren.
+- Karten mit unten ausgerichtetem Abschluss (Preis-Packs): `.card.col` + `.fill`.
+
+## Hintergrund-Animation (app-weit)
+
+Drei Ebenen, jede ausschließlich über `transform`/`opacity` — GPU-Kompositor,
+**kein Canvas**:
+
+| Klasse | Effekt |
+|---|---|
+| `.bg-grid` | 64px-Raster, driftet 72 s linear, radial ausgefadet |
+| `.bg-glow` | zwei langsame Stahl-/Messing-Blobs, 96 s `alternate` |
+| `.bg-grain` | statisches SVG-Filmkorn, `overlay` |
+
+Darüber liegt ein **statischer Scrim** (`body::before`), der den Kontrast
+garantiert. `prefers-reduced-motion: reduce` friert die Ebenen ein, das Design
+bleibt intakt.
+
+Eingehängt wird das per `mountBackground()` in `app.js`. **Nie** eine neue Seite
+mit handgeschriebenem `<canvas>`- oder Div-Block bauen — das Feld kommt
+automatisch und identisch auf jeder View.
+
+## Chrome
+
+Topbar und Footer kommen ebenfalls aus `app.js` (`navHTML()`, `footerHTML()`),
+damit die Navigation nicht zwischen Seiten auseinanderläuft.
+
+- `navHTML(activeKey)` — `activeKey` ist `dashboard` | `chat` | `credits` |
+  `pool` | `nodes` | `earnings` | `agent` | `profile`. Einträge mit
+  `providerOnly: true` erscheinen nur für Provider-Rollen.
+- Der Footer wird beim Laden angehängt; Seiten brauchen keinen Platzhalter.
+- Mobile: die Nav bekommt eine eigene Zeile und scrollt den aktiven Link
+  automatisch ins Bild (`revealActiveNav()`).
+
+## Seiten
+
+| Pfad | Zweck |
+|---|---|
+| `/` (index.html) | Dashboard: Guthaben, API-Key, letzte Aufrufe |
+| `/login.html` | Anmeldung |
+| `/register.html` | Registrierung (100 Credits zum Start) |
+| `/credits.html` | Credits kaufen (Starter/Pro/Business) |
+| `/chat.html` | Chat mit Modell-Auswahl |
+| `/pool.html` | Community-Pool, Live-Auto-Refresh alle 10 s |
+| `/nodes.html` | Eigene GPUs registrieren/verwalten (Provider) |
+| `/earnings.html` | Einnahmen pro Node/Event (Provider) |
+| `/profile.html` | Rolle + Modell-Whitelist |
+| `/agent.html` | Node-Agent-Setup |
+
+## Architektur
+
+- Alle API-Calls gehen über `/api/*`; nginx strippt das Präfix und proxyt auf
+  den `api`-Service (FastAPI, Port 8000).
+- Auth ist sessionlos: das Backend liefert bei Register/Login einen rohen
+  API-Key, der Client legt ihn in `localStorage` und schickt ihn als
+  `Authorization: Bearer <key>`.
+- `app.js` exportiert global: `API`, `Auth`, `LS`, `toast`, `fmtCredits`,
+  `fmtNumber`, `fmtDate`, `timeAgo`, `navHTML`, `footerHTML`,
+  `mountBackground`, `renderUsageChart`, `refreshUser`.
+
+## Starten
+
 ```bash
-# From the project root (one level up)
+# Aus dem Projekt-Root (eine Ebene höher)
 docker compose build frontend
 docker compose up -d frontend
-
-# Frontend is now reachable on:
-http://<host>:3000/
+# erreichbar auf http://<host>:3000/
 ```
 
-## Backend integration
-The frontend talks to these endpoints (proxied through `/api`):
-- `POST /api/auth/register` — public registration (returns API key + 100 credits)
-- `POST /api/auth/login` — public login (returns a fresh API key, deactivates old ones)
-- `GET  /api/v1/me` — current user + credit balance (requires `Authorization: Bearer <key>`)
-- `GET  /api/v1/models` — list Ollama models
-- `POST /api/v1/chat/completions` — OpenAI-compatible chat (deducts credits)
+## Backend-Endpunkte, die das Frontend nutzt
 
-## Notes / POC limitations
-- No real Stripe: the "Buy now" buttons simulate a checkout confirmation;
-  credits are NOT actually added. The "manual top-up" form stores requests
-  in `localStorage` only.
-- The usage chart on the dashboard shows 7 empty days (no `/v1/stats` endpoint
-  yet); the rest of the dashboard pulls live data from `/v1/me`.
-- Passwords are stored as SHA-256 hashes in the backend — fine for a POC,
-  use bcrypt/argon2 in production.
+- `POST /api/auth/register` · `POST /api/auth/login`
+- `GET  /api/v1/me` · `PUT /api/v1/me/role` · `PUT /api/v1/me/allowed-models`
+- `GET  /api/v1/models` · `GET /api/v1/available-models`
+- `POST /api/v1/chat/completions`
+- `GET  /api/nodes/list?only_online=true` · `GET /api/nodes/my`
+- `POST /api/nodes/register` · `POST /api/nodes/{id}/heartbeat`
+- `GET  /api/nodes/stats/summary` · `POST /api/nodes/{id}/enable`
+- `GET  /api/pool/earnings/mine`
+
+## POC-Grenzen
+
+- Kein echtes Stripe: die Kauf-Buttons legen nur einen Aufladewunsch an
+  (localStorage), den ein Admin bestätigt.
+- Das Nutzungsdiagramm im Dashboard zeigt 7 leere Tage — es gibt noch keinen
+  `/v1/stats`-Endpunkt.
+- Passwörter liegen als SHA-256 im Backend — für den POC okay, produktiv
+  bcrypt/argon2.
