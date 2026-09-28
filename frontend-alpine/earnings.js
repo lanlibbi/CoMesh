@@ -12,9 +12,9 @@ document.addEventListener("alpine:init", () => {
       try {
         const data = await api("/pool/earnings/mine", { auth: true });
         this.total = data.total;
-        this.byNode = data.by_node;
-        this.events = data.events;
-        this.nodeMap = Object.fromEntries(data.by_node.map(n => [n.node_id, n.name]));
+        this.byNode = data.by_node || [];
+        this.events = data.events || [];
+        this.nodeMap = Object.fromEntries(this.byNode.map(n => [n.node_id, n.name]));
       } catch (e) {
         this.error = e.message;
       }
