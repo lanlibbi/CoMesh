@@ -107,8 +107,7 @@ document.addEventListener("alpine:init", () => {
       } catch (e) { toast("Delete failed: " + e.message, "err"); }
     },
 
-    statusPillClass(n) {
-      return `pill pill-${n.status}`;
-    },
+    // Status pill class is derived in the template (`'pill-' + n.status`) so
+    // unknown server statuses degrade to the neutral pill instead of a missing one.
   }));
 });

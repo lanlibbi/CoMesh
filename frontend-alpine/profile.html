@@ -1,103 +1,129 @@
 <!doctype html>
-<html lang="en">
+<html lang="de">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Profil · GPU-Pool POC</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+<title>Profil · GPU-Pool</title>
+<meta name="color-scheme" content="dark" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="style.css" />
 </head>
 <body x-data="profilePage()" x-init="init()">
   <div x-html="navHTML('profile')"></div>
 
-  <main class="max-w-4xl mx-auto px-4 pb-20">
-    <h1 class="text-2xl font-bold mb-1">⚙️ Profil</h1>
-    <p class="text-sm text-[color:var(--text-dim)] mb-6">
-      Rolle & Modell-Whitelist. Änderungen wirken sich sofort aus.
-    </p>
+  <main class="shell" style="max-width:900px">
+    <div class="page-head">
+      <div class="eyebrow">Konto</div>
+      <h1>Profil</h1>
+      <p class="lede">Rolle und Modell-Whitelist. Änderungen greifen sofort, ohne erneute Anmeldung.</p>
+    </div>
 
-    <div x-show="error" class="card glass mb-6 text-err" x-text="error"></div>
+    <div x-show="error" class="notice mb-4" style="border-color:rgba(209,88,79,.4)">
+      <span class="notice-icon" style="color:var(--err)" aria-hidden="true">!</span>
+      <div class="grow t-sm text-err" x-text="error"></div>
+    </div>
 
-    <!-- Rolle -->
-    <section class="card glass mb-6">
-      <h2 class="font-semibold mb-3">Rolle</h2>
-      <p class="text-sm text-[color:var(--text-dim)] mb-3">
-        <span x-text="currentRole"></span> — was darf ich damit?
-        <span x-show="currentRole === 'consumer'">Du kannst die API nutzen, aber keine Nodes registrieren.</span>
-        <span x-show="currentRole === 'provider'">Du kannst Nodes registrieren und Earnings kassieren, aber keine API-Calls (Chat) machen.</span>
-        <span x-show="currentRole === 'both'">Voller Zugriff auf alles.</span>
-      </p>
-      <div class="space-y-2">
-        <label class="flex items-start gap-2 cursor-pointer">
-          <input type="radio" name="role" value="consumer" x-model="role" class="mt-1" />
-          <span>
-            <span class="font-semibold">Nur Consumer</span>
-            <span class="block text-xs text-[color:var(--text-dim)]">API nutzen, keine Nodes.</span>
+    <!-- Role -->
+    <section class="card mb-4">
+      <div class="panel-head">
+        <div>
+          <div class="eyebrow">Berechtigungen</div>
+          <h3>Rolle</h3>
+          <p>
+            Aktuell: <span class="mono text-brand" x-text="currentRole"></span> —
+            <span x-show="currentRole === 'consumer'">API nutzbar, keine Node-Registrierung.</span>
+            <span x-show="currentRole === 'provider'">Nodes registrierbar, keine eigenen API-Calls.</span>
+            <span x-show="currentRole === 'both'">Voller Zugriff.</span>
+          </p>
+        </div>
+      </div>
+
+      <div class="stack" style="gap:2px">
+        <label class="check">
+          <input type="radio" name="role" value="consumer" x-model="role" />
+          <span class="check-body">
+            <span class="check-title">Nur Consumer</span>
+            <span class="check-sub">API nutzen, keine Nodes registrieren.</span>
           </span>
         </label>
-        <label class="flex items-start gap-2 cursor-pointer">
-          <input type="radio" name="role" value="provider" x-model="role" class="mt-1" />
-          <span>
-            <span class="font-semibold">Nur Provider</span>
-            <span class="block text-xs text-[color:var(--text-dim)]">Nodes teilen, keine API-Calls.</span>
+        <label class="check">
+          <input type="radio" name="role" value="provider" x-model="role" />
+          <span class="check-body">
+            <span class="check-title">Nur Provider</span>
+            <span class="check-sub">Nodes teilen, keine API-Calls.</span>
           </span>
         </label>
-        <label class="flex items-start gap-2 cursor-pointer">
-          <input type="radio" name="role" value="both" x-model="role" class="mt-1" />
-          <span>
-            <span class="font-semibold">Beides</span>
-            <span class="block text-xs text-[color:var(--text-dim)]">Voller Zugriff (Default).</span>
+        <label class="check">
+          <input type="radio" name="role" value="both" x-model="role" />
+          <span class="check-body">
+            <span class="check-title">Beides</span>
+            <span class="check-sub">Voller Zugriff — Standard.</span>
           </span>
         </label>
       </div>
-      <div x-show="roleWarning" class="text-sm text-err mt-2" x-text="roleWarning"></div>
-      <div class="mt-3 flex gap-2">
-        <button class="btn-primary text-sm" @click="saveRole()" :disabled="savingRole">
+
+      <div x-show="roleWarning" class="t-sm text-err mt-2" x-text="roleWarning"></div>
+
+      <div class="row mt-3" style="gap:12px">
+        <button class="btn-primary btn-sm" @click="saveRole()" :disabled="savingRole">
           <span x-show="!savingRole">Rolle speichern</span>
           <span x-show="savingRole">Speichere…</span>
         </button>
-        <span x-show="lastRoleChange" class="text-xs text-[color:var(--text-dim)] mt-2" x-text="lastRoleChange"></span>
+        <span x-show="lastRoleChange" class="t-xs text-mute" x-text="lastRoleChange"></span>
       </div>
     </section>
 
-    <!-- Modell-Whitelist -->
-    <section class="card glass">
-      <h2 class="font-semibold mb-3">Modelle, die du nutzen darfst</h2>
-      <p class="text-sm text-[color:var(--text-dim)] mb-2">
-        Leer = Standard (alle lokalen Modelle, keine Cloud). Wähle explizit, um die Auswahl einzuschränken oder Cloud-Modelle freizuschalten.
-      </p>
-
-      <div class="border border-white/10 rounded p-2 max-h-64 overflow-y-auto space-y-1">
-        <template x-for="m in availableModels" :key="m.name">
-          <label class="flex items-center gap-2 text-sm cursor-pointer hover:bg-white/5 px-1 rounded">
-            <input type="checkbox" :checked="selectedModels.includes(m.name)" @change="toggleModel(m.name)" />
-            <span x-text="m.name" class="flex-1"></span>
-            <span x-show="m.is_cloud" class="pill pill-busy text-[10px]">cloud</span>
-            <span x-text="(m.size_gb || 0) + ' GB'" class="text-xs text-[color:var(--text-dim)]"></span>
-          </label>
-        </template>
-        <div x-show="availableModels.length === 0" class="text-xs text-[color:var(--text-dim)]">Lade Modelle…</div>
+    <!-- Model whitelist -->
+    <section class="card">
+      <div class="panel-head">
+        <div>
+          <div class="eyebrow">Modelle</div>
+          <h3>Freigegebene Modelle</h3>
+          <p>Leer bedeutet: alle lokalen Modelle, keine Cloud. Explizit wählen, um einzuschränken oder Cloud freizuschalten.</p>
+        </div>
       </div>
 
-      <label class="flex items-center gap-2 text-sm mt-3">
+      <div class="option-list" style="max-height:300px">
+        <template x-for="m in availableModels" :key="m.name">
+          <label class="check">
+            <input type="checkbox" :checked="selectedModels.includes(m.name)" @change="toggleModel(m.name)" />
+            <span class="check-body row" style="gap:8px">
+              <span class="grow mono t-sm" x-text="m.name"></span>
+              <span x-show="m.is_cloud" class="pill pill-busy pill-flat">cloud</span>
+              <span class="t-xs text-mute num" x-text="(m.size_gb || 0) + ' GB'"></span>
+            </span>
+          </label>
+        </template>
+        <div x-show="availableModels.length === 0" class="t-xs text-mute" style="padding:8px 10px">
+          Modelle werden geladen…
+        </div>
+      </div>
+
+      <label class="check mt-2">
         <input type="checkbox" x-model="allowCloud" />
-        <span>Cloud-Modelle erlauben (z.B. wenn du im Urlaub bist und deine lokalen Tokens nicht nutzt)</span>
+        <span class="check-body">
+          <span class="check-title">Cloud-Modelle erlauben</span>
+          <span class="check-sub">Sinnvoll, wenn die lokale Hardware gerade nicht verfügbar ist.</span>
+        </span>
       </label>
 
-      <div x-show="modelWarning" class="text-sm text-err mt-2" x-text="modelWarning"></div>
-      <div class="mt-3 flex gap-2 items-center">
-        <button class="btn-primary text-sm" @click="saveModels()" :disabled="savingModels">
+      <div x-show="modelWarning" class="t-sm text-err mt-2" x-text="modelWarning"></div>
+
+      <div class="row wrap mt-3" style="gap:10px">
+        <button class="btn-primary btn-sm" @click="saveModels()" :disabled="savingModels">
           <span x-show="!savingModels">Modelle speichern</span>
           <span x-show="savingModels">Speichere…</span>
         </button>
-        <button class="btn-ghost text-sm" @click="resetToDefault()">Auf Standard zurücksetzen</button>
-        <span x-show="lastModelChange" class="text-xs text-[color:var(--text-dim)] mt-2" x-text="lastModelChange"></span>
+        <button class="btn-ghost btn-sm" @click="resetToDefault()">Auf Standard zurücksetzen</button>
+        <span x-show="lastModelChange" class="t-xs text-mute" x-text="lastModelChange"></span>
       </div>
     </section>
   </main>
 
-  <script src="app.js"></script>
+      <script defer src="https://unpkg.com/alpinejs@3.5.1/dist/cdn.min.js"></script>
+<script src="app.js"></script>
   <script src="profile.js"></script>
 </body>
 </html>

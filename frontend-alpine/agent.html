@@ -1,62 +1,95 @@
 <!doctype html>
-<html lang="en">
+<html lang="de">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Node-Agent Setup · GPU-Pool POC</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+<title>Node-Agent · GPU-Pool</title>
+<meta name="color-scheme" content="dark" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="style.css" />
 </head>
 <body x-data="agentPage()" x-init="init()">
   <div x-html="navHTML('agent')"></div>
 
-  <main class="max-w-4xl mx-auto px-4 pb-20">
-    <h1 class="text-2xl font-bold mb-1">🐳 Node-Agent Setup</h1>
-    <p class="text-sm text-[color:var(--text-dim)] mb-6">
-      Drei Schritte: Node registrieren → Agent bauen → starten. Sobald der Agent den ersten
-      Heartbeat schickt, wird deine GPU im <a href="pool.html" class="text-brand">Community-Pool</a> sichtbar.
-    </p>
-
-    <div class="card glass mb-4">
-      <h3 class="font-semibold mb-2">1) Node registrieren</h3>
-      <p class="text-sm text-[color:var(--text-dim)]">
-        Auf <a href="nodes.html" class="text-brand">/nodes</a> ausfüllen. Du bekommst nach dem Registrieren
-        einen <span class="mono">agent_api_key</span>.
+  <main class="shell" style="max-width:900px">
+    <div class="page-head">
+      <div class="eyebrow">Provider</div>
+      <h1>Node-Agent einrichten</h1>
+      <p class="lede">
+        Vier Schritte: Node registrieren, Image bauen, Container starten, im Pool
+        verifizieren. Danach läuft alles über Heartbeats automatisch.
       </p>
     </div>
 
-    <div class="card glass mb-4">
-      <h3 class="font-semibold mb-2">2) Agent-Image bauen</h3>
-      <p class="text-sm text-[color:var(--text-dim)] mb-2">
-        Klone das Repo (oder kopiere den <span class="mono">node-agent/</span>-Ordner) und baue das Image:
-      </p>
-      <pre class="bg-black/40 p-3 rounded text-xs overflow-x-auto"><code>cd node-agent
+    <div class="stack">
+      <div class="card">
+        <div class="row top" style="gap:16px">
+          <span class="pill pill-flat mono" style="color:var(--brass);border-color:var(--brass-line)">01</span>
+          <div class="grow">
+            <h3>Node registrieren</h3>
+            <p class="t-sm text-dim mt-1">
+              Auf <a href="nodes.html" class="link">Meine Nodes</a> ausfüllen. Die Antwort enthält den
+              <code class="inline">agent_api_key</code> — einmalig sichtbar.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="row top" style="gap:16px">
+          <span class="pill pill-flat mono" style="color:var(--brass);border-color:var(--brass-line)">02</span>
+          <div class="grow">
+            <h3>Image bauen</h3>
+            <p class="t-sm text-dim mt-2 mb-2">
+              Repo klonen (oder den Ordner <code class="inline">node-agent/</code> kopieren) und bauen:
+            </p>
+            <pre class="term mono"><code>cd node-agent
 docker build -t gpu-pool-node-agent .</code></pre>
-    </div>
+          </div>
+        </div>
+      </div>
 
-    <div class="card glass mb-4">
-      <h3 class="font-semibold mb-2">3) Agent starten</h3>
-      <p class="text-sm text-[color:var(--text-dim)] mb-2">
-        Ersetze <span class="mono">NODE_ID</span> und <span class="mono">NODE_API_KEY</span> mit den Werten aus Schritt 1:
-      </p>
-      <pre class="bg-black/40 p-3 rounded text-xs overflow-x-auto"><code x-text="cmd"></code></pre>
-      <p class="text-sm text-[color:var(--text-dim)] mt-3 mb-1">Logs checken:</p>
-      <pre class="bg-black/40 p-3 rounded text-xs overflow-x-auto"><code>docker logs -f gpu-pool-agent</code></pre>
-      <p class="text-sm text-[color:var(--text-dim)] mt-3 mb-1">Health check:</p>
-      <pre class="bg-black/40 p-3 rounded text-xs overflow-x-auto"><code>curl http://&lt;tailscale-ip&gt;:11435/health | jq</code></pre>
-    </div>
+      <div class="card">
+        <div class="row top" style="gap:16px">
+          <span class="pill pill-flat mono" style="color:var(--brass);border-color:var(--brass-line)">03</span>
+          <div class="grow">
+            <h3>Container starten</h3>
+            <p class="t-sm text-dim mt-2 mb-2">
+              <code class="inline">NODE_ID</code> und <code class="inline">NODE_API_KEY</code> durch die Werte aus Schritt 1 ersetzen:
+            </p>
+            <pre class="term mono" x-text="cmd"></pre>
+            <p class="t-sm text-dim mt-4 mb-2">Logs verfolgen:</p>
+            <pre class="term mono"><code>docker logs -f gpu-pool-agent</code></pre>
+            <p class="t-sm text-dim mt-4 mb-2">Health-Check der Node:</p>
+            <pre class="term mono"><code>curl http://&lt;tailscale-ip&gt;:11435/health | jq</code></pre>
+          </div>
+        </div>
+      </div>
 
-    <div class="card glass">
-      <h3 class="font-semibold mb-2">4) Verifizieren</h3>
-      <p class="text-sm text-[color:var(--text-dim)]">
-        Sobald dein Node im Pool auftaucht, bist du live. Anfragen werden automatisch an deine GPU
-        geroutet, du bekommst 70% der Job-Kosten als Credits auf dein Konto.
-      </p>
+      <div class="card">
+        <div class="row top" style="gap:16px">
+          <span class="pill pill-flat mono" style="color:var(--brass);border-color:var(--brass-line)">04</span>
+          <div class="grow">
+            <h3>Verifizieren</h3>
+            <p class="t-sm text-dim mt-1">
+              Sobald die Node im <a href="pool.html" class="link">Community-Pool</a> auftaucht, ist sie live.
+              Anfragen werden automatisch dorthin geroutet; 70 % der Job-Kosten landen als Credits
+              auf deinem Konto.
+            </p>
+            <div class="row mt-3">
+              <a href="pool.html" class="btn-ghost btn-sm">Pool ansehen</a>
+              <a href="earnings.html" class="btn-ghost btn-sm">Earnings</a>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </main>
 
-  <script src="app.js"></script>
+      <script defer src="https://unpkg.com/alpinejs@3.5.1/dist/cdn.min.js"></script>
+<script src="app.js"></script>
   <script src="agent.js"></script>
 </body>
 </html>

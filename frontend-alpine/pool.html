@@ -1,85 +1,125 @@
 <!doctype html>
-<html lang="en">
+<html lang="de">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Community Pool · GPU-Pool POC</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+<title>Community-Pool · GPU-Pool</title>
+<meta name="color-scheme" content="dark" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="style.css" />
-<style>
-  .util-bar { background: rgba(0,0,0,0.3); border-radius: 6px; overflow: hidden; height: 8px; }
-  .util-bar > div { height: 100%; background: linear-gradient(90deg, #22c55e, #f59e0b, #ef4444); transition: width 0.4s; }
-</style>
 </head>
 <body x-data="poolPage()" x-init="init()">
   <div x-html="navHTML('pool')"></div>
 
-  <main class="max-w-6xl mx-auto px-4 pb-20">
-    <h1 class="text-2xl font-bold mb-1">🌐 Community Pool</h1>
-    <p class="text-sm text-[color:var(--text-dim)] mb-6">
-      Live-Übersicht aller beigetragenen GPUs. Auto-Refresh alle 10s.
-    </p>
+  <main class="shell">
+    <div class="page-head">
+      <div class="eyebrow">Live</div>
+      <h1>Community-Pool</h1>
+      <p class="lede">
+        Alle beigetragenen GPUs mit aktueller Auslastung. Aktualisiert sich automatisch
+        alle 10 Sekunden.
+      </p>
+    </div>
 
-    <!-- Hero stats -->
-    <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-8">
-      <div class="card glass text-center">
-        <div class="text-3xl font-bold gradient-text" x-text="stats ? (stats.online_nodes + ' / ' + stats.total_nodes) : '–'"></div>
-        <div class="text-xs text-[color:var(--text-dim)] mt-1">Aktive Nodes</div>
+    <!-- Aggregate stats -->
+    <div class="grid mb-4">
+      <div class="card span-3">
+        <div class="stat">
+          <div class="eyebrow">Nodes online</div>
+          <div class="stat-value" x-text="stats ? (stats.online_nodes + ' / ' + stats.total_nodes) : '–'"></div>
+          <div class="stat-sub">bereit / registriert</div>
+        </div>
       </div>
-      <div class="card glass text-center">
-        <div class="text-3xl font-bold gradient-text" x-text="stats ? stats.total_vram_gb : '–'"></div>
-        <div class="text-xs text-[color:var(--text-dim)] mt-1">Community-VRAM (GB)</div>
+      <div class="card span-3">
+        <div class="stat">
+          <div class="eyebrow">VRAM gesamt</div>
+          <div class="stat-value" x-text="stats ? stats.total_vram_gb : '–'"></div>
+          <div class="stat-sub">GB im Pool</div>
+        </div>
       </div>
-      <div class="card glass text-center">
-        <div class="text-3xl font-bold gradient-text" x-text="stats ? stats.available_vram_gb : '–'"></div>
-        <div class="text-xs text-[color:var(--text-dim)] mt-1">Verfügbar (GB)</div>
+      <div class="card span-3">
+        <div class="stat">
+          <div class="eyebrow">VRAM verfügbar</div>
+          <div class="stat-value" x-text="stats ? stats.available_vram_gb : '–'"></div>
+          <div class="stat-sub">GB gerade frei</div>
+        </div>
       </div>
-      <div class="card glass text-center">
-        <div class="text-3xl font-bold gradient-text" x-text="stats ? (stats.avg_utilization * 100).toFixed(0) + '%' : '–'"></div>
-        <div class="text-xs text-[color:var(--text-dim)] mt-1">Ø Auslastung</div>
-      </div>
-      <div class="card glass text-center">
-        <div class="text-3xl font-bold gradient-text" x-text="rateRange()"></div>
-        <div class="text-xs text-[color:var(--text-dim)] mt-1">Stundensatz (Credits)</div>
+      <div class="card span-3">
+        <div class="stat">
+          <div class="eyebrow">Ø Auslastung</div>
+          <div class="stat-value" x-text="stats ? (stats.avg_utilization * 100).toFixed(0) + '%' : '–'"></div>
+          <div class="stat-sub">Stundensatz <span x-text="rateRange()"></span></div>
+        </div>
       </div>
     </div>
 
-    <h2 class="text-xl font-semibold mb-3">Verfügbare GPUs</h2>
-    <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+    <!-- Nodes -->
+    <div class="panel-head">
+      <div>
+        <div class="eyebrow">Hardware</div>
+        <h3>Verfügbare GPUs</h3>
+      </div>
+      <span class="chip mono" x-show="!loading" x-text="nodes.length + ' Nodes'"></span>
+    </div>
+
+    <div class="grid">
       <template x-for="n in nodes" :key="n.id">
-        <div class="card glass">
-          <div class="flex justify-between items-start">
-            <h4 class="font-semibold" x-text="n.name"></h4>
-            <span :class="'pill pill-' + n.status" x-text="n.status"></span>
+        <div class="card span-4">
+          <div class="row between" style="align-items:flex-start">
+            <div style="min-width:0">
+              <div class="semibold" x-text="n.name"></div>
+              <div class="t-sm text-dim" x-text="n.gpu_type"></div>
+            </div>
+            <span class="pill" :class="'pill-' + n.status" x-text="n.status"></span>
           </div>
-          <div class="text-sm text-[color:var(--text-dim)] mt-1">
-            <span x-text="n.gpu_type"></span> · <span x-text="n.vram_gb"></span> GB VRAM
+
+          <div class="divider inset"></div>
+
+          <div class="stat-row">
+            <span class="k">VRAM</span>
+            <span class="v">
+              <span x-text="n.vram_used_gb.toFixed(1)"></span> /
+              <span x-text="n.vram_gb"></span> GB
+            </span>
           </div>
-          <div class="text-sm text-[color:var(--text-dim)]">
-            <span x-text="n.hourly_rate"></span> Credits/h
+          <div class="meter mt-1" :class="loadClass(vramPct(n))"><div :style="'width:' + vramPct(n) + '%'"></div></div>
+
+          <div class="stat-row mt-2">
+            <span class="k">Auslastung</span>
+            <span class="v" x-text="utilPct(n) + ' %'"></span>
           </div>
-          <div class="text-xs text-[color:var(--text-dim)] mt-2">
-            VRAM: <span x-text="n.vram_used_gb.toFixed(1)"></span> / <span x-text="n.vram_gb"></span> GB
-            (<span x-text="vramPct(n)"></span>%)
+          <div class="meter" :class="loadClass(utilPct(n))"><div :style="'width:' + utilPct(n) + '%'"></div></div>
+
+          <div class="row between mt-3">
+            <span class="chip mono" x-text="n.hourly_rate + ' Credits/h'"></span>
+            <span class="t-xs text-mute mono" x-text="n.tailscale_ip ? 'Tailscale' : 'lokal'"></span>
           </div>
-          <div class="util-bar mt-1"><div :style="'width:' + vramPct(n) + '%'"></div></div>
-          <div class="text-xs text-[color:var(--text-dim)] mt-1">
-            Auslastung: <span x-text="utilPct(n)"></span>%
-          </div>
-          <div class="util-bar mt-1"><div :style="'width:' + utilPct(n) + '%'"></div></div>
-          <p class="text-xs text-[color:var(--text-dim)] mt-2" x-show="n.description" x-text="n.description"></p>
+
+          <p class="t-xs text-mute mt-2" x-show="n.description" x-text="n.description"></p>
         </div>
       </template>
     </div>
 
-    <div x-show="nodes.length === 0 && !loading" class="text-center text-[color:var(--text-dim)] py-12">
-      <div class="text-4xl mb-2">🛰️</div>
-      <p>Keine Nodes gerade online. Schau später wieder rein oder <a href="nodes.html" class="text-brand">registriere deine GPU</a>!</p>
+    <div x-show="nodes.length === 0 && !loading" class="card mt-4">
+      <div class="empty">
+        <span class="empty-mark" aria-hidden="true">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="4" width="18" height="7" rx="2"/><rect x="3" y="13" width="18" height="7" rx="2"/>
+          </svg>
+        </span>
+        <p>
+          Gerade ist keine Node online. Schau später wieder rein oder
+          <a href="nodes.html" class="link">registriere deine eigene GPU</a>.
+        </p>
+      </div>
     </div>
   </main>
 
-  <script src="app.js"></script>
+      <script defer src="https://unpkg.com/alpinejs@3.5.1/dist/cdn.min.js"></script>
+<script src="app.js"></script>
   <script src="pool.js"></script>
 </body>
 </html>
