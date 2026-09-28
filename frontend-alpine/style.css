@@ -27,8 +27,13 @@
 
   /* type */
   --text:          #e8ebee;
-  --text-dim:      #98a1ac;
-  --text-mute:     #6b7580;
+  --text-dim:      #a4acb6;
+  /* --text-mute is used for small text (hints, stat subs, eyebrows, table
+     headers). Every token that lands on small text must clear WCAG AA (4.5:1)
+     against the DARKEST surface it can sit on (--surface-3 #232930), not just
+     --surface. Verified values below are contrast ratios measured against
+     #232930. */
+  --text-mute:     #8d97a2;   /* 4.95:1 on --surface-3 */
 
   /* metallic highlights */
   --metal:         #d7dce2;
@@ -39,9 +44,9 @@
   --brass-line:    rgba(201, 162, 74, 0.30);
 
   /* semantics */
-  --ok:            #5cb87a;
-  --warn:          #d9a441;
-  --err:           #d1584f;
+  --ok:            #5cb87a;   /* 6.00:1 on --surface-3 */
+  --warn:          #d9a441;   /* 6.52:1 on --surface-3 */
+  --err:           #e07168;   /* 4.70:1 on --surface-3 (was #d1584f = 3.65:1) */
 
   /* legacy aliases — older inline styles / markup reference these names */
   --brand:         var(--brass);
@@ -546,8 +551,8 @@ main.shell { padding-bottom: 72px; }
 .btn-quiet:hover:not(:disabled) { background: rgba(255, 255, 255, 0.05); color: var(--text); border-color: transparent; }
 .btn-danger { color: var(--err); }
 .btn-danger:hover:not(:disabled) {
-  background: rgba(209, 88, 79, 0.12);
-  border-color: rgba(209, 88, 79, 0.4);
+  background: rgba(224, 113, 104, 0.12);
+  border-color: rgba(224, 113, 104, 0.4);
 }
 
 /* =================================================================== forms */
@@ -740,7 +745,7 @@ td.neg { color: var(--err); }
 .pill-busy   { color: var(--warn); border-color: rgba(217, 164, 65, 0.35); background: rgba(217, 164, 65, 0.1); }
 .pill-offline,
 .pill-disabled { color: var(--text-mute); }
-.pill-error  { color: var(--err); border-color: rgba(209, 88, 79, 0.35); background: rgba(209, 88, 79, 0.1); }
+.pill-error  { color: var(--err); border-color: rgba(224, 113, 104, 0.35); background: rgba(224, 113, 104, 0.1); }
 .pill-paused { color: var(--warn); }
 
 .chip {

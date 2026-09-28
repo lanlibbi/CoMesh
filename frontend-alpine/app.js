@@ -209,7 +209,7 @@ function renderUsageChart(canvasId, dataPoints) {
 
   const W = cssW, H = cssH;
   const style = getComputedStyle(document.documentElement);
-  const dim = style.getPropertyValue("--text-mute").trim() || "#6b7580";
+  const dim = style.getPropertyValue("--text-mute").trim() || "#8d97a2";
   const brass = style.getPropertyValue("--brass").trim() || "#c9a24a";
 
   const hasData = dataPoints && dataPoints.some((d) => Number(d.value) > 0);
