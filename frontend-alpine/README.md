@@ -127,8 +127,8 @@ docker compose up -d frontend
 - Kein echtes Stripe: die Kauf-Buttons legen nur einen Aufladewunsch an
   (localStorage), den ein Admin bestätigt.
 - Das Nutzungsdiagramm liest `GET /v1/me/usage` (7-Tage-Fenster). Der
-  Zeitraum-Umschalter (24 h / 7 Tage / 30 Tage / Gesamt) lebt im
-  [Usage-Tab](/usage.html) — das Dashboard-Panel bleibt bewusst fest auf 7 Tage.
+  Zeitraum-Umschalter (24 h / 7 Tage / 30 Tage / Gesamt) lebt im Usage-Tab
+  (`/usage.html`) — das Dashboard-Panel bleibt bewusst fest auf 7 Tage.
 - Die Ø-Latenz kommt aus `pool_jobs`, nicht aus `usages` — Requests, die nie an
   eine Node geroutet wurden, tauchen in der Latenz nicht auf (Token schon).
 - Passwörter liegen als SHA-256 im Backend — für den POC okay, produktiv
