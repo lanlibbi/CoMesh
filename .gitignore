@@ -17,6 +17,11 @@ Thumbs.db
 /data/gpu_pool.db
 /data/seed_api_key.txt
 
+# Local env (may hold ADMIN_API_KEY / payment secrets)
+.env
+
 # Test artifacts
 /tmp/ws_test_setup.py
 *.tmp
+.pytest_cache/
+__pycache__/

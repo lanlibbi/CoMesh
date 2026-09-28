@@ -110,6 +110,45 @@ Example client: [examples/client.py](examples/client.py)
 
 ---
 
+## Admin operations
+
+Everything under `/admin` requires an API key of a user with `role = "admin"`.
+
+Bootstrap the first admin by setting `ADMIN_API_KEY` in the environment (see
+`.env.example`). The account named by `ADMIN_EMAIL` is created and that value
+becomes its only active key:
+
+```bash
+export ADMIN_API_KEY="gpu_$(python3 -c 'import secrets;print(secrets.token_urlsafe(32))')"
+docker compose up -d --build
+
+curl -H "Authorization: Bearer $ADMIN_API_KEY" http://localhost:8765/admin/whoami
+curl -H "Authorization: Bearer $ADMIN_API_KEY" "http://localhost:8765/admin/nodes?status=all"
+curl -H "Authorization: Bearer $ADMIN_API_KEY" http://localhost:8765/admin/overview
+```
+
+What an operator can do:
+
+- **Users** — list (including deactivated ones), create, change role/state/model
+  whitelist, top up credits, rotate or revoke API keys. Admins can only be
+  created by another admin; `PUT /v1/me/role` never accepts `admin`.
+- **Nodes** — see **every** node including offline and disabled ones, with owner,
+  WebSocket state, last heartbeat and job/failure counters; pause or resume a
+  node of any owner.
+- **Auditing** — every mutation writes an `admin_audit_log` row. Mutating POSTs
+  accept an `Idempotency-Key` header, so a retried request replays the stored
+  result instead of repeating the effect (raw API keys are never stored).
+
+### Tests
+
+```bash
+python3 -m venv .venv && .venv/bin/pip install -r requirements-dev.txt
+.venv/bin/pytest tests -q          # 15 admin tests, in-process TestClient
+bash scripts/smoke_admin.sh http://localhost:8765 "$ADMIN_API_KEY"   # live HTTP smoke check
+```
+
+---
+
 ## Documentation
 
 - [ARCHITECTURE.md](ARCHITECTURE.md) — ASCII diagram and data flows

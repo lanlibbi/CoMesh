@@ -42,7 +42,7 @@ endpoint that proxies to the host's existing Ollama instance.
 
 > ⚠️ The raw key is only visible in the container log / seed file on first
 > start. Subsequent restarts won't show it again. If lost, create a new user
-> via `POST /admin/users` or `topup` the existing one.
+> via `POST /admin/users` (admin-authenticated, idempotent by email) or `topup` the existing one.
 
 ## Verification (all passed)
 
@@ -86,19 +86,26 @@ curl -X POST http://portal-ip:8765/v1/chat/completions \
     "messages": [{"role":"user","content":"Hello!"}]
   }'
 
-# Create more users
+# Create more users (admin key required, see docs/api.md -> Admin)
 curl -X POST http://portal-ip:8765/admin/users \
+  -H "Authorization: Bearer gpu_admin..." \
   -H "Content-Type: application/json" \
   -d '{"email":"alice@example.com","name":"Alice","initial_credits":50}'
 
-# Top up existing user
-curl -X POST 'http://portal-ip:8765/admin/users/1/topup?amount=25.0'
+# Top up existing user (Idempotency-Key makes retries safe)
+curl -X POST 'http://portal-ip:8765/admin/users/1/topup' \
+  -H "Authorization: Bearer gpu_admin..." \
+  -H "Idempotency-Key: topup-alice-25" \
+  -H "Content-Type: application/json" \
+  -d '{"amount":25.0,"reason":"manual topup"}'
 ```
 
 ## Caveats / next steps
 
-1. **`/admin/*` endpoints are unauthenticated.** Acceptable for POC on a
-   trusted LAN; must be gated before any external exposure.
+1. **`/admin/*` endpoints are now role-gated** (fixed in v0.4.0): they require
+   an API key belonging to a user with `role = "admin"` and every mutation is
+   written to `admin_audit_log`. Bootstrap an admin with `ADMIN_API_KEY`.
+   See `docs/api.md` → Admin.
 2. **Credit cost is flat** (`0.001` credits per 1K tokens). Could be made
    per-model to reflect real GPU cost.
 3. **No streaming yet** — `stream: true` is accepted in the request schema

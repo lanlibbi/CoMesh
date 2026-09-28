@@ -306,6 +306,149 @@ Earnings über Zeit (für Charts).
 
 ---
 
+## Admin
+
+Alle `/admin`-Endpoints sind **rollen-gated**: sie verlangen einen gültigen API-Key
+eines Users mit `role = "admin"`. Ohne Key → `401`, mit Nicht-Admin-Key → `403`.
+Jeder schreibende Aufruf landet im Audit-Log (`admin_audit_log`).
+
+Admin-Rechte vergibt nur ein bestehender Admin (`PATCH /admin/users/{id}` mit
+`{"role":"admin"}`). Über `PUT /v1/me/role` kann sich ein User **nicht** selbst
+zum Admin machen — erlaubt bleiben dort `provider | consumer | both`.
+
+### Idempotenz
+
+Alle schreibenden `POST`-Endpoints akzeptieren einen `Idempotency-Key`-Header.
+Der erste Aufruf mutiert und speichert das Ergebnis im Audit-Log; ein Replay mit
+demselben Key liefert das gespeicherte Ergebnis mit `"replayed": true` zurück und
+mutiert **nicht** erneut. Roh-Keys werden nie im Audit-Log gespeichert: bei einem
+Replay einer Key-Rotation kommt `api_key: null` zurück.
+
+```bash
+curl -X POST http://portal-host:8765/admin/users/12/topup \
+  -H "Authorization: Bearer gpu_admin..." \
+  -H "Idempotency-Key: topup-2026-09-25-12-25eur" \
+  -H "Content-Type: application/json" \
+  -d '{"amount": 25.0, "reason": "manual topup"}'
+```
+
+### `GET /admin/whoami`
+
+Billiger Probe-Call: bestätigt, dass der Key admin-berechtigt ist.
+
+**Response 200:** `{"id":1,"email":"admin@…","name":"Platform Admin","role":"admin",…}`
+
+### `GET /admin/overview`
+
+Plattform-Kennzahlen: User (gesamt/aktiv/pro Rolle), Credits, Keys, Nodes
+(gesamt/online/offline/disabled, VRAM), Pool-Jobs, Earnings-Splits, Payments.
+
+### `GET /admin/users`
+
+| Parameter | Beschreibung |
+|---|---|
+| `q` | Substring auf `email` oder `name` |
+| `role` | `admin` \| `provider` \| `consumer` \| `both` |
+| `is_active` | `true` / `false` |
+| `include_inactive` | Default `true` — inaktive User werden mitgelistet |
+| `limit` / `offset` | Default 50 / 0, max 500 |
+
+Jeder Eintrag enthält `credits`, `role`, `is_active`, `active_keys`,
+`nodes_total`, `nodes_online`, `usage_total_tokens`, `paid_total`.
+
+### `POST /admin/users`
+
+Legt einen User an. **Idempotent per E-Mail**: ein zweiter Aufruf mit derselben
+E-Mail liefert `"created": false` und den bestehenden User — kein Duplikat, kein
+zweiter Key, keine zusätzlichen Credits.
+
+```json
+{"email":"alice@example.com","name":"Alice","initial_credits":50,"role":"both"}
+```
+**Response 201:** `{"user_id":3,"email":"…","role":"both","api_key":"gpu_… (einmalig)","key_prefix":"gpu_abc1234","credits":50.0,"created":true}`
+
+### `GET /admin/users/{user_id}`
+
+Detail inkl. Key-Metadaten (`key_prefix`, `last_used_at` — nie der Roh-Key),
+Node-Kurzliste und Usage-Zähler.
+
+### `PATCH /admin/users/{user_id}`
+
+Partielle Änderung: `name`, `role` (inkl. `admin`), `is_active`,
+`allowed_models` (+ `allow_cloud`), optional `expected_updated_at` für
+Optimistic Concurrency. Nicht gesetzte Felder bleiben unangetastet, ein
+identischer Aufruf ändert nichts.
+
+* `is_active: false` entwertet sofort alle Keys des Users.
+* Ein Admin kann sein **eigenes** Konto weder deaktivieren noch degradieren
+  (`409`, Lockout-Guard).
+
+### `POST /admin/users/{user_id}/topup`
+
+```json
+{"amount": 25.0, "reason": "manual topup"}
+```
+**Response:** `{"user_id":12,"credits":37.5,"balance_before":12.5,"added":25.0,"reason":"manual topup","transaction_id":88}`
+
+### `POST /admin/users/{user_id}/keys`
+
+Rotiert den Key: entwertet alle aktiven Keys des Users und gibt einen neuen aus
+(`?label=` optional). Der Roh-Key wird **einmal** zurückgegeben und nie
+gespeichert.
+
+### `POST /admin/users/{user_id}/keys/{key_id}/revoke`
+
+Entwertet genau einen Key. Ein bereits inaktiver Key ist ein erfolgreicher
+No-Op (`already_inactive: true`).
+
+### `GET /admin/nodes`
+
+Alle Nodes des Clusters — **inklusive offline und disabled**. Der öffentliche
+`/nodes/list` verbirgt diese per Default, das ist der Unterschied.
+
+| Parameter | Beschreibung |
+|---|---|
+| `q` | Substring auf `name`, `gpu_type` oder `tailscale_ip` |
+| `status` | `all` (Default) \| `online` \| `offline` \| `busy` \| `disabled` |
+| `owner_id` / `backend` | Filter |
+| `include_disabled` | Default `true` — `false` blendet pausierte Nodes aus |
+| `limit` / `offset` | Default 100 / 0, max 500 |
+
+Jeder Eintrag enthält `effective_status` (`online | offline | busy | disabled`),
+`online`, `seconds_since_seen`, `owner_email`, `connection_state` (WebSocket),
+`has_agent_key`, Auslastung und VRAM. Die Response enthält zusätzlich
+`summary` (Cluster-Zähler über alle Nodes, unabhängig vom Filter).
+
+### `GET /admin/nodes/{node_id}`
+
+Node-Detail inkl. Besitzer, Job-Statistik (`nodes_jobs_total`,
+`nodes_jobs_failed`), Earnings-Events, Heartbeats der letzten 24 h und dem
+letzten Heartbeat-Payload.
+
+### `POST /admin/users/{user_id}/nodes/{node_id}/enable?enabled=false`
+
+Pausiert/aktiviert einen Node **jedes** Besitzers — `PATCH /nodes/{id}/enable`
+kann das nur owner-scoped. Idempotent (identischer Wert = No-Op).
+
+### Admin-Bootstrap
+
+Ohne Admin-User wäre die Oberfläche nicht erreichbar. Zwei Wege:
+
+1. `ADMIN_API_KEY` (+ optional `ADMIN_EMAIL`, `ADMIN_NAME`) in der Umgebung
+   setzen. Beim Start wird der User angelegt/promotet und dieser Key als
+   sein einziger aktiver Key installiert. **Empfohlen.**
+2. Kein `ADMIN_API_KEY` gesetzt, aber `PROMOTE_ADMIN_EMAIL=<email>` zeigt auf
+   einen existierenden User → dieser wird beim Start zum Admin promovet
+   (Warnung im Log). **Default ist leer / aus** — ein Deployment soll nicht
+   stillschweigend einem Seed-/POC-Konto Adminrechte geben.
+
+> Der frühere Caveat „`/admin/*` ist unauthentifiziert" ist damit erledigt:
+> die alten offenen Routen (`POST /admin/users`, `POST /admin/users/{id}/topup`)
+> wurden entfernt. `POST /admin/users/legacy-create` antwortet nur noch mit
+> `308` und verweist auf die authentifizierte Route.
+
+---
+
 ## UI-Endpoints (HTML)
 
 | Endpoint | Beschreibung |
