@@ -81,12 +81,12 @@
         <div class="panel-head">
           <div>
             <div class="eyebrow">Verbrauch</div>
-            <h3>Letzte 7 Tage</h3>
-            <p>Pro Tag verbrauchte Credits.</p>
+            <h3 x-text="'Letzte ' + (usage && usage.window === '30d' ? '30 Tage' : usage && usage.window === '24h' ? '24 Stunden' : '7 Tage')"></h3>
+            <p>Pro Tag verbrauchte Token.</p>
           </div>
           <div class="right">
-            <div class="eyebrow" style="justify-content:flex-end">Gesamt</div>
-            <div class="t-xl num semibold" x-text="fmtCredits(stats.total_spent)">—</div>
+            <div class="eyebrow" style="justify-content:flex-end">Token</div>
+            <div class="t-xl num semibold" x-text="usage ? fmtNumber(usage.totals.total_tokens) : '—'"></div>
           </div>
         </div>
         <canvas id="usageChart" style="width:100%;height:190px;display:block"></canvas>
@@ -96,19 +96,27 @@
         <div class="eyebrow mb-3">Kennzahlen</div>
         <div class="stat-row">
           <span class="k">API-Aufrufe</span>
-          <span class="v" x-text="fmtNumber(stats.calls)"></span>
+          <span class="v" x-text="usage ? fmtNumber(usage.totals.requests) : '—'"></span>
         </div>
         <div class="stat-row">
           <span class="k">Token verbraucht</span>
-          <span class="v" x-text="fmtNumber(stats.tokens)"></span>
+          <span class="v" x-text="usage ? fmtNumber(usage.totals.total_tokens) : '—'"></span>
+        </div>
+        <div class="stat-row">
+          <span class="k">Modelle</span>
+          <span class="v" x-text="usage ? fmtNumber(usage.totals.models_used) : '—'"></span>
+        </div>
+        <div class="stat-row">
+          <span class="k">Credits verbraucht</span>
+          <span class="v" x-text="usage ? fmtCredits(usage.totals.credits) : '—'"></span>
         </div>
         <div class="stat-row">
           <span class="k">Letzte Aktivität</span>
-          <span class="v" x-text="stats.last_used ? timeAgo(stats.last_used) : '—'"></span>
+          <span class="v" x-text="usage && usage.recent.length ? timeAgo(usage.recent[0].created_at) : '—'"></span>
         </div>
         <p class="hint mt-3">
-          Serverseitige Statistik ist im POC noch nicht angebunden — die Werte stammen
-          aus <code class="inline">/v1/me</code>.
+          Live aus <code class="inline">GET /v1/me/usage</code> — Details und Zeitraum-Umschalter
+          im <a href="usage.html" class="link">Usage-Tab</a>.
         </p>
       </div>
     </div>
@@ -177,7 +185,7 @@
                 <td class="t-xs text-dim" x-text="timeAgo(u.created_at)"></td>
                 <td class="mono" x-text="u.model"></td>
                 <td class="num" x-text="fmtNumber(u.total_tokens)"></td>
-                <td class="num neg" x-text="'-' + fmtCredits(u.credits_charged)"></td>
+                <td class="num neg" x-text="'-' + fmtCredits(u.credits)"></td>
               </tr>
             </template>
           </tbody>
@@ -198,7 +206,7 @@
         revealKey: false,
         regenerating: false,
         loading: true,
-        stats: { calls: 0, tokens: 0, total_spent: 0, last_used: null },
+        usage: null,
         recent: [],
         exampleCurl: `curl http://localhost:8765/v1/chat/completions \\
   -H "Authorization: Bearer $GPU_POOL_KEY" \\
@@ -227,15 +235,13 @@
           try {
             this.me = await refreshUser();
             this.apiKey = LS.get("api_key");
-            // No /v1/stats endpoint yet in the POC; keep the shape, show zeros.
-            this.stats = { calls: 0, tokens: 0, total_spent: 0, last_used: null };
-            this.recent = [];
-            const now = new Date();
-            const points = Array.from({ length: 7 }, (_, i) => {
-              const d = new Date(now); d.setDate(d.getDate() - (6 - i));
-              return { label: d.toLocaleDateString("de-DE", { weekday: "short" }), value: 0 };
-            });
-            renderUsageChart("usageChart", points);
+            // Server-side aggregation: which models, how many tokens, this week.
+            this.usage = await api("/v1/me/usage?window=7d", { auth: true });
+            this.recent = this.usage.recent || [];
+            renderUsageChart(
+              "usageChart",
+              (this.usage.series || []).map((b) => ({ label: b.label, value: b.total_tokens }))
+            );
           } catch (e) {
             toast("Laden fehlgeschlagen: " + e.message, "err");
           } finally {

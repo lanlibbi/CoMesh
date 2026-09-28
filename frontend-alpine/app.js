@@ -141,6 +141,7 @@ function mountBackground() {
 const NAV_ITEMS = [
   { key: "dashboard", href: "index.html", label: "Dashboard" },
   { key: "chat", href: "chat.html", label: "Chat" },
+  { key: "usage", href: "usage.html", label: "Usage" },
   { key: "pool", href: "pool.html", label: "Pool" },
   { key: "nodes", href: "nodes.html", label: "Nodes", providerOnly: true },
   { key: "earnings", href: "earnings.html", label: "Earnings", providerOnly: true },
