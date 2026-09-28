@@ -1,6 +1,13 @@
 """
 Minimal HTML frontend for the GPU-Pool POC.
 
+Credits are behind the `credits_enabled` flag in config.yaml. The page list
+below is intentionally *not* pruned when credits are off: old links and
+bookmarks keep resolving, and the JS on those pages shows a "credits are
+disabled" notice instead of purchase actions. Route availability stays stable,
+which also keeps the frontend-alpine SPA (served by nginx, not this router)
+consistent with the backend.
+
 Pages:
   /             -> login/register
   /chat         -> chat UI

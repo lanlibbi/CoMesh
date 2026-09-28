@@ -13,7 +13,7 @@
   <div class="card glass w-full max-w-lg" x-data="registerForm()">
     <div class="text-center mb-6">
       <h1 class="text-2xl font-bold gradient-text">⚡ GPU-Pool</h1>
-      <p class="text-[color:var(--text-dim)] mt-1 text-sm">Create your account · Get 100 free credits</p>
+      <p class="text-[color:var(--text-dim)] mt-1 text-sm">Create your account · unbegrenzte Nutzung</p>
     </div>
 
     <form @submit.prevent="submit()" class="space-y-4">
@@ -147,9 +147,12 @@ function registerForm() {
         Auth.save({
           id: r.user_id, email: r.email, name: r.name,
           credits: r.credits, role: r.role, allowed_models: r.allowed_models,
+          credits_enabled: r.credits_enabled,
         }, r.api_key);
         sessionStorage.setItem("just_registered_key", r.api_key);
-        toast("Account created! 100 credits granted.");
+        toast(r.credits_enabled === false
+          ? "Account created! Unbegrenzte Nutzung aktiv."
+          : "Account created! 100 credits granted.");
         setTimeout(() => { window.location.href = "index.html?new=1"; }, 500);
       } catch (e) {
         this.error = e.message || "Registration failed";

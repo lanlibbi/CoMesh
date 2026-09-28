@@ -51,8 +51,17 @@ docker build -t gpu-pool-node-agent .</code></pre>
       <h3 class="font-semibold mb-2">4) Verifizieren</h3>
       <p class="text-sm text-[color:var(--text-dim)]">
         Sobald dein Node im Pool auftaucht, bist du live. Anfragen werden automatisch an deine GPU
-        geroutet, du bekommst 70% der Job-Kosten als Credits auf dein Konto.
+        geroutet<span id="agent-earnings-note">, du bekommst 70% der Job-Kosten als Credits auf dein Konto.</span>
       </p>
+      <script>
+        // Credits are behind the config.yaml flag; rewrite the promise when off.
+        document.addEventListener("DOMContentLoaded", () => {
+          if (typeof Credits !== "undefined" && Credits.disabled()) {
+            const el = document.getElementById("agent-earnings-note");
+            if (el) el.textContent = ". Die dabei ermittelten Beträge werden derzeit nur als Statistik erfasst (Credits deaktiviert).";
+          }
+        });
+      </script>
     </div>
   </main>
 

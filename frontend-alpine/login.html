@@ -56,7 +56,9 @@ function loginForm() {
       this.error = "";
       try {
         const r = await API("/auth/login", { method: "POST", body: { email: this.email, password: this.password } });
-        Auth.save({ id: r.user_id, email: r.email, name: r.name, credits: r.credits }, r.api_key);
+        Auth.save({ id: r.user_id, email: r.email, name: r.name, credits: r.credits,
+                    role: r.role, allowed_models: r.allowed_models,
+                    credits_enabled: r.credits_enabled }, r.api_key);
         toast("Welcome back, " + r.name + "!");
         setTimeout(() => { window.location.href = "index.html"; }, 400);
       } catch (e) {

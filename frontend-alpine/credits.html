@@ -14,13 +14,25 @@
   <main class="max-w-6xl mx-auto px-6 pb-12">
     <div class="mb-6">
       <h1 class="text-2xl font-bold">Buy credits</h1>
-      <p class="text-[color:var(--text-dim)] mt-1 text-sm">
+      <p class="text-[color:var(--text-dim)] mt-1 text-sm" x-show="billing">
         Current balance:
         <span class="font-semibold gradient-text" x-text="fmtCredits(me?.credits)"></span> credits
       </p>
     </div>
 
+    <!-- Credits are switched off (config.yaml: credits_enabled: false) -->
+    <div class="card glass mb-8" x-show="!billing">
+      <h2 class="text-lg font-semibold mb-2">Credits sind deaktiviert</h2>
+      <p class="text-sm text-[color:var(--text-dim)]">
+        Die Nutzung ist für alle Accounts unbegrenzt — es gibt nichts zu kaufen. Diese Seite bleibt
+        nur erreichbar, damit alte Links nicht ins Leere laufen. Sobald das Credits-System wieder
+        aktiviert wird, erscheinen hier die Pakete.
+      </p>
+      <p class="text-sm mt-3"><a href="chat.html" class="text-brand">→ Zum Chat</a></p>
+    </div>
+
     <!-- Packs -->
+    <div x-show="billing">
     <div class="grid md:grid-cols-3 gap-4 mb-8">
       <template x-for="pack in packs" :key="pack.id">
         <div class="card glass flex flex-col"
@@ -43,8 +55,8 @@
       </template>
     </div>
 
-    <!-- Manual top-up request -->
-    <div class="card glass mb-6">
+    <!-- Manual top-up request (billing mode only) -->
+    <div class="card glass mb-6" x-show="billing">
       <h2 class="text-lg font-semibold mb-2">Or request a manual top-up</h2>
       <p class="text-sm text-[color:var(--text-dim)] mb-4">
         For the POC we don't process real payments. Submit a request and the admin will credit your account.
@@ -66,8 +78,8 @@
       <div x-show="topupMsg" class="mt-3 text-sm" :class="topupOk ? 'text-[color:var(--ok)]' : 'text-[color:var(--err)]'" x-text="topupMsg"></div>
     </div>
 
-    <!-- Pending requests -->
-    <div class="card glass">
+    <!-- Pending requests (billing mode only) -->
+    <div class="card glass" x-show="billing">
       <h2 class="text-lg font-semibold mb-3">Your top-up requests</h2>
       <div x-show="requests.length === 0" class="text-sm text-[color:var(--text-dim)]">No requests yet.</div>
       <div x-show="requests.length > 0" class="overflow-x-auto">
@@ -97,6 +109,7 @@
         </table>
       </div>
     </div>
+    </div><!-- /billing-only section -->
   </main>
 
   <script src="app.js"></script>
@@ -104,6 +117,10 @@
     function creditsPage() {
       return {
         me: Auth.currentUser(),
+        // With credits_enabled: false there is nothing to buy. The page stays
+        // reachable (bookmark / old link) but shows an explanatory notice and
+        // does not offer any purchase action.
+        billing: Credits.enabled(),
         busy: null,
         topupBusy: false,
         topupAmount: 100,

@@ -78,6 +78,23 @@ const Auth = {
   },
 };
 
+// ---------- Credits feature flag ----------
+// The backend owns the flag (config.yaml: credits_enabled). The UI only mirrors
+// it: with credits off the portal is free to use, so balances, prices, top-up
+// buttons and the cost line after a reply are hidden rather than removed from
+// the markup. Flipping the flag back on makes them reappear — no frontend
+// change needed. Unknown/missing flag values default to the legacy (on) mode so
+// an older cached app.js never silently drops the billing surfaces of a
+// billable deployment.
+const Credits = {
+  enabled() {
+    const u = Auth.currentUser();
+    if (!u || u.credits_enabled == null) return true;
+    return !!u.credits_enabled;
+  },
+  disabled() { return !this.enabled(); },
+};
+
 // ---------- Toast notifications ----------
 function toast(msg, kind = "ok", timeout = 3500) {
   const el = document.createElement("div");
@@ -116,16 +133,17 @@ function timeAgo(s) {
 function navHTML(active) {
   const user = Auth.currentUser() || {};
   const isProvider = Auth.hasRole("provider");
+  const billing = Credits.enabled();
   return `
     <nav class="flex items-center justify-between px-6 py-4 max-w-6xl mx-auto">
       <a href="index.html" class="text-xl font-bold gradient-text">⚡ GPU-Pool</a>
       <div class="flex items-center gap-1">
         <a href="index.html" class="nav-link ${active === "dashboard" ? "active" : ""}">Dashboard</a>
         <a href="chat.html" class="nav-link ${active === "chat" ? "active" : ""}">Chat</a>
-        
+        ${billing ? `<a href="credits.html" class="nav-link ${active === "credits" ? "active" : ""}">Credits</a>` : ""}
         <a href="pool.html" class="nav-link ${active === "pool" ? "active" : ""}">Pool</a>
         ${isProvider ? `<a href="nodes.html" class="nav-link ${active === "nodes" ? "active" : ""}">Nodes</a>` : ""}
-        ${isProvider ? `<a href="earnings.html" class="nav-link ${active === "earnings" ? "active" : ""}">Earnings</a>` : ""}
+        ${billing && isProvider ? `<a href="earnings.html" class="nav-link ${active === "earnings" ? "active" : ""}">Earnings</a>` : ""}
         <a href="agent.html" class="nav-link ${active === "agent" ? "active" : ""}">Agent</a>
         <a href="profile.html" class="nav-link ${active === "profile" ? "active" : ""}">Profil</a>
       </div>
@@ -199,6 +217,7 @@ window.Auth = Auth;
 window.LS = LS;
 window.toast = toast;
 window.fmtCredits = fmtCredits;
+window.Credits = Credits;
 window.fmtNumber = fmtNumber;
 window.fmtDate = fmtDate;
 window.timeAgo = timeAgo;

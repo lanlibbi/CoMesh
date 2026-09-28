@@ -10,6 +10,11 @@ Includes user management, API key issuance, credit accounting,
 payments (Stripe, PayPal, Alipay, Apple Pay - all in test/mock mode
 for the POC), and Community GPU-Pool (node registration, heartbeat,
 load-balancing, revenue distribution).
+
+Feature flags live in config.yaml (see config.py). `credits_enabled: false`
+puts the portal in free mode: no HTTP 402 balance gate and no credit
+deduction on /v1/chat/completions. The credit tables themselves are never
+dropped, so the flag can be flipped back on without a migration.
 """
 import hashlib
 import logging
@@ -45,6 +50,7 @@ from payments import router as payments_router
 from frontend import router as frontend_router
 from nodes import router as nodes_router
 from pool import router as pool_router, distribute_revenue
+from config import credits_enabled
 from ws import router as ws_router  # Phase 1: WebSocket outbound layer
 
 # ----------------------------------------------------------------------------
@@ -170,6 +176,9 @@ class UserInfo(BaseModel):
     role: str = "both"
     allowed_models: Optional[List[str]] = None
     created_at: str
+    # Feature flag (config.yaml: credits_enabled). False = unlimited usage:
+    # the UI must not show balances, prices or top-up flows.
+    credits_enabled: bool = True
 
 
 class UpdateRoleRequest(BaseModel):
@@ -301,6 +310,7 @@ async def health():
         "status": "ok",
         "ollama_reachable": ollama_ok,
         "ollama_error": ollama_error,
+        "credits_enabled": credits_enabled(),
         "community": {
             "nodes_total": len(nodes) if 'nodes' in dir() else 0,
             "nodes_online": len(online) if 'online' in dir() else 0,
@@ -323,7 +333,7 @@ async def list_models(_user: User = Depends(get_current_user)):
 
 @app.get("/v1/me")
 def me(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    """Current user info + credit balance."""
+    """Current user info + credit balance (+ the credits feature flag)."""
     return UserInfo(
         id=user.id,
         email=user.email,
@@ -333,6 +343,7 @@ def me(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
         role=getattr(user, "role", "both") or "both",
         allowed_models=user.get_allowed_models(),
         created_at=user.created_at.isoformat(),
+        credits_enabled=credits_enabled(),
     )
 
 
@@ -476,8 +487,12 @@ async def chat_completions(
     from pool import route_request
     model = request.model or DEFAULT_MODEL
 
+    # Credits are behind a feature flag (config.yaml: credits_enabled).
+    # When the flag is off the portal is free to use: no balance floor and no
+    # HTTP 402. When it is on we keep the legacy behaviour.
+    billing = credits_enabled()
     balance = get_user_credits(db, user.id)
-    if balance < 0.01:
+    if billing and balance < 0.01:
         raise HTTPException(
             status_code=status.HTTP_402_PAYMENT_REQUIRED,
             detail=f"Insufficient credits. Current balance: {balance:.4f}",
@@ -528,12 +543,16 @@ async def chat_completions(
         total_tokens=total_tokens,
         credits_charged=credits_used,
     ))
-    db.add(CreditTransaction(
-        user_id=user.id,
-        amount=-credits_used,
-        balance_after=new_balance,
-        reason=f"chat: {model} ({total_tokens} tokens, src={routed['source']})",
-    ))
+    if billing:
+        # Charge the request. With the flag off we deliberately skip this: no
+        # balance floor means a deduction would just drive balances negative.
+        # The Usage row above still records the token count.
+        db.add(CreditTransaction(
+            user_id=user.id,
+            amount=-credits_used,
+            balance_after=new_balance,
+            reason=f"chat: {model} ({total_tokens} tokens, src={routed['source']})",
+        ))
 
     # Pool job record + revenue distribution when running on a community node
     pool_job = PoolJob(
@@ -559,10 +578,12 @@ async def chat_completions(
 
     db.commit()
 
+    cost_note = (f"-{credits_used} credits (balance: {new_balance:.4f})"
+                 if billing else f"credits off (informational: {credits_used})")
     log.info(
         f"User {user.email} -> {model} src={routed['source']} "
         f"node={routed.get('node_id')} | in:{prompt_tokens} out:{completion_tokens} "
-        f"| -{credits_used} credits (balance: {new_balance:.4f}) | {latency_ms}ms"
+        f"| {cost_note} | {latency_ms}ms"
     )
 
     return ChatCompletionResponse(
@@ -665,6 +686,7 @@ class AuthResponse(BaseModel):
     api_key: str
     key_prefix: str
     credits: float
+    credits_enabled: bool = True
 
 
 @app.post("/auth/register", response_model=AuthResponse)
@@ -696,12 +718,15 @@ def auth_register(req: RegisterRequest, db: Session = Depends(get_db)):
     db.flush()
     if allowed_models_value is not None:
         user.set_allowed_models(allowed_models_value)
-    db.add(CreditTransaction(
-        user_id=user.id,
-        amount=req.initial_credits,
-        balance_after=req.initial_credits,
-        reason="signup credit",
-    ))
+    if credits_enabled():
+        # Signup grants stay tied to the billing system: with credits off they
+        # would be meaningless (and the user gets unlimited usage anyway).
+        db.add(CreditTransaction(
+            user_id=user.id,
+            amount=req.initial_credits,
+            balance_after=req.initial_credits,
+            reason="signup credit",
+        ))
 
     raw_key, key_hash, key_prefix = generate_api_key()
     db.add(ApiKey(
@@ -723,6 +748,7 @@ def auth_register(req: RegisterRequest, db: Session = Depends(get_db)):
         api_key=raw_key,
         key_prefix=key_prefix,
         credits=req.initial_credits,
+        credits_enabled=credits_enabled(),
     )
 
 
@@ -756,6 +782,7 @@ def auth_login(req: LoginRequest, db: Session = Depends(get_db)):
         api_key=raw_key,
         key_prefix=key_prefix,
         credits=balance,
+        credits_enabled=credits_enabled(),
     )
 
 

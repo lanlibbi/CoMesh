@@ -31,10 +31,19 @@
     <!-- Credit balance + actions -->
     <div class="grid md:grid-cols-3 gap-4 mb-6">
       <div class="card glass md:col-span-2">
-        <div class="text-[color:var(--text-dim)] text-sm">Credit balance</div>
-        <div class="stat-value mt-1" x-text="fmtCredits(me?.credits)">—</div>
-        <div class="text-xs text-[color:var(--text-dim)] mt-1">
-          ≈ <span x-text="fmtNumber(Math.floor((me?.credits || 0) * 1000))"></span> tokens
+        <div x-show="billing">
+          <div class="text-[color:var(--text-dim)] text-sm">Credit balance</div>
+          <div class="stat-value mt-1" x-text="fmtCredits(me?.credits)">—</div>
+          <div class="text-xs text-[color:var(--text-dim)] mt-1">
+            ≈ <span x-text="fmtNumber(Math.floor((me?.credits || 0) * 1000))"></span> tokens
+          </div>
+        </div>
+        <div x-show="!billing">
+          <div class="text-[color:var(--text-dim)] text-sm">Nutzung</div>
+          <div class="stat-value mt-1">Unbegrenzt</div>
+          <div class="text-xs text-[color:var(--text-dim)] mt-1">
+            Credits sind deaktiviert — alle Accounts können ohne Limit nutzen.
+          </div>
         </div>
         <div class="mt-4 flex flex-wrap gap-2">
           
@@ -57,9 +66,12 @@
         <div class="flex items-center justify-between mb-3">
           <div>
             <div class="font-semibold">Usage (last 7 days)</div>
-            <div class="text-xs text-[color:var(--text-dim)]">Credits spent per day</div>
+            <div class="text-xs text-[color:var(--text-dim)]">
+              <span x-show="billing">Credits spent per day</span>
+              <span x-show="!billing">Tokens per day</span>
+            </div>
           </div>
-          <div class="text-right">
+          <div class="text-right" x-show="billing">
             <div class="text-xs text-[color:var(--text-dim)]">Total spent</div>
             <div class="text-lg font-semibold" x-text="fmtCredits(stats.total_spent)">—</div>
           </div>
@@ -123,7 +135,7 @@
               <th>When</th>
               <th>Model</th>
               <th>Tokens</th>
-              <th>Credits</th>
+              <th x-show="billing">Credits</th>
             </tr>
           </thead>
           <tbody>
@@ -132,7 +144,7 @@
                 <td class="text-xs" x-text="timeAgo(u.created_at)"></td>
                 <td x-text="u.model"></td>
                 <td class="mono" x-text="fmtNumber(u.total_tokens)"></td>
-                <td class="mono" x-text="'-' + fmtCredits(u.credits_charged)"></td>
+                <td class="mono" x-show="billing" x-text="'-' + fmtCredits(u.credits_charged)"></td>
               </tr>
             </template>
           </tbody>
@@ -146,6 +158,7 @@
     function dashboard() {
       return {
         me: Auth.currentUser(),
+        billing: Credits.enabled(),
         apiKey: LS.get("api_key"),
         showNewKey: false,
         newKey: "",
@@ -174,6 +187,7 @@
           this.loading = true;
           try {
             this.me = await refreshUser();
+            this.billing = Credits.enabled();
             this.apiKey = LS.get("api_key");
             // Stats: we don't have a dedicated /v1/stats endpoint, so derive from /v1/me
             // (For the POC, we just call /v1/me and display zeros + leave the chart empty.)

@@ -60,7 +60,7 @@
           </div>
           <div class="grid grid-cols-2 gap-3">
             <div>
-              <label class="text-sm">Stundensatz (Credits)</label>
+              <label class="text-sm">Stundensatz (Credits)<span x-show="!billing" class="text-[color:var(--text-dim)]"> — derzeit ohne Wirkung</span></label>
               <input class="input" type="number" step="0.01" min="0" x-model.number="form.hourly_rate" />
             </div>
             <div>
@@ -113,7 +113,7 @@
           <li>Du bekommst einen <span class="mono">agent_api_key</span> — einmalig anzeigen und sicher speichern.</li>
           <li>Du startest den Node-Agent (Docker) auf deiner Maschine mit Node-ID + API-Key.</li>
           <li>Der Agent sendet alle 30s einen Heartbeat. Dein Node wird im Community-Pool sichtbar.</li>
-          <li>Andere User schicken Anfragen — deine GPU verarbeitet sie. Du bekommst 70% der Credits.</li>
+          <li>Andere User schicken Anfragen — deine GPU verarbeitet sie.<span x-show="billing"> Du bekommst 70% der Credits.</span><span x-show="!billing"> Die Auslastung wird als Statistik mitgeschrieben (Credits sind derzeit deaktiviert).</span></li>
         </ol>
         <p class="mt-4"><a href="agent.html" class="text-brand">→ Agent-Setup-Anleitung</a></p>
       </div>
@@ -140,8 +140,9 @@
                 <span x-text="(n.tailscale_ip || 'no Tailscale') + ':' + n.port"></span>
               </div>
               <div class="text-xs text-[color:var(--text-dim)] mt-1">
-                <span x-text="n.hourly_rate"></span> Credits/h ·
-                Earned: <span x-text="fmtCredits(n.earnings_total)"></span> ·
+                <span x-show="billing"><span x-text="n.hourly_rate"></span> Credits/h ·</span>
+                <span x-show="billing">Earned: <span x-text="fmtCredits(n.earnings_total)"></span> ·</span>
+                <span x-show="!billing">Earnings: <span x-text="fmtCredits(n.earnings_total)"></span> (informativ) ·</span>
                 Last seen: <span x-text="fmtDate(n.last_seen)"></span> ·
                 <span>
                   <template x-if="!n.allowed_models">

@@ -12,12 +12,20 @@
   <div x-html="navHTML('chat')"></div>
 
   <main class="max-w-4xl mx-auto px-4 pb-32">
+    <div class="card glass mb-4" x-show="!billing" style="padding:10px 14px;">
+      <span class="text-sm text-[color:var(--text-dim)]">
+        Credits sind derzeit deaktiviert — unbegrenzte Nutzung für alle Accounts.
+      </span>
+    </div>
     <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
       <div>
         <h1 class="text-2xl font-bold">Chat</h1>
-        <p class="text-sm text-[color:var(--text-dim)]">
+        <p class="text-sm text-[color:var(--text-dim)]" x-show="billing">
           Balance:
           <span class="font-semibold gradient-text" x-text="fmtCredits(me?.credits)"></span> credits
+        </p>
+        <p class="text-sm text-[color:var(--text-dim)]" x-show="!billing">
+          Unbegrenzte Nutzung — Credits sind für alle Accounts deaktiviert.
         </p>
       </div>
       <div class="flex items-center gap-2">
@@ -80,9 +88,9 @@
 
     <!-- Last usage info -->
     <div x-show="lastUsage" class="text-xs text-[color:var(--text-dim)] mt-2 text-right">
-      <span x-show="lastUsage">
-        Last reply: <span class="mono" x-text="fmtNumber(lastUsage?.total_tokens)"></span> tokens ·
-        cost <span class="mono" x-text="fmtCredits(lastUsage?.credits_used)"></span> credits
+      <span>
+        Last reply: <span class="mono" x-text="fmtNumber(lastUsage?.total_tokens)"></span> tokens<span x-show="billing">
+        · cost <span class="mono" x-text="fmtCredits(lastUsage?.credits_used)"></span> credits</span>
       </span>
     </div>
   </main>
@@ -92,6 +100,7 @@
     function chatPage() {
       return {
         me: Auth.currentUser(),
+        billing: Credits.enabled(),
         models: [],
         model: "",
         messages: [],
@@ -103,6 +112,7 @@
           if (!Auth.requireLogin()) return;
           await this.loadModels();
           try { this.me = await refreshUser(); } catch {}
+          this.billing = Credits.enabled();
         },
 
         async loadModels() {
@@ -124,8 +134,9 @@
           this.messages.push({ role: "user", content: text });
           this.loading = true;
           this.lastUsage = null;
-          // Pre-check credit balance
-          if (this.me && this.me.credits != null && this.me.credits < 0.01) {
+          // Pre-check credit balance (only when the credits flag is on — with
+          // credits disabled every account has unlimited usage).
+          if (this.billing && this.me && this.me.credits != null && this.me.credits < 0.01) {
             this.loading = false;
             toast("Insufficient credits. Please top up.", "err", 5000);
             return;

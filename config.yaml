@@ -1,0 +1,18 @@
+# GPU-Pool configuration
+#
+# Feature flags. Every key can be overridden by an environment variable of the
+# same name (uppercased), e.g. CREDITS_ENABLED=1.
+
+# Credits / billing system.
+#   false -> the portal is free to use: no HTTP 402 "Insufficient credits",
+#            no balance floor, no credit deduction on /v1/chat/completions.
+#            Usage rows and node earnings are still recorded (informational),
+#            so the data stays complete if credits are re-enabled later.
+#   true  -> legacy behaviour: requests are refused below the minimum balance
+#            and each request books a CreditTransaction.
+# The database schema is never dropped — this flag only switches enforcement.
+credits_enabled: false
+
+supply_check_threshold: 20  # Default threshold for supply alerts (percent)
+alert_email:
+  enabled: false  # Set to true to enable email alerts
