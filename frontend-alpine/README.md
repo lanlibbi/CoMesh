@@ -1,6 +1,6 @@
-# GPU-Pool Frontend — Alpine.js (Single-File, kein Build-Step)
+# CoMesh Frontend — Alpine.js (Single-File, kein Build-Step)
 
-Statisches Frontend für den GPU-Pool POC, ausgeliefert von nginx in einem
+Statisches Frontend für den CoMesh-Pool, ausgeliefert von nginx in einem
 eigenen Container auf **Port 3000**.
 
 ## Tech-Stack
@@ -72,6 +72,36 @@ damit die Navigation nicht zwischen Seiten auseinanderläuft.
 - Der Footer wird beim Laden angehängt; Seiten brauchen keinen Platzhalter.
 - Mobile: die Nav bekommt eine eigene Zeile und scrollt den aktiven Link
   automatisch ins Bild (`revealActiveNav()`).
+
+## Theme + Sprache
+
+`i18n.js` (Runtime) und `i18n-catalog.js` (Strings) liegen in jeder Seite
+zwischen `app.js` und dem Seiten-Script; ein winziges Inline-Script im `<head>`
+setzt das Theme **vor** dem ersten Paint.
+
+- **Theme:** Dark (Anthrazit) ist Default. Eine explizite Wahl in
+  `localStorage.gp_theme` gewinnt, sonst entscheidet `prefers-color-scheme`,
+  sonst Dark. Alle Farben sind CSS-Variablen (`:root` = dark,
+  `[data-theme="light"]` = light).
+- **Sprache:** `localStorage.gp_lang`, Default **EN**. Persistiert pro Browser,
+  nicht pro Konto.
+- **Umfang: genau vier Locales — EN (Default), DE, ES, FR.** PT und ZH sind
+  bewusst **nicht** implementiert (Entscheidung LANA-65); die Build-Prüfung
+  `scripts/i18n/build_catalog.py` lässt eine fünfte Sprache gar nicht durch.
+  Ein neues Locale heißt: Entscheidung neu treffen, `LOCALES`/`META` im
+  Build-Script ergänzen, Übersetzungen liefern, `build_catalog.py` + `python3
+  scripts/i18n/audit_coverage.py` laufen lassen.
+- **Catalog pflegen:** die Quelle sind `scripts/i18n/i18n_parts/*.py` (kein
+  Handeditieren von `i18n-catalog.js`). Nach jeder Textänderung:
+  `python3 scripts/i18n/build_catalog.py`. Es prüft Vollständigkeit in beide
+  Richtungen, dass die DE-Werte noch exakt dem Markup entsprechen, dass
+  HTML-Werte in allen Locales dieselben Tags tragen und dass **kein** Wert
+  CJK-Zeichen enthält (die würden ohne Font-Fallback als Tofu rendern).
+- **Fachbegriffe** (Node, Token, Model, Credits, API-Key, Pool, Provider,
+  Owner, Treasury, VRAM, Tailscale) bleiben in jeder Sprache unübersetzt — das
+  ist Produktregel, keine fehlende Übersetzung.
+- Ein alter `gp_lang`-Wert außerhalb der vier Locales (z. B. ein früher
+  gewähltes `zh`) fällt in `I18n.lang` automatisch auf EN zurück.
 
 ## Seiten
 

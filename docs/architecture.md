@@ -1,6 +1,6 @@
 # Architektur
 
-Dieses Dokument beschreibt die Architektur des GPU-Pool-POC im Detail: Komponenten, Datenmodell, Entscheidungen und Trade-offs.
+Dieses Dokument beschreibt die Architektur des CoMesh-POC im Detail: Komponenten, Datenmodell, Entscheidungen und Trade-offs.
 
 ## Design-Prinzipien
 

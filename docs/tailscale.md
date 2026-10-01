@@ -1,6 +1,6 @@
 # Tailscale-Setup
 
-Der gesamte GPU-Pool läuft ausschließlich über ein privates Tailscale-Netzwerk. Das bedeutet:
+Der gesamte CoMesh-Pool läuft ausschließlich über ein privates Tailscale-Netzwerk. Das bedeutet:
 
 - **Keine Public-IPs** für Portal oder Node-Agents
 - **Keine Firewall-Regeln** nötig

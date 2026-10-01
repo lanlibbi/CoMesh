@@ -94,7 +94,7 @@ docker compose logs -f agent
 
 Erwartete Ausgabe:
 ```
-[agent] Starting GPU-Pool Node-Agent
+[agent] Starting CoMesh Node-Agent
 [agent] Detected GPU: NVIDIA GeForce RTX 4090 (24 GB)
 [agent] Registering with portal at http://portal-ip:8765
 [agent] Registered as node_id=3
