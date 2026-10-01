@@ -1,6 +1,6 @@
 # API-Referenz
 
-Komplette Referenz aller HTTP-Endpoints des GPU-Pool-Portals.
+Komplette Referenz aller HTTP-Endpoints des CoMesh-Portals.
 
 **Base-URL:** `http://portal-host:8765` (oder via Tailscale-MagicDNS)
 **Content-Type:** `application/json` (außer bei File-Uploads)

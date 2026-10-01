@@ -1,6 +1,6 @@
 # Portal
 
-Das Portal ist die zentrale API- und UI-Instanz des GPU-Pool-POC. Es läuft im POC auf `portal-host` (Tailscale-IP `portal-ip`).
+Das Portal ist die zentrale API- und UI-Instanz des CoMesh-POC. Es läuft im POC auf `portal-host` (Tailscale-IP `portal-ip`).
 
 ## Setup
 
