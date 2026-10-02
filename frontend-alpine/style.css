@@ -1,5 +1,5 @@
 /* =========================================================================
-   GPU-Pool — Anthracite Design System
+   CoMesh — Anthracite Design System
    -------------------------------------------------------------------------
    Single-file Alpine frontend, no build step. This stylesheet is the whole
    design system: tokens, layout primitives, components, app-wide background.
@@ -1034,3 +1034,24 @@ td.neg { color: var(--err); }
   max-height: 15rem;
   overflow-y: auto;
 }
+
+/* Language dropdown (brass-matched) — Quinn 29.09. */
+.lang-select {
+  appearance: none;
+  -webkit-appearance: none;
+  background: var(--surface-2);
+  color: var(--text-dim);
+  border: 1px solid var(--line-strong);
+  border-radius: 7px;
+  padding: 5px 26px 5px 10px;
+  font: 500 12px/1.2 var(--font-sans);
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2710%27 height=%276%27 viewBox=%270 0 10 6%27%3E%3Cpath d=%27M1 1l4 4 4-4%27 stroke=%27%238d97a2%27 stroke-width=%271.4%27 fill=%27none%27 stroke-linecap=%27round%27/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 9px center;
+  transition: border-color 0.15s, color 0.15s;
+}
+.lang-select:hover { color: var(--text); border-color: var(--brass-line); }
+.lang-select:focus { outline: none; border-color: var(--brass); }
+.lang-select option { background: var(--surface-2); color: var(--text); }

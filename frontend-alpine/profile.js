@@ -1,4 +1,4 @@
-// GPU-Pool — /profile page (alpine frontend). Edit role + model whitelist.
+// CoMesh — /profile page (alpine frontend). Edit role + model whitelist.
 document.addEventListener("alpine:init", () => {
   Alpine.data("profilePage", () => ({
     role: "both",

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Dashboard · GPU-Pool</title>
+<title>Dashboard · CoMesh</title>
 <meta name="color-scheme" content="dark" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -24,38 +24,38 @@
         </svg>
       </span>
       <div class="grow">
-        <div class="semibold">API-Key jetzt sichern</div>
+        <div class="semibold" data-i18n="idx.keyTitle">API-Key jetzt sichern</div>
         <p class="t-sm text-dim mt-1">
           Dieser Schlüssel wird nur einmal vollständig angezeigt. Er ist die einzige
           Zugangsmöglichkeit zur API.
         </p>
         <pre class="code mono mt-2" x-text="newKey"></pre>
         <div class="row mt-3">
-          <button class="btn-ghost btn-sm" @click="copyNewKey($event)">Kopieren</button>
-          <button class="btn-ghost btn-sm btn-quiet" @click="showNewKey = false">Habe ich gesichert</button>
+          <button class="btn-ghost btn-sm" @click="copyNewKey($event)" data-i18n="idx.copy">Kopieren</button>
+          <button class="btn-ghost btn-sm btn-quiet" @click="showNewKey = false" data-i18n="idx.saved">Habe ich gesichert</button>
         </div>
       </div>
     </div>
 
     <div class="page-head">
-      <div class="eyebrow">Übersicht</div>
+      <div class="eyebrow" data-i18n="idx.overview">Übersicht</div>
       <h1 x-text="greeting()"></h1>
-      <p class="lede">Guthaben, API-Zugang und die letzten Aufrufe auf einen Blick.</p>
+      <p class="lede" data-i18n="idx.overviewSub">Guthaben, API-Zugang und die letzten Aufrufe auf einen Blick.</p>
     </div>
 
     <!-- Balance + account -->
     <div class="grid mb-4">
       <div class="card span-8">
         <div class="stat">
-          <div class="eyebrow">Credit-Guthaben</div>
+          <div class="eyebrow" data-i18n="idx.balance">Credit-Guthaben</div>
           <div class="stat-value brass" x-text="fmtCredits(me?.credits)">—</div>
           <div class="stat-sub">
             entspricht ca. <span x-text="fmtNumber(Math.floor((me?.credits || 0) * 1000))"></span> Token
           </div>
         </div>
         <div class="row wrap mt-4">
-                    <a href="chat.html" class="btn-ghost">Chat öffnen</a>
-          <button class="btn-ghost btn-quiet" @click="refresh()" :disabled="loading">Aktualisieren</button>
+                    <a href="chat.html" class="btn-ghost" data-i18n="idx.openChat">Chat öffnen</a>
+          <button class="btn-ghost btn-quiet" @click="refresh()" :disabled="loading" data-i18n="idx.refresh">Aktualisieren</button>
         </div>
       </div>
 
@@ -69,7 +69,7 @@
           <span class="v" x-text="me?.role || 'both'"></span>
         </div>
         <div class="stat-row">
-          <span class="k">Registriert</span>
+          <span class="k" data-i18n="idx.registered">Registriert</span>
           <span class="v t-xs" x-text="fmtDate(me?.created_at)"></span>
         </div>
       </div>
@@ -80,9 +80,9 @@
       <div class="card span-8">
         <div class="panel-head">
           <div>
-            <div class="eyebrow">Verbrauch</div>
+            <div class="eyebrow" data-i18n="idx.usage">Verbrauch</div>
             <h3 x-text="'Letzte ' + (usage && usage.window === '30d' ? '30 Tage' : usage && usage.window === '24h' ? '24 Stunden' : '7 Tage')"></h3>
-            <p>Pro Tag verbrauchte Token.</p>
+            <p data-i18n="idx.usageSub">Pro Tag verbrauchte Token.</p>
           </div>
           <div class="right">
             <div class="eyebrow" style="justify-content:flex-end">Token</div>
@@ -93,25 +93,25 @@
       </div>
 
       <div class="card span-4">
-        <div class="eyebrow mb-3">Kennzahlen</div>
+        <div class="eyebrow mb-3" data-i18n="idx.stats">Kennzahlen</div>
         <div class="stat-row">
-          <span class="k">API-Aufrufe</span>
+          <span class="k" data-i18n="idx.apiCalls">API-Aufrufe</span>
           <span class="v" x-text="usage ? fmtNumber(usage.totals.requests) : '—'"></span>
         </div>
         <div class="stat-row">
-          <span class="k">Token verbraucht</span>
+          <span class="k" data-i18n="idx.tokensUsed">Token verbraucht</span>
           <span class="v" x-text="usage ? fmtNumber(usage.totals.total_tokens) : '—'"></span>
         </div>
         <div class="stat-row">
-          <span class="k">Modelle</span>
+          <span class="k" data-i18n="idx.models">Modelle</span>
           <span class="v" x-text="usage ? fmtNumber(usage.totals.models_used) : '—'"></span>
         </div>
         <div class="stat-row">
-          <span class="k">Credits verbraucht</span>
+          <span class="k" data-i18n="idx.creditsUsed">Credits verbraucht</span>
           <span class="v" x-text="usage ? fmtCredits(usage.totals.credits) : '—'"></span>
         </div>
         <div class="stat-row">
-          <span class="k">Letzte Aktivität</span>
+          <span class="k" data-i18n="idx.lastActivity">Letzte Aktivität</span>
           <span class="v" x-text="usage && usage.recent.length ? timeAgo(usage.recent[0].created_at) : '—'"></span>
         </div>
         <p class="hint mt-3">
@@ -126,14 +126,14 @@
       <div class="panel-head">
         <div>
           <div class="eyebrow">Zugang</div>
-          <h3>API-Key</h3>
+          <h3 data-i18n="idx.apiKey">API-Key</h3>
           <p>Für <code class="inline">/v1/chat/completions</code> und <code class="inline">/v1/models</code>.</p>
         </div>
         <div class="row">
           <button class="btn-ghost btn-sm" @click="revealKey = !revealKey" x-text="revealKey ? 'Verbergen' : 'Anzeigen'"></button>
-          <button class="btn-ghost btn-sm" @click="copyKey($event)">Kopieren</button>
+          <button class="btn-ghost btn-sm" @click="copyKey($event)" data-i18n="idx.copy">Kopieren</button>
           <button class="btn-ghost btn-sm" @click="regenerate()" :disabled="regenerating">
-            <span x-show="!regenerating">Neu ausstellen</span>
+            <span x-show="!regenerating" data-i18n="idx.regenerate">Neu ausstellen</span>
             <span x-show="regenerating">…</span>
           </button>
         </div>
@@ -148,7 +148,7 @@
     <div class="card">
       <div class="panel-head">
         <div>
-          <div class="eyebrow">Protokoll</div>
+          <div class="eyebrow" data-i18n="idx.recent">Protokoll</div>
           <h3>Letzte API-Aufrufe</h3>
         </div>
       </div>
@@ -195,6 +195,7 @@
   </main>
 
       <script defer src="https://unpkg.com/alpinejs@3.5.1/dist/cdn.min.js"></script>
+<script src="i18n.js"></script>
 <script src="app.js"></script>
   <script>
     function dashboard() {

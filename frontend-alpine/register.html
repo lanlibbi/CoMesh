@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Registrieren · GPU-Pool</title>
+<title data-i18n="reg.title">Registrieren · CoMesh</title>
 <meta name="color-scheme" content="dark" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -21,12 +21,12 @@
         </svg>
       </span>
       <span class="brand-text">
-        <strong>GPU-Pool</strong>
-        <span>Community Compute</span>
+        <strong>CoMesh</strong>
+        <span>Your compute, meshed.</span>
       </span>
     </a>
 
-    <h1>Konto anlegen, 100 Credits zum Start.</h1>
+    <h1>Konto anlegen und mitmachen.</h1>
     <p>
       Ein Konto deckt beides ab: die API nutzen und eigene GPUs bereitstellen. Die Rolle
       legt fest, was freigeschaltet wird — im Profil jederzeit änderbar.
@@ -134,6 +134,7 @@
 </main>
 
 <script defer src="https://unpkg.com/alpinejs@3.5.1/dist/cdn.min.js"></script>
+<script src="i18n.js"></script>
 <script src="app.js"></script>
 <script>
 function registerForm() {
@@ -184,7 +185,7 @@ function registerForm() {
           credits: r.credits, role: r.role, allowed_models: r.allowed_models,
         }, r.api_key);
         sessionStorage.setItem("just_registered_key", r.api_key);
-        toast("Konto angelegt — 100 Credits gutgeschrieben.");
+        toast("Konto angelegt.");
         setTimeout(() => { window.location.href = "index.html?new=1"; }, 500);
       } catch (e) {
         this.error = e.message || "Registrierung fehlgeschlagen";

@@ -1,7 +1,11 @@
-# GPU-Pool
+# CoMesh
 
-A decentralized GPU pool that joins local and remote self-hosted inference
-servers into one shared inference layer. Users send requests to a **Portal**,
+> **Your compute, meshed.**
+>
+> Contribute GPUs to the pool, use the whole pool through one OpenAI-compatible API — free and powered by your community.
+
+CoMesh joins local and remote self-hosted inference servers into one shared
+inference layer. Users send requests to a **Portal**,
 which routes them to the most suitable **Node-Agent** in the pool.
 
 > **Status:** Proof of Concept (POC). Works end-to-end with Portal, Node-Agents,
@@ -166,9 +170,13 @@ POC, internal use. TBD.
 
 ---
 
-# GPU-Pool (Deutsch)
+# CoMesh (Deutsch)
 
-Ein dezentraler GPU-Pool, der lokale und entfernte Ollama- und OpenAI-kompatible
+> **Your compute, meshed.**
+>
+> Stelle GPUs für den Pool bereit und nutze den ganzen Pool über eine einzige OpenAI-kompatible API — kostenlos und von deiner Community getragen.
+
+CoMesh führt lokale und entfernte Ollama- und OpenAI-kompatible
 Instanzen (LM Studio, LiteLLM, vLLM, llama.cpp) zu einer gemeinsamen
 Inference-Schicht zusammenführt. Nutzer schicken ihre Anfragen an ein **Portal**,
 das Portal verteilt sie an den am besten geeigneten **Node-Agent** im Netz.
@@ -206,7 +214,7 @@ curl -X POST http://localhost:8765/v1/chat/completions \
   -H "Content-Type: application/json" \
   -d '{
     "model": "qwen2.5-coder:14b",
-    "messages": [{"role": "user", "content": "Hallo GPU-Pool!"}]
+    "messages": [{"role": "user", "content": "Hallo CoMesh!"}]
   }'
 ```
 

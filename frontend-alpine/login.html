@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Anmelden · GPU-Pool</title>
+<title data-i18n="login.title">Anmelden · CoMesh</title>
 <meta name="color-scheme" content="dark" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -21,37 +21,38 @@
         </svg>
       </span>
       <span class="brand-text">
-        <strong>GPU-Pool</strong>
-        <span>Community Compute</span>
+        <strong>CoMesh</strong>
+        <span>Your compute, meshed.</span>
       </span>
     </a>
 
-    <h1>Rechenzeit aus der Community, abgerechnet in Credits.</h1>
-    <p>
-      Rechner mit freier GPU stellen ihre Leistung bereit, andere nutzen sie über eine
-      OpenAI-kompatible API. Abrechnung läuft über Credits — pro Token, nicht pro Abo.
+    <h1 data-i18n="login.h1">Stelle GPUs für den Pool bereit und nutze den ganzen Pool über eine einzige OpenAI-kompatible API — kostenlos und von deiner Community getragen.</h1>
+    <p data-i18n="login.intro">
+      Ein Pool aus Rechnern mit freier GPU, ein einziger OpenAI-kompatibler Zugang.
+      Kostenlos, getragen von der Community — kein Abo, keine Abrechnung pro Token.
     </p>
 
     <ul class="auth-points">
       <li><span class="idx">01</span><span><b>OpenAI-kompatible API.</b> Bestehende Clients und SDKs funktionieren ohne Anpassung.</span></li>
-      <li><span class="idx">02</span><span><b>Eigene Hardware einbringen.</b> Der Node-Agent läuft als Container, 70 % der Job-Kosten gehen an den Owner.</span></li>
+      <li><span class="idx">02</span><span><b>Eigene Hardware einbringen.</b> Der Node-Agent läuft als Container und meldet die GPU an den Pool.</span></li>
       <li><span class="idx">03</span><span><b>Modelle bleiben kontrollierbar.</b> Pro Node und pro Konto als Whitelist steuerbar, Cloud-Modelle explizit freizuschalten.</span></li>
     </ul>
+  <div id="langSlotHolder" style="margin-top:14px"></div>
   </section>
 
   <section class="card auth-card" x-data="loginForm()">
     <div class="eyebrow">Konto</div>
     <h2>Anmelden</h2>
-    <p class="t-sm text-dim mt-2">Melde dich an, um Credits, Nodes und API-Keys zu verwalten.</p>
+    <p class="t-sm text-dim mt-2" data-i18n="login.sub">Melde dich an, um Nodes, API-Keys und Nutzung zu verwalten.</p>
 
     <form @submit.prevent="submit()" class="stack tight mt-4">
       <div class="field">
-        <label class="label" for="email">E-Mail</label>
+        <label class="label" for="email" data-i18n="login.email">E-Mail</label>
         <input class="input" id="email" type="email" x-model="email" required
                autocomplete="email" placeholder="name@beispiel.de" />
       </div>
       <div class="field">
-        <label class="label" for="password">Passwort</label>
+        <label class="label" for="password" data-i18n="login.password">Passwort</label>
         <input class="input" id="password" type="password" x-model="password" required
                autocomplete="current-password" placeholder="••••••••" />
       </div>
@@ -66,12 +67,13 @@
 
     <p class="auth-alt">
       Noch kein Konto?
-      <a href="register.html" class="link">Registrieren</a> — 100 Credits zum Start.
+      <a href="register.html" class="link">Registrieren</a>.
     </p>
   </section>
 </main>
 
 <script defer src="https://unpkg.com/alpinejs@3.5.1/dist/cdn.min.js"></script>
+<script src="i18n.js"></script>
 <script src="app.js"></script>
 <script>
 function loginForm() {

@@ -1,4 +1,4 @@
-// GPU-Pool — /pool page (alpine frontend). Live community pool overview.
+// CoMesh — /pool page (alpine frontend). Live community pool overview.
 document.addEventListener("alpine:init", () => {
   Alpine.data("poolPage", () => ({
     stats: null,

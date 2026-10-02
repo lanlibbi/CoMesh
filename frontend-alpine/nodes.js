@@ -1,4 +1,4 @@
-// GPU-Pool — /nodes page (alpine frontend). Register a node + list mine.
+// CoMesh — /nodes page (alpine frontend). Register a node + list mine.
 document.addEventListener("alpine:init", () => {
   Alpine.data("nodesPage", () => ({
   myNodes: [],

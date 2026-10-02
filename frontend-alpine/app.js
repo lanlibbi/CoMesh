@@ -1,4 +1,4 @@
-// GPU-Pool — shared client (Alpine frontend)
+// CoMesh — shared client (Alpine frontend)
 // Vanilla JS + Alpine.js. Talks to the backend at /api/* (proxied by nginx).
 //
 // This file also owns the app-wide chrome: the animated background field is
@@ -175,12 +175,13 @@ function navHTML(active) {
             </svg>
           </span>
           <span class="brand-text">
-            <strong>GPU-Pool</strong>
+            <strong>CoMesh</strong>
             <span>Community Compute</span>
           </span>
         </a>
         <nav class="nav" aria-label="Hauptnavigation">${links}</nav>
         <div class="topbar-right">
+          <span id="langSlot">${(typeof I18N !== "undefined") ? I18N.switcherHTML() : ""}</span>
           <span class="who">
             <b>${user.email || ""}</b>
             <em>${user.role || "both"}</em>
@@ -195,8 +196,7 @@ function navHTML(active) {
 function footerHTML() {
   return `
     <footer class="site-foot">
-      <span>GPU-Pool · selbstgehosteter Community-Compute-Pool</span>
-      <span class="mono">Owner 70 % · Platform 20 % · Treasury 10 %</span>
+      <span>CoMesh · Your compute, meshed.</span>
     </footer>
   `;
 }
@@ -346,3 +346,19 @@ window.footerHTML = footerHTML;
 window.mountBackground = mountBackground;
 window.renderUsageChart = renderUsageChart;
 window.refreshUser = refreshUser;
+
+/* CoMesh rebrand (LANA-71): the catalog predates the rename, so the brand name is
+   normalised at lookup time instead of editing 60 dict strings by hand. */
+(function () {
+  try {
+    var rt = window.I18N || (typeof I18N !== "undefined" ? I18N : null);
+    if (!rt || !rt.t || rt.t.__comeshWrapped) return;
+    var base = rt.t;
+    var wrapped = function (key, params) {
+      var out = base.call(rt, key, params);
+      return typeof out === "string" ? out.replace(/GPU-Pool/g, "CoMesh") : out;
+    };
+    wrapped.__comeshWrapped = true;
+    rt.t = wrapped;
+  } catch (e) { /* no i18n on this page */ }
+})();

@@ -1,12 +1,12 @@
 # ARCHITECTURE
 
-Visuelle Übersicht der GPU-Pool-Komponenten und Datenflüsse.
+Visuelle Übersicht der CoMesh-Komponenten und Datenflüsse.
 
 ## Komponenten-Diagramm
 
 ```
                 ┌───────────────────────────────────────────────┐
-                │              GPU-Pool Portal                  │
+                │              CoMesh Portal                    │
                 │              (portal-host)                    │
                 │                                               │
                 │   ┌─────────┐   ┌─────────┐   ┌─────────┐    │

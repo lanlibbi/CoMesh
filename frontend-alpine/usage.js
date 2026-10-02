@@ -1,4 +1,4 @@
-// GPU-Pool — /usage page (alpine frontend).
+// CoMesh — /usage page (alpine frontend).
 // Token + credit consumption per model, per window. Backend: GET /v1/me/usage
 // (see usage_stats.py) — one aggregated payload per window change, no polling.
 document.addEventListener("alpine:init", () => {

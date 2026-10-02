@@ -1,4 +1,4 @@
-// GPU-Pool — /agent page (alpine frontend). Setup instructions.
+// CoMesh — /agent page (alpine frontend). Setup instructions.
 document.addEventListener("alpine:init", () => {
   Alpine.data("agentPage", () => ({
     nodes: [],

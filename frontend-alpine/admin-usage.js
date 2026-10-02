@@ -1,4 +1,4 @@
-// GPU-Pool — /admin-usage page (alpine frontend).
+// CoMesh — /admin-usage page (alpine frontend).
 // Per-user token/credit consumption across ALL users. Backend: GET /admin/usage
 // (role-gated, see usage_stats.py build_admin_usage) — one aggregated payload per
 // window change, no polling.
