@@ -1,0 +1,31 @@
+# Build-context exclusions for the portal image (LANA-73).
+# The api Dockerfile does `COPY . .`, so anything listed here must never
+# reach the image layer.
+
+# Deployment secrets — live/.env holds ADMIN_API_KEY. Without this file a
+# rebuild bakes that key into the image.
+.env
+.env.*
+*.env
+
+# Local data / artifacts (never part of the source)
+data/
+*.db
+*.db-journal
+seed_api_key.txt
+*.bak-lana*
+*.tgz
+
+# Python noise
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.venv/
+venv/
+
+# VCS / tooling
+.git/
+.gitignore
+.vscode/
+.idea/
