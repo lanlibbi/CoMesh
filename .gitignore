@@ -19,9 +19,9 @@ Thumbs.db
 
 # Local env (may hold ADMIN_API_KEY / payment secrets)
 .env
+.node-agent.env
 
 # Test artifacts
 /tmp/ws_test_setup.py
 *.tmp
 .pytest_cache/
-__pycache__/

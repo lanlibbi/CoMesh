@@ -189,7 +189,13 @@ def _fulfill_payment(db: Session, payment: Payment) -> Payment:
 # ----------------------------------------------------------------------------
 @router.get("/config")
 def payments_config(_user: User = Depends(get_current_user)):
+    from config import credits_enabled
+    billing = credits_enabled()
     return {
+        # With credits_enabled: false the packages are returned for information
+        # only. The flag is what the UI keys off to hide buy/top-up surfaces, so
+        # an older cached frontend also learns the current mode from here.
+        "credits_enabled": billing,
         "packages": [
             {
                 "id": k,

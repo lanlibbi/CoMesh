@@ -2,6 +2,8 @@
 document.addEventListener("alpine:init", () => {
   Alpine.data("nodesPage", () => ({
   myNodes: [],
+  // Mirrors the backend credits flag: hides credit rates / earnings labelling.
+  billing: Credits.enabled(),
   availableModels: [],
   editingId: null,
   editAllowed: [],
@@ -21,8 +23,10 @@ document.addEventListener("alpine:init", () => {
 
     async init() {
       if (!Auth.requireProviderOrRedirect()) return;
+      this.billing = Credits.enabled();
       await this.loadAvailableModels();
       await this.load();
+      this.billing = Credits.enabled();
     },
 
     // ---- Auswahl -------------------------------------------------------

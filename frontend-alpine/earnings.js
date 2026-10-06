@@ -1,6 +1,7 @@
 // CoMesh — /earnings page (alpine frontend). Per-node + per-event earnings.
 document.addEventListener("alpine:init", () => {
   Alpine.data("earningsPage", () => ({
+    billing: Credits.enabled(),
     total: 0,
     byNode: [],
     events: [],
