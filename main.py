@@ -10,6 +10,11 @@ Includes user management, API key issuance, credit accounting,
 payments (Stripe, PayPal, Alipay, Apple Pay - all in test/mock mode
 for the POC), and Community GPU-Pool (node registration, heartbeat,
 load-balancing, revenue distribution).
+
+Feature flags live in config.yaml (see config.py). `credits_enabled: false`
+puts the portal in free mode: no HTTP 402 balance gate and no credit
+deduction on /v1/chat/completions. The credit tables themselves are never
+dropped, so the flag can be flipped back on without a migration.
 """
 import hashlib
 import logging
@@ -27,12 +32,9 @@ from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from auth import generate_api_key, get_current_user
-from admin_auth import require_admin
-from admin import router as admin_router
 from database import SessionLocal, engine, get_db, init_db
 from models import (
     ApiKey,
-    AdminAuditLog,
     CreditTransaction,
     GpuNode,
     NodeEarning,
@@ -41,8 +43,6 @@ from models import (
     Usage,
     User,
     VALID_ROLES,
-    ADMIN_MANAGED_ROLES,
-    ADMIN_ROLE,
     get_user_credits,
     _is_cloud_model_name,
 )
@@ -50,7 +50,7 @@ from payments import router as payments_router
 from frontend import router as frontend_router
 from nodes import router as nodes_router
 from pool import router as pool_router, distribute_revenue
-from usage_stats import ensure_usage_indexes, router as usage_router
+from config import credits_enabled
 from ws import router as ws_router  # Phase 1: WebSocket outbound layer
 
 # ----------------------------------------------------------------------------
@@ -65,18 +65,6 @@ if not os.path.exists("/.dockerenv") and os.environ.get("DOCKER_ENV") != "1":
 DEFAULT_MODEL = os.environ.get("DEFAULT_MODEL", "qwen2.5-coder:7b")
 COST_PER_1K_TOKENS = float(os.environ.get("COST_PER_1K_TOKENS", "0.001"))  # 1 credit = 0.001 EUR-ish
 
-# Bootstrap secret for the first admin account. When set, startup ensures an
-# admin user exists whose API key is this value, so the board can log into the
-# admin surface without a chicken-and-egg problem. Leave unset to manage the
-# admin role purely through the DB / existing admin keys.
-ADMIN_API_KEY = os.environ.get("ADMIN_API_KEY", "").strip()
-ADMIN_EMAIL = os.environ.get("ADMIN_EMAIL", "admin@gpu-pool.local").strip().lower()
-ADMIN_NAME = os.environ.get("ADMIN_NAME", "Platform Admin").strip()
-# Optional fallback: promote this existing account to 'admin' when ADMIN_API_KEY
-# is unset. Deliberately EMPTY by default — silently promoting a seeded/known
-# account would hand admin rights to anyone with the POC credentials.
-PROMOTE_ADMIN_EMAIL = os.environ.get("PROMOTE_ADMIN_EMAIL", "").strip().lower()
-
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 log = logging.getLogger("gpu-pool")
 
@@ -89,14 +77,11 @@ async def lifespan(app: FastAPI):
     init_db()
     _ensure_payments_table()
     _ensure_node_tables()
-    _ensure_admin_tables()
     _ensure_password_column()
     _ensure_user_settings()
     _ensure_node_allowed_models()
     _ensure_node_ws_columns()
-    ensure_usage_indexes()
     await seed_test_user_if_empty()
-    await seed_admin_user()
     log.info(f"GPU-Pool POC started. Ollama URL: {OLLAMA_URL}, default model: {DEFAULT_MODEL}")
     yield
 
@@ -108,7 +93,7 @@ app = FastAPI(
         "Includes payments, community GPU-pool (node registration, "
         "load-balancing, revenue distribution)."
     ),
-    version="0.4.0",
+    version="0.3.0",
     lifespan=lifespan,
 )
 
@@ -120,16 +105,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Mount sub-routers.
-# NOTE: the /admin router is mounted BEFORE the frontend router. The SPA has a
-# wildcard-ish page list and the old POC frontend served /admin, so admin must
-# win the route match to keep /admin/* as real API endpoints.
-app.include_router(admin_router)
+# Mount sub-routers
 app.include_router(payments_router)
 app.include_router(frontend_router)
 app.include_router(nodes_router)
 app.include_router(pool_router)
-app.include_router(usage_router)  # GET /v1/me/usage (per-user token aggregation)
 app.include_router(ws_router)  # Phase 1: WebSocket /agent/connect + /nodes/{id}/connection
 
 
@@ -196,6 +176,9 @@ class UserInfo(BaseModel):
     role: str = "both"
     allowed_models: Optional[List[str]] = None
     created_at: str
+    # Feature flag (config.yaml: credits_enabled). False = unlimited usage:
+    # the UI must not show balances, prices or top-up flows.
+    credits_enabled: bool = True
 
 
 class UpdateRoleRequest(BaseModel):
@@ -239,7 +222,7 @@ def _ensure_password_column():
 
 
 def _ensure_user_settings():
-    """Add users.role, users.allowed_models and users.updated_at columns if missing (idempotent)."""
+    """Add users.role and users.allowed_models columns if missing (idempotent)."""
     with engine.begin() as conn:
         cols = [row[1] for row in conn.exec_driver_sql("PRAGMA table_info(users)").fetchall()]
         if "role" not in cols:
@@ -248,9 +231,6 @@ def _ensure_user_settings():
         if "allowed_models" not in cols:
             conn.exec_driver_sql("ALTER TABLE users ADD COLUMN allowed_models TEXT")
             log.info("Added users.allowed_models column")
-        if "updated_at" not in cols:
-            conn.exec_driver_sql("ALTER TABLE users ADD COLUMN updated_at DATETIME")
-            log.info("Added users.updated_at column")
 
 
 def _ensure_node_allowed_models():
@@ -301,12 +281,6 @@ def _ensure_node_tables():
     log.info("Community pool tables ready.")
 
 
-def _ensure_admin_tables():
-    """Create the admin audit/idempotency table if it doesn't exist (idempotent)."""
-    AdminAuditLog.__table__.create(bind=engine, checkfirst=True)
-    log.info("Admin audit table ready.")
-
-
 # ----------------------------------------------------------------------------
 # Endpoints
 # ----------------------------------------------------------------------------
@@ -336,6 +310,7 @@ async def health():
         "status": "ok",
         "ollama_reachable": ollama_ok,
         "ollama_error": ollama_error,
+        "credits_enabled": credits_enabled(),
         "community": {
             "nodes_total": len(nodes) if 'nodes' in dir() else 0,
             "nodes_online": len(online) if 'online' in dir() else 0,
@@ -358,7 +333,7 @@ async def list_models(_user: User = Depends(get_current_user)):
 
 @app.get("/v1/me")
 def me(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    """Current user info + credit balance."""
+    """Current user info + credit balance (+ the credits feature flag)."""
     return UserInfo(
         id=user.id,
         email=user.email,
@@ -368,6 +343,7 @@ def me(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
         role=getattr(user, "role", "both") or "both",
         allowed_models=user.get_allowed_models(),
         created_at=user.created_at.isoformat(),
+        credits_enabled=credits_enabled(),
     )
 
 
@@ -511,8 +487,12 @@ async def chat_completions(
     from pool import route_request
     model = request.model or DEFAULT_MODEL
 
+    # Credits are behind a feature flag (config.yaml: credits_enabled).
+    # When the flag is off the portal is free to use: no balance floor and no
+    # HTTP 402. When it is on we keep the legacy behaviour.
+    billing = credits_enabled()
     balance = get_user_credits(db, user.id)
-    if balance < 0.01:
+    if billing and balance < 0.01:
         raise HTTPException(
             status_code=status.HTTP_402_PAYMENT_REQUIRED,
             detail=f"Insufficient credits. Current balance: {balance:.4f}",
@@ -563,12 +543,16 @@ async def chat_completions(
         total_tokens=total_tokens,
         credits_charged=credits_used,
     ))
-    db.add(CreditTransaction(
-        user_id=user.id,
-        amount=-credits_used,
-        balance_after=new_balance,
-        reason=f"chat: {model} ({total_tokens} tokens, src={routed['source']})",
-    ))
+    if billing:
+        # Charge the request. With the flag off we deliberately skip this: no
+        # balance floor means a deduction would just drive balances negative.
+        # The Usage row above still records the token count.
+        db.add(CreditTransaction(
+            user_id=user.id,
+            amount=-credits_used,
+            balance_after=new_balance,
+            reason=f"chat: {model} ({total_tokens} tokens, src={routed['source']})",
+        ))
 
     # Pool job record + revenue distribution when running on a community node
     pool_job = PoolJob(
@@ -594,10 +578,12 @@ async def chat_completions(
 
     db.commit()
 
+    cost_note = (f"-{credits_used} credits (balance: {new_balance:.4f})"
+                 if billing else f"credits off (informational: {credits_used})")
     log.info(
         f"User {user.email} -> {model} src={routed['source']} "
         f"node={routed.get('node_id')} | in:{prompt_tokens} out:{completion_tokens} "
-        f"| -{credits_used} credits (balance: {new_balance:.4f}) | {latency_ms}ms"
+        f"| {cost_note} | {latency_ms}ms"
     )
 
     return ChatCompletionResponse(
@@ -615,24 +601,57 @@ async def chat_completions(
 
 
 # ----------------------------------------------------------------------------
-# Legacy /admin/* aliases
+# Admin: create users (POC - in production this would be behind admin auth)
 # ----------------------------------------------------------------------------
-# The unauthenticated POC endpoints (POST /admin/users, POST /admin/users/{id}/topup)
-# were removed: /admin is now a role-gated, audited router (see admin.py). These
-# aliases keep old callers working but require admin credentials and delegate to
-# the same logic, returning a deprecation notice.
-@app.post("/admin/users/legacy-create", deprecated=True, status_code=308)
-def create_user_legacy(
-    req: CreateUserRequest,
-    _admin: User = Depends(require_admin),
-    db: Session = Depends(get_db),
-):
-    """DEPRECATED alias: unauthenticated POC user creation. Use POST /admin/users."""
-    raise HTTPException(
-        status_code=308,
-        detail="Use POST /admin/users (admin-authenticated; 201 on create, existing user on replay).",
-        headers={"Location": "/admin/users"},
+@app.post("/admin/users", response_model=CreateUserResponse)
+def create_user(req: CreateUserRequest, db: Session = Depends(get_db)):
+    if db.query(User).filter(User.email == req.email).first():
+        raise HTTPException(status_code=409, detail="User with that email already exists")
+
+    user = User(email=req.email, name=req.name, is_active=True)
+    db.add(user)
+    db.flush()
+    db.add(CreditTransaction(
+        user_id=user.id,
+        amount=req.initial_credits,
+        balance_after=req.initial_credits,
+        reason="initial credit",
+    ))
+    raw_key, key_hash, key_prefix = generate_api_key()
+    db.add(ApiKey(
+        user_id=user.id,
+        key_hash=key_hash,
+        key_prefix=key_prefix,
+        label="default",
+        is_active=True,
+    ))
+    db.commit()
+
+    log.info(f"Created user {user.email} (id={user.id}) with {req.initial_credits} credits")
+    return CreateUserResponse(
+        user_id=user.id,
+        email=user.email,
+        api_key=raw_key,
+        key_prefix=key_prefix,
+        credits=req.initial_credits,
     )
+
+
+@app.post("/admin/users/{user_id}/topup")
+def topup_user(user_id: int, amount: float, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    current = get_user_credits(db, user.id)
+    new_balance = round(current + amount, 6)
+    db.add(CreditTransaction(
+        user_id=user.id,
+        amount=amount,
+        balance_after=new_balance,
+        reason="manual topup",
+    ))
+    db.commit()
+    return {"user_id": user.id, "credits": new_balance, "added": amount}
 
 
 # ----------------------------------------------------------------------------
@@ -667,6 +686,7 @@ class AuthResponse(BaseModel):
     api_key: str
     key_prefix: str
     credits: float
+    credits_enabled: bool = True
 
 
 @app.post("/auth/register", response_model=AuthResponse)
@@ -698,12 +718,15 @@ def auth_register(req: RegisterRequest, db: Session = Depends(get_db)):
     db.flush()
     if allowed_models_value is not None:
         user.set_allowed_models(allowed_models_value)
-    db.add(CreditTransaction(
-        user_id=user.id,
-        amount=req.initial_credits,
-        balance_after=req.initial_credits,
-        reason="signup credit",
-    ))
+    if credits_enabled():
+        # Signup grants stay tied to the billing system: with credits off they
+        # would be meaningless (and the user gets unlimited usage anyway).
+        db.add(CreditTransaction(
+            user_id=user.id,
+            amount=req.initial_credits,
+            balance_after=req.initial_credits,
+            reason="signup credit",
+        ))
 
     raw_key, key_hash, key_prefix = generate_api_key()
     db.add(ApiKey(
@@ -725,6 +748,7 @@ def auth_register(req: RegisterRequest, db: Session = Depends(get_db)):
         api_key=raw_key,
         key_prefix=key_prefix,
         credits=req.initial_credits,
+        credits_enabled=credits_enabled(),
     )
 
 
@@ -758,6 +782,7 @@ def auth_login(req: LoginRequest, db: Session = Depends(get_db)):
         api_key=raw_key,
         key_prefix=key_prefix,
         credits=balance,
+        credits_enabled=credits_enabled(),
     )
 
 
@@ -801,95 +826,5 @@ async def seed_test_user_if_empty():
                     user.password_hash = _hash_pw("password123")
                     db.commit()
                     log.info("Set password_hash=password123 for seed user")
-    finally:
-        db.close()
-
-
-# ----------------------------------------------------------------------------
-# Seed: bootstrap admin account
-# ----------------------------------------------------------------------------
-async def seed_admin_user():
-    """
-    Make sure at least one admin exists.
-
-    Bootstrap path: `ADMIN_API_KEY` is set -> the user with `ADMIN_EMAIL` is
-    (created and) promoted to role 'admin', and its only active key is
-    ADMIN_API_KEY itself.
-
-    Fallback: no ADMIN_API_KEY, but `PROMOTE_ADMIN_EMAIL` names an existing
-    account -> that account is promoted to 'admin'. This is OFF by default so a
-    deployment cannot silently hand admin rights to a seeded/POC account.
-
-    Both paths are idempotent and never demote anyone.
-    """
-    db = SessionLocal()
-    try:
-        if ADMIN_API_KEY:
-            user = db.query(User).filter(User.email == ADMIN_EMAIL).first()
-            if not user:
-                user = User(
-                    email=ADMIN_EMAIL,
-                    name=ADMIN_NAME,
-                    is_active=True,
-                    role=ADMIN_ROLE,
-                )
-                user.password_hash = _hash_pw(ADMIN_API_KEY)
-                db.add(user)
-                db.flush()
-                db.add(CreditTransaction(
-                    user_id=user.id,
-                    amount=1000.0,
-                    balance_after=1000.0,
-                    reason="admin bootstrap credit",
-                ))
-                log.info(f"Bootstrapped admin user {ADMIN_EMAIL} (id={user.id})")
-            else:
-                if user.role != ADMIN_ROLE:
-                    user.role = ADMIN_ROLE
-                    log.info(f"Promoted {ADMIN_EMAIL} to admin")
-                user.is_active = True
-
-            # Ensure exactly one active key for that user, and that it is ADMIN_API_KEY.
-            wanted_hash = hashlib.sha256(ADMIN_API_KEY.encode("utf-8")).hexdigest()
-            keys = db.query(ApiKey).filter(ApiKey.user_id == user.id).all()
-            if not any(k.key_hash == wanted_hash and k.is_active for k in keys):
-                for k in keys:
-                    k.is_active = False
-                db.add(ApiKey(
-                    user_id=user.id,
-                    key_hash=wanted_hash,
-                    key_prefix=ADMIN_API_KEY[:12],
-                    label="admin-bootstrap",
-                    is_active=True,
-                ))
-                log.info(f"Installed admin bootstrap key for {user.email}")
-            db.commit()
-            return
-
-        admin_count = db.query(User).filter(User.role == ADMIN_ROLE).count()
-        if admin_count == 0:
-            if not PROMOTE_ADMIN_EMAIL:
-                log.warning(
-                    "No admin account exists and neither ADMIN_API_KEY nor "
-                    "PROMOTE_ADMIN_EMAIL is set — /admin/* is unreachable. "
-                    "Set ADMIN_API_KEY in the environment and restart."
-                )
-                return
-            user = db.query(User).filter(User.email == PROMOTE_ADMIN_EMAIL).first()
-            if user is None:
-                log.warning(
-                    f"PROMOTE_ADMIN_EMAIL='{PROMOTE_ADMIN_EMAIL}' does not match any user; "
-                    "no admin was created. Set ADMIN_API_KEY instead."
-                )
-                return
-            user.role = ADMIN_ROLE
-            db.commit()
-            log.warning(
-                f"No admin existed. Promoted '{user.email}' (id={user.id}) to role 'admin' per "
-                "PROMOTE_ADMIN_EMAIL. Prefer ADMIN_API_KEY for a stable admin bootstrap."
-            )
-    except Exception as e:
-        db.rollback()
-        log.error(f"Admin bootstrap failed: {e}")
     finally:
         db.close()
