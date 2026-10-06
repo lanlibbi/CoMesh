@@ -1,4 +1,4 @@
-// GPU-Pool — /earnings page (alpine frontend). Per-node + per-event earnings.
+// CoMesh — /earnings page (alpine frontend). Per-node + per-event earnings.
 document.addEventListener("alpine:init", () => {
   Alpine.data("earningsPage", () => ({
     total: 0,

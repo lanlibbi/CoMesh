@@ -1,0 +1,1951 @@
+{
+ "keys": {
+  "verbrauch-aller-nutzer": {
+   "src": "Verbrauch aller Nutzer",
+   "pages": [
+    "admin-usage.html"
+   ]
+  },
+  "token-und-credits-pro-nutzer-und-modell-die": {
+   "src": "Token und Credits pro Nutzer und Modell — die Admin-Sicht auf <code class=\"inline\">GET /admin/usage</code>. Schwerste Nutzer zuerst.",
+   "pages": [
+    "admin-usage.html"
+   ]
+  },
+  "admin-rolle-erforderlich": {
+   "src": "Admin-Rolle erforderlich",
+   "pages": [
+    "admin-usage.html"
+   ]
+  },
+  "dieser-bereich-listet-die-nutzung-aller": {
+   "src": "Dieser Bereich listet die Nutzung aller Konten und ist auf <code class=\"inline\">role = admin</code> beschränkt. Deine Rolle: <span class=\"mono\" x-text=\"(Auth.currentUser() || {}).role || 'both'\"></span>. Die eigene Nutzung steht unter <a href=\"usage.html\" class=\"link\">Usage</a>.",
+   "pages": [
+    "admin-usage.html"
+   ]
+  },
+  "verbrauch-konnte-nicht-geladen-werden": {
+   "src": "Verbrauch konnte nicht geladen werden",
+   "pages": [
+    "admin-usage.html"
+   ]
+  },
+  "aktualisieren": {
+   "src": "Aktualisieren",
+   "pages": [
+    "admin-usage.html",
+    "chat.html",
+    "index.html",
+    "usage.html"
+   ]
+  },
+  "zeitraum": {
+   "src": "Zeitraum",
+   "pages": [
+    "admin-usage.html",
+    "usage.html"
+   ]
+  },
+  "token-gesamt": {
+   "src": "Token gesamt",
+   "pages": [
+    "admin-usage.html",
+    "usage.html"
+   ]
+  },
+  "nutzende-konten": {
+   "src": "Nutzende Konten",
+   "pages": [
+    "admin-usage.html"
+   ]
+  },
+  "aufschluesselung": {
+   "src": "Aufschlüsselung",
+   "pages": [
+    "admin-usage.html"
+   ]
+  },
+  "verbrauch-je-nutzer": {
+   "src": "Verbrauch je Nutzer",
+   "pages": [
+    "admin-usage.html"
+   ]
+  },
+  "laedt": {
+   "src": "Lädt…",
+   "pages": [
+    "admin-usage.html",
+    "index.html",
+    "usage.html"
+   ]
+  },
+  "in-diesem-zeitraum-hat-niemand-verbraucht": {
+   "src": "In diesem Zeitraum hat niemand verbraucht.",
+   "pages": [
+    "admin-usage.html"
+   ]
+  },
+  "zeitraum-auf-gesamt-stellen-oder-inaktive": {
+   "src": "Zeitraum auf „Gesamt“ stellen oder inaktive Konten einblenden.",
+   "pages": [
+    "admin-usage.html"
+   ]
+  },
+  "nutzer": {
+   "src": "Nutzer",
+   "pages": [
+    "admin-usage.html"
+   ]
+  },
+  "rolle": {
+   "src": "Rolle",
+   "pages": [
+    "admin-usage.html",
+    "index.html",
+    "profile.html",
+    "register.html"
+   ]
+  },
+  "zuletzt": {
+   "src": "Zuletzt",
+   "pages": [
+    "admin-usage.html"
+   ]
+  },
+  "inaktiv": {
+   "src": "inaktiv",
+   "pages": [
+    "admin-usage.html"
+   ]
+  },
+  "quelle-code-class-inline-get-admin-usage": {
+   "src": "Quelle: <code class=\"inline\">GET /admin/usage?window=24h|7d|30d|all&amp;limit=50&amp;include_inactive=true</code> — dieselbe Aggregation wie <code class=\"inline\">/v1/me/usage</code>, ohne Nutzerfilter.",
+   "pages": [
+    "admin-usage.html"
+   ]
+  },
+  "node-agent-einrichten": {
+   "src": "Node-Agent einrichten",
+   "pages": [
+    "agent.html"
+   ]
+  },
+  "vier-schritte-node-registrieren-image-bauen": {
+   "src": "Vier Schritte: Node registrieren, Image bauen, Container starten, im Pool verifizieren. Danach läuft alles über Heartbeats automatisch.",
+   "pages": [
+    "agent.html"
+   ]
+  },
+  "node-registrieren": {
+   "src": "Node registrieren",
+   "pages": [
+    "agent.html",
+    "nodes.html"
+   ]
+  },
+  "auf-a-href-nodes-html-class-link-meine": {
+   "src": "Auf <a href=\"nodes.html\" class=\"link\">Meine Nodes</a> ausfüllen. Die Antwort enthält den <code class=\"inline\">agent_api_key</code> — einmalig sichtbar.",
+   "pages": [
+    "agent.html"
+   ]
+  },
+  "image-bauen": {
+   "src": "Image bauen",
+   "pages": [
+    "agent.html"
+   ]
+  },
+  "repo-klonen-oder-den-ordner-code-class": {
+   "src": "Repo klonen (oder den Ordner <code class=\"inline\">node-agent/</code> kopieren) und bauen:",
+   "pages": [
+    "agent.html"
+   ]
+  },
+  "container-starten": {
+   "src": "Container starten",
+   "pages": [
+    "agent.html"
+   ]
+  },
+  "code-class-inline-node-id-code-und-code": {
+   "src": "<code class=\"inline\">NODE_ID</code> und <code class=\"inline\">NODE_API_KEY</code> durch die Werte aus Schritt 1 ersetzen:",
+   "pages": [
+    "agent.html"
+   ]
+  },
+  "logs-verfolgen": {
+   "src": "Logs verfolgen:",
+   "pages": [
+    "agent.html"
+   ]
+  },
+  "health-check-der-node": {
+   "src": "Health-Check der Node:",
+   "pages": [
+    "agent.html"
+   ]
+  },
+  "verifizieren": {
+   "src": "Verifizieren",
+   "pages": [
+    "agent.html"
+   ]
+  },
+  "sobald-die-node-im-a-href-pool-html-class": {
+   "src": "Sobald die Node im <a href=\"pool.html\" class=\"link\">Community-Pool</a> auftaucht, ist sie live. Anfragen werden automatisch dorthin geroutet; 70 % der Job-Kosten landen als Credits auf deinem Konto.",
+   "pages": [
+    "agent.html"
+   ]
+  },
+  "pool-ansehen": {
+   "src": "Pool ansehen",
+   "pages": [
+    "agent.html"
+   ]
+  },
+  "inference": {
+   "src": "Inference",
+   "pages": [
+    "chat.html"
+   ]
+  },
+  "direkter-testlauf-gegen-den-pool": {
+   "src": "Direkter Testlauf gegen den Pool. Abgerechnet wird pro Token über dein Guthaben — aktuell <span class=\"text-brand num\" x-text=\"fmtCredits(me?.credits)\"></span> Credits.",
+   "pages": [
+    "chat.html"
+   ]
+  },
+  "session": {
+   "src": "Session",
+   "pages": [
+    "chat.html"
+   ]
+  },
+  "modellliste-neu-laden": {
+   "src": "Modellliste neu laden",
+   "pages": [
+    "chat.html"
+   ]
+  },
+  "noch-keine-nachricht-starte-mit-einer-der": {
+   "src": "Noch keine Nachricht. Starte mit einer der Vorlagen oder tippe direkt los.",
+   "pages": [
+    "chat.html"
+   ]
+  },
+  "antwort-wird-erzeugt": {
+   "src": "Antwort wird erzeugt",
+   "pages": [
+    "chat.html"
+   ]
+  },
+  "senden": {
+   "src": "Senden",
+   "pages": [
+    "chat.html"
+   ]
+  },
+  "letzte-antwort-span-x-text-fmtnumber": {
+   "src": "Letzte Antwort: <span x-text=\"fmtNumber(lastUsage?.total_tokens)\"></span> Token · <span x-text=\"fmtCredits(lastUsage?.credits_used)\"></span> Credits",
+   "pages": [
+    "chat.html"
+   ]
+  },
+  "span-x-text-messages-length-span": {
+   "src": "<span x-text=\"messages.length\"></span> Nachrichten im Verlauf",
+   "pages": [
+    "chat.html"
+   ]
+  },
+  "abrechnung": {
+   "src": "Abrechnung",
+   "pages": [
+    "credits.html"
+   ]
+  },
+  "credits-aufladen": {
+   "src": "Credits aufladen",
+   "pages": [
+    "credits.html"
+   ]
+  },
+  "aktuelles-guthaben-span-class-text-brand": {
+   "src": "Aktuelles Guthaben: <span class=\"text-brand num semibold\" x-text=\"fmtCredits(me?.credits)\"></span> Credits. Abgerechnet wird pro Token — es gibt kein Abo und keine Mindestlaufzeit.",
+   "pages": [
+    "credits.html"
+   ]
+  },
+  "empfohlen": {
+   "src": "empfohlen",
+   "pages": [
+    "credits.html"
+   ]
+  },
+  "kaufen": {
+   "src": "Kaufen",
+   "pages": [
+    "credits.html"
+   ]
+  },
+  "zahlung-ist-im-poc-nicht-angeschlossen": {
+   "src": "Zahlung ist im POC nicht angeschlossen",
+   "pages": [
+    "credits.html"
+   ]
+  },
+  "kaufen-legt-lediglich-einen-aufladewunsch": {
+   "src": "„Kaufen\" legt lediglich einen Aufladewunsch an, den ein Admin bestätigt. Echte Zahlungsabwicklung (Stripe o. ä.) ist noch nicht implementiert.",
+   "pages": [
+    "credits.html"
+   ]
+  },
+  "manuell": {
+   "src": "Manuell",
+   "pages": [
+    "credits.html"
+   ]
+  },
+  "aufladung-anfragen": {
+   "src": "Aufladung anfragen",
+   "pages": [
+    "credits.html"
+   ]
+  },
+  "betrag-und-optionalen-verwendungszweck": {
+   "src": "Betrag und optionalen Verwendungszweck angeben — der Admin schreibt gut.",
+   "pages": [
+    "credits.html"
+   ]
+  },
+  "betrag-credits": {
+   "src": "Betrag (Credits)",
+   "pages": [
+    "credits.html"
+   ]
+  },
+  "notiz-optional": {
+   "src": "Notiz (optional)",
+   "pages": [
+    "credits.html"
+   ]
+  },
+  "z-b-rechnungsnummer": {
+   "src": "z. B. Rechnungsnummer",
+   "pages": [
+    "credits.html"
+   ]
+  },
+  "anfrage-senden": {
+   "src": "Anfrage senden",
+   "pages": [
+    "credits.html"
+   ]
+  },
+  "historie": {
+   "src": "Historie",
+   "pages": [
+    "credits.html"
+   ]
+  },
+  "deine-aufladungen": {
+   "src": "Deine Aufladungen",
+   "pages": [
+    "credits.html"
+   ]
+  },
+  "noch-keine-anfragen-gestellt": {
+   "src": "Noch keine Anfragen gestellt.",
+   "pages": [
+    "credits.html"
+   ]
+  },
+  "wann": {
+   "src": "Wann",
+   "pages": [
+    "credits.html",
+    "earnings.html",
+    "index.html",
+    "usage.html"
+   ]
+  },
+  "betrag": {
+   "src": "Betrag",
+   "pages": [
+    "credits.html"
+   ]
+  },
+  "status": {
+   "src": "Status",
+   "pages": [
+    "credits.html"
+   ]
+  },
+  "notiz": {
+   "src": "Notiz",
+   "pages": [
+    "credits.html"
+   ]
+  },
+  "credits-aus-jobs-die-andere-nutzer-auf": {
+   "src": "Credits aus Jobs, die andere Nutzer auf deinen Nodes ausgeführt haben — inklusive Aufteilung zwischen Owner, Plattform und Treasury.",
+   "pages": [
+    "earnings.html"
+   ]
+  },
+  "gesamt-earnings": {
+   "src": "Gesamt-Earnings",
+   "pages": [
+    "earnings.html"
+   ]
+  },
+  "credits-ueber-alle-nodes": {
+   "src": "Credits über alle Nodes",
+   "pages": [
+    "earnings.html"
+   ]
+  },
+  "beitragende-nodes": {
+   "src": "Beitragende Nodes",
+   "pages": [
+    "earnings.html"
+   ]
+  },
+  "mit-mindestens-einem-job": {
+   "src": "mit mindestens einem Job",
+   "pages": [
+    "earnings.html"
+   ]
+  },
+  "aufteilung": {
+   "src": "Aufteilung",
+   "pages": [
+    "earnings.html"
+   ]
+  },
+  "owner-plattform-treasury": {
+   "src": "Owner / Plattform / Treasury",
+   "pages": [
+    "earnings.html"
+   ]
+  },
+  "aggregiert": {
+   "src": "Aggregiert",
+   "pages": [
+    "earnings.html"
+   ]
+  },
+  "pro-node": {
+   "src": "Pro Node",
+   "pages": [
+    "earnings.html"
+   ]
+  },
+  "noch-keine-nodes": {
+   "src": "Noch keine Nodes.",
+   "pages": [
+    "earnings.html"
+   ]
+  },
+  "protokoll": {
+   "src": "Protokoll",
+   "pages": [
+    "earnings.html",
+    "index.html",
+    "usage.html"
+   ]
+  },
+  "letzte-job-earnings": {
+   "src": "Letzte Job-Earnings",
+   "pages": [
+    "earnings.html"
+   ]
+  },
+  "job-kosten": {
+   "src": "Job-Kosten",
+   "pages": [
+    "earnings.html"
+   ]
+  },
+  "owner-70": {
+   "src": "Owner 70 %",
+   "pages": [
+    "earnings.html"
+   ]
+  },
+  "plattform-20": {
+   "src": "Plattform 20 %",
+   "pages": [
+    "earnings.html"
+   ]
+  },
+  "treasury-10": {
+   "src": "Treasury 10 %",
+   "pages": [
+    "earnings.html"
+   ]
+  },
+  "noch-keine-job-earnings": {
+   "src": "Noch keine Job-Earnings.",
+   "pages": [
+    "earnings.html"
+   ]
+  },
+  "api-key-jetzt-sichern": {
+   "src": "API-Key jetzt sichern",
+   "pages": [
+    "index.html"
+   ]
+  },
+  "dieser-schluessel-wird-nur-einmal": {
+   "src": "Dieser Schlüssel wird nur einmal vollständig angezeigt. Er ist die einzige Zugangsmöglichkeit zur API.",
+   "pages": [
+    "index.html"
+   ]
+  },
+  "kopieren": {
+   "src": "Kopieren",
+   "pages": [
+    "index.html"
+   ]
+  },
+  "habe-ich-gesichert": {
+   "src": "Habe ich gesichert",
+   "pages": [
+    "index.html"
+   ]
+  },
+  "uebersicht": {
+   "src": "Übersicht",
+   "pages": [
+    "index.html"
+   ]
+  },
+  "guthaben-api-zugang-und-die-letzten-aufrufe": {
+   "src": "Guthaben, API-Zugang und die letzten Aufrufe auf einen Blick.",
+   "pages": [
+    "index.html"
+   ]
+  },
+  "credit-guthaben": {
+   "src": "Credit-Guthaben",
+   "pages": [
+    "index.html"
+   ]
+  },
+  "entspricht-ca-span-x-text-fmtnumber-math": {
+   "src": "entspricht ca. <span x-text=\"fmtNumber(Math.floor((me?.credits || 0) * 1000))\"></span> Token",
+   "pages": [
+    "index.html"
+   ]
+  },
+  "chat-oeffnen": {
+   "src": "Chat öffnen",
+   "pages": [
+    "index.html"
+   ]
+  },
+  "konto": {
+   "src": "Konto",
+   "pages": [
+    "index.html",
+    "login.html",
+    "profile.html"
+   ]
+  },
+  "registriert": {
+   "src": "Registriert",
+   "pages": [
+    "index.html"
+   ]
+  },
+  "verbrauch": {
+   "src": "Verbrauch",
+   "pages": [
+    "index.html",
+    "usage.html"
+   ]
+  },
+  "pro-tag-verbrauchte-token": {
+   "src": "Pro Tag verbrauchte Token.",
+   "pages": [
+    "index.html"
+   ]
+  },
+  "kennzahlen": {
+   "src": "Kennzahlen",
+   "pages": [
+    "index.html"
+   ]
+  },
+  "api-aufrufe": {
+   "src": "API-Aufrufe",
+   "pages": [
+    "index.html"
+   ]
+  },
+  "token-verbraucht": {
+   "src": "Token verbraucht",
+   "pages": [
+    "index.html"
+   ]
+  },
+  "credits-verbraucht": {
+   "src": "Credits verbraucht",
+   "pages": [
+    "index.html",
+    "usage.html"
+   ]
+  },
+  "letzte-aktivitaet": {
+   "src": "Letzte Aktivität",
+   "pages": [
+    "index.html",
+    "usage.html"
+   ]
+  },
+  "live-aus-code-class-inline-get-v1-me-usage": {
+   "src": "Live aus <code class=\"inline\">GET /v1/me/usage</code> — Details und Zeitraum-Umschalter im <a href=\"usage.html\" class=\"link\">Usage-Tab</a>.",
+   "pages": [
+    "index.html"
+   ]
+  },
+  "zugang": {
+   "src": "Zugang",
+   "pages": [
+    "index.html"
+   ]
+  },
+  "fuer-code-class-inline-v1-chat-completions": {
+   "src": "Für <code class=\"inline\">/v1/chat/completions</code> und <code class=\"inline\">/v1/models</code>.",
+   "pages": [
+    "index.html"
+   ]
+  },
+  "neu-ausstellen": {
+   "src": "Neu ausstellen",
+   "pages": [
+    "index.html"
+   ]
+  },
+  "authorization-bearer-lt-api-key-gt": {
+   "src": "Authorization: Bearer &lt;api-key&gt;",
+   "pages": [
+    "index.html"
+   ]
+  },
+  "letzte-api-aufrufe": {
+   "src": "Letzte API-Aufrufe",
+   "pages": [
+    "index.html"
+   ]
+  },
+  "noch-keine-aufrufe-der-chat-ist-der": {
+   "src": "Noch keine Aufrufe. Der Chat ist der schnellste Weg zum ersten Request.",
+   "pages": [
+    "index.html"
+   ]
+  },
+  "oder-direkt-per-curl": {
+   "src": "Oder direkt per curl:",
+   "pages": [
+    "index.html"
+   ]
+  },
+  "rechenzeit-aus-der-community-abgerechnet-in": {
+   "src": "Rechenzeit aus der Community, abgerechnet in Credits.",
+   "pages": [
+    "login.html"
+   ]
+  },
+  "rechner-mit-freier-gpu-stellen-ihre": {
+   "src": "Rechner mit freier GPU stellen ihre Leistung bereit, andere nutzen sie über eine OpenAI-kompatible API. Abrechnung läuft über Credits — pro Token, nicht pro Abo.",
+   "pages": [
+    "login.html"
+   ]
+  },
+  "b-openai-kompatible-api-b-bestehende": {
+   "src": "<b>OpenAI-kompatible API.</b> Bestehende Clients und SDKs funktionieren ohne Anpassung.",
+   "pages": [
+    "login.html"
+   ]
+  },
+  "b-eigene-hardware-einbringen-b-der-node": {
+   "src": "<b>Eigene Hardware einbringen.</b> Der Node-Agent läuft als Container, 70 % der Job-Kosten gehen an den Owner.",
+   "pages": [
+    "login.html"
+   ]
+  },
+  "b-modelle-bleiben-kontrollierbar-b-pro-node": {
+   "src": "<b>Modelle bleiben kontrollierbar.</b> Pro Node und pro Konto als Whitelist steuerbar, Cloud-Modelle explizit freizuschalten.",
+   "pages": [
+    "login.html"
+   ]
+  },
+  "anmelden": {
+   "src": "Anmelden",
+   "pages": [
+    "login.html"
+   ]
+  },
+  "melde-dich-an-um-credits-nodes-und-api-keys": {
+   "src": "Melde dich an, um Credits, Nodes und API-Keys zu verwalten.",
+   "pages": [
+    "login.html"
+   ]
+  },
+  "e-mail": {
+   "src": "E-Mail",
+   "pages": [
+    "login.html",
+    "register.html"
+   ]
+  },
+  "name-beispiel-de": {
+   "src": "name@beispiel.de",
+   "pages": [
+    "login.html",
+    "register.html"
+   ]
+  },
+  "passwort": {
+   "src": "Passwort",
+   "pages": [
+    "login.html",
+    "register.html"
+   ]
+  },
+  "anmeldung-laeuft": {
+   "src": "Anmeldung läuft…",
+   "pages": [
+    "login.html"
+   ]
+  },
+  "noch-kein-konto-a-href-register-html-class": {
+   "src": "Noch kein Konto? <a href=\"register.html\" class=\"link\">Registrieren</a> — 100 Credits zum Start.",
+   "pages": [
+    "login.html"
+   ]
+  },
+  "gpu-bereitstellen": {
+   "src": "GPU bereitstellen",
+   "pages": [
+    "nodes.html"
+   ]
+  },
+  "node-registrieren-agent-starten-fertig-70": {
+   "src": "Node registrieren, Agent starten, fertig. 70 % der Job-Kosten werden dem Node-Owner als Credits gutgeschrieben.",
+   "pages": [
+    "nodes.html"
+   ]
+  },
+  "alle-nodes-auswaehlen": {
+   "src": "Alle Nodes auswählen",
+   "pages": [
+    "nodes.html"
+   ]
+  },
+  "alle-auswaehlen": {
+   "src": "Alle auswählen",
+   "pages": [
+    "nodes.html"
+   ]
+  },
+  "span-class-mono-x-text-selectedcount-span": {
+   "src": "<span class=\"mono\" x-text=\"selectedCount\"></span> ausgewählt",
+   "pages": [
+    "nodes.html"
+   ]
+  },
+  "whitelist-setzen": {
+   "src": "Whitelist setzen",
+   "pages": [
+    "nodes.html"
+   ]
+  },
+  "auswahl-aufheben": {
+   "src": "Auswahl aufheben",
+   "pages": [
+    "nodes.html"
+   ]
+  },
+  "neu": {
+   "src": "Neu",
+   "pages": [
+    "nodes.html"
+   ]
+  },
+  "name": {
+   "src": "Name",
+   "pages": [
+    "nodes.html",
+    "register.html"
+   ]
+  },
+  "z-b-wohnzimmer-rtx-4090": {
+   "src": "z. B. Wohnzimmer RTX 4090",
+   "pages": [
+    "nodes.html"
+   ]
+  },
+  "gpu-typ": {
+   "src": "GPU-Typ",
+   "pages": [
+    "nodes.html"
+   ]
+  },
+  "rtx-4090": {
+   "src": "RTX 4090",
+   "pages": [
+    "nodes.html"
+   ]
+  },
+  "vram-gb": {
+   "src": "VRAM (GB)",
+   "pages": [
+    "nodes.html"
+   ]
+  },
+  "stundensatz-credits": {
+   "src": "Stundensatz (Credits)",
+   "pages": [
+    "nodes.html"
+   ]
+  },
+  "port": {
+   "src": "Port",
+   "pages": [
+    "nodes.html"
+   ]
+  },
+  "tailscale-ip": {
+   "src": "Tailscale-IP",
+   "pages": [
+    "nodes.html"
+   ]
+  },
+  "der-pool-routet-ausschliesslich-ueber-das": {
+   "src": "Der Pool routet ausschließlich über das Tailnet — public erreichbare Nodes sind nicht vorgesehen.",
+   "pages": [
+    "nodes.html"
+   ]
+  },
+  "beschreibung": {
+   "src": "Beschreibung",
+   "pages": [
+    "nodes.html"
+   ]
+  },
+  "modelle-die-diese-node-teilen-darf": {
+   "src": "Modelle, die diese Node teilen darf",
+   "pages": [
+    "nodes.html"
+   ]
+  },
+  "leer-standard-alle-lokalen-modelle-keine": {
+   "src": "Leer = Standard (alle lokalen Modelle, keine Cloud). Explizit auswählen, um einzuschränken.",
+   "pages": [
+    "nodes.html"
+   ]
+  },
+  "modelle-werden-geladen": {
+   "src": "Modelle werden geladen…",
+   "pages": [
+    "nodes.html",
+    "profile.html",
+    "register.html"
+   ]
+  },
+  "registrieren": {
+   "src": "Registrieren",
+   "pages": [
+    "nodes.html",
+    "register.html"
+   ]
+  },
+  "agent-api-key": {
+   "src": "Agent-API-Key",
+   "pages": [
+    "nodes.html"
+   ]
+  },
+  "wird-nur-jetzt-angezeigt-der-node-agent": {
+   "src": "Wird nur jetzt angezeigt — der Node-Agent braucht ihn beim Start.",
+   "pages": [
+    "nodes.html"
+   ]
+  },
+  "ablauf": {
+   "src": "Ablauf",
+   "pages": [
+    "nodes.html"
+   ]
+  },
+  "was-beim-registrieren-passiert": {
+   "src": "Was beim Registrieren passiert",
+   "pages": [
+    "nodes.html"
+   ]
+  },
+  "du-erhaeltst-einen-code-class-inline-agent": {
+   "src": "Du erhältst einen <code class=\"inline\">agent_api_key</code> — einmalig sichtbar, sicher speichern.",
+   "pages": [
+    "nodes.html"
+   ]
+  },
+  "node-agent-als-container-starten-mit-node": {
+   "src": "Node-Agent als Container starten, mit Node-ID und API-Key.",
+   "pages": [
+    "nodes.html"
+   ]
+  },
+  "der-agent-sendet-alle-30-s-einen-heartbeat": {
+   "src": "Der Agent sendet alle 30 s einen Heartbeat — die Node erscheint im Community-Pool.",
+   "pages": [
+    "nodes.html"
+   ]
+  },
+  "anfragen-laufen-ueber-deine-gpu-70-der-job": {
+   "src": "Anfragen laufen über deine GPU. 70 % der Job-Kosten gehen an dich, 20 % an die Plattform, 10 % an die Treasury.",
+   "pages": [
+    "nodes.html"
+   ]
+  },
+  "zur-node-agent-anleitung": {
+   "src": "Zur Node-Agent-Anleitung",
+   "pages": [
+    "nodes.html"
+   ]
+  },
+  "bestand": {
+   "src": "Bestand",
+   "pages": [
+    "nodes.html"
+   ]
+  },
+  "meine-registrierten-nodes": {
+   "src": "Meine registrierten Nodes",
+   "pages": [
+    "nodes.html"
+   ]
+  },
+  "pausiert": {
+   "src": "pausiert",
+   "pages": [
+    "nodes.html"
+   ]
+  },
+  "span-x-text-n-gpu-type-span-span-x-text-n": {
+   "src": "<span x-text=\"n.gpu_type\"></span> · <span x-text=\"n.vram_gb\"></span> GB VRAM · <span class=\"mono\" x-text=\"(n.tailscale_ip || 'kein Tailscale') + ':' + n.port\"></span>",
+   "pages": [
+    "nodes.html"
+   ]
+  },
+  "span-class-mono-x-text-n-hourly-rate-span": {
+   "src": "<span class=\"mono\" x-text=\"n.hourly_rate\"></span> Credits/h · verdient <span class=\"mono\" x-text=\"fmtCredits(n.earnings_total)\"></span> · zuletzt gesehen <span x-text=\"fmtDate(n.last_seen)\"></span>",
+   "pages": [
+    "nodes.html"
+   ]
+  },
+  "standard-alle-lokal-keine-cloud": {
+   "src": "Standard (alle lokal, keine Cloud)",
+   "pages": [
+    "nodes.html"
+   ]
+  },
+  "nichts-freigegeben": {
+   "src": "nichts freigegeben",
+   "pages": [
+    "nodes.html"
+   ]
+  },
+  "loeschen": {
+   "src": "Löschen",
+   "pages": [
+    "nodes.html"
+   ]
+  },
+  "modell-whitelist-bearbeiten": {
+   "src": "Modell-Whitelist bearbeiten",
+   "pages": [
+    "nodes.html"
+   ]
+  },
+  "leere-auswahl-bedeutet-nichts-freigegeben": {
+   "src": "Leere Auswahl bedeutet: nichts freigegeben. Über „Auf Standard zurücksetzen\" im Profil gilt wieder „alle lokalen Modelle\".",
+   "pages": [
+    "nodes.html"
+   ]
+  },
+  "speichern": {
+   "src": "Speichern",
+   "pages": [
+    "nodes.html"
+   ]
+  },
+  "abbrechen": {
+   "src": "Abbrechen",
+   "pages": [
+    "nodes.html"
+   ]
+  },
+  "noch-keine-node-registriert-das-formular": {
+   "src": "Noch keine Node registriert — das Formular oben ist der erste Schritt.",
+   "pages": [
+    "nodes.html"
+   ]
+  },
+  "bulk": {
+   "src": "Bulk",
+   "pages": [
+    "nodes.html"
+   ]
+  },
+  "modell-whitelist-fuer-span-x-text": {
+   "src": "Modell-Whitelist für <span x-text=\"selectedCount\"></span> Node(s)",
+   "pages": [
+    "nodes.html"
+   ]
+  },
+  "schliessen": {
+   "src": "Schließen",
+   "pages": [
+    "nodes.html"
+   ]
+  },
+  "gilt-fuer-alle-ausgewaehlten-nodes-keine": {
+   "src": "Gilt für alle ausgewählten Nodes. Keine Auswahl = Nodes nehmen keine Modelle an. Ein Zurücksetzen auf \"Standard\" (alle lokalen Modelle) ist über die UI derzeit nicht möglich — siehe LANA-49.",
+   "pages": [
+    "nodes.html"
+   ]
+  },
+  "alle-lokalen": {
+   "src": "Alle lokalen",
+   "pages": [
+    "nodes.html"
+   ]
+  },
+  "alle": {
+   "src": "Alle",
+   "pages": [
+    "nodes.html"
+   ]
+  },
+  "keine": {
+   "src": "Keine",
+   "pages": [
+    "nodes.html"
+   ]
+  },
+  "span-class-mono-x-text": {
+   "src": "<span class=\"mono\" x-text=\"bulkWhitelistSelection.length\"></span> gewählt",
+   "pages": [
+    "nodes.html"
+   ]
+  },
+  "lade-modelle": {
+   "src": "Lade Modelle…",
+   "pages": [
+    "nodes.html"
+   ]
+  },
+  "live": {
+   "src": "Live",
+   "pages": [
+    "pool.html"
+   ]
+  },
+  "community-pool": {
+   "src": "Community-Pool",
+   "pages": [
+    "pool.html"
+   ]
+  },
+  "alle-beigetragenen-gpus-mit-aktueller": {
+   "src": "Alle beigetragenen GPUs mit aktueller Auslastung. Aktualisiert sich automatisch alle 10 Sekunden.",
+   "pages": [
+    "pool.html"
+   ]
+  },
+  "nodes-online": {
+   "src": "Nodes online",
+   "pages": [
+    "pool.html"
+   ]
+  },
+  "bereit-registriert": {
+   "src": "bereit / registriert",
+   "pages": [
+    "pool.html"
+   ]
+  },
+  "vram-gesamt": {
+   "src": "VRAM gesamt",
+   "pages": [
+    "pool.html"
+   ]
+  },
+  "gb-im-pool": {
+   "src": "GB im Pool",
+   "pages": [
+    "pool.html"
+   ]
+  },
+  "vram-verfuegbar": {
+   "src": "VRAM verfügbar",
+   "pages": [
+    "pool.html"
+   ]
+  },
+  "gb-gerade-frei": {
+   "src": "GB gerade frei",
+   "pages": [
+    "pool.html"
+   ]
+  },
+  "stundensatz-span-x-text-raterange-span": {
+   "src": "Stundensatz <span x-text=\"rateRange()\"></span>",
+   "pages": [
+    "pool.html"
+   ]
+  },
+  "hardware": {
+   "src": "Hardware",
+   "pages": [
+    "pool.html"
+   ]
+  },
+  "verfuegbare-gpus": {
+   "src": "Verfügbare GPUs",
+   "pages": [
+    "pool.html"
+   ]
+  },
+  "auslastung": {
+   "src": "Auslastung",
+   "pages": [
+    "pool.html"
+   ]
+  },
+  "gerade-ist-keine-node-online-schau-spaeter": {
+   "src": "Gerade ist keine Node online. Schau später wieder rein oder <a href=\"nodes.html\" class=\"link\">registriere deine eigene GPU</a>.",
+   "pages": [
+    "pool.html"
+   ]
+  },
+  "rolle-und-modell-whitelist-aenderungen": {
+   "src": "Rolle und Modell-Whitelist. Änderungen greifen sofort, ohne erneute Anmeldung.",
+   "pages": [
+    "profile.html"
+   ]
+  },
+  "berechtigungen": {
+   "src": "Berechtigungen",
+   "pages": [
+    "profile.html"
+   ]
+  },
+  "api-nutzbar-keine-node-registrierung": {
+   "src": "API nutzbar, keine Node-Registrierung.",
+   "pages": [
+    "profile.html"
+   ]
+  },
+  "nodes-registrierbar-keine-eigenen-api-calls": {
+   "src": "Nodes registrierbar, keine eigenen API-Calls.",
+   "pages": [
+    "profile.html"
+   ]
+  },
+  "voller-zugriff": {
+   "src": "Voller Zugriff.",
+   "pages": [
+    "profile.html"
+   ]
+  },
+  "nur-consumer": {
+   "src": "Nur Consumer",
+   "pages": [
+    "profile.html",
+    "register.html"
+   ]
+  },
+  "api-nutzen-keine-nodes-registrieren": {
+   "src": "API nutzen, keine Nodes registrieren.",
+   "pages": [
+    "profile.html",
+    "register.html"
+   ]
+  },
+  "nur-provider": {
+   "src": "Nur Provider",
+   "pages": [
+    "profile.html",
+    "register.html"
+   ]
+  },
+  "nodes-teilen-keine-api-calls": {
+   "src": "Nodes teilen, keine API-Calls.",
+   "pages": [
+    "profile.html"
+   ]
+  },
+  "beides": {
+   "src": "Beides",
+   "pages": [
+    "profile.html",
+    "register.html"
+   ]
+  },
+  "voller-zugriff-standard": {
+   "src": "Voller Zugriff — Standard.",
+   "pages": [
+    "profile.html"
+   ]
+  },
+  "rolle-speichern": {
+   "src": "Rolle speichern",
+   "pages": [
+    "profile.html"
+   ]
+  },
+  "speichere": {
+   "src": "Speichere…",
+   "pages": [
+    "profile.html"
+   ]
+  },
+  "freigegebene-modelle": {
+   "src": "Freigegebene Modelle",
+   "pages": [
+    "profile.html"
+   ]
+  },
+  "leer-bedeutet-alle-lokalen-modelle-keine": {
+   "src": "Leer bedeutet: alle lokalen Modelle, keine Cloud. Explizit wählen, um einzuschränken oder Cloud freizuschalten.",
+   "pages": [
+    "profile.html"
+   ]
+  },
+  "cloud-modelle-erlauben": {
+   "src": "Cloud-Modelle erlauben",
+   "pages": [
+    "profile.html",
+    "register.html"
+   ]
+  },
+  "sinnvoll-wenn-die-lokale-hardware-gerade": {
+   "src": "Sinnvoll, wenn die lokale Hardware gerade nicht verfügbar ist.",
+   "pages": [
+    "profile.html",
+    "register.html"
+   ]
+  },
+  "modelle-speichern": {
+   "src": "Modelle speichern",
+   "pages": [
+    "profile.html"
+   ]
+  },
+  "auf-standard-zuruecksetzen": {
+   "src": "Auf Standard zurücksetzen",
+   "pages": [
+    "profile.html"
+   ]
+  },
+  "konto-anlegen-100-credits-zum-start": {
+   "src": "Konto anlegen, 100 Credits zum Start.",
+   "pages": [
+    "register.html"
+   ]
+  },
+  "ein-konto-deckt-beides-ab-die-api-nutzen": {
+   "src": "Ein Konto deckt beides ab: die API nutzen und eigene GPUs bereitstellen. Die Rolle legt fest, was freigeschaltet wird — im Profil jederzeit änderbar.",
+   "pages": [
+    "register.html"
+   ]
+  },
+  "b-consumer-b-api-nutzen-keine-hardware": {
+   "src": "<b>Consumer.</b> API nutzen, keine Hardware bereitstellen. Für Rechner ohne nutzbare GPU.",
+   "pages": [
+    "register.html"
+   ]
+  },
+  "b-provider-b-nodes-registrieren-und-credits": {
+   "src": "<b>Provider.</b> Nodes registrieren und Credits verdienen, keine eigenen API-Calls.",
+   "pages": [
+    "register.html"
+   ]
+  },
+  "b-beides-b-voller-zugriff-einbringen-und": {
+   "src": "<b>Beides.</b> Voller Zugriff — Einbringen und Nutzen gleichzeitig.",
+   "pages": [
+    "register.html"
+   ]
+  },
+  "neues-konto": {
+   "src": "Neues Konto",
+   "pages": [
+    "register.html"
+   ]
+  },
+  "vor-und-nachname": {
+   "src": "Vor- und Nachname",
+   "pages": [
+    "register.html"
+   ]
+  },
+  "mindestens-6-zeichen": {
+   "src": "mindestens 6 Zeichen",
+   "pages": [
+    "register.html"
+   ]
+  },
+  "eigene-gpus-teilen-keine-api-calls": {
+   "src": "Eigene GPUs teilen, keine API-Calls.",
+   "pages": [
+    "register.html"
+   ]
+  },
+  "gpus-teilen-und-api-nutzen-standard": {
+   "src": "GPUs teilen und API nutzen — Standard.",
+   "pages": [
+    "register.html"
+   ]
+  },
+  "modelle-einschraenken-span-class-hint": {
+   "src": "Modelle einschränken <span class=\"hint\">optional — leer bedeutet: alle lokalen Modelle, keine Cloud</span>",
+   "pages": [
+    "register.html"
+   ]
+  },
+  "spaeter-im-a-href-profile-html-class-link": {
+   "src": "Später im <a href=\"profile.html\" class=\"link\">Profil</a> jederzeit änderbar.",
+   "pages": [
+    "register.html"
+   ]
+  },
+  "konto-anlegen": {
+   "src": "Konto anlegen",
+   "pages": [
+    "register.html"
+   ]
+  },
+  "wird-angelegt": {
+   "src": "Wird angelegt…",
+   "pages": [
+    "register.html"
+   ]
+  },
+  "schon-registriert-a-href-login-html-class": {
+   "src": "Schon registriert? <a href=\"login.html\" class=\"link\">Anmelden</a>",
+   "pages": [
+    "register.html"
+   ]
+  },
+  "welche-modelle-du-nutzt-und-wie-viele-token": {
+   "src": "Welche Modelle du nutzt und wie viele Token dabei durchlaufen. Aggregiert serverseitig aus jedem <code class=\"inline\">/v1/chat/completions</code>-Aufruf.",
+   "pages": [
+    "usage.html"
+   ]
+  },
+  "usage-konnte-nicht-geladen-werden": {
+   "src": "Usage konnte nicht geladen werden",
+   "pages": [
+    "usage.html"
+   ]
+  },
+  "verschiedene-modelle-verwendet": {
+   "src": "verschiedene Modelle verwendet",
+   "pages": [
+    "usage.html"
+   ]
+  },
+  "verteilung": {
+   "src": "Verteilung",
+   "pages": [
+    "usage.html"
+   ]
+  },
+  "token-je-modell": {
+   "src": "Token je Modell",
+   "pages": [
+    "usage.html"
+   ]
+  },
+  "in-diesem-zeitraum-wurde-noch-nichts": {
+   "src": "In diesem Zeitraum wurde noch nichts verbraucht.",
+   "pages": [
+    "usage.html"
+   ]
+  },
+  "a-href-chat-html-class-link-chat-oeffnen-a": {
+   "src": "<a href=\"chat.html\" class=\"link\">Chat öffnen</a> oder den Zeitraum auf „Gesamt“ stellen.",
+   "pages": [
+    "usage.html"
+   ]
+  },
+  "verlauf": {
+   "src": "Verlauf",
+   "pages": [
+    "usage.html"
+   ]
+  },
+  "token-je-span-x-text-data-data-granularity": {
+   "src": "Token je <span x-text=\"data && data.granularity === 'hour' ? 'Stunde' : 'Tag'\"></span>",
+   "pages": [
+    "usage.html"
+   ]
+  },
+  "leere-abschnitte-heissen-keine-anfrage": {
+   "src": "Leere Abschnitte heißen: keine Anfrage.",
+   "pages": [
+    "usage.html"
+   ]
+  },
+  "letzte-requests": {
+   "src": "Letzte Requests",
+   "pages": [
+    "usage.html"
+   ]
+  },
+  "keine-requests-in-diesem-zeitraum": {
+   "src": "Keine Requests in diesem Zeitraum.",
+   "pages": [
+    "usage.html"
+   ]
+  },
+  "prompt": {
+   "src": "Prompt",
+   "pages": [
+    "usage.html"
+   ]
+  },
+  "completion": {
+   "src": "Completion",
+   "pages": [
+    "usage.html"
+   ]
+  },
+  "quelle-code-class-inline-get-v1-me-usage": {
+   "src": "Quelle: <code class=\"inline\">GET /v1/me/usage?window=24h|7d|30d|all</code> — Aggregation pro Modell, Zeitraum und Request.",
+   "pages": [
+    "usage.html"
+   ]
+  }
+ },
+ "findings": {
+  "mixed_siblings": [],
+  "suspicious": [
+   {
+    "key": "authorization-bearer-lt-api-key-gt",
+    "src": "Authorization: Bearer &lt;api-key&gt;"
+   }
+  ]
+ },
+ "js": {
+  "templates": {
+   "admin-usage": [
+    "admin-usage.html:x-html"
+   ],
+   "both": [
+    "admin-usage.html:x-text",
+    "index.html:x-text"
+   ],
+   "Lädt…": [
+    "admin-usage.html:x-text",
+    "chat.html:x-text",
+    "usage.html:x-text"
+   ],
+   "inkl. inaktive": [
+    "admin-usage.html:x-text"
+   ],
+   "nur aktive": [
+    "admin-usage.html:x-text"
+   ],
+   "mit Verbrauch im Zeitraum": [
+    "admin-usage.html:x-text"
+   ],
+   " Modelle im Umlauf": [
+    "admin-usage.html:x-text"
+   ],
+   "agent": [
+    "agent.html:x-html"
+   ],
+   "chat": [
+    "chat.html:x-html"
+   ],
+   "Bitte wählen": [
+    "chat.html:x-text"
+   ],
+   "credits": [
+    "credits.html:x-html"
+   ],
+   "earnings": [
+    "earnings.html:x-html"
+   ],
+   " Einträge": [
+    "earnings.html:x-text"
+   ],
+   "dashboard": [
+    "index.html:x-html"
+   ],
+   "Letzte ": [
+    "index.html:x-text"
+   ],
+   "30 Tage": [
+    "index.html:x-text"
+   ],
+   "24 Stunden": [
+    "index.html:x-text"
+   ],
+   "7 Tage": [
+    "index.html:x-text"
+   ],
+   "Verbergen": [
+    "index.html:x-text"
+   ],
+   "Anzeigen": [
+    "index.html:x-text"
+   ],
+   "nodes": [
+    "nodes.html:x-html"
+   ],
+   "Status… ": [
+    "nodes.html:x-text"
+   ],
+   "Status toggeln": [
+    "nodes.html:x-text"
+   ],
+   "kein Tailscale": [
+    "nodes.html:x-text"
+   ],
+   " freigegeben": [
+    "nodes.html:x-text"
+   ],
+   "Pausieren": [
+    "nodes.html:x-text"
+   ],
+   "Fortsetzen": [
+    "nodes.html:x-text"
+   ],
+   "Abbrechen": [
+    "nodes.html:x-text"
+   ],
+   "Setze… ": [
+    "nodes.html:x-text",
+    "nodes.html:x-text"
+   ],
+   "Whitelist anwenden": [
+    "nodes.html:x-text",
+    "nodes.html:x-text"
+   ],
+   "pool": [
+    "pool.html:x-html"
+   ],
+   "lokal": [
+    "pool.html:x-text"
+   ],
+   "profile": [
+    "profile.html:x-html"
+   ],
+   " Token / Request": [
+    "usage.html:x-text"
+   ],
+   "hour": [
+    "usage.html:x-text"
+   ],
+   "Stunde": [
+    "usage.html:x-text"
+   ],
+   "Die jüngsten ": [
+    "usage.html:x-text"
+   ],
+   " Aufrufe in diesem Zeitraum.": [
+    "usage.html:x-text"
+   ]
+  },
+  "scripts": {
+   "Quantencomputing erklären": [
+    "chat.html:script:12"
+   ],
+   "Erkläre Quantencomputing in drei Sätzen.": [
+    "chat.html:script:12"
+   ],
+   "Python Hello-World": [
+    "chat.html:script:13"
+   ],
+   "Schreibe ein Python Hello-World mit Type Hints.": [
+    "chat.html:script:13"
+   ],
+   "Ideen für ein Nebenprojekt": [
+    "chat.html:script:14"
+   ],
+   "Gib mir drei Ideen für ein Nebenprojekt.": [
+    "chat.html:script:14"
+   ],
+   "Modelle konnten nicht geladen werden:": [
+    "chat.html:script:33"
+   ],
+   "Guthaben reicht nicht — bitte Credits aufladen.": [
+    "chat.html:script:47"
+   ],
+   "(keine Antwort)": [
+    "chat.html:script:64"
+   ],
+   "assistant": [
+    "chat.html:script:65"
+   ],
+   "starter": [
+    "credits.html:script:14"
+   ],
+   "ca. 10 Mio. Token": [
+    "credits.html:script:15"
+   ],
+   "alle Modelle": [
+    "credits.html:script:15",
+    "credits.html:script:19",
+    "credits.html:script:23"
+   ],
+   "Standard-Support": [
+    "credits.html:script:15"
+   ],
+   "ca. 50 Mio. Token": [
+    "credits.html:script:19"
+   ],
+   "Prioritäts-Queue": [
+    "credits.html:script:19"
+   ],
+   "E-Mail-Support": [
+    "credits.html:script:19"
+   ],
+   "business": [
+    "credits.html:script:22"
+   ],
+   "ca. 200 Mio. Token": [
+    "credits.html:script:23"
+   ],
+   "höchste Priorität": [
+    "credits.html:script:23"
+   ],
+   "eigene Limits": [
+    "credits.html:script:23"
+   ],
+   "approved": [
+    "credits.html:script:34"
+   ],
+   "online": [
+    "credits.html:script:34"
+   ],
+   "rejected": [
+    "credits.html:script:35"
+   ],
+   "error": [
+    "credits.html:script:35"
+   ],
+   "busy": [
+    "credits.html:script:36"
+   ],
+   "Laden fehlgeschlagen:": [
+    "credits.html:script:43",
+    "index.html:script:48"
+   ],
+   "Kauf fehlgeschlagen:": [
+    "credits.html:script:62"
+   ],
+   "pending": [
+    "credits.html:script:74"
+   ],
+   "manuelle Aufladung": [
+    "credits.html:script:85"
+   ],
+   "Anfrage gespeichert. Der Admin schreibt die Credits gut.": [
+    "credits.html:script:87"
+   ],
+   "Guten Morgen": [
+    "index.html:script:21"
+   ],
+   "Guten Tag": [
+    "index.html:script:21"
+   ],
+   "Guten Abend": [
+    "index.html:script:21"
+   ],
+   "just_registered_key": [
+    "index.html:script:29",
+    "index.html:script:30",
+    "register.html:script:49"
+   ],
+   "usageChart": [
+    "index.html:script:44"
+   ],
+   "Kopiert ✓": [
+    "index.html:script:66"
+   ],
+   "API-Key kopiert": [
+    "index.html:script:73",
+    "index.html:script:81"
+   ],
+   "Neuen API-Key ausstellen? Der bisherige wird sofort ungültig.": [
+    "index.html:script:87"
+   ],
+   "Passwort zur Bestätigung:": [
+    "index.html:script:91"
+   ],
+   "Neuer API-Key ausgestellt — jetzt sichern.": [
+    "index.html:script:98"
+   ],
+   "Willkommen zurück,": [
+    "login.html:script:14"
+   ],
+   "Anmeldung fehlgeschlagen": [
+    "login.html:script:17"
+   ],
+   "both": [
+    "register.html:script:7",
+    "app.js:5",
+    "app.js:6",
+    "app.js:92",
+    "app.js:118",
+    "profile.js:4",
+    "profile.js:5",
+    "profile.js:28",
+    "profile.js:29"
+   ],
+   "Konto angelegt — 100 Credits gutgeschrieben.": [
+    "register.html:script:50"
+   ],
+   "Registrierung fehlgeschlagen": [
+    "register.html:script:53"
+   ],
+   "adminUsagePage": [
+    "admin-usage.js:9"
+   ],
+   "7 Tage": [
+    "admin-usage.js:13",
+    "usage.js:9"
+   ],
+   "30 Tage": [
+    "admin-usage.js:14",
+    "usage.js:10"
+   ],
+   "Gesamt": [
+    "admin-usage.js:15",
+    "usage.js:11"
+   ],
+   "admin": [
+    "admin-usage.js:32",
+    "app.js:92"
+   ],
+   "Laden fehlgeschlagen": [
+    "admin-usage.js:58",
+    "usage.js:33"
+   ],
+   "gesamter Zeitraum": [
+    "admin-usage.js:114",
+    "usage.js:97"
+   ],
+   "agentPage": [
+    "agent.js:3"
+   ],
+   "provider": [
+    "app.js:12",
+    "app.js:88"
+   ],
+   "Der Provider-Bereich braucht die Rolle „Provider": [
+    "app.js:13"
+   ],
+   "“ oder „beides": [
+    "app.js:13"
+   ],
+   "“ — im Profil umstellbar.": [
+    "app.js:13"
+   ],
+   "de-DE": [
+    "app.js:38",
+    "app.js:43"
+   ],
+   "2-digit": [
+    "app.js:44",
+    "app.js:44",
+    "app.js:45",
+    "app.js:45"
+   ],
+   "numeric": [
+    "app.js:44"
+   ],
+   ".bg-field": [
+    "app.js:61"
+   ],
+   "bg-field": [
+    "app.js:63"
+   ],
+   "aria-hidden": [
+    "app.js:64"
+   ],
+   "true": [
+    "app.js:64",
+    "app.js:103"
+   ],
+   "bg-grid": [
+    "app.js:66"
+   ],
+   "bg-glow": [
+    "app.js:67"
+   ],
+   "bg-grain": [
+    "app.js:68"
+   ],
+   "dashboard": [
+    "app.js:74"
+   ],
+   "chat": [
+    "app.js:75"
+   ],
+   "admin-usage": [
+    "app.js:78"
+   ],
+   "pool": [
+    "app.js:79"
+   ],
+   "nodes": [
+    "app.js:80"
+   ],
+   "earnings": [
+    "app.js:81"
+   ],
+   "agent": [
+    "app.js:82"
+   ],
+   "profile": [
+    "app.js:83"
+   ],
+   "topbar": [
+    "app.js:100"
+   ],
+   "brand": [
+    "app.js:102"
+   ],
+   "brand-mark": [
+    "app.js:103"
+   ],
+   "none": [
+    "app.js:104"
+   ],
+   "currentColor": [
+    "app.js:104"
+   ],
+   "round": [
+    "app.js:105",
+    "app.js:105"
+   ],
+   "brand-text": [
+    "app.js:109"
+   ],
+   "Hauptnavigation": [
+    "app.js:114"
+   ],
+   "topbar-right": [
+    "app.js:115"
+   ],
+   "button": [
+    "app.js:120"
+   ],
+   "site-foot": [
+    "app.js:129"
+   ],
+   "--text-mute": [
+    "app.js:150"
+   ],
+   "--brass": [
+    "app.js:151"
+   ],
+   "center": [
+    "app.js:157",
+    "app.js:200"
+   ],
+   "noch keine Nutzung erfasst": [
+    "app.js:158"
+   ],
+   "right": [
+    "app.js:176"
+   ],
+   "DOMContentLoaded": [
+    "app.js:226",
+    "app.js:253"
+   ],
+   ".site-foot": [
+    "app.js:229"
+   ],
+   "undefined": [
+    "app.js:248"
+   ],
+   "resize": [
+    "app.js:256"
+   ],
+   "load": [
+    "app.js:257"
+   ],
+   "earningsPage": [
+    "earnings.js:3"
+   ],
+   "nodesPage": [
+    "nodes.js:3"
+   ],
+   "nichts erlaubt": [
+    "nodes.js:122",
+    "nodes.js:148"
+   ],
+   "Node registriert": [
+    "nodes.js:200"
+   ],
+   "Modell-Whitelist aktualisiert": [
+    "nodes.js:226"
+   ],
+   "Update fehlgeschlagen:": [
+    "nodes.js:229"
+   ],
+   "Toggle failed:": [
+    "nodes.js:236"
+   ],
+   "Bearer": [
+    "nodes.js:242"
+   ],
+   "Node gelöscht": [
+    "nodes.js:244"
+   ],
+   "poolPage": [
+    "pool.js:3"
+   ],
+   "visibilitychange": [
+    "pool.js:13"
+   ],
+   "crit": [
+    "pool.js:35"
+   ],
+   "warn": [
+    "pool.js:36"
+   ],
+   "profilePage": [
+    "profile.js:3"
+   ],
+   "Fehler beim Laden:": [
+    "profile.js:35"
+   ],
+   "Rolle aktualisiert": [
+    "profile.js:72"
+   ],
+   "Modell-Whitelist gespeichert.": [
+    "profile.js:95"
+   ],
+   "Modelle aktualisiert": [
+    "profile.js:99"
+   ],
+   "usagePage": [
+    "usage.js:5"
+   ],
+   "usageSeries": [
+    "usage.js:44"
+   ]
+  }
+ }
+}

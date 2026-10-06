@@ -3,11 +3,27 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Profil · GPU-Pool</title>
-<meta name="color-scheme" content="dark" />
+<title data-i18n="title.profile">Profil · CoMesh</title>
+<meta name="color-scheme" content="dark light" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<script>
+/* Apply the stored theme BEFORE the stylesheet loads, so the first paint is
+   already the right palette. Dark is the default; a first-time visitor follows
+   the OS setting until they choose explicitly. Kept inline and tiny on purpose —
+   it must not depend on the rest of the JS. */
+(function () {
+  try {
+    var stored = localStorage.getItem("gp_theme");
+    var theme = (stored === "light" || stored === "dark") ? stored
+      : (window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
+    document.documentElement.setAttribute("data-theme", theme);
+  } catch (e) {
+    document.documentElement.setAttribute("data-theme", "dark");
+  }
+})();
+</script>
 <link rel="stylesheet" href="style.css" />
 </head>
 <body x-data="profilePage()" x-init="init()">
@@ -15,9 +31,9 @@
 
   <main class="shell" style="max-width:900px">
     <div class="page-head">
-      <div class="eyebrow">Konto</div>
+      <div class="eyebrow" data-i18n="konto">Konto</div>
       <h1>Profil</h1>
-      <p class="lede">Rolle und Modell-Whitelist. Änderungen greifen sofort, ohne erneute Anmeldung.</p>
+      <p class="lede" data-i18n="rolle-und-modell-whitelist-aenderungen">Rolle und Modell-Whitelist. Änderungen greifen sofort, ohne erneute Anmeldung.</p>
     </div>
 
     <div x-show="error" class="notice mb-4" style="border-color:rgba(209,88,79,.4)">
@@ -29,13 +45,13 @@
     <section class="card mb-4">
       <div class="panel-head">
         <div>
-          <div class="eyebrow">Berechtigungen</div>
-          <h3>Rolle</h3>
+          <div class="eyebrow" data-i18n="berechtigungen">Berechtigungen</div>
+          <h3 data-i18n="rolle">Rolle</h3>
           <p>
             Aktuell: <span class="mono text-brand" x-text="currentRole"></span> —
-            <span x-show="currentRole === 'consumer'">API nutzbar, keine Node-Registrierung.</span>
-            <span x-show="currentRole === 'provider'">Nodes registrierbar, keine eigenen API-Calls.</span>
-            <span x-show="currentRole === 'both'">Voller Zugriff.</span>
+            <span x-show="currentRole === 'consumer'" data-i18n="api-nutzbar-keine-node-registrierung">API nutzbar, keine Node-Registrierung.</span>
+            <span x-show="currentRole === 'provider'" data-i18n="nodes-registrierbar-keine-eigenen-api-calls">Nodes registrierbar, keine eigenen API-Calls.</span>
+            <span x-show="currentRole === 'both'" data-i18n="voller-zugriff">Voller Zugriff.</span>
           </p>
         </div>
       </div>
@@ -44,22 +60,22 @@
         <label class="check">
           <input type="radio" name="role" value="consumer" x-model="role" />
           <span class="check-body">
-            <span class="check-title">Nur Consumer</span>
-            <span class="check-sub">API nutzen, keine Nodes registrieren.</span>
+            <span class="check-title" data-i18n="nur-consumer">Nur Consumer</span>
+            <span class="check-sub" data-i18n="api-nutzen-keine-nodes-registrieren">API nutzen, keine Nodes registrieren.</span>
           </span>
         </label>
         <label class="check">
           <input type="radio" name="role" value="provider" x-model="role" />
           <span class="check-body">
-            <span class="check-title">Nur Provider</span>
-            <span class="check-sub">Nodes teilen, keine API-Calls.</span>
+            <span class="check-title" data-i18n="nur-provider">Nur Provider</span>
+            <span class="check-sub" data-i18n="nodes-teilen-keine-api-calls">Nodes teilen, keine API-Calls.</span>
           </span>
         </label>
         <label class="check">
           <input type="radio" name="role" value="both" x-model="role" />
           <span class="check-body">
-            <span class="check-title">Beides</span>
-            <span class="check-sub">Voller Zugriff — Standard.</span>
+            <span class="check-title" data-i18n="beides">Beides</span>
+            <span class="check-sub" data-i18n="voller-zugriff-standard">Voller Zugriff — Standard.</span>
           </span>
         </label>
       </div>
@@ -68,8 +84,8 @@
 
       <div class="row mt-3" style="gap:12px">
         <button class="btn-primary btn-sm" @click="saveRole()" :disabled="savingRole">
-          <span x-show="!savingRole">Rolle speichern</span>
-          <span x-show="savingRole">Speichere…</span>
+          <span x-show="!savingRole" data-i18n="rolle-speichern">Rolle speichern</span>
+          <span x-show="savingRole" data-i18n="speichere">Speichere…</span>
         </button>
         <span x-show="lastRoleChange" class="t-xs text-mute" x-text="lastRoleChange"></span>
       </div>
@@ -80,8 +96,8 @@
       <div class="panel-head">
         <div>
           <div class="eyebrow">Modelle</div>
-          <h3>Freigegebene Modelle</h3>
-          <p>Leer bedeutet: alle lokalen Modelle, keine Cloud. Explizit wählen, um einzuschränken oder Cloud freizuschalten.</p>
+          <h3 data-i18n="freigegebene-modelle">Freigegebene Modelle</h3>
+          <p data-i18n="leer-bedeutet-alle-lokalen-modelle-keine">Leer bedeutet: alle lokalen Modelle, keine Cloud. Explizit wählen, um einzuschränken oder Cloud freizuschalten.</p>
         </div>
       </div>
 
@@ -96,7 +112,7 @@
             </span>
           </label>
         </template>
-        <div x-show="availableModels.length === 0" class="t-xs text-mute" style="padding:8px 10px">
+        <div x-show="availableModels.length === 0" class="t-xs text-mute" style="padding:8px 10px" data-i18n="modelle-werden-geladen">
           Modelle werden geladen…
         </div>
       </div>
@@ -104,8 +120,8 @@
       <label class="check mt-2">
         <input type="checkbox" x-model="allowCloud" />
         <span class="check-body">
-          <span class="check-title">Cloud-Modelle erlauben</span>
-          <span class="check-sub">Sinnvoll, wenn die lokale Hardware gerade nicht verfügbar ist.</span>
+          <span class="check-title" data-i18n="cloud-modelle-erlauben">Cloud-Modelle erlauben</span>
+          <span class="check-sub" data-i18n="sinnvoll-wenn-die-lokale-hardware-gerade">Sinnvoll, wenn die lokale Hardware gerade nicht verfügbar ist.</span>
         </span>
       </label>
 
@@ -113,16 +129,18 @@
 
       <div class="row wrap mt-3" style="gap:10px">
         <button class="btn-primary btn-sm" @click="saveModels()" :disabled="savingModels">
-          <span x-show="!savingModels">Modelle speichern</span>
-          <span x-show="savingModels">Speichere…</span>
+          <span x-show="!savingModels" data-i18n="modelle-speichern">Modelle speichern</span>
+          <span x-show="savingModels" data-i18n="speichere">Speichere…</span>
         </button>
-        <button class="btn-ghost btn-sm" @click="resetToDefault()">Auf Standard zurücksetzen</button>
+        <button class="btn-ghost btn-sm" @click="resetToDefault()" data-i18n="auf-standard-zuruecksetzen">Auf Standard zurücksetzen</button>
         <span x-show="lastModelChange" class="t-xs text-mute" x-text="lastModelChange"></span>
       </div>
     </section>
   </main>
 
       <script defer src="https://unpkg.com/alpinejs@3.5.1/dist/cdn.min.js"></script>
+<script src="i18n-catalog.js"></script>
+<script src="i18n.js"></script>
 <script src="app.js"></script>
   <script src="profile.js"></script>
 </body>

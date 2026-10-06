@@ -1,4 +1,4 @@
-// GPU-Pool — /nodes page (alpine frontend). Register a node + list mine.
+// CoMesh — /nodes page (alpine frontend). Register a node + list mine.
 document.addEventListener("alpine:init", () => {
   Alpine.data("nodesPage", () => ({
   myNodes: [],
@@ -84,10 +84,10 @@ document.addEventListener("alpine:init", () => {
       if (failed.length > 0) {
         this.selectedIds = failed.map(f => f.id);
         this.bulkError = failed.map(f => `${f.name}: ${f.msg}`).join(" · ");
-        toast(`Status: ${targets.length - failed.length}/${targets.length} ok`, "err");
+        toast(I18n.t("nodes.bulk.status_ok", { ok: targets.length - failed.length, n: targets.length }), "err");
         return;
       }
-      toast(`${targets.length} Node(s) umgeschaltet (${enabled} an, ${targets.length - enabled} pausiert)`, "ok");
+      toast(I18n.t("nodes.bulk.toggled", { n: targets.length, on: enabled, off: targets.length - enabled }), "ok");
       this.clearSelection();
     },
 
@@ -122,7 +122,7 @@ document.addEventListener("alpine:init", () => {
       const models = [...this.bulkWhitelistSelection];
       if (models.length === 0) {
         const names = targets.map(n => n.name).join(", ");
-        if (!confirm(`Keine Modelle ausgewählt — setzt die Whitelist auf "nichts erlaubt" für: ${names}. Fortfahren?`)) return;
+        if (!confirm(`Keine Modelle ausgewählt — setzt die Whitelist auf I18n.t("nodes.none_allowed") für: ${names}. Fortfahren?`)) return;
       }
 
       this.bulkWhitelistBusy = true;
@@ -145,11 +145,11 @@ document.addEventListener("alpine:init", () => {
       if (failed.length > 0) {
         this.selectedIds = failed.map(f => f.id);
         this.bulkWhitelistError = failed.map(f => `${f.name}: ${f.msg}`).join(" · ");
-        toast(`Whitelist: ${targets.length - failed.length}/${targets.length} ok`, "err");
+        toast(I18n.t("nodes.bulk.whitelist_ok", { ok: targets.length - failed.length, n: targets.length }), "err");
         return;
       }
-      const label = models.length > 0 ? `${models.length} Modell(e)` : "nichts erlaubt";
-      toast(`${targets.length} Node(s): Whitelist = ${label}`, "ok");
+      const label = models.length > 0 ? I18n.t("unit.models_count", { n: models.length }) : I18n.t("nodes.none_allowed");
+      toast(I18n.t("nodes.bulk.whitelist_result", { n: targets.length, label }), "ok");
       this.bulkWhitelistOpen = false;
       this.clearSelection();
     },
@@ -171,7 +171,7 @@ document.addEventListener("alpine:init", () => {
       try {
         this.myNodes = await api("/nodes/my", { auth: true });
       } catch (e) {
-        this.msg = "Fehler: " + e.message;
+        this.msg = I18n.t("err.generic") + e.message;
       }
       // Auswahl auf existierende Nodes begrenzen (Loeschen/Reload).
       const ids = new Set(this.myNodes.map(n => n.id));
@@ -200,13 +200,13 @@ document.addEventListener("alpine:init", () => {
         };
         const n = await api("/nodes/register", { method: "POST", body, auth: true });
         this.lastKey = n.agent_api_key;
-        this.msg = `Node #${n.id} registriert. Agent-Key (jetzt kopieren!):`;
-        toast("Node registriert", "ok");
+        this.msg = I18n.t("nodes.registered_hint", { id: n.id });
+        toast(I18n.t("nodes.registered"), "ok");
         this.form = { name: "", gpu_type: "", vram_gb: 24, hourly_rate: 0.05, tailscale_ip: "", port: 11435, description: "" };
         this.formAllowed = [];
         await this.load();
       } catch (e) {
-        this.msg = "Fehler: " + e.message;
+        this.msg = I18n.t("err.generic") + e.message;
       }
     },
 
@@ -227,25 +227,25 @@ document.addEventListener("alpine:init", () => {
           auth: true,
           body: { allowed_models: this.editAllowed.length > 0 ? this.editAllowed : [] },
         });
-        toast("Modell-Whitelist aktualisiert", "ok");
+        toast(I18n.t("nodes.whitelist_updated"), "ok");
         this.editingId = null;
         await this.load();
-      } catch (e) { toast("Update fehlgeschlagen: " + e.message, "err"); }
+      } catch (e) { toast(I18n.t("nodes.update_failed") + " " + e.message, "err"); }
     },
 
     async toggle(n) {
       try {
         await api(`/nodes/${n.id}/enable?enabled=${!n.is_enabled}`, { method: "POST", auth: true });
         await this.load();
-      } catch (e) { toast("Toggle failed: " + e.message, "err"); }
+      } catch (e) { toast(I18n.t("nodes.toggle_failed") + " " + e.message, "err"); }
     },
 
     async del(n) {
-      if (!confirm(`Node #${n.id} (${n.name}) wirklich löschen?`)) return;
+      if (!confirm(I18n.t("nodes.delete_confirm", { id: n.id, name: n.name }))) return;
       try {
         const r = await fetch(API_BASE + `/nodes/${n.id}`, { method: "DELETE", headers: { Authorization: "Bearer " + LS.get("api_key") } });
         if (!r.ok && r.status !== 204) throw new Error(`HTTP ${r.status}`);
-        toast("Node gelöscht", "ok");
+        toast(I18n.t("nodes.deleted"), "ok");
         await this.load();
       } catch (e) { toast("Delete failed: " + e.message, "err"); }
     },

@@ -3,11 +3,27 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Node-Agent · GPU-Pool</title>
-<meta name="color-scheme" content="dark" />
+<title data-i18n="title.agent">Node-Agent · CoMesh</title>
+<meta name="color-scheme" content="dark light" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<script>
+/* Apply the stored theme BEFORE the stylesheet loads, so the first paint is
+   already the right palette. Dark is the default; a first-time visitor follows
+   the OS setting until they choose explicitly. Kept inline and tiny on purpose —
+   it must not depend on the rest of the JS. */
+(function () {
+  try {
+    var stored = localStorage.getItem("gp_theme");
+    var theme = (stored === "light" || stored === "dark") ? stored
+      : (window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
+    document.documentElement.setAttribute("data-theme", theme);
+  } catch (e) {
+    document.documentElement.setAttribute("data-theme", "dark");
+  }
+})();
+</script>
 <link rel="stylesheet" href="style.css" />
 </head>
 <body x-data="agentPage()" x-init="init()">
@@ -16,8 +32,8 @@
   <main class="shell" style="max-width:900px">
     <div class="page-head">
       <div class="eyebrow">Provider</div>
-      <h1>Node-Agent einrichten</h1>
-      <p class="lede">
+      <h1 data-i18n="node-agent-einrichten">Node-Agent einrichten</h1>
+      <p class="lede" data-i18n="vier-schritte-node-registrieren-image-bauen">
         Vier Schritte: Node registrieren, Image bauen, Container starten, im Pool
         verifizieren. Danach läuft alles über Heartbeats automatisch.
       </p>
@@ -28,7 +44,7 @@
         <div class="row top" style="gap:16px">
           <span class="pill pill-flat mono" style="color:var(--brass);border-color:var(--brass-line)">01</span>
           <div class="grow">
-            <h3>Node registrieren</h3>
+            <h3 data-i18n="node-registrieren">Node registrieren</h3>
             <p class="t-sm text-dim mt-1">
               Auf <a href="nodes.html" class="link">Meine Nodes</a> ausfüllen. Die Antwort enthält den
               <code class="inline">agent_api_key</code> — einmalig sichtbar.
@@ -41,7 +57,7 @@
         <div class="row top" style="gap:16px">
           <span class="pill pill-flat mono" style="color:var(--brass);border-color:var(--brass-line)">02</span>
           <div class="grow">
-            <h3>Image bauen</h3>
+            <h3 data-i18n="image-bauen">Image bauen</h3>
             <p class="t-sm text-dim mt-2 mb-2">
               Repo klonen (oder den Ordner <code class="inline">node-agent/</code> kopieren) und bauen:
             </p>
@@ -55,14 +71,14 @@ docker build -t gpu-pool-node-agent .</code></pre>
         <div class="row top" style="gap:16px">
           <span class="pill pill-flat mono" style="color:var(--brass);border-color:var(--brass-line)">03</span>
           <div class="grow">
-            <h3>Container starten</h3>
+            <h3 data-i18n="container-starten">Container starten</h3>
             <p class="t-sm text-dim mt-2 mb-2">
               <code class="inline">NODE_ID</code> und <code class="inline">NODE_API_KEY</code> durch die Werte aus Schritt 1 ersetzen:
             </p>
             <pre class="term mono" x-text="cmd"></pre>
-            <p class="t-sm text-dim mt-4 mb-2">Logs verfolgen:</p>
+            <p class="t-sm text-dim mt-4 mb-2" data-i18n="logs-verfolgen">Logs verfolgen:</p>
             <pre class="term mono"><code>docker logs -f gpu-pool-agent</code></pre>
-            <p class="t-sm text-dim mt-4 mb-2">Health-Check der Node:</p>
+            <p class="t-sm text-dim mt-4 mb-2" data-i18n="health-check-der-node">Health-Check der Node:</p>
             <pre class="term mono"><code>curl http://&lt;tailscale-ip&gt;:11435/health | jq</code></pre>
           </div>
         </div>
@@ -72,14 +88,14 @@ docker build -t gpu-pool-node-agent .</code></pre>
         <div class="row top" style="gap:16px">
           <span class="pill pill-flat mono" style="color:var(--brass);border-color:var(--brass-line)">04</span>
           <div class="grow">
-            <h3>Verifizieren</h3>
+            <h3 data-i18n="verifizieren">Verifizieren</h3>
             <p class="t-sm text-dim mt-1">
               Sobald die Node im <a href="pool.html" class="link">Community-Pool</a> auftaucht, ist sie live.
               Anfragen werden automatisch dorthin geroutet; 70 % der Job-Kosten landen als Credits
               auf deinem Konto.
             </p>
             <div class="row mt-3">
-              <a href="pool.html" class="btn-ghost btn-sm">Pool ansehen</a>
+              <a href="pool.html" class="btn-ghost btn-sm" data-i18n="pool-ansehen">Pool ansehen</a>
               <a href="earnings.html" class="btn-ghost btn-sm">Earnings</a>
             </div>
           </div>
@@ -89,6 +105,8 @@ docker build -t gpu-pool-node-agent .</code></pre>
   </main>
 
       <script defer src="https://unpkg.com/alpinejs@3.5.1/dist/cdn.min.js"></script>
+<script src="i18n-catalog.js"></script>
+<script src="i18n.js"></script>
 <script src="app.js"></script>
   <script src="agent.js"></script>
 </body>

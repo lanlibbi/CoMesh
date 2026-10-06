@@ -3,11 +3,27 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Credits · GPU-Pool</title>
-<meta name="color-scheme" content="dark" />
+<title data-i18n="title.credits">Credits · CoMesh</title>
+<meta name="color-scheme" content="dark light" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<script>
+/* Apply the stored theme BEFORE the stylesheet loads, so the first paint is
+   already the right palette. Dark is the default; a first-time visitor follows
+   the OS setting until they choose explicitly. Kept inline and tiny on purpose —
+   it must not depend on the rest of the JS. */
+(function () {
+  try {
+    var stored = localStorage.getItem("gp_theme");
+    var theme = (stored === "light" || stored === "dark") ? stored
+      : (window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
+    document.documentElement.setAttribute("data-theme", theme);
+  } catch (e) {
+    document.documentElement.setAttribute("data-theme", "dark");
+  }
+})();
+</script>
 <link rel="stylesheet" href="style.css" />
 </head>
 <body x-data="creditsPage()" x-init="init()">
@@ -15,8 +31,8 @@
 
   <main class="shell">
     <div class="page-head">
-      <div class="eyebrow">Abrechnung</div>
-      <h1>Credits aufladen</h1>
+      <div class="eyebrow" data-i18n="abrechnung">Abrechnung</div>
+      <h1 data-i18n="credits-aufladen">Credits aufladen</h1>
       <p class="lede">
         Aktuelles Guthaben: <span class="text-brand num semibold" x-text="fmtCredits(me?.credits)"></span> Credits.
         Abgerechnet wird pro Token — es gibt kein Abo und keine Mindestlaufzeit.
@@ -29,7 +45,7 @@
         <div class="card span-4 col" :style="pack.featured ? 'border-color: var(--brass-line)' : ''">
           <div class="row between">
             <div class="eyebrow" x-text="pack.name"></div>
-            <span x-show="pack.featured" class="pill pill-flat" style="color:var(--brass-soft);border-color:var(--brass-line);background:var(--brass-dim)">
+            <span x-show="pack.featured" class="pill pill-flat" style="color:var(--brass-soft);border-color:var(--brass-line);background:var(--brass-dim)" data-i18n="empfohlen">
               empfohlen
             </span>
           </div>
@@ -51,7 +67,7 @@
           </ul>
 
           <button class="btn-primary btn-block mt-4" @click="buy(pack)" :disabled="busy === pack.id">
-            <span x-show="busy !== pack.id">Kaufen</span>
+            <span x-show="busy !== pack.id" data-i18n="kaufen">Kaufen</span>
             <span x-show="busy === pack.id">…</span>
           </button>
         </div>
@@ -66,8 +82,8 @@
         </svg>
       </span>
       <div class="grow">
-        <div class="semibold">Zahlung ist im POC nicht angeschlossen</div>
-        <p class="t-sm text-dim mt-1">
+        <div class="semibold" data-i18n="zahlung-ist-im-poc-nicht-angeschlossen">Zahlung ist im POC nicht angeschlossen</div>
+        <p class="t-sm text-dim mt-1" data-i18n="kaufen-legt-lediglich-einen-aufladewunsch">
           „Kaufen" legt lediglich einen Aufladewunsch an, den ein Admin bestätigt. Echte
           Zahlungsabwicklung (Stripe o. ä.) ist noch nicht implementiert.
         </p>
@@ -78,23 +94,23 @@
     <div class="card mb-4">
       <div class="panel-head">
         <div>
-          <div class="eyebrow">Manuell</div>
-          <h3>Aufladung anfragen</h3>
-          <p>Betrag und optionalen Verwendungszweck angeben — der Admin schreibt gut.</p>
+          <div class="eyebrow" data-i18n="manuell">Manuell</div>
+          <h3 data-i18n="aufladung-anfragen">Aufladung anfragen</h3>
+          <p data-i18n="betrag-und-optionalen-verwendungszweck">Betrag und optionalen Verwendungszweck angeben — der Admin schreibt gut.</p>
         </div>
       </div>
       <form @submit.prevent="requestTopup()" class="row wrap" style="align-items:flex-end;gap:14px">
         <div class="field grow" style="min-width:180px">
-          <label class="label" for="amount">Betrag (Credits)</label>
+          <label class="label" for="amount" data-i18n="betrag-credits">Betrag (Credits)</label>
           <input class="input" id="amount" type="number" min="10" max="10000" step="1"
                  x-model.number="topupAmount" required />
         </div>
         <div class="field grow" style="min-width:220px">
-          <label class="label" for="note">Notiz (optional)</label>
-          <input class="input" id="note" x-model="topupNote" placeholder="z. B. Rechnungsnummer" />
+          <label class="label" for="note" data-i18n="notiz-optional">Notiz (optional)</label>
+          <input class="input" id="note" x-model="topupNote" placeholder="z. B. Rechnungsnummer" data-i18n-placeholder="z-b-rechnungsnummer" />
         </div>
         <button class="btn-ghost" type="submit" :disabled="topupBusy">
-          <span x-show="!topupBusy">Anfrage senden</span>
+          <span x-show="!topupBusy" data-i18n="anfrage-senden">Anfrage senden</span>
           <span x-show="topupBusy">…</span>
         </button>
       </form>
@@ -106,19 +122,19 @@
     <div class="card">
       <div class="panel-head">
         <div>
-          <div class="eyebrow">Historie</div>
-          <h3>Deine Aufladungen</h3>
+          <div class="eyebrow" data-i18n="historie">Historie</div>
+          <h3 data-i18n="deine-aufladungen">Deine Aufladungen</h3>
         </div>
       </div>
-      <div x-show="requests.length === 0" class="t-sm text-mute">Noch keine Anfragen gestellt.</div>
+      <div x-show="requests.length === 0" class="t-sm text-mute" data-i18n="noch-keine-anfragen-gestellt">Noch keine Anfragen gestellt.</div>
       <div x-show="requests.length > 0" class="table-wrap">
         <table class="tbl">
           <thead>
             <tr>
-              <th>Wann</th>
-              <th>Betrag</th>
-              <th>Status</th>
-              <th>Notiz</th>
+              <th data-i18n="wann">Wann</th>
+              <th data-i18n="betrag">Betrag</th>
+              <th data-i18n="status">Status</th>
+              <th data-i18n="notiz">Notiz</th>
             </tr>
           </thead>
           <tbody>
@@ -139,6 +155,8 @@
   </main>
 
       <script defer src="https://unpkg.com/alpinejs@3.5.1/dist/cdn.min.js"></script>
+<script src="i18n-catalog.js"></script>
+<script src="i18n.js"></script>
 <script src="app.js"></script>
   <script>
     function creditsPage() {

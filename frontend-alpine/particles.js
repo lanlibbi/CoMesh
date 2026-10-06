@@ -1,4 +1,4 @@
-/* GPU-Pool Particle background — lightweight "AI network" effect.
+/* CoMesh Particle background — lightweight "AI network" effect.
  * Canvas-based, no external deps. Draws drifting dots connected by lines
  * when close, in the brand palette from style.css vars.
  */

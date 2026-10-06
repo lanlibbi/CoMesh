@@ -3,11 +3,27 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Dashboard · GPU-Pool</title>
-<meta name="color-scheme" content="dark" />
+<title data-i18n="title.index">Dashboard · CoMesh</title>
+<meta name="color-scheme" content="dark light" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<script>
+/* Apply the stored theme BEFORE the stylesheet loads, so the first paint is
+   already the right palette. Dark is the default; a first-time visitor follows
+   the OS setting until they choose explicitly. Kept inline and tiny on purpose —
+   it must not depend on the rest of the JS. */
+(function () {
+  try {
+    var stored = localStorage.getItem("gp_theme");
+    var theme = (stored === "light" || stored === "dark") ? stored
+      : (window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
+    document.documentElement.setAttribute("data-theme", theme);
+  } catch (e) {
+    document.documentElement.setAttribute("data-theme", "dark");
+  }
+})();
+</script>
 <link rel="stylesheet" href="style.css" />
 </head>
 <body x-data="dashboard()" x-init="init()">
@@ -24,52 +40,52 @@
         </svg>
       </span>
       <div class="grow">
-        <div class="semibold">API-Key jetzt sichern</div>
-        <p class="t-sm text-dim mt-1">
+        <div class="semibold" data-i18n="api-key-jetzt-sichern">API-Key jetzt sichern</div>
+        <p class="t-sm text-dim mt-1" data-i18n="dieser-schluessel-wird-nur-einmal">
           Dieser Schlüssel wird nur einmal vollständig angezeigt. Er ist die einzige
           Zugangsmöglichkeit zur API.
         </p>
         <pre class="code mono mt-2" x-text="newKey"></pre>
         <div class="row mt-3">
-          <button class="btn-ghost btn-sm" @click="copyNewKey($event)">Kopieren</button>
-          <button class="btn-ghost btn-sm btn-quiet" @click="showNewKey = false">Habe ich gesichert</button>
+          <button class="btn-ghost btn-sm" @click="copyNewKey($event)" data-i18n="kopieren">Kopieren</button>
+          <button class="btn-ghost btn-sm btn-quiet" @click="showNewKey = false" data-i18n="habe-ich-gesichert">Habe ich gesichert</button>
         </div>
       </div>
     </div>
 
     <div class="page-head">
-      <div class="eyebrow">Übersicht</div>
+      <div class="eyebrow" data-i18n="uebersicht">Übersicht</div>
       <h1 x-text="greeting()"></h1>
-      <p class="lede">Guthaben, API-Zugang und die letzten Aufrufe auf einen Blick.</p>
+      <p class="lede" data-i18n="konto-api-zugang-und-die-letzten-aufrufe">Konto, API-Zugang und die letzten Aufrufe auf einen Blick.</p>
     </div>
 
     <!-- Balance + account -->
     <div class="grid mb-4">
       <div class="card span-8">
         <div class="stat">
-          <div class="eyebrow">Credit-Guthaben</div>
+          <div class="eyebrow" data-i18n="credit-guthaben">Credit-Guthaben</div>
           <div class="stat-value brass" x-text="fmtCredits(me?.credits)">—</div>
           <div class="stat-sub">
             entspricht ca. <span x-text="fmtNumber(Math.floor((me?.credits || 0) * 1000))"></span> Token
           </div>
         </div>
         <div class="row wrap mt-4">
-                    <a href="chat.html" class="btn-ghost">Chat öffnen</a>
-          <button class="btn-ghost btn-quiet" @click="refresh()" :disabled="loading">Aktualisieren</button>
+                    <a href="chat.html" class="btn-ghost" data-i18n="chat-oeffnen">Chat öffnen</a>
+          <button class="btn-ghost btn-quiet" @click="refresh()" :disabled="loading" data-i18n="aktualisieren">Aktualisieren</button>
         </div>
       </div>
 
       <div class="card span-4">
-        <div class="eyebrow">Konto</div>
+        <div class="eyebrow" data-i18n="konto">Konto</div>
         <div class="t-lg semibold mt-2" x-text="me?.name || '—'"></div>
         <div class="t-sm text-dim" x-text="me?.email || ''"></div>
         <div class="divider inset"></div>
         <div class="stat-row">
-          <span class="k">Rolle</span>
+          <span class="k" data-i18n="rolle">Rolle</span>
           <span class="v" x-text="me?.role || 'both'"></span>
         </div>
         <div class="stat-row">
-          <span class="k">Registriert</span>
+          <span class="k" data-i18n="registriert">Registriert</span>
           <span class="v t-xs" x-text="fmtDate(me?.created_at)"></span>
         </div>
       </div>
@@ -80,9 +96,9 @@
       <div class="card span-8">
         <div class="panel-head">
           <div>
-            <div class="eyebrow">Verbrauch</div>
-            <h3 x-text="'Letzte ' + (usage && usage.window === '30d' ? '30 Tage' : usage && usage.window === '24h' ? '24 Stunden' : '7 Tage')"></h3>
-            <p>Pro Tag verbrauchte Token.</p>
+            <div class="eyebrow" data-i18n="verbrauch">Verbrauch</div>
+            <h3 x-text="'Letzte ' + (usage && usage.window === '30d' ? I18n.t('range.30d') : usage && usage.window === '24h' ? I18n.t('range.24h') : I18n.t('range.7d'))"></h3>
+            <p data-i18n="pro-tag-verbrauchte-token">Pro Tag verbrauchte Token.</p>
           </div>
           <div class="right">
             <div class="eyebrow" style="justify-content:flex-end">Token</div>
@@ -93,13 +109,13 @@
       </div>
 
       <div class="card span-4">
-        <div class="eyebrow mb-3">Kennzahlen</div>
+        <div class="eyebrow mb-3" data-i18n="kennzahlen">Kennzahlen</div>
         <div class="stat-row">
-          <span class="k">API-Aufrufe</span>
+          <span class="k" data-i18n="api-aufrufe">API-Aufrufe</span>
           <span class="v" x-text="usage ? fmtNumber(usage.totals.requests) : '—'"></span>
         </div>
         <div class="stat-row">
-          <span class="k">Token verbraucht</span>
+          <span class="k" data-i18n="token-verbraucht">Token verbraucht</span>
           <span class="v" x-text="usage ? fmtNumber(usage.totals.total_tokens) : '—'"></span>
         </div>
         <div class="stat-row">
@@ -107,11 +123,11 @@
           <span class="v" x-text="usage ? fmtNumber(usage.totals.models_used) : '—'"></span>
         </div>
         <div class="stat-row">
-          <span class="k">Credits verbraucht</span>
+          <span class="k" data-i18n="credits-verbraucht">Credits verbraucht</span>
           <span class="v" x-text="usage ? fmtCredits(usage.totals.credits) : '—'"></span>
         </div>
         <div class="stat-row">
-          <span class="k">Letzte Aktivität</span>
+          <span class="k" data-i18n="letzte-aktivitaet">Letzte Aktivität</span>
           <span class="v" x-text="usage && usage.recent.length ? timeAgo(usage.recent[0].created_at) : '—'"></span>
         </div>
         <p class="hint mt-3">
@@ -125,22 +141,22 @@
     <div class="card mb-4">
       <div class="panel-head">
         <div>
-          <div class="eyebrow">Zugang</div>
+          <div class="eyebrow" data-i18n="zugang">Zugang</div>
           <h3>API-Key</h3>
           <p>Für <code class="inline">/v1/chat/completions</code> und <code class="inline">/v1/models</code>.</p>
         </div>
         <div class="row">
           <button class="btn-ghost btn-sm" @click="revealKey = !revealKey" x-text="revealKey ? 'Verbergen' : 'Anzeigen'"></button>
-          <button class="btn-ghost btn-sm" @click="copyKey($event)">Kopieren</button>
+          <button class="btn-ghost btn-sm" @click="copyKey($event)" data-i18n="kopieren">Kopieren</button>
           <button class="btn-ghost btn-sm" @click="regenerate()" :disabled="regenerating">
-            <span x-show="!regenerating">Neu ausstellen</span>
+            <span x-show="!regenerating" data-i18n="neu-ausstellen">Neu ausstellen</span>
             <span x-show="regenerating">…</span>
           </button>
         </div>
       </div>
       <pre class="code mono" x-text="revealKey ? (apiKey || '—') : maskKey(apiKey)"></pre>
       <p class="hint">
-        Header: <code class="inline">Authorization: Bearer &lt;api-key&gt;</code>
+        Header: <code class="inline" data-i18n="authorization-bearer-lt-api-key-gt">Authorization: Bearer &lt;api-key&gt;</code>
       </p>
     </div>
 
@@ -148,12 +164,12 @@
     <div class="card">
       <div class="panel-head">
         <div>
-          <div class="eyebrow">Protokoll</div>
-          <h3>Letzte API-Aufrufe</h3>
+          <div class="eyebrow" data-i18n="protokoll">Protokoll</div>
+          <h3 data-i18n="letzte-api-aufrufe">Letzte API-Aufrufe</h3>
         </div>
       </div>
 
-      <div x-show="loading" class="t-sm text-mute">Lädt…</div>
+      <div x-show="loading" class="t-sm text-mute" data-i18n="laedt">Lädt…</div>
 
       <div x-show="!loading && recent.length === 0">
         <div class="empty">
@@ -163,9 +179,9 @@
               <path d="M4 17l5-5 4 3 7-7"/><path d="M4 21h16"/>
             </svg>
           </span>
-          <p>Noch keine Aufrufe. Der Chat ist der schnellste Weg zum ersten Request.</p>
+          <p data-i18n="noch-keine-aufrufe-der-chat-ist-der">Noch keine Aufrufe. Der Chat ist der schnellste Weg zum ersten Request.</p>
         </div>
-        <p class="t-sm text-dim">Oder direkt per curl:</p>
+        <p class="t-sm text-dim" data-i18n="oder-direkt-per-curl">Oder direkt per curl:</p>
         <pre class="code mono mt-2" x-text="exampleCurl"></pre>
       </div>
 
@@ -173,7 +189,7 @@
         <table class="tbl">
           <thead>
             <tr>
-              <th>Wann</th>
+              <th data-i18n="wann">Wann</th>
               <th>Modell</th>
               <th>Token</th>
               <th>Credits</th>
@@ -195,6 +211,8 @@
   </main>
 
       <script defer src="https://unpkg.com/alpinejs@3.5.1/dist/cdn.min.js"></script>
+<script src="i18n-catalog.js"></script>
+<script src="i18n.js"></script>
 <script src="app.js"></script>
   <script>
     function dashboard() {

@@ -3,11 +3,27 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Admin · Usage · GPU-Pool</title>
-<meta name="color-scheme" content="dark" />
+<title data-i18n="title.admin-usage">Admin · Usage · CoMesh</title>
+<meta name="color-scheme" content="dark light" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<script>
+/* Apply the stored theme BEFORE the stylesheet loads, so the first paint is
+   already the right palette. Dark is the default; a first-time visitor follows
+   the OS setting until they choose explicitly. Kept inline and tiny on purpose —
+   it must not depend on the rest of the JS. */
+(function () {
+  try {
+    var stored = localStorage.getItem("gp_theme");
+    var theme = (stored === "light" || stored === "dark") ? stored
+      : (window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
+    document.documentElement.setAttribute("data-theme", theme);
+  } catch (e) {
+    document.documentElement.setAttribute("data-theme", "dark");
+  }
+})();
+</script>
 <link rel="stylesheet" href="style.css" />
 </head>
 <body x-data="adminUsagePage()" x-init="init()">
@@ -16,7 +32,7 @@
   <main class="shell">
     <div class="page-head">
       <div class="eyebrow">Admin</div>
-      <h1>Verbrauch aller Nutzer</h1>
+      <h1 data-i18n="verbrauch-aller-nutzer">Verbrauch aller Nutzer</h1>
       <p class="lede">
         Token und Credits pro Nutzer und Modell — die Admin-Sicht auf
         <code class="inline">GET /admin/usage</code>. Schwerste Nutzer zuerst.
@@ -32,7 +48,7 @@
         </svg>
       </span>
       <div class="grow">
-        <div class="semibold">Admin-Rolle erforderlich</div>
+        <div class="semibold" data-i18n="admin-rolle-erforderlich">Admin-Rolle erforderlich</div>
         <p class="t-sm text-dim mt-1">
           Dieser Bereich listet die Nutzung aller Konten und ist auf <code class="inline">role = admin</code>
           beschränkt. Deine Rolle:
@@ -51,14 +67,14 @@
         </svg>
       </span>
       <div class="grow">
-        <div class="semibold">Verbrauch konnte nicht geladen werden</div>
+        <div class="semibold" data-i18n="verbrauch-konnte-nicht-geladen-werden">Verbrauch konnte nicht geladen werden</div>
         <p class="t-sm text-dim mt-1" x-text="error"></p>
       </div>
     </div>
 
     <div x-show="!denied">
       <!-- Window switcher -->
-      <div class="row wrap mb-4" role="group" aria-label="Zeitraum">
+      <div class="row wrap mb-4" role="group" aria-label="Zeitraum" data-i18n-aria-label="zeitraum">
         <template x-for="w in windows" :key="w.key">
           <button type="button"
                   class="btn-ghost btn-sm"
@@ -67,19 +83,19 @@
                   @click="setWindow(w.key)"
                   x-text="w.label"></button>
         </template>
-        <span class="hint grow right" x-text="loading ? 'Lädt…' : rangeText()"></span>
+        <span class="hint grow right" x-text="loading ? I18n.t('common.loading') : rangeText()"></span>
         <button type="button" class="btn-ghost btn-sm" :class="includeInactive ? 'is-active' : ''"
                 :aria-pressed="includeInactive ? 'true' : 'false'"
                 @click="toggleInactive()"
-                x-text="includeInactive ? 'inkl. inaktive' : 'nur aktive'"></button>
-        <button type="button" class="btn-ghost btn-sm btn-quiet" @click="load()" :disabled="loading">Aktualisieren</button>
+                x-text="includeInactive ? I18n.t('admin.include_inactive') : I18n.t('admin.only_active')"></button>
+        <button type="button" class="btn-ghost btn-sm btn-quiet" @click="load()" :disabled="loading" data-i18n="aktualisieren">Aktualisieren</button>
       </div>
 
       <!-- Totals -->
       <div class="grid mb-4">
         <div class="card span-3">
           <div class="stat">
-            <div class="eyebrow">Token gesamt</div>
+            <div class="eyebrow" data-i18n="token-gesamt">Token gesamt</div>
             <div class="stat-value brass" x-text="fmtCompact(totals.total_tokens || 0)"></div>
             <div class="stat-sub" x-text="fmtNumber(totals.total_tokens || 0) + ' Token'"></div>
           </div>
@@ -93,16 +109,16 @@
         </div>
         <div class="card span-3">
           <div class="stat">
-            <div class="eyebrow">Nutzende Konten</div>
+            <div class="eyebrow" data-i18n="nutzende-konten">Nutzende Konten</div>
             <div class="stat-value" x-text="fmtNumber(totals.active_users || 0)"></div>
-            <div class="stat-sub" x-text="'mit Verbrauch im Zeitraum'"></div>
+            <div class="stat-sub" x-text="I18n.t('admin.with_usage')"></div>
           </div>
         </div>
         <div class="card span-3">
           <div class="stat">
             <div class="eyebrow">Credits</div>
             <div class="stat-value brass" x-text="fmtCredits(totals.credits || 0)"></div>
-            <div class="stat-sub" x-text="fmtNumber(totals.models_used || 0) + ' Modelle im Umlauf'"></div>
+            <div class="stat-sub" x-text="fmtNumber(totals.models_used || 0) + I18n.t('fmt.models_in_circulation')"></div>
           </div>
         </div>
       </div>
@@ -111,13 +127,13 @@
       <div class="card">
         <div class="panel-head">
           <div>
-            <div class="eyebrow">Aufschlüsselung</div>
-            <h3>Verbrauch je Nutzer</h3>
+            <div class="eyebrow" data-i18n="aufschluesselung">Aufschlüsselung</div>
+            <h3 data-i18n="verbrauch-je-nutzer">Verbrauch je Nutzer</h3>
             <p x-text="coverageText()"></p>
           </div>
         </div>
 
-        <div x-show="loading && !users.length" class="t-sm text-mute">Lädt…</div>
+        <div x-show="loading && !users.length" class="t-sm text-mute" data-i18n="laedt">Lädt…</div>
 
         <div x-show="!loading && users.length === 0" class="empty">
           <span class="empty-mark" aria-hidden="true">
@@ -126,21 +142,21 @@
               <path d="M3 3v18h18"/><path d="M7 15l3-4 3 2 5-7"/>
             </svg>
           </span>
-          <p>In diesem Zeitraum hat niemand verbraucht.</p>
-          <p class="t-sm text-dim mt-2">Zeitraum auf „Gesamt“ stellen oder inaktive Konten einblenden.</p>
+          <p data-i18n="in-diesem-zeitraum-hat-niemand-verbraucht">In diesem Zeitraum hat niemand verbraucht.</p>
+          <p class="t-sm text-dim mt-2" data-i18n="zeitraum-auf-gesamt-stellen-oder-inaktive">Zeitraum auf „Gesamt“ stellen oder inaktive Konten einblenden.</p>
         </div>
 
         <div x-show="users.length > 0" class="table-wrap">
           <table class="tbl">
             <thead>
               <tr>
-                <th>Nutzer</th>
-                <th>Rolle</th>
+                <th data-i18n="nutzer">Nutzer</th>
+                <th data-i18n="rolle">Rolle</th>
                 <th style="min-width:180px">Token</th>
                 <th>Requests</th>
                 <th>Modelle</th>
                 <th>Credits</th>
-                <th>Zuletzt</th>
+                <th data-i18n="zuletzt">Zuletzt</th>
               </tr>
             </thead>
             <tbody>
@@ -150,7 +166,7 @@
                     <div class="semibold" x-text="u.name || u.email"></div>
                     <div class="t-xs text-mute">
                       <span x-text="u.email"></span>
-                      <span x-show="!u.is_active" class="pill pill-paused" style="margin-left:6px">inaktiv</span>
+                      <span x-show="!u.is_active" class="pill pill-paused" style="margin-left:6px" data-i18n="inaktiv">inaktiv</span>
                     </div>
                   </td>
                   <td><span class="pill pill-flat" x-text="u.role"></span></td>
@@ -183,6 +199,8 @@
   </main>
 
       <script defer src="https://unpkg.com/alpinejs@3.5.1/dist/cdn.min.js"></script>
+<script src="i18n-catalog.js"></script>
+<script src="i18n.js"></script>
 <script src="app.js"></script>
   <script src="admin-usage.js"></script>
 </body>

@@ -3,11 +3,27 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Registrieren · GPU-Pool</title>
-<meta name="color-scheme" content="dark" />
+<title data-i18n="title.register">Registrieren · CoMesh</title>
+<meta name="color-scheme" content="dark light" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<script>
+/* Apply the stored theme BEFORE the stylesheet loads, so the first paint is
+   already the right palette. Dark is the default; a first-time visitor follows
+   the OS setting until they choose explicitly. Kept inline and tiny on purpose —
+   it must not depend on the rest of the JS. */
+(function () {
+  try {
+    var stored = localStorage.getItem("gp_theme");
+    var theme = (stored === "light" || stored === "dark") ? stored
+      : (window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
+    document.documentElement.setAttribute("data-theme", theme);
+  } catch (e) {
+    document.documentElement.setAttribute("data-theme", "dark");
+  }
+})();
+</script>
 <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -21,13 +37,13 @@
         </svg>
       </span>
       <span class="brand-text">
-        <strong>GPU-Pool</strong>
-        <span>Community Compute</span>
+        <strong>CoMesh</strong>
+        <span>Your compute, meshed.</span>
       </span>
     </a>
 
-    <h1>Konto anlegen, 100 Credits zum Start.</h1>
-    <p>
+    <h1 data-i18n="konto-anlegen-und-mitmachen">Konto anlegen und mitmachen.</h1>
+    <p data-i18n="ein-konto-deckt-beides-ab-die-api-nutzen">
       Ein Konto deckt beides ab: die API nutzen und eigene GPUs bereitstellen. Die Rolle
       legt fest, was freigeschaltet wird — im Profil jederzeit änderbar.
     </p>
@@ -40,47 +56,47 @@
   </section>
 
   <section class="card auth-card" x-data="registerForm()" x-init="init()">
-    <div class="eyebrow">Neues Konto</div>
-    <h2>Registrieren</h2>
+    <div class="eyebrow" data-i18n="neues-konto">Neues Konto</div>
+    <h2 data-i18n="registrieren">Registrieren</h2>
 
     <form @submit.prevent="submit()" class="stack tight mt-4">
       <div class="field">
-        <label class="label" for="name">Name</label>
-        <input class="input" id="name" x-model="name" required placeholder="Vor- und Nachname" />
+        <label class="label" for="name" data-i18n="name">Name</label>
+        <input class="input" id="name" x-model="name" required placeholder="Vor- und Nachname" data-i18n-placeholder="vor-und-nachname" />
       </div>
       <div class="field">
-        <label class="label" for="email">E-Mail</label>
+        <label class="label" for="email" data-i18n="e-mail">E-Mail</label>
         <input class="input" id="email" type="email" x-model="email" required
-               autocomplete="email" placeholder="name@beispiel.de" />
+               autocomplete="email" placeholder="name@beispiel.de" data-i18n-placeholder="name-beispiel-de" />
       </div>
       <div class="field">
-        <label class="label" for="password">Passwort</label>
+        <label class="label" for="password" data-i18n="passwort">Passwort</label>
         <input class="input" id="password" type="password" x-model="password" required minlength="6"
-               autocomplete="new-password" placeholder="mindestens 6 Zeichen" />
+               autocomplete="new-password" placeholder="mindestens 6 Zeichen" data-i18n-placeholder="mindestens-6-zeichen" />
       </div>
 
       <fieldset class="field" style="border:0;padding:0;margin:0">
-        <legend class="label" style="padding:0">Rolle</legend>
+        <legend class="label" style="padding:0" data-i18n="rolle">Rolle</legend>
         <div class="stack" style="gap:2px;margin-top:4px">
           <label class="check">
             <input type="radio" name="role" value="consumer" x-model="role" />
             <span class="check-body">
-              <span class="check-title">Nur Consumer</span>
-              <span class="check-sub">API nutzen, keine Nodes registrieren.</span>
+              <span class="check-title" data-i18n="nur-consumer">Nur Consumer</span>
+              <span class="check-sub" data-i18n="api-nutzen-keine-nodes-registrieren">API nutzen, keine Nodes registrieren.</span>
             </span>
           </label>
           <label class="check">
             <input type="radio" name="role" value="provider" x-model="role" />
             <span class="check-body">
-              <span class="check-title">Nur Provider</span>
-              <span class="check-sub">Eigene GPUs teilen, keine API-Calls.</span>
+              <span class="check-title" data-i18n="nur-provider">Nur Provider</span>
+              <span class="check-sub" data-i18n="eigene-gpus-teilen-keine-api-calls">Eigene GPUs teilen, keine API-Calls.</span>
             </span>
           </label>
           <label class="check">
             <input type="radio" name="role" value="both" x-model="role" />
             <span class="check-body">
-              <span class="check-title">Beides</span>
-              <span class="check-sub">GPUs teilen und API nutzen — Standard.</span>
+              <span class="check-title" data-i18n="beides">Beides</span>
+              <span class="check-sub" data-i18n="gpus-teilen-und-api-nutzen-standard">GPUs teilen und API nutzen — Standard.</span>
             </span>
           </label>
         </div>
@@ -103,15 +119,15 @@
                 </span>
               </label>
             </template>
-            <div x-show="availableModels.length === 0" class="t-xs text-mute" style="padding:8px 10px">
+            <div x-show="availableModels.length === 0" class="t-xs text-mute" style="padding:8px 10px" data-i18n="modelle-werden-geladen">
               Modelle werden geladen…
             </div>
           </div>
           <label class="check">
             <input type="checkbox" x-model="allowCloud" />
             <span class="check-body">
-              <span class="check-title">Cloud-Modelle erlauben</span>
-              <span class="check-sub">Sinnvoll, wenn die lokale Hardware gerade nicht verfügbar ist.</span>
+              <span class="check-title" data-i18n="cloud-modelle-erlauben">Cloud-Modelle erlauben</span>
+              <span class="check-sub" data-i18n="sinnvoll-wenn-die-lokale-hardware-gerade">Sinnvoll, wenn die lokale Hardware gerade nicht verfügbar ist.</span>
             </span>
           </label>
           <p class="hint">Später im <a href="profile.html" class="link">Profil</a> jederzeit änderbar.</p>
@@ -121,8 +137,8 @@
       <div x-show="error" class="t-sm text-err" x-text="error"></div>
 
       <button type="submit" class="btn-primary btn-block mt-1" :disabled="loading">
-        <span x-show="!loading">Konto anlegen</span>
-        <span x-show="loading">Wird angelegt…</span>
+        <span x-show="!loading" data-i18n="konto-anlegen">Konto anlegen</span>
+        <span x-show="loading" data-i18n="wird-angelegt">Wird angelegt…</span>
       </button>
     </form>
 
@@ -134,6 +150,8 @@
 </main>
 
 <script defer src="https://unpkg.com/alpinejs@3.5.1/dist/cdn.min.js"></script>
+<script src="i18n-catalog.js"></script>
+<script src="i18n.js"></script>
 <script src="app.js"></script>
 <script>
 function registerForm() {
@@ -184,7 +202,7 @@ function registerForm() {
           credits: r.credits, role: r.role, allowed_models: r.allowed_models,
         }, r.api_key);
         sessionStorage.setItem("just_registered_key", r.api_key);
-        toast("Konto angelegt — 100 Credits gutgeschrieben.");
+        toast("Konto angelegt.");
         setTimeout(() => { window.location.href = "index.html?new=1"; }, 500);
       } catch (e) {
         this.error = e.message || "Registrierung fehlgeschlagen";

@@ -1,4 +1,4 @@
-// GPU-Pool — shared client (Alpine frontend)
+// CoMesh — shared client (Alpine frontend)
 // Vanilla JS + Alpine.js. Talks to the backend at /api/* (proxied by nginx).
 //
 // This file also owns the app-wide chrome: the animated background field is
@@ -24,7 +24,7 @@ async function api(path, { method = "GET", body = null, auth = false, raw = fals
   const headers = { "Content-Type": "application/json" };
   if (auth) {
     const key = LS.get("api_key");
-    if (!key) throw new Error("Not logged in");
+    if (!key) throw new Error(I18n.t("app.login_required"));
     headers["Authorization"] = `Bearer ${key}`;
   }
   const res = await fetch(API_BASE + path, {
@@ -74,7 +74,7 @@ const Auth = {
   requireProviderOrRedirect(target = "chat.html") {
     if (!this.isLoggedIn()) { window.location.href = "login.html"; return false; }
     if (!this.hasRole("provider")) {
-      toast("Der Provider-Bereich braucht die Rolle „Provider" + "“ oder „beides" + "“ — im Profil umstellbar.", "err");
+      toast(I18n.t("app.provider_required"), "err");
       window.location.href = target;
       return false;
     }
@@ -138,17 +138,20 @@ function mountBackground() {
 }
 
 // ---------- Chrome (topbar + footer) ----------
+// Labels are catalog *keys* resolved at render time, never pre-translated
+// strings: this array is evaluated once at load, so a stored translation here
+// would freeze the nav in whatever language was active on the first paint.
 const NAV_ITEMS = [
-  { key: "dashboard", href: "index.html", label: "Dashboard" },
-  { key: "chat", href: "chat.html", label: "Chat" },
-  { key: "usage", href: "usage.html", label: "Usage" },
+  { key: "dashboard", href: "index.html", labelKey: "nav.dashboard" },
+  { key: "chat", href: "chat.html", labelKey: "nav.chat" },
+  { key: "usage", href: "usage.html", labelKey: "nav.usage" },
   // Admin-only view of every user's consumption; the server gates /admin/usage too.
-  { key: "admin-usage", href: "admin-usage.html", label: "Admin", adminOnly: true },
-  { key: "pool", href: "pool.html", label: "Pool" },
-  { key: "nodes", href: "nodes.html", label: "Nodes", providerOnly: true },
-  { key: "earnings", href: "earnings.html", label: "Earnings", providerOnly: true },
-  { key: "agent", href: "agent.html", label: "Agent" },
-  { key: "profile", href: "profile.html", label: "Profil" },
+  { key: "admin-usage", href: "admin-usage.html", labelKey: "nav.admin", adminOnly: true },
+  { key: "pool", href: "pool.html", labelKey: "nav.pool" },
+  { key: "nodes", href: "nodes.html", labelKey: "nav.nodes", providerOnly: true },
+  { key: "earnings", href: "earnings.html", labelKey: "nav.earnings", providerOnly: true },
+  { key: "agent", href: "agent.html", labelKey: "nav.agent" },
+  { key: "profile", href: "profile.html", labelKey: "nav.profile" },
 ];
 
 function navHTML(active) {
@@ -161,7 +164,7 @@ function navHTML(active) {
   const links = NAV_ITEMS
     .filter((i) => !i.providerOnly || isProvider)
     .filter((i) => !i.adminOnly || isAdmin)
-    .map((i) => `<a href="${i.href}" class="nav-link${active === i.key ? " active" : ""}">${i.label}</a>`)
+    .map((i) => `<a href="${i.href}" class="nav-link${active === i.key ? " active" : ""}">${I18n.t(i.labelKey)}</a>`)
     .join("");
 
   return `
@@ -175,17 +178,17 @@ function navHTML(active) {
             </svg>
           </span>
           <span class="brand-text">
-            <strong>GPU-Pool</strong>
-            <span>Community Compute</span>
+            <strong>CoMesh</strong>
+            <span>${I18n.t("brand.tagline")}</span>
           </span>
         </a>
-        <nav class="nav" aria-label="Hauptnavigation">${links}</nav>
+        <nav class="nav" aria-label="${I18n.t("nav.aria")}">${links}</nav>
         <div class="topbar-right">
           <span class="who">
             <b>${user.email || ""}</b>
             <em>${user.role || "both"}</em>
           </span>
-          <button type="button" class="btn-ghost btn-sm" onclick="Auth.logout()">Logout</button>
+          <button type="button" class="btn-ghost btn-sm" onclick="Auth.logout()">${I18n.t("nav.logout.button")}</button>
         </div>
       </div>
     </header>
@@ -195,8 +198,7 @@ function navHTML(active) {
 function footerHTML() {
   return `
     <footer class="site-foot">
-      <span>GPU-Pool · selbstgehosteter Community-Compute-Pool</span>
-      <span class="mono">Owner 70 % · Platform 20 % · Treasury 10 %</span>
+      <span>${I18n.t("foot.text")}</span>
     </footer>
   `;
 }
@@ -224,7 +226,7 @@ function renderUsageChart(canvasId, dataPoints) {
     ctx.fillStyle = dim;
     ctx.font = "12px 'JetBrains Mono', monospace";
     ctx.textAlign = "center";
-    ctx.fillText("noch keine Nutzung erfasst", W / 2, H / 2);
+    ctx.fillText(I18n.t("chart.no_usage"), W / 2, H / 2);
     return;
   }
 

@@ -3,11 +3,27 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Usage · GPU-Pool</title>
-<meta name="color-scheme" content="dark" />
+<title data-i18n="title.usage">Usage · CoMesh</title>
+<meta name="color-scheme" content="dark light" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<script>
+/* Apply the stored theme BEFORE the stylesheet loads, so the first paint is
+   already the right palette. Dark is the default; a first-time visitor follows
+   the OS setting until they choose explicitly. Kept inline and tiny on purpose —
+   it must not depend on the rest of the JS. */
+(function () {
+  try {
+    var stored = localStorage.getItem("gp_theme");
+    var theme = (stored === "light" || stored === "dark") ? stored
+      : (window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
+    document.documentElement.setAttribute("data-theme", theme);
+  } catch (e) {
+    document.documentElement.setAttribute("data-theme", "dark");
+  }
+})();
+</script>
 <link rel="stylesheet" href="style.css" />
 </head>
 <body x-data="usagePage()" x-init="init()">
@@ -15,7 +31,7 @@
 
   <main class="shell">
     <div class="page-head">
-      <div class="eyebrow">Verbrauch</div>
+      <div class="eyebrow" data-i18n="verbrauch">Verbrauch</div>
       <h1>Usage</h1>
       <p class="lede">
         Welche Modelle du nutzt und wie viele Token dabei durchlaufen.
@@ -24,7 +40,7 @@
     </div>
 
     <!-- Window switcher -->
-    <div class="row wrap mb-4" role="group" aria-label="Zeitraum">
+    <div class="row wrap mb-4" role="group" aria-label="Zeitraum" data-i18n-aria-label="zeitraum">
       <template x-for="w in windows" :key="w.key">
         <button type="button"
                 class="btn-ghost btn-sm"
@@ -33,8 +49,8 @@
                 @click="setWindow(w.key)"
                 x-text="w.label"></button>
       </template>
-      <span class="hint grow right" x-text="loading ? 'Lädt…' : rangeText()"></span>
-      <button type="button" class="btn-ghost btn-sm btn-quiet" @click="load()" :disabled="loading">Aktualisieren</button>
+      <span class="hint grow right" x-text="loading ? I18n.t('common.loading') : rangeText()"></span>
+      <button type="button" class="btn-ghost btn-sm btn-quiet" @click="load()" :disabled="loading" data-i18n="aktualisieren">Aktualisieren</button>
     </div>
 
     <div x-show="error" x-cloak class="notice mb-4">
@@ -46,7 +62,7 @@
         </svg>
       </span>
       <div class="grow">
-        <div class="semibold">Usage konnte nicht geladen werden</div>
+        <div class="semibold" data-i18n="usage-konnte-nicht-geladen-werden">Usage konnte nicht geladen werden</div>
         <p class="t-sm text-dim mt-1" x-text="error"></p>
       </div>
     </div>
@@ -55,7 +71,7 @@
     <div class="grid mb-4">
       <div class="card span-3">
         <div class="stat">
-          <div class="eyebrow">Token gesamt</div>
+          <div class="eyebrow" data-i18n="token-gesamt">Token gesamt</div>
           <div class="stat-value brass" x-text="fmtCompact(totals.total_tokens || 0)"></div>
           <div class="stat-sub" x-text="fmtNumber(totals.total_tokens || 0) + ' Token'"></div>
         </div>
@@ -64,14 +80,14 @@
         <div class="stat">
           <div class="eyebrow">Requests</div>
           <div class="stat-value" x-text="fmtNumber(totals.requests || 0)"></div>
-          <div class="stat-sub" x-text="'Ø ' + tokensPerRequest(totals) + ' Token / Request'"></div>
+          <div class="stat-sub" x-text="'Ø ' + tokensPerRequest(totals) + I18n.t('fmt.token_per_request')"></div>
         </div>
       </div>
       <div class="card span-3">
         <div class="stat">
           <div class="eyebrow">Modelle</div>
           <div class="stat-value" x-text="fmtNumber(totals.models_used || 0)"></div>
-          <div class="stat-sub">verschiedene Modelle verwendet</div>
+          <div class="stat-sub" data-i18n="verschiedene-modelle-verwendet">verschiedene Modelle verwendet</div>
         </div>
       </div>
       <div class="card span-3">
@@ -88,8 +104,8 @@
       <div class="card span-7">
         <div class="panel-head">
           <div>
-            <div class="eyebrow">Verteilung</div>
-            <h3>Token je Modell</h3>
+            <div class="eyebrow" data-i18n="verteilung">Verteilung</div>
+            <h3 data-i18n="token-je-modell">Token je Modell</h3>
             <p x-text="windowLabel()"></p>
           </div>
           <div class="right">
@@ -98,7 +114,7 @@
           </div>
         </div>
 
-        <div x-show="loading && !models.length" class="t-sm text-mute">Lädt…</div>
+        <div x-show="loading && !models.length" class="t-sm text-mute" data-i18n="laedt">Lädt…</div>
 
         <div x-show="!loading && models.length === 0" class="empty">
           <span class="empty-mark" aria-hidden="true">
@@ -107,7 +123,7 @@
               <path d="M3 3v18h18"/><path d="M7 15l3-4 3 2 5-7"/>
             </svg>
           </span>
-          <p>In diesem Zeitraum wurde noch nichts verbraucht.</p>
+          <p data-i18n="in-diesem-zeitraum-wurde-noch-nichts">In diesem Zeitraum wurde noch nichts verbraucht.</p>
           <p class="t-sm text-dim mt-2">
             <a href="chat.html" class="link">Chat öffnen</a> oder den Zeitraum auf „Gesamt“ stellen.
           </p>
@@ -139,24 +155,24 @@
       <div class="card span-5">
         <div class="panel-head">
           <div>
-            <div class="eyebrow">Verlauf</div>
+            <div class="eyebrow" data-i18n="verlauf">Verlauf</div>
             <h3>Token je <span x-text="data && data.granularity === 'hour' ? 'Stunde' : 'Tag'"></span></h3>
-            <p>Leere Abschnitte heißen: keine Anfrage.</p>
+            <p data-i18n="leere-abschnitte-heissen-keine-anfrage">Leere Abschnitte heißen: keine Anfrage.</p>
           </div>
         </div>
         <canvas id="usageSeries" style="width:100%;height:200px;display:block"></canvas>
 
         <div class="divider inset"></div>
         <div class="stat-row">
-          <span class="k">Zeitraum</span>
+          <span class="k" data-i18n="zeitraum">Zeitraum</span>
           <span class="v t-xs" x-text="rangeText()"></span>
         </div>
         <div class="stat-row">
-          <span class="k">Letzte Aktivität</span>
+          <span class="k" data-i18n="letzte-aktivitaet">Letzte Aktivität</span>
           <span class="v t-xs" x-text="recent.length ? timeAgo(recent[0].created_at) : '—'"></span>
         </div>
         <div class="stat-row">
-          <span class="k">Credits verbraucht</span>
+          <span class="k" data-i18n="credits-verbraucht">Credits verbraucht</span>
           <span class="v" x-text="fmtCredits(totals.credits || 0)"></span>
         </div>
       </div>
@@ -166,24 +182,24 @@
     <div class="card">
       <div class="panel-head">
         <div>
-          <div class="eyebrow">Protokoll</div>
-          <h3>Letzte Requests</h3>
-          <p x-text="'Die jüngsten ' + recent.length + ' Aufrufe in diesem Zeitraum.'"></p>
+          <div class="eyebrow" data-i18n="protokoll">Protokoll</div>
+          <h3 data-i18n="letzte-requests">Letzte Requests</h3>
+          <p x-text="I18n.t('fmt.range_last') + recent.length + I18n.t('fmt.range_suffix')"></p>
         </div>
       </div>
 
       <div x-show="!loading && recent.length === 0" class="empty">
-        <p>Keine Requests in diesem Zeitraum.</p>
+        <p data-i18n="keine-requests-in-diesem-zeitraum">Keine Requests in diesem Zeitraum.</p>
       </div>
 
       <div x-show="recent.length > 0" class="table-wrap">
         <table class="tbl">
           <thead>
             <tr>
-              <th>Wann</th>
+              <th data-i18n="wann">Wann</th>
               <th>Modell</th>
-              <th>Prompt</th>
-              <th>Completion</th>
+              <th data-i18n="prompt">Prompt</th>
+              <th data-i18n="completion">Completion</th>
               <th>Token</th>
               <th>Credits</th>
             </tr>
@@ -211,6 +227,8 @@
   </main>
 
       <script defer src="https://unpkg.com/alpinejs@3.5.1/dist/cdn.min.js"></script>
+<script src="i18n-catalog.js"></script>
+<script src="i18n.js"></script>
 <script src="app.js"></script>
   <script src="usage.js"></script>
 </body>

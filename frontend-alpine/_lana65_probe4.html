@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>LANA-65 probe v4</title></head>
+<body>
+<div id="out">loading</div>
+<script>
+/* LANA-65 verification probe, v4 (temporary; not part of the product).
+   ONE case per page load:  ?lang=xx&view=foo.html
+   Loads the view in a same-origin iframe, snapshots its rendered chrome, POSTs
+   the record to the collector on :8898 and sets the title to DONE:<lang>:<view>.
+   The driver (outside the page) advances case by case, so background-tab timer
+   throttling and CDP drops cannot lose work - the collector file is the state. */
+const COLLECTOR = "http://127.0.0.1:8898";
+const qs = new URLSearchParams(location.search);
+const lang = qs.get("lang"), view = qs.get("view");
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+function snapshot(iframe) {
+  const d = iframe.contentDocument, w = iframe.contentWindow;
+  const nav = [...d.querySelectorAll(".nav .nav-link")].map((a) => a.textContent.trim());
+  const menu = d.querySelector(".lang-menu");
+  const items = menu ? [...menu.querySelectorAll(".lang-item")].map((b) => ({
+    code: b.getAttribute("data-lang-set"), checked: b.getAttribute("aria-checked") === "true",
+  })) : null;
+  const summary = d.querySelector("details.lang summary");
+  const text = (d.body.innerText || "").replace(/\s+/g, " ");
+  return {
+    htmlLang: d.documentElement.getAttribute("lang"),
+    htmlTheme: d.documentElement.getAttribute("data-theme"),
+    title: d.title,
+    switcherSummary: summary ? summary.textContent.trim() : null,
+    codes: items ? items.map((i) => i.code) : null,
+    switcherCount: items ? items.length : 0,
+    themeToggle: !!d.querySelector("[data-theme-set]"),
+    i18nLoaded: !!w.I18n,
+    localesReported: w.I18n ? w.I18n.locales : null,
+    activeLang: w.I18n ? w.I18n.lang : null,
+    nav,
+    rawKey: /(?:^|\s)(nav|chrome|common|unit|fmt|err|app|dash|usage)\.[a-z_.]+/.test(text),
+    cjk: /[\u2e80-\u9fff\u3000-\u303f\uff00-\uffef]/.test(text),
+    ptText: /\b(Sair|Idioma|Portugu|Não|Você|Entrar)\b/.test(text),
+  };
+}
+
+(async () => {
+  localStorage.setItem("gp_lang", lang);
+  localStorage.setItem("gp_theme", "dark");
+  let rec = { lang, view, requested: lang };
+  try {
+    const r = await new Promise((resolve) => {
+      const iframe = document.createElement("iframe");
+      iframe.style.cssText = "width:1200px;height:900px;border:0";
+      iframe.src = view + "?_probe=" + Math.random();
+      let settled = false;
+      const finish = (v) => { if (!settled) { settled = true; resolve(v); } };
+      iframe.addEventListener("load", () => { sleep(1500).then(() => finish(iframe)); });
+      setTimeout(() => finish("timeout"), 15000);
+      document.body.appendChild(iframe);
+    });
+    rec = (r === "timeout") ? { ...rec, error: "timeout" } : { ...rec, ...snapshot(r) };
+  } catch (e) {
+    rec = { ...rec, error: "read: " + e.message };
+  }
+  document.getElementById("out").textContent = "REC " + JSON.stringify(rec);
+  try {
+    await fetch(COLLECTOR + "/result", {
+      method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify(rec), keepalive: true,
+    });
+  } catch (e) { /* collector down: driver will re-run this case */ }
+  localStorage.removeItem("gp_lang");
+  localStorage.removeItem("gp_theme");
+  document.title = "DONE:" + lang + ":" + view;
+})();
+</script>
+</body>
+</html>

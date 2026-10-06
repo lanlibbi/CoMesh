@@ -3,11 +3,27 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Earnings · GPU-Pool</title>
-<meta name="color-scheme" content="dark" />
+<title data-i18n="title.earnings">Earnings · CoMesh</title>
+<meta name="color-scheme" content="dark light" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<script>
+/* Apply the stored theme BEFORE the stylesheet loads, so the first paint is
+   already the right palette. Dark is the default; a first-time visitor follows
+   the OS setting until they choose explicitly. Kept inline and tiny on purpose —
+   it must not depend on the rest of the JS. */
+(function () {
+  try {
+    var stored = localStorage.getItem("gp_theme");
+    var theme = (stored === "light" || stored === "dark") ? stored
+      : (window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
+    document.documentElement.setAttribute("data-theme", theme);
+  } catch (e) {
+    document.documentElement.setAttribute("data-theme", "dark");
+  }
+})();
+</script>
 <link rel="stylesheet" href="style.css" />
 </head>
 <body x-data="earningsPage()" x-init="init()">
@@ -17,7 +33,7 @@
     <div class="page-head">
       <div class="eyebrow">Provider</div>
       <h1>Earnings</h1>
-      <p class="lede">
+      <p class="lede" data-i18n="credits-aus-jobs-die-andere-nutzer-auf">
         Credits aus Jobs, die andere Nutzer auf deinen Nodes ausgeführt haben —
         inklusive Aufteilung zwischen Owner, Plattform und Treasury.
       </p>
@@ -31,31 +47,31 @@
     <div class="grid mb-5">
       <div class="card span-4">
         <div class="stat">
-          <div class="eyebrow">Gesamt-Earnings</div>
+          <div class="eyebrow" data-i18n="gesamt-earnings">Gesamt-Earnings</div>
           <div class="stat-value brass" x-text="fmtCredits(total)"></div>
-          <div class="stat-sub">Credits über alle Nodes</div>
+          <div class="stat-sub" data-i18n="credits-ueber-alle-nodes">Credits über alle Nodes</div>
         </div>
       </div>
       <div class="card span-4">
         <div class="stat">
-          <div class="eyebrow">Beitragende Nodes</div>
+          <div class="eyebrow" data-i18n="beitragende-nodes">Beitragende Nodes</div>
           <div class="stat-value" x-text="byNode.length"></div>
-          <div class="stat-sub">mit mindestens einem Job</div>
+          <div class="stat-sub" data-i18n="mit-mindestens-einem-job">mit mindestens einem Job</div>
         </div>
       </div>
       <div class="card span-4">
         <div class="stat">
-          <div class="eyebrow">Aufteilung</div>
+          <div class="eyebrow" data-i18n="aufteilung">Aufteilung</div>
           <div class="stat-value">70 / 20 / 10</div>
-          <div class="stat-sub">Owner / Plattform / Treasury</div>
+          <div class="stat-sub" data-i18n="owner-plattform-treasury">Owner / Plattform / Treasury</div>
         </div>
       </div>
     </div>
 
     <div class="panel-head">
       <div>
-        <div class="eyebrow">Aggregiert</div>
-        <h3>Pro Node</h3>
+        <div class="eyebrow" data-i18n="aggregiert">Aggregiert</div>
+        <h3 data-i18n="pro-node">Pro Node</h3>
       </div>
     </div>
     <div class="card mb-5" style="padding:0">
@@ -75,7 +91,7 @@
               </tr>
             </template>
             <tr x-show="byNode.length === 0">
-              <td colspan="2" class="t-sm text-mute" style="padding:16px">Noch keine Nodes.</td>
+              <td colspan="2" class="t-sm text-mute" style="padding:16px" data-i18n="noch-keine-nodes">Noch keine Nodes.</td>
             </tr>
           </tbody>
         </table>
@@ -84,8 +100,8 @@
 
     <div class="panel-head">
       <div>
-        <div class="eyebrow">Protokoll</div>
-        <h3>Letzte Job-Earnings</h3>
+        <div class="eyebrow" data-i18n="protokoll">Protokoll</div>
+        <h3 data-i18n="letzte-job-earnings">Letzte Job-Earnings</h3>
       </div>
       <span class="chip mono" x-text="events.length + ' Einträge'"></span>
     </div>
@@ -94,12 +110,12 @@
         <table class="tbl">
           <thead>
             <tr>
-              <th>Wann</th>
+              <th data-i18n="wann">Wann</th>
               <th>Node</th>
-              <th>Job-Kosten</th>
-              <th>Owner 70 %</th>
-              <th>Plattform 20 %</th>
-              <th>Treasury 10 %</th>
+              <th data-i18n="job-kosten">Job-Kosten</th>
+              <th data-i18n="owner-70">Owner 70 %</th>
+              <th data-i18n="plattform-20">Plattform 20 %</th>
+              <th data-i18n="treasury-10">Treasury 10 %</th>
             </tr>
           </thead>
           <tbody>
@@ -114,7 +130,7 @@
               </tr>
             </template>
             <tr x-show="events.length === 0">
-              <td colspan="6" class="t-sm text-mute" style="padding:16px">Noch keine Job-Earnings.</td>
+              <td colspan="6" class="t-sm text-mute" style="padding:16px" data-i18n="noch-keine-job-earnings">Noch keine Job-Earnings.</td>
             </tr>
           </tbody>
         </table>
@@ -123,6 +139,8 @@
   </main>
 
       <script defer src="https://unpkg.com/alpinejs@3.5.1/dist/cdn.min.js"></script>
+<script src="i18n-catalog.js"></script>
+<script src="i18n.js"></script>
 <script src="app.js"></script>
   <script src="earnings.js"></script>
 </body>

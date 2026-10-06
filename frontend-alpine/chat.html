@@ -3,11 +3,27 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Chat · GPU-Pool</title>
-<meta name="color-scheme" content="dark" />
+<title data-i18n="title.chat">Chat · CoMesh</title>
+<meta name="color-scheme" content="dark light" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<script>
+/* Apply the stored theme BEFORE the stylesheet loads, so the first paint is
+   already the right palette. Dark is the default; a first-time visitor follows
+   the OS setting until they choose explicitly. Kept inline and tiny on purpose —
+   it must not depend on the rest of the JS. */
+(function () {
+  try {
+    var stored = localStorage.getItem("gp_theme");
+    var theme = (stored === "light" || stored === "dark") ? stored
+      : (window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
+    document.documentElement.setAttribute("data-theme", theme);
+  } catch (e) {
+    document.documentElement.setAttribute("data-theme", "dark");
+  }
+})();
+</script>
 <link rel="stylesheet" href="style.css" />
 </head>
 <body x-data="chatPage()" x-init="init()">
@@ -15,7 +31,7 @@
 
   <main class="shell" style="max-width:960px">
     <div class="page-head">
-      <div class="eyebrow">Inference</div>
+      <div class="eyebrow" data-i18n="inference">Inference</div>
       <h1>Chat</h1>
       <p class="lede">
         Direkter Testlauf gegen den Pool. Abgerechnet wird pro Token über dein Guthaben —
@@ -26,20 +42,20 @@
     <div class="card">
       <div class="panel-head">
         <div>
-          <div class="eyebrow">Session</div>
-          <h3 x-text="model || 'Modell wählen'"></h3>
+          <div class="eyebrow" data-i18n="session">Session</div>
+          <h3 x-text="model || I18n.t('chat.choose_model')"></h3>
         </div>
         <div class="row">
           <label class="label" for="model" style="margin:0">Modell</label>
           <select class="input" id="model" x-model="model"
                   style="width:auto;min-width:230px" :disabled="models.length === 0">
-            <option value="" disabled x-text="models.length ? 'Bitte wählen' : 'Lädt…'"></option>
+            <option value="" disabled x-text="models.length ? I18n.t('chat.choose_model') : I18n.t('common.loading')"></option>
             <template x-for="m in models" :key="m.name">
               <option :value="m.name"
                       x-text="m.name + (m.size ? ' — ' + (m.size / 1e9).toFixed(1) + ' GB' : '')"></option>
             </template>
           </select>
-          <button class="btn-ghost btn-sm" @click="loadModels()" title="Modellliste neu laden">Aktualisieren</button>
+          <button class="btn-ghost btn-sm" @click="loadModels()" title="Modellliste neu laden" data-i18n-title="modellliste-neu-laden" data-i18n="aktualisieren">Aktualisieren</button>
         </div>
       </div>
 
@@ -53,7 +69,7 @@
               <path d="M21 15a2 2 0 0 1-2 2H8l-5 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2Z"/>
             </svg>
           </span>
-          <p>Noch keine Nachricht. Starte mit einer der Vorlagen oder tippe direkt los.</p>
+          <p data-i18n="noch-keine-nachricht-starte-mit-einer-der">Noch keine Nachricht. Starte mit einer der Vorlagen oder tippe direkt los.</p>
         </div>
         <div class="row wrap" style="justify-content:center">
           <template x-for="p in prompts" :key="p.label">
@@ -71,7 +87,7 @@
         </template>
         <div class="row" x-show="loading" style="justify-content:flex-start">
           <div class="chat-bubble chat-assistant">
-            <span class="typing" aria-label="Antwort wird erzeugt"><i></i><i></i><i></i></span>
+            <span class="typing" aria-label="Antwort wird erzeugt" data-i18n-aria-label="antwort-wird-erzeugt"><i></i><i></i><i></i></span>
           </div>
         </div>
       </div>
@@ -83,7 +99,7 @@
                 placeholder="Nachricht schreiben — Enter sendet, Shift+Enter macht eine neue Zeile"
                 :disabled="loading"></textarea>
       <button type="submit" class="btn-primary" :disabled="loading || !input.trim() || !model">
-        <span x-show="!loading">Senden</span>
+        <span x-show="!loading" data-i18n="senden">Senden</span>
         <span x-show="loading">…</span>
       </button>
     </form>
@@ -100,6 +116,8 @@
   </main>
 
       <script defer src="https://unpkg.com/alpinejs@3.5.1/dist/cdn.min.js"></script>
+<script src="i18n-catalog.js"></script>
+<script src="i18n.js"></script>
 <script src="app.js"></script>
   <script>
     function chatPage() {

@@ -1,4 +1,4 @@
-// GPU-Pool — /admin-usage page (alpine frontend).
+// CoMesh — /admin-usage page (alpine frontend).
 // Per-user token/credit consumption across ALL users. Backend: GET /admin/usage
 // (role-gated, see usage_stats.py build_admin_usage) — one aggregated payload per
 // window change, no polling.
@@ -9,10 +9,10 @@ document.addEventListener("alpine:init", () => {
   Alpine.data("adminUsagePage", () => ({
     window: "7d",
     windows: [
-      { key: "24h", label: "24 h" },
-      { key: "7d", label: "7 Tage" },
-      { key: "30d", label: "30 Tage" },
-      { key: "all", label: "Gesamt" },
+      { key: "24h", label: I18n.t("usage.window.24h") },
+      { key: "7d", label: I18n.t("dash.window.7d") },
+      { key: "30d", label: I18n.t("dash.window.30d") },
+      { key: "all", label: I18n.t("usage.window.all") },
     ],
     includeInactive: true,
     limit: 50,
@@ -85,14 +85,14 @@ document.addEventListener("alpine:init", () => {
       return ((Number(u.total_tokens) || 0) / total * 100).toFixed(1) + " %";
     },
 
-    /** Compact per-model summary: "model (tokens)" joined, top 3 + count. */
+    /** Compact per-model summary: I18n.t("fmt.model_tokens") joined, top 3 + count. */
     modelSummary(u) {
       const ms = u.models || [];
       if (!ms.length) return "—";
       const head = ms.slice(0, 3)
         .map((m) => `${m.model} (${this.fmtCompact(m.total_tokens)})`)
         .join(" · ");
-      return ms.length > 3 ? `${head} +${ms.length - 3}` : head;
+      return ms.length > 3 ? head + I18n.t("fmt.plus_more", { n: ms.length - 3 }) : head;
     },
 
     fmtTokens(n) { return fmtNumber(n == null ? 0 : n); },
@@ -111,8 +111,8 @@ document.addEventListener("alpine:init", () => {
 
     rangeText() {
       if (!this.data) return "";
-      if (!this.data.since) return "gesamter Zeitraum";
-      return `${fmtDate(this.data.since)} – jetzt`;
+      if (!this.data.since) return I18n.t("usage.range.all");
+      return I18n.t("fmt.range_now", { since: fmtDate(this.data.since) });
     },
 
     /** "12 von 34" — shows the limit actually truncated the list or not. */
@@ -120,10 +120,10 @@ document.addEventListener("alpine:init", () => {
       if (!this.data) return "";
       const shown = this.users.length;
       const total = this.totals.active_users;
-      if (total == null) return `${shown} Nutzer`;
+      if (total == null) return I18n.t("unit.users", { shown });
       return shown >= total
-        ? `${shown} Nutzer`
-        : `${shown} von ${total} Nutzern (Limit ${this.limit})`;
+        ? I18n.t("unit.users", { shown })
+        : I18n.t("fmt.range_shown", { shown, total }) + " " + I18n.t("unit.users_limit", { limit: this.limit });
     },
   }));
 });

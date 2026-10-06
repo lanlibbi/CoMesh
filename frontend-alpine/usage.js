@@ -1,14 +1,14 @@
-// GPU-Pool — /usage page (alpine frontend).
+// CoMesh — /usage page (alpine frontend).
 // Token + credit consumption per model, per window. Backend: GET /v1/me/usage
 // (see usage_stats.py) — one aggregated payload per window change, no polling.
 document.addEventListener("alpine:init", () => {
   Alpine.data("usagePage", () => ({
     window: "7d",
     windows: [
-      { key: "24h", label: "24 h" },
-      { key: "7d", label: "7 Tage" },
-      { key: "30d", label: "30 Tage" },
-      { key: "all", label: "Gesamt" },
+      { key: "24h", label: I18n.t("usage.window.24h") },
+      { key: "7d", label: I18n.t("dash.window.7d") },
+      { key: "30d", label: I18n.t("dash.window.30d") },
+      { key: "all", label: I18n.t("usage.window.all") },
     ],
     data: null,
     loading: true,
@@ -94,8 +94,8 @@ document.addEventListener("alpine:init", () => {
     /** "since" is null for the all-time window. */
     rangeText() {
       if (!this.data) return "";
-      if (!this.data.since) return "gesamter Zeitraum";
-      return `${fmtDate(this.data.since)} – jetzt`;
+      if (!this.data.since) return I18n.t("usage.range.all");
+      return I18n.t("fmt.range_now", { since: fmtDate(this.data.since) });
     },
 
     modelHue(i) {

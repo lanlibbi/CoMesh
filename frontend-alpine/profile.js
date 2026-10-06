@@ -1,4 +1,4 @@
-// GPU-Pool — /profile page (alpine frontend). Edit role + model whitelist.
+// CoMesh — /profile page (alpine frontend). Edit role + model whitelist.
 document.addEventListener("alpine:init", () => {
   Alpine.data("profilePage", () => ({
     role: "both",
@@ -32,7 +32,7 @@ document.addEventListener("alpine:init", () => {
         // Keep the cached user object in sync
         Auth.save({ ...(Auth.currentUser() || {}), role: this.role, allowed_models: me.allowed_models }, LS.get("api_key"));
       } catch (e) {
-        this.error = "Fehler beim Laden: " + e.message;
+        this.error = I18n.t("err.load_prefix") + e.message;
       }
     },
 
@@ -65,14 +65,14 @@ document.addEventListener("alpine:init", () => {
         // Refresh localStorage user object so the nav updates immediately
         const u = Auth.currentUser() || {};
         Auth.save({ ...u, role: r.role }, LS.get("api_key"));
-        this.lastRoleChange = `Rolle auf '${r.role}' gesetzt.`;
+        this.lastRoleChange = I18n.t("profile.role_set", { role: r.role });
         if (r.warnings && r.warnings.length > 0) {
           this.roleWarning = r.warnings.join(" • ");
         }
-        toast("Rolle aktualisiert", "ok");
+        toast(I18n.t("profile.role.updated"), "ok");
       } catch (e) {
         this.roleWarning = e.message;
-        toast("Fehler: " + e.message, "err");
+        toast(I18n.t("err.generic") + e.message, "err");
       } finally {
         this.savingRole = false;
       }
@@ -92,14 +92,14 @@ document.addEventListener("alpine:init", () => {
         this.allowCloud = !!r.allow_cloud;
         const u = Auth.currentUser() || {};
         Auth.save({ ...u, allowed_models: r.allowed_models }, LS.get("api_key"));
-        this.lastModelChange = "Modell-Whitelist gespeichert.";
+        this.lastModelChange = I18n.t("profile.models.saved");
         if (r.warnings && r.warnings.length > 0) {
           this.modelWarning = r.warnings.join(" • ");
         }
-        toast("Modelle aktualisiert", "ok");
+        toast(I18n.t("profile.models.updated"), "ok");
       } catch (e) {
         this.modelWarning = e.message;
-        toast("Fehler: " + e.message, "err");
+        toast(I18n.t("err.generic") + e.message, "err");
       } finally {
         this.savingModels = false;
       }
