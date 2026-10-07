@@ -502,7 +502,7 @@ async def test_ws_node_offline_routes_http(env: InProcessEnv):
     r = await env.http.post("/nodes/register", json={
         "name": f"wjs-offline-node-{secrets.token_hex(3)}",
         "gpu_type": "RTX 4090", "vram_gb": 24, "port": 11435,
-        "tailscale_ip": "127.0.0.1",  # required so _forward_to_node can build a URL
+        "node_url": "http://127.0.0.1:11435",  # so _forward_to_node can build a URL
     }, headers={"Authorization": f"Bearer {api_key}"})
     node = r.json()
     node_id = node["id"]

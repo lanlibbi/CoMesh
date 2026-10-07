@@ -148,7 +148,7 @@
         <li>GPU mit CUDA-Unterstützung (NVIDIA empfohlen)</li>
         <li>Ollama installiert (<a href="https://ollama.com" target="_blank">ollama.com</a>)</li>
         <li>Docker (empfohlen) oder Python 3.11+</li>
-        <li>Tailscale oder VPN-Zugang (für sichere Verbindung)</li>
+        <li>Kein VPN noetig — Portal und Nodes muessen sich nur gegenseitig erreichen koennen (gleiches LAN, DNS-/mDNS-Name empfohlen). Ein Mesh-VPN wie Tailscale ist eine Option, kein Zwang.</li>
       </ul>
 
       <h3>Schritt 1: Node registrieren</h3>
@@ -159,7 +159,7 @@
           <li>Klicke "Neue Node registrieren"</li>
           <li>Gib an:
             <ul>
-              <li><strong>Tailscale IP</strong> – Deine IP im VPN (z.B. <code>100.x.x.x</code>)</li>
+              <li><strong>Adresse</strong> – optional: Name oder IP, unter der das Portal diese Node erreicht. Leer lassen ist der Normalfall: der Agent traegt seine erkannte Adresse beim ersten Heartbeat selbst ein (DHCP-tauglich).</li>
               <li><strong>Port</strong> – Standard <code>11435</code></li>
               <li><strong>GPU-Modell</strong> – z.B. "RTX 3080 10GB"</li>
               <li><strong>VRAM</strong> – z.B. <code>10240</code> (in MB)</li>
@@ -291,7 +291,7 @@ python agent.py</code></pre>
       <h3>Node zeigt "offline"</h3>
       <ul>
         <li>Prüfe: Läuft der Agent? <code>docker ps | grep gpu-pool</code></li>
-        <li>Prüfe: Tailscale verbunden? <code>tailscale status</code></li>
+        <li>Prüfe: erreicht die Node das Portal? <code>curl $PORTAL_URL/net/echo</code></li>
         <li>Prüfe: Firewall-Port 11435 offen? <code>ufw allow 11435/tcp</code></li>
         <li>Prüfe: Logs <code>docker logs gpu-pool-agent</code></li>
       </ul>
@@ -322,7 +322,7 @@ python agent.py</code></pre>
     <section class="docs-section">
       <h2>🔒 Sicherheit & Datenschutz</h2>
       <ul>
-        <li><strong>Keine öffentlichen Ports</strong> – Nutze Tailscale/VPN für Agent-Verbindungen</li>
+        <li><strong>Keine öffentlichen Ports</strong> – Portal und Agent gehoeren nicht ins offene Internet; ein privates Netz (LAN oder Mesh-VPN) genuegt.</li>
         <li><strong>API-Keys</strong> – Werden sicher in localStorage gespeichert, nicht auf dem Server</li>
         <li><strong>Passwörter</strong> – Gehasht mit bcrypt, nie im Klartext</li>
         <li><strong>Zahlungen</strong> – Alle Zahlungsanbieter sind PCI-DSS konform</li>

@@ -3,6 +3,10 @@
 # Kopiere diese Datei in dein node-agent/ Verzeichnis,
 # passe die .env an, dann:
 #   docker compose up -d
+#
+# Fuer einen frischen DHCP-Client genuegt in .env:
+#   PORTAL_URL=http://portal-host:8765
+#   PORTAL_USER_KEY=gpu_...        (Selbst-Registrierung, Rest passiert automatisch)
 
 services:
   agent:
@@ -10,18 +14,30 @@ services:
     container_name: gpu-pool-agent
     restart: unless-stopped
 
-    # Tailscale-IP dieses Hosts (vom .env)
     environment:
-      - TAILSCALE_IP=${TAILSCALE_IP}
-      - AGENT_PORT=${AGENT_PORT:-8080}
-      - PORTAL_URL=${PORTAL_URL}
+      - PORTAL_URL=${PORTAL_URL}              # Name/IP des Portal-Hosts
+      # Variante A: Selbst-Registrierung (nur diese Zeile zusaetzlich)
+      - PORTAL_USER_KEY=${PORTAL_USER_KEY:-}
+      # Variante B: im Portal registrieren und beide Werte eintragen
+      - NODE_ID=${NODE_ID:-}
+      - NODE_API_KEY=${NODE_API_KEY:-}
+      # Eigene Adresse: leer = automatisch erkannt (DHCP-tauglich)
+      - ADVERTISE_HOST=${ADVERTISE_HOST:-}
+      - NODE_STATE_FILE=/data/node-state.json
+      - AGENT_PORT=${AGENT_PORT:-11435}
       - HEARTBEAT_INTERVAL_SECONDS=${HEARTBEAT_INTERVAL_SECONDS:-5}
       - PRICE_PER_1K_TOKENS=${PRICE_PER_1K_TOKENS:-0.0005}
       - OLLAMA_URL=${OLLAMA_URL}
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
 
     ports:
-      - "${AGENT_PORT:-8080}:8080"
+      # Keine feste externe IP — nur ein Port-Mapping. Bei AGENT_TRANSPORT=ws
+      # kann der Port ganz entfallen (nur outbound).
+      - "${AGENT_PORT:-11435}:11435"
+
+    # Node-Credentials ueberleben einen Rebuild
+    volumes:
+      - agent_state:/data
 
     # GPU-Passthrough (NVIDIA)
     deploy:
@@ -43,3 +59,6 @@ services:
       timeout: 5s
       retries: 3
       start_period: 10s
+
+volumes:
+  agent_state:

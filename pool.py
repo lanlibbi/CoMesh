@@ -5,7 +5,7 @@ Two layers:
 
   * `PoolRouter` (class) — picks the best node for a given request.
     Scoring weights: online > enough free VRAM > low utilization > low rate
-    > Tailscale reachability (we assume yes if registered).
+    > reachability (a registered node is expected to be dialable).
   * `distribute_revenue` (function) — splits a job's revenue 70/20/10
     (owner / platform / treasury) and writes a NodeEarning row +
     bumps GpuNode.earnings_total. The platform/treasury side is
@@ -28,6 +28,8 @@ import httpx
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
+
+from netinfo import node_base_url
 
 from database import get_db
 from models import (
@@ -117,9 +119,9 @@ def find_best_node(
         if free_vram < model_vram_need:
             continue
 
-        # Lower is better. We weight price more heavily than utilization
-        # because in the POC every node is on Tailscale — the bottleneck
-        # is willingness to be cheap, not network latency.
+        # Lower is better. We weight price more heavily than utilization:
+        # in the POC the bottleneck is willingness to be cheap, not network
+        # latency (all nodes are reached directly, whatever the network is).
         score = (
             n.hourly_rate * 1.0
             + n.current_utilization * 0.5
@@ -162,7 +164,21 @@ async def _forward_to_node(node: GpuNode, ollama_payload: dict, timeout: float =
     will remove it once the WS is the only transport.
     """
     import secrets as _secrets
-    url = f"http://{node.tailscale_ip}:{node.port}/v1/chat/completions"
+    base = node_base_url(node.node_url, node.port)
+    if not base:
+        # Legacy rows written before LANA-89 still carry only `tailscale_ip`.
+        legacy_host = (node.tailscale_ip or "").strip()
+        if legacy_host:
+            base = node_base_url(
+                legacy_host if "://" in legacy_host else f"http://{legacy_host}",
+                node.port,
+            )
+    if not base:
+        raise RuntimeError(
+            f"Node {node.id} has no reachable address yet. It gets one from its first "
+            "heartbeat (or set node_url at registration / in the node's ADVERTISE_HOST)."
+        )
+    url = f"{base}/v1/chat/completions"
     # Build the OpenAI-shaped payload from the ollama_payload
     openai_payload = {
         "model": ollama_payload.get("model", ""),
@@ -266,7 +282,7 @@ async def route_request(
     Main entry point used by main.py's /v1/chat/completions.
 
     Decision tree:
-      1. Try local Ollama (ai-lanlibbi itself). If it works, source=local.
+      1. Try local Ollama on the portal host. If it works, source=local.
       2. If local fails or is busy, pick a community node and forward.
       3. If no community node is available, return 503.
 

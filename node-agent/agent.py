@@ -23,11 +23,24 @@ Three transports (Phase 1+2):
 
 Configuration via environment variables (or a .env file):
 
-  PORTAL_URL       Base URL of the portal, e.g. http://100.126.79.111:8765
-  NODE_ID          Numeric id of the registered GpuNode
-  NODE_API_KEY     The agent_api_key issued by POST /nodes/register
+  PORTAL_URL       Base URL of the portal. No default on purpose — an agent that
+                   silently talks to localhost is worse than one that stops and
+                   says so. Example: http://portal-host:8765
+  NODE_ID          Numeric id of the registered GpuNode. Leave empty to let the
+                   agent register itself (see REGISTER_* below).
+  NODE_API_KEY     The agent_api_key issued by the portal. Also optional when the
+                   agent registers itself.
+  ADVERTISE_HOST   Host (name or IP) the portal should dial. Empty = detect at
+                   runtime (outbound IP, else hostname). Prefer a DNS/mDNS name:
+                   an IP breaks when the DHCP lease changes.
+  PORTAL_USER_KEY  API key of a CoMesh account, used only for self-registration
+                   (POST /nodes/register). Not needed once NODE_ID/NODE_API_KEY
+                   are set.
+  NODE_NAME        Display name for a self-registered node (default: hostname).
+  NODE_GPU_TYPE    GPU label for a self-registered node (default: probed via NVML).
+  NODE_VRAM_GB     VRAM for a self-registered node (default: probed via NVML).
   OLLAMA_URL       Local Ollama URL (default: http://localhost:11434)
-  AGENT_PORT       Port to listen on (HTTP transport only; default: 11435)
+  AGENT_PORT       Port to listen on (default: 11435)
   HEARTBEAT_SEC    Heartbeat interval in HTTP mode (default: 30)
   AGENT_TRANSPORT  "http" (default) or "ws"
   WS_HEARTBEAT_SEC Ping interval in WS mode (default: 15)
@@ -37,9 +50,9 @@ Run:
   # HTTP mode (unchanged)
   docker run -d --name gpu-pool-agent \
     --gpus all \
-    -e PORTAL_URL=http://100.126.79.111:8765 \
+    -e PORTAL_URL=http://portal-host:8765 \
     -e NODE_ID=1 \
-    -e NODE_API_KEY=node_xxx... \
+    -e NODE_API_KEY=*** \
     -p 11435:11435 \
     gpu-pool-node-agent
 
@@ -47,10 +60,13 @@ Run:
   docker run -d --name gpu-pool-agent-ws \
     --gpus all \
     -e AGENT_TRANSPORT=ws \
-    -e PORTAL_URL=http://100.126.79.111:8765 \
+    -e PORTAL_URL=http://portal-host:8765 \
     -e NODE_ID=1 \
-    -e NODE_API_KEY=node_xxx... \
+    -e NODE_API_KEY=*** \
     gpu-pool-node-agent
+
+  # Configuration check — prints which address the portal would use, then exits
+  python agent.py --check
 """
 import asyncio
 import json
@@ -66,6 +82,13 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel
 
+from netinfo import (
+    detect_outbound_ip,
+    gpu_summary,
+    local_hostname,
+    resolve_advertise_host,
+)
+
 # pynvml is optional in non-GPU dev environments
 try:
     import pynvml
@@ -80,9 +103,32 @@ log = logging.getLogger("node-agent")
 # ----------------------------------------------------------------------------
 # Config
 # ----------------------------------------------------------------------------
-PORTAL_URL = os.environ.get("PORTAL_URL", "http://100.126.79.111:8765").rstrip("/")
-NODE_ID = os.environ.get("NODE_ID", "")
+# No default portal URL: a wrong default silently sends heartbeats (and API keys)
+# to the wrong host. Empty means "not configured" and is reported as such.
+PORTAL_URL = os.environ.get("PORTAL_URL", "").rstrip("/")
+if PORTAL_URL and "://" not in PORTAL_URL:
+    PORTAL_URL = "http://" + PORTAL_URL  # tolerate "portal-host:8765"
+
+NODE_ID = str(os.environ.get("NODE_ID", "") or "").strip()
 NODE_API_KEY = os.environ.get("NODE_API_KEY", "")
+
+# --- self-registration (LANA-89) --------------------------------------------
+# With an account key present and no NODE_ID yet, the agent registers itself and
+# keeps the returned node credentials in a state file, so the operator never has
+# to copy values between portal and host. That is what makes a one-variable
+# setup work on a fresh DHCP network.
+PORTAL_USER_KEY = os.environ.get("PORTAL_USER_KEY", "")
+NODE_NAME = os.environ.get("NODE_NAME", "")
+NODE_GPU_TYPE = os.environ.get("NODE_GPU_TYPE", "")
+NODE_VRAM_GB = os.environ.get("NODE_VRAM_GB", "")
+NODE_STATE_FILE = os.environ.get("NODE_STATE_FILE", "/data/node-state.json")
+NODE_HOURLY_RATE = os.environ.get("NODE_HOURLY_RATE", "")
+# Host the portal should dial. Empty = detected at runtime (see netinfo).
+ADVERTISE_HOST = os.environ.get("ADVERTISE_HOST", "").strip()
+# How the agent reaches the portal. Same env var the portal reads, so an operator
+# can pin the exact host (usually only needed with a reverse proxy).
+_PORTAL_TRY_ADVERTISE = os.environ.get("PORTAL_TRY_ADVERTISE_HOST", "1").strip().lower() not in ("0", "false", "no")
+
 OLLAMA_URL = os.environ.get("OLLAMA_URL", "http://localhost:11434").rstrip("/")
 # Which inference backend this node exposes:
 #   ollama  -> local Ollama (default, legacy) — translates OpenAI->/api/chat
@@ -177,6 +223,20 @@ WS_RECONNECT_MAX_SEC = int(os.environ.get("WS_RECONNECT_MAX_SEC", "30"))
 
 if not NODE_ID or not NODE_API_KEY:
     log.warning("NODE_ID / NODE_API_KEY not set — heartbeats and auth will not work.")
+
+# Where this agent is reachable. Resolved once at start (ADVERTISE_HOST, else the
+# outbound IP, else the hostname) and re-sent with every heartbeat so the portal
+# can adopt it when it has no explicit address for this node.
+ADVERTISE = os.environ.get("ADVERTISE_HOST", "").strip()
+
+
+def advertised_host() -> str:
+    """The host we tell the portal to dial. Resolved lazily, cached after the first call."""
+    global ADVERTISE
+    if not ADVERTISE:
+        ADVERTISE = resolve_advertise_host(env_var="ADVERTISE_HOST")
+        log.info(f"Advertise host detected: {ADVERTISE} (set ADVERTISE_HOST to pin a name)")
+    return ADVERTISE
 
 # Track in-flight requests so the agent can report active_jobs
 _active_jobs = 0
@@ -306,20 +366,153 @@ async def chat_completions(req: ChatRequest):
 
 
 # ----------------------------------------------------------------------------
+# Self-registration + configuration check (LANA-89)
+# ----------------------------------------------------------------------------
+def _read_state_file() -> dict:
+    try:
+        with open(NODE_STATE_FILE, "r", encoding="utf-8") as f:
+            return json.load(f) or {}
+    except Exception:
+        return {}
+
+
+def _write_state_file(data: dict) -> None:
+    """Persist node credentials next to the portal data (mode 0600)."""
+    try:
+        directory = os.path.dirname(NODE_STATE_FILE)
+        if directory:
+            os.makedirs(directory, exist_ok=True)
+        tmp = f"{NODE_STATE_FILE}.tmp"
+        with open(tmp, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=2)
+        os.chmod(tmp, 0o600)
+        os.replace(tmp, NODE_STATE_FILE)
+    except Exception as e:
+        log.warning(f"Could not persist node state to {NODE_STATE_FILE}: {e}")
+
+
+def _load_node_identity() -> None:
+    """Fill NODE_ID/NODE_API_KEY from the state file or register fresh.
+
+    Two supported setups:
+
+      * operator copies NODE_ID + NODE_API_KEY into .env (classic), or
+      * operator sets PORTAL_URL + PORTAL_USER_KEY only; the agent registers
+        itself, writes /data/node-state.json, and is done. The address is derived
+        from ADVERTISE_HOST / the detected outbound IP on the portal side, so
+        neither side needs to know an IP up front.
+    """
+    global NODE_ID, NODE_API_KEY
+    state = _read_state_file()
+    if not NODE_ID and state.get("node_id"):
+        NODE_ID = str(state["node_id"])
+        NODE_API_KEY = NODE_API_KEY or state.get("node_api_key", "")
+        log.info(f"Loaded node credentials from {NODE_STATE_FILE}: node_id={NODE_ID}")
+    if NODE_ID and NODE_API_KEY:
+        return
+    if not (PORTAL_URL and PORTAL_USER_KEY):
+        return
+
+    summary = gpu_summary()
+    name = NODE_NAME or local_hostname() or "node"
+    body = {
+        "name": name[:80],
+        "gpu_type": (NODE_GPU_TYPE or summary["name"] or "unknown")[:80],
+        "vram_gb": max(1, int(NODE_VRAM_GB or summary["vram_gb"] or 1)),
+        "port": AGENT_PORT,
+        # The address may well be empty here: the portal fills it in from the
+        # first heartbeat, so a node on DHCP does not need to know it at all.
+        "node_url": ADVERTISE_HOST or None,
+    }
+    if NODE_HOURLY_RATE:
+        try:
+            body["hourly_rate"] = float(NODE_HOURLY_RATE)
+        except ValueError:
+            pass
+    try:
+        r = httpx.post(
+            f"{PORTAL_URL}/nodes/register",
+            headers={"Authorization": f"Bearer {PORTAL_USER_KEY}", "Content-Type": "application/json"},
+            json=body,
+            timeout=20.0,
+        )
+        if r.status_code >= 300:
+            log.error(f"Self-registration failed ({r.status_code}): {r.text[:300]}")
+            log.error("Check PORTAL_USER_KEY (account API key) and that the account has role provider/both.")
+            return
+        data = r.json()
+        NODE_ID = str(data.get("id") or "")
+        NODE_API_KEY = data.get("agent_api_key") or ""
+        log.info(f"Self-registered as node_id={NODE_ID} name={body['name']} ({body['gpu_type']})")
+        _write_state_file({
+            "node_id": NODE_ID,
+            "node_api_key": NODE_API_KEY,
+            "portal_url": PORTAL_URL,
+            "name": body["name"],
+        })
+    except Exception as e:
+        log.error(f"Self-registration error: {e!r}")
+
+
+def config_check() -> int:
+    """Print what the portal would be told. Exit code 0 = a node can start."""
+    ok = True
+    advertise = resolve_advertise_host(env_var="ADVERTISE_HOST")
+    print("CoMesh node-agent — configuration check")
+    print(f"  portal URL      : {PORTAL_URL or '(unset — set PORTAL_URL)'}")
+    print(f"  advertise host  : {advertise}  (= how the portal will dial this node)")
+    print(f"  detected IP     : {detect_outbound_ip()}")
+    print(f"  hostname        : {local_hostname()}")
+    print(f"  agent port      : {AGENT_PORT}")
+    print(f"  transport       : {AGENT_TRANSPORT}")
+    print(f"  backend         : {BACKEND} @ {INFERENCE_URL}")
+    print(f"  node id         : {NODE_ID or '(auto-register on start)'}")
+    print(f"  node state file : {NODE_STATE_FILE}")
+    gpu = gpu_summary()
+    print(f"  gpu             : {gpu['name']} ({gpu['vram_gb']} GB)")
+
+    if not PORTAL_URL:
+        print("  !! PORTAL_URL is unset — a node on a fresh network needs at least this one variable.")
+        ok = False
+    else:
+        try:
+            with httpx.Client(timeout=10.0) as c:
+                r = c.get(f"{PORTAL_URL}/net/echo")
+            if r.status_code == 200:
+                echo = r.json() or {}
+                portal = echo.get("portal") or {}
+                print(f"  portal reachable: yes (public_url={portal.get('public_url')})")
+            else:
+                print(f"  portal /net/echo returned HTTP {r.status_code}")
+        except Exception as e:
+            print(f"  !! portal not reachable at {PORTAL_URL}: {e}")
+            ok = False
+    if not (NODE_ID and NODE_API_KEY) and not PORTAL_USER_KEY:
+        print("  !! neither NODE_ID/NODE_API_KEY nor PORTAL_USER_KEY set — the node cannot join the pool.")
+        ok = False
+    print("=> OK" if ok else "=> incomplete configuration")
+    return 0 if ok else 1
+
+
+# ----------------------------------------------------------------------------
 # Heartbeat loop
 # ----------------------------------------------------------------------------
 async def send_heartbeat(client: httpx.AsyncClient):
     if not NODE_ID or not NODE_API_KEY:
         return
     info = get_gpu_info()
-    # status: busy if there are active jobs OR VRAM > 80% used; else online
-    busy = info["active_jobs"] > 0 or (info["utilization"] or 0) > 0.8
+    # status: busy if there are active jobs OR VRAM > 70% used; else online
+    busy = info["active_jobs"] > 0 or (info["utilization"] or 0) > 0.7
     payload = {
         "status": "busy" if busy else "online",
         "gpu_util": info["utilization"],
         "vram_used_gb": info["vram_used_gb"],
         "vram_total_gb": info["vram_total_gb"],
         "active_jobs": info["active_jobs"],
+        # The portal adopts this only while the node has no explicitly configured
+        # address. That is how a DHCP node stays dialable without any config.
+        "advertise_host": advertised_host(),
+        "agent_port": AGENT_PORT,
         "raw": info,
     }
     try:
@@ -489,6 +682,13 @@ async def _handle_job_frame(ws, frame: dict) -> None:
 
 @app.on_event("startup")
 async def _on_start():
+    _load_node_identity()
+    if not NODE_ID or not NODE_API_KEY:
+        log.warning(
+            "Agent is running without node credentials: no heartbeats, no jobs. "
+            "Set NODE_ID + NODE_API_KEY, or PORTAL_URL + PORTAL_USER_KEY for self-registration."
+        )
+    log.info(f"Advertised as {advertised_host()}:{AGENT_PORT} (portal dials this)")
     if AGENT_TRANSPORT == "ws":
         asyncio.create_task(ws_loop())
         log.info(
@@ -503,17 +703,24 @@ async def _on_start():
 
 if __name__ == "__main__":
     import argparse
-    parser = argparse.ArgumentParser(description="GPU-Pool Node-Agent")
+    parser = argparse.ArgumentParser(description="CoMesh Node-Agent")
     parser.add_argument(
         "--transport", choices=["http", "ws"], default=None,
         help="Override AGENT_TRANSPORT env var (default: read from env, fallback 'http')",
+    )
+    parser.add_argument(
+        "--check", action="store_true",
+        help="Print the network configuration (portal reachability, detected address) and exit",
     )
     args = parser.parse_args()
     if args.transport:
         AGENT_TRANSPORT = args.transport  # local override for this run
         log.info(f"--transport={args.transport} override applied")
+    if args.check:
+        raise SystemExit(config_check())
     if AGENT_TRANSPORT == "ws":
         # WS mode: don't bind a port, just run the async loop.
+        _load_node_identity()
         try:
             asyncio.run(ws_loop())
         except KeyboardInterrupt:

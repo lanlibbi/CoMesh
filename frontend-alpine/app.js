@@ -1,11 +1,16 @@
 // CoMesh — shared client (Alpine frontend)
-// Vanilla JS + Alpine.js. Talks to the backend at /api/* (proxied by nginx).
+// Vanilla JS + Alpine.js. Talks to the backend at API_BASE + path.
+//
+// The base URL is resolved at runtime by config.js (?api= → localStorage →
+// config.js global → same-origin /api); no address is baked into this file.
 //
 // This file also owns the app-wide chrome: the animated background field is
 // injected here, so every view gets the identical effect and it can never
 // drift between pages.
 
-const API_BASE = "/api"; // same-origin; nginx strips the /api prefix before proxying
+// Fallback only for the case where config.js was not loaded (e.g. an old cached
+// HTML shell). Same-origin /api is the deployment default.
+const API_BASE = (typeof window !== "undefined" && window.API_BASE) || "/api";
 
 // ---------- LocalStorage helpers ----------
 const LS = {

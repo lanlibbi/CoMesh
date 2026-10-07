@@ -1289,6 +1289,12 @@ window.GP_I18N = {
    "es": "Tarifa (Credits)",
    "fr": "Tarif (Credits)"
   },
+  "adresse-leer-lassen-der-agent-meldet": {
+   "en": "Leave empty: the agent reports its own address with the first heartbeat (the usual case on DHCP). Prefer a fixed address? Enter a name — DNS/mDNS such as mein-gpu.local:11435, not an IP.",
+   "de": "Leer lassen: der Agent meldet seine Adresse beim ersten Heartbeat selbst (üblich in DHCP-Netzen). Feste Adresse? Dann einen Namen eintragen — DNS/mDNS wie mein-gpu.local:11435 statt einer IP.",
+   "es": "Déjalo vacío: el agente comunica su dirección con el primer heartbeat (lo habitual en DHCP). ¿Prefieres una dirección fija? Usa un nombre — DNS/mDNS como mein-gpu.local:11435, no una IP.",
+   "fr": "Laissez vide : l’agent annonce sa propre adresse au premier heartbeat (le cas habituel en DHCP). Adresse fixe ? Utilisez un nom — DNS/mDNS comme mein-gpu.local:11435, pas une IP."
+  },
   "der-pool-routet-ausschliesslich-ueber-das": {
    "en": "The pool routes exclusively over the tailnet — publicly reachable nodes are not intended.",
    "de": "Der Pool routet ausschließlich über das Tailnet — public erreichbare Nodes sind nicht vorgesehen.",
@@ -1356,10 +1362,10 @@ window.GP_I18N = {
    "fr": "Mes nodes enregistrés"
   },
   "span-x-text-n-gpu-type-span-span-x-text-n": {
-   "en": "<span x-text=\"n.gpu_type\"></span> · <span x-text=\"n.vram_gb\"></span> GB VRAM · <span class=\"mono\" x-text=\"(n.tailscale_ip || 'no Tailscale') + ':' + n.port\"></span>",
-   "de": "<span x-text=\"n.gpu_type\"></span> · <span x-text=\"n.vram_gb\"></span> GB VRAM · <span class=\"mono\" x-text=\"(n.tailscale_ip || 'kein Tailscale') + ':' + n.port\"></span>",
-   "es": "<span x-text=\"n.gpu_type\"></span> · <span x-text=\"n.vram_gb\"></span> GB VRAM · <span class=\"mono\" x-text=\"(n.tailscale_ip || 'sin Tailscale') + ':' + n.port\"></span>",
-   "fr": "<span x-text=\"n.gpu_type\"></span> · <span x-text=\"n.vram_gb\"></span> GB VRAM · <span class=\"mono\" x-text=\"(n.tailscale_ip || 'pas de Tailscale') + ':' + n.port\"></span>"
+   "en": "<span x-text=\"n.gpu_type\"></span> · <span x-text=\"n.vram_gb\"></span> GB VRAM · <span class=\"mono\" x-text=\"n.node_url || '—'\"></span>",
+   "de": "<span x-text=\"n.gpu_type\"></span> · <span x-text=\"n.vram_gb\"></span> GB VRAM · <span class=\"mono\" x-text=\"n.node_url || '—'\"></span>",
+   "es": "<span x-text=\"n.gpu_type\"></span> · <span x-text=\"n.vram_gb\"></span> GB VRAM · <span class=\"mono\" x-text=\"n.node_url || '—'\"></span>",
+   "fr": "<span x-text=\"n.gpu_type\"></span> · <span x-text=\"n.vram_gb\"></span> GB VRAM · <span class=\"mono\" x-text=\"n.node_url || '—'\"></span>"
   },
   "span-class-mono-x-text-n-hourly-rate-span": {
    "en": "<span class=\"mono\" x-text=\"n.hourly_rate\"></span> Credits/h · earned <span class=\"mono\" x-text=\"fmtCredits(n.earnings_total)\"></span> · last seen <span x-text=\"fmtDate(n.last_seen)\"></span>",
@@ -1703,11 +1709,17 @@ window.GP_I18N = {
    "es": "Guardar",
    "fr": "Enregistrer"
   },
-  "tailscale-ip": {
-   "en": "Tailscale IP",
-   "de": "Tailscale-IP",
-   "es": "IP de Tailscale",
-   "fr": "IP Tailscale"
+  "node-adresse-optional": {
+   "en": "Node address (optional)",
+   "de": "Adresse der Node (optional)",
+   "es": "Dirección del node (opcional)",
+   "fr": "Adresse du node (facultatif)"
+  },
+  "automatisch-erkannt": {
+   "en": "auto-detected",
+   "de": "automatisch erkannt",
+   "es": "detectada automáticamente",
+   "fr": "détectée automatiquement"
   },
   "zuletzt": {
    "en": "Last seen",
@@ -1996,12 +2008,6 @@ window.GP_I18N = {
    "de": "Keine Modelle ausgewählt — setzt die Whitelist auf \"nichts erlaubt\" für: {names}. Fortfahren?",
    "es": "Ningún modelo seleccionado — pone la whitelist en \"nada permitido\" para: {names}. ¿Continuar?",
    "fr": "Aucun modèle sélectionné — met la whitelist à « rien d'autorisé » pour : {names}. Continuer ?"
-  },
-  "nodes.no_tailscale": {
-   "en": "no Tailscale",
-   "de": "kein Tailscale",
-   "es": "sin Tailscale",
-   "fr": "pas de Tailscale"
   },
   "nodes.none_allowed": {
    "en": "nothing allowed",

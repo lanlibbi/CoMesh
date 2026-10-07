@@ -58,7 +58,7 @@ docker build -t gpu-pool-node-agent .</pre>
         <p>Logs checken:</p>
 <pre>docker logs -f gpu-pool-agent</pre>
         <p>Health check:</p>
-<pre>curl http://&lt;tailscale-ip&gt;:11435/health | jq</pre>
+<pre>curl http://&lt;node-host&gt;:11435/health | jq</pre>
       </div>
 
       <div class="step">

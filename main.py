@@ -2,7 +2,7 @@
 GPU-Sharing POC - FastAPI backend.
 
 OpenAI-compatible /v1/chat/completions that proxies to:
-  1. Local Ollama (ai-lanlibbi itself) - default path
+  1. Local Ollama on the portal host itself - default path
   2. Community pool nodes - picked by pool.find_best_node()
   3. Cloud overflow (RunPod/Vast) - stub for now
 
@@ -25,7 +25,7 @@ from contextlib import asynccontextmanager
 from typing import List, Optional
 
 import httpx
-from fastapi import Depends, FastAPI, HTTPException, Header, status
+from fastapi import Depends, FastAPI, HTTPException, Header, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
@@ -33,6 +33,8 @@ from sqlalchemy.orm import Session
 
 from auth import generate_api_key, get_current_user
 from database import SessionLocal, engine, get_db, init_db
+from netinfo import DEFAULT_AGENT_PORT
+from payments import APP_PUBLIC_URL
 from models import (
     ApiKey,
     CreditTransaction,
@@ -81,6 +83,7 @@ async def lifespan(app: FastAPI):
     _ensure_user_settings()
     _ensure_node_allowed_models()
     _ensure_node_ws_columns()
+    _ensure_node_address_columns()
     await seed_test_user_if_empty()
     log.info(f"GPU-Pool POC started. Ollama URL: {OLLAMA_URL}, default model: {DEFAULT_MODEL}")
     yield
@@ -265,6 +268,26 @@ def _ensure_node_ws_columns():
             log.info("Added gpu_nodes.ws_session_id column")
 
 
+def _ensure_node_address_columns():
+    """Add gpu_nodes.node_url / node_url_auto if missing (idempotent, LANA-89).
+
+    `node_url` supersedes `tailscale_ip`: the pool no longer assumes a mesh VPN,
+    so a node is addressed by whatever URL reaches it (DNS/mDNS name, LAN IP,
+    tailnet name, reverse proxy). The legacy column stays in place — old rows
+    keep working through the fallback in pool._forward_to_node.
+    """
+    with engine.begin() as conn:
+        cols = [row[1] for row in conn.exec_driver_sql("PRAGMA table_info(gpu_nodes)").fetchall()]
+        if "node_url" not in cols:
+            conn.exec_driver_sql("ALTER TABLE gpu_nodes ADD COLUMN node_url VARCHAR")
+            log.info("Added gpu_nodes.node_url column")
+        if "node_url_auto" not in cols:
+            conn.exec_driver_sql(
+                "ALTER TABLE gpu_nodes ADD COLUMN node_url_auto BOOLEAN DEFAULT 0 NOT NULL"
+            )
+            log.info("Added gpu_nodes.node_url_auto column")
+
+
 def _ensure_payments_table():
     """Create the payments table if it doesn't exist (idempotent)."""
     Payment.__table__.create(bind=engine, checkfirst=True)
@@ -316,6 +339,59 @@ async def health():
             "nodes_online": len(online) if 'online' in dir() else 0,
             "total_vram_gb": community_vram,
         },
+    }
+
+
+@app.get("/net/echo")
+async def net_echo(request: Request):
+    """Setup check (LANA-89): what the portal sees of the caller, and what it is.
+
+    Open, unauthenticated, no side effects. `scripts/check_setup.sh` and the
+    node-agent's `--check` use it to answer the two questions that decide whether
+    a fresh DHCP installation can work at all:
+
+      * which address/host does this portal believe it is reachable under?
+      * what address does it derive for *this* caller?
+
+    A node whose `advertise_host`/source address lands in `derived_node_url` is
+    what the pool will dial — if that URL is not reachable from here, no
+    heartbeat tuning will help.
+    """
+    import socket
+
+    from netinfo import detect_outbound_ip, local_hostname, request_base_url, source_host
+
+    peer = source_host(request)
+    derived = None
+    if peer and not peer.startswith(("10.", "172.", "192.168.", "169.254.", "127.")):
+        try:
+            from netinfo import derive_node_url
+            derived = derive_node_url(peer, DEFAULT_AGENT_PORT,
+                                      scheme=request.headers.get("x-forwarded-proto", "http"))
+        except Exception:
+            derived = None
+
+    return {
+        "portal": {
+            "advertise_host": os.environ.get("ADVERTISE_HOST") or local_hostname(),
+            "detected_ip": detect_outbound_ip(),
+            "hostname": local_hostname(),
+            "public_url": APP_PUBLIC_URL or request_base_url(request),
+            "base_url_seen_by_caller": request_base_url(request),
+        },
+        "caller": {
+            "peer_host": peer,
+            "x_forwarded_for": request.headers.get("x-forwarded-for"),
+            "x_real_ip": request.headers.get("x-real-ip"),
+            "forwarded_proto": request.headers.get("x-forwarded-proto"),
+        },
+        "derived_node_url": derived,
+        "hints": [
+            "Clients and nodes must be able to reach each other directly for /v1/chat/completions.",
+            "Use a DNS or mDNS name instead of an IP so a DHCP lease change cannot break the pool.",
+            "A mesh VPN (e.g. Tailscale MagicDNS) works too — it is one option, not a requirement.",
+        ],
+        "socket": {"fqdn": socket.getfqdn(), "hostname": socket.gethostname()},
     }
 
 

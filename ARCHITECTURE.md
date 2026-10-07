@@ -29,7 +29,7 @@ Visuelle Übersicht der CoMesh-Komponenten und Datenflüsse.
                 │   └─────────┘  └─────────┘  └─────────┘      │
                 └──────────────────────┬────────────────────────┘
                                        │
-                            Tailscale │ (WireGuard)
+    HTTP/WS to node_url │ (DNS, mDNS, LAN or mesh VPN)
                                        │
        ┌───────────────────┬───────────┼───────────┬───────────────────┐
        │                   │           │           │                   │
@@ -63,9 +63,9 @@ Portal (/v1/chat/completions)
   │
   │ 2. Fehler → pool.find_best_node()
   │    Kriterien: niedrigster Preis, niedrigste Auslastung
-  │    → Gewählter Node-Agent (Tailscale-IP)
+  │    → Gewählter Node-Agent (über sein node_url)
   │
-  │ 3. POST {tailscale_ip}:8080/v1/chat/completions
+  │ 3. POST {node_url}/v1/chat/completions
   ▼
 Node-Agent
   │ Proxy zu lokalem Ollama (:11434)
@@ -84,7 +84,9 @@ Client
 ```
 Node-Agent (alle 5s)
   │ POST /nodes/heartbeat
-  │ Body: {tailscale_ip, cpu_pct, ram_pct, gpu_util, price_per_1k_tokens}
+  │ Body: {status, gpu_util, advertise_host, agent_port, raw}
+  │ (advertise_host: eigene Adresse — das Portal übernimmt sie,
+  │  solange keine node_url fest eingetragen ist)
   ▼
 Portal
   │ DB: NodeHeartbeat (timestamp, metrics)
@@ -98,7 +100,8 @@ Portal
 ```
 Node-Agent (beim Start)
   │ POST /nodes/register
-  │ Body: {tailscale_ip, port, gpu_model, vram_gb, ...}
+  │ Body: {name, gpu_type, vram_gb, port, node_url?, ...}
+  │ (node_url darf leer bleiben → Auto-Erkennung beim Heartbeat)
   ▼
 Portal
   │ DB: GpuNode (CREATE)
@@ -119,7 +122,7 @@ Node-Agent
 | Frontend | Alpine.js + Tailwind | Keine Build-Pipeline nötig |
 | Node-Agent | Python + psutil + pynvml | Minimaler Footprint |
 | Containerisierung | Docker | Reproduzierbar, plattformunabhängig |
-| Netzwerk | Tailscale | Keine Public-IPs, Zero-Config |
+| Netzwerk | DNS/mDNS, LAN oder Mesh-VPN | Keine Public-IPs, keine feste Adresse |
 
 ## Nicht-Ziele (POC)
 
@@ -128,3 +131,9 @@ Node-Agent
 - Multi-Tenancy
 - Model-Catalog-Sync über Nodes hinweg
 - Streaming-Responses (geplant, nicht implementiert)
+
+## Adressierung
+
+Kein Bestandteil kennt eine feste IP. Ein Node wird über `node_url` angesprochen;
+bleibt das Feld leer, leitet das Portal die Adresse aus dem ersten Heartbeat ab
+(Details: [docs/network.md](docs/network.md)).

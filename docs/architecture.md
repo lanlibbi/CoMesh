@@ -7,7 +7,9 @@ Dieses Dokument beschreibt die Architektur des CoMesh-POC im Detail: Komponenten
 1. **OpenAI-API-kompatibel** — Clients sollen den Pool wie jeden anderen OpenAI-Endpoint ansprechen können.
 2. **Dezentral, aber zentral koordiniert** — Node-Agents laufen unabhängig, das Portal kennt aber alle Nodes und verteilt.
 3. **Stateless Portal** — Load-Balancing-Logik und State nur in der DB, Portal selbst ist horizontal skalierbar.
-4. **Tailscale-first** — Kein Port-Forwarding, keine Firewall-Regeln, keine Public-IPs.
+4. **Kein festes Netz** — Kein Port-Forwarding, keine Public-IPs, keine
+   Annahme über IP-Bereiche. Ein Node wird über `node_url` angesprochen
+   (DNS/mDNS-Name, LAN-IP oder Mesh-VPN-Name); ein DHCP-Netz genügt.
 
 ## Komponenten
 
@@ -68,7 +70,8 @@ class GpuNode(Base):
     __tablename__ = "gpu_nodes"
     
     id: Mapped[int] = mapped_column(primary_key=True)
-    tailscale_ip: Mapped[str] = mapped_column(unique=True, index=True)
+    node_url: Mapped[Optional[str]]        # http(s)://host[:port]; NULL = noch unbekannt
+    node_url_auto: Mapped[bool]            # true = aus dem Heartbeat abgeleitet
     port: Mapped[int] = mapped_column(default=8080)
     gpu_model: Mapped[Optional[str]]
     vram_gb: Mapped[Optional[int]]
@@ -177,14 +180,14 @@ def find_best_node(model: str) -> Optional[GpuNode]:
 
 ### Lokales Ollama als Fallback im Portal
 
-- ✅ Portal kann auf `portal-host` selbst laufen und antworten, wenn keine externen Nodes verfügbar sind
+- ✅ Portal kann auf dem Portal-Host selbst laufen und antworten, wenn keine externen Nodes verfügbar sind
 - ❌ Verhalten inkonsistent (manchmal lokal, manchmal remote)
 - **Beibehalten:** Funktioniert als "Garantie-Verfügbarkeit" für kleine Workloads.
 
 ### Keine Authentifizierung (POC)
 
-- ❌ Offen für jeden mit Tailscale-Zugang
-- **TODO für Prod:** API-Keys, OAuth, oder mTLS via Tailscale.
+- ❌ Offen für jeden, der das Netz erreicht
+- **TODO für Prod:** API-Keys, OAuth oder mTLS.
 
 ### Model-Catalog nicht synchronisiert
 
@@ -199,5 +202,5 @@ def find_best_node(model: str) -> Optional[GpuNode]:
 | Requests/s | <10 | 1000+ |
 | DB | SQLite | Postgres + Read-Replicas |
 | Portal | Single | Multi-Instance hinter Load-Balancer |
-| Auth | keine | API-Keys + Tailscale-ACLs |
+| Auth | keine | API-Keys + Netz-ACLs (Mesh-VPN oder Firewall) |
 | Earnings | tracked | echte Abrechnung (Stripe o.ä.) |

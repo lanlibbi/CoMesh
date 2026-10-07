@@ -179,9 +179,14 @@ class Payment(Base):
 class GpuNode(Base):
     """A community-contributed GPU node.
 
-    The owner is a User. The node exposes its Ollama-compatible API on
-    a Tailscale-reachable IP:port. Heartbeats refresh `last_seen`;
-    the pool router reads `status` to decide where to forward jobs.
+    The owner is a User. The node exposes its Ollama-compatible API on a
+    `node_url` (scheme + host + port). The host may be a DNS name, an mDNS
+    name (``*.local``), a name from a mesh VPN (e.g. Tailscale MagicDNS) or a
+    plain LAN IP — whatever the portal can reach. Nodes on DHCP keep an
+    *empty* ``node_url``; the portal then auto-detects the address from the
+    source IP of each heartbeat, so no address has to be configured or kept
+    in sync. Heartbeats refresh `last_seen`; the pool router reads `status`
+    to decide where to forward jobs.
     """
     __tablename__ = "gpu_nodes"
 
@@ -192,7 +197,19 @@ class GpuNode(Base):
     vram_gb = Column(Integer, nullable=False)            # total VRAM
     status = Column(String, default="offline", nullable=False)  # online | offline | busy
     hourly_rate = Column(Float, default=0.05, nullable=False)   # credits/hour charged to the user
-    tailscale_ip = Column(String, nullable=True)         # 100.x.y.z
+    # Deprecated (LANA-89): use `node_url`. Kept so existing SQLite databases
+    # keep loading; it is no longer written or read by the application.
+    tailscale_ip = Column(String, nullable=True)
+    # Canonical reachability address of the agent, e.g.
+    #   http://node-host:11435   (DNS / mDNS name, preferred)
+    #   http://10.0.0.42:11435   (plain IP — breaks on DHCP lease changes)
+    #   https://gpu-01.example.net  (reverse proxy / TLS terminator)
+    # May be empty: the portal then derives the host from the heartbeat's
+    # source address and stores the result back here.
+    node_url = Column(String, nullable=True)
+    # True when `node_url` was derived automatically from the heartbeat source
+    # address (DHCP-friendly) rather than configured explicitly.
+    node_url_auto = Column(Boolean, default=False, nullable=False)
     port = Column(Integer, default=11434, nullable=False)
     # Inference backend this node exposes. "ollama" (default) talks Ollama's
     # /api/chat; "openai" talks any OpenAI-compatible server (LM Studio, LiteLLM, vLLM…).
@@ -305,7 +322,7 @@ class PoolJob(Base):
 
     Stored for observability + fair-use analytics. We always record the
     final outcome (forwarded / overflowed / failed) and the source
-    (local = ai-lanlibbi, community = GpuNode, cloud = RunPod/Vast stub).
+    (local = the portal host, community = GpuNode, cloud = RunPod/Vast stub).
     """
     __tablename__ = "pool_jobs"
 

@@ -44,7 +44,6 @@ KEYS = {
     "nodes.bulk.setting": {"en": "Setting… ", "de": "Setze… ", "es": "Aplicando… ", "fr": "Application… "},
     "nodes.bulk.whitelist_apply": {"en": "Apply whitelist", "de": "Whitelist anwenden", "es": "Aplicar whitelist", "fr": "Appliquer la whitelist"},
     "nodes.bulk.empty.confirm": {"en": "No models selected — sets the whitelist to \"nothing allowed\" for: {names}. Continue?", "de": "Keine Modelle ausgewählt — setzt die Whitelist auf \"nichts erlaubt\" für: {names}. Fortfahren?", "es": "Ningún modelo seleccionado — pone la whitelist en \"nada permitido\" para: {names}. ¿Continuar?", "fr": "Aucun modèle sélectionné — met la whitelist à « rien d'autorisé » pour : {names}. Continuer ?"},
-    "nodes.no_tailscale": {"en": "no Tailscale", "de": "kein Tailscale", "es": "sin Tailscale", "fr": "pas de Tailscale"},
     "nodes.none_allowed": {"en": "nothing allowed", "de": "nichts erlaubt", "es": "nada permitido", "fr": "rien d'autorisé"},
     "nodes.registered": {"en": "Node registered", "de": "Node registriert", "es": "Node registrado", "fr": "Node enregistré"},
     "nodes.deleted": {"en": "Node deleted", "de": "Node gelöscht", "es": "Node eliminado", "fr": "Node supprimé"},

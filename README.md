@@ -11,6 +11,10 @@ which routes them to the most suitable **Node-Agent** in the pool.
 > **Status:** Proof of Concept (POC). Works end-to-end with Portal, Node-Agents,
 > load-balancing and earnings tracking. This repo contains **code + docs**.
 
+> **Network:** no fixed addresses anywhere. The portal and its nodes find each
+> other over a plain LAN, Docker network or mesh VPN — DHCP is fine. Nothing has
+> to be configured beyond `.env` variables. See [docs/network.md](docs/network.md).
+
 ---
 
 ## Repository layout
@@ -27,20 +31,22 @@ which routes them to the most suitable **Node-Agent** in the pool.
 ├── node-agent/           # Contributor agent (backend-agnostic: Ollama/OpenAI-compatible)
 │   └── setup.py          # Interactive installer with backend selection
 ├── docker-compose.yml    # Portal + frontend stack
-├── docs/                 # Architecture / API / Node-Agent / Tailscale
+├── netinfo.py            # address detection + node_url helpers (no fixed IPs)
+├── docs/                 # Architecture / API / Node-Agent / Network
+├── scripts/check_setup.sh # portal-side setup check (no API key needed)
 └── examples/             # Example client + node-agent compose
 ```
 
 ## Architecture (overview)
 
 ```
-┌──────────┐    OpenAI-API     ┌──────────┐    Tailscale     ┌──────────────┐
-│  Client  │ ────────────────► │  Portal  │ ────────────────►│  Node-Agent  │
-│ (Python) │                  │ (FastAPI)│                  │   (Docker)   │
+┌──────────┐    OpenAI-API     ┌──────────┐  HTTP/WS to      ┌──────────────┐
+│  Client  │ ────────────────► │  Portal  │  node_url        │  Node-Agent  │
+│ (Python) │                  │ (FastAPI)│ ────────────────►│   (Docker)   │
 └───────────                  └──────────┘                  └──────┬───────┘
                                    │                              │
-                                   │ Heartbeats                   │ HTTP (local)
-                                   │                              ▼
+                                   │ Heartbeats (carry the        │ HTTP (local)
+                                   │ node's own address)          ▼
                                    ▼                        ┌──────────┐
                               ┌─────────┐                   │  Ollama  │
                               │  Nodes  │                   │  :11434  │
@@ -50,7 +56,8 @@ which routes them to the most suitable **Node-Agent** in the pool.
 
 - **Portal** (FastAPI): receives requests, picks the best node, dispatches jobs, tracks earnings.
 - **Node-Agent** (Python container): runs on contributor hosts, reports heartbeats (CPU/GPU/RAM/price), proxies requests to the local backend.
-- **Tailscale**: private overlay network, portal → node-agents directly, no public IPs.
+- **Network**: portal → node-agent over `node_url` (DNS/mDNS name, LAN IP, or a
+  mesh-VPN name — e.g. Tailscale, optionally). No public ports, no fixed IPs.
 
 See [ARCHITECTURE.md](ARCHITECTURE.md) and [docs/architecture.md](docs/architecture.md).
 
@@ -61,20 +68,34 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) and [docs/architecture.md](docs/architect
 ### 1. Start the portal
 
 ```bash
+cp .env.example .env
 docker compose up -d --build
 # Portal: http://localhost:8765
+# Setup check (no API key): scripts/check_setup.sh http://localhost:8765
 ```
 
 ### 2. Deploy a node-agent (on the contributor host)
 
 ```bash
 cd node-agent/
-python3 setup.py          # interactive: pick backend (Ollama / LM Studio / LiteLLM / OpenAI-compatible)
-# fill in NODE_ID + NODE_API_KEY from the portal in .env
+python3 setup.py            # interactive: backend, portal URL, optional own name
+python agent.py --check     # which address will the portal dial?
 docker compose up -d
 ```
 
+All it needs is the portal's address; the agent registers itself and reports the
+address it is reachable under:
+
+```bash
+# node-agent/.env — the whole network configuration
+PORTAL_URL=http://portal-host:8765   # name of the portal host (your LAN / mDNS / VPN)
+PORTAL_USER_KEY=gpu_...              # API key of an account with role provider/both
+ADVERTISE_HOST=my-node.local         # optional; omit to auto-detect
+```
+
 The agent registers with the portal automatically and becomes available after ~5 seconds.
+Both sides work on DHCP: nothing in this setup has to know an IP in advance, and a
+lease change re-registers the address by itself ([docs/network.md](docs/network.md)).
 
 **Backend selection:** the setup installer generates the matching `.env` + `docker-compose.yml` for your self-hosted backend:
 
@@ -158,9 +179,9 @@ bash scripts/smoke_admin.sh http://localhost:8765 "$ADMIN_API_KEY"   # live HTTP
 - [ARCHITECTURE.md](ARCHITECTURE.md) — ASCII diagram and data flows
 - [docs/architecture.md](docs/architecture.md) — deep-dive architecture
 - [docs/portal.md](docs/portal.md) — portal setup, config, API
-- [docs/node-agent.md](docs/node-agent.md) — node-agent setup, deployment, Tailscale
+- [docs/node-agent.md](docs/node-agent.md) — node-agent setup and deployment
 - [docs/api.md](docs/api.md) — full API reference
-- [docs/tailscale.md](docs/tailscale.md) — network setup
+- [docs/network.md](docs/network.md) — addressing, DHCP, mDNS, optional mesh VPN
 
 ---
 
@@ -192,20 +213,34 @@ das Portal verteilt sie an den am besten geeigneten **Node-Agent** im Netz.
 ### 1. Portal starten
 
 ```bash
+cp .env.example .env
 docker compose up -d --build
 # Portal: http://localhost:8765
+# Setup-Check (ohne API-Key): scripts/check_setup.sh http://localhost:8765
 ```
 
 ### 2. Node-Agent deployen (auf dem Contributor-Host)
 
 ```bash
 cd node-agent/
-python3 setup.py          # interaktiv: Backend wählen (Ollama / LM Studio / LiteLLM / OpenAI-kompatibel)
-# .env mit NODE_ID + NODE_API_KEY aus dem Portal setzen
+python3 setup.py          # interaktiv: Backend, Portal-URL, optional eigener Name
+python agent.py --check   # welche Adresse spricht das Portal an?
 docker compose up -d
 ```
 
+Nötig ist nur die Adresse des Portals; der Agent registriert sich selbst und
+meldet die Adresse, unter der er erreichbar ist:
+
+```bash
+# node-agent/.env — die komplette Netz-Konfiguration
+PORTAL_URL=http://portal-host:8765   # Name des Portal-Hosts (LAN / mDNS / VPN)
+PORTAL_USER_KEY=gpu_...              # API-Key eines Kontos mit Rolle provider/both
+ADVERTISE_HOST=mein-node.local       # optional; ohne Angabe: automatische Erkennung
+```
+
 Der Agent meldet sich automatisch beim Portal an und ist nach ~5 Sekunden verfügbar.
+Beide Seiten laufen auf DHCP: hier muss nichts eine IP vorher kennen, und ein
+Lease-Wechsel trägt die neue Adresse selbst nach ([docs/network.md](docs/network.md)).
 
 ### 3. Erste Anfrage schicken
 
@@ -229,9 +264,9 @@ gewählten Nodes.
 - [ARCHITECTURE.md](ARCHITECTURE.md) — ASCII-Diagramm und Datenflüsse
 - [docs/architecture.md](docs/architecture.md) — tiefer Architektur-Einblick
 - [docs/portal.md](docs/portal.md) — Portal-Setup, Konfiguration, API
-- [docs/node-agent.md](docs/node-agent.md) — Node-Agent-Setup, Deployment, Tailscale
+- [docs/node-agent.md](docs/node-agent.md) — Node-Agent-Setup und Deployment
 - [docs/api.md](docs/api.md) — komplette API-Referenz
-- [docs/tailscale.md](docs/tailscale.md) — Netzwerk-Setup
+- [docs/network.md](docs/network.md) — Adressierung, DHCP, mDNS, optionales Mesh-VPN
 
 ## Lizenz
 

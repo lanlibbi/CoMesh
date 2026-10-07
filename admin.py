@@ -45,6 +45,7 @@ from sqlalchemy.orm import Session
 from admin_auth import require_admin
 from auth import generate_api_key
 from database import get_db
+from netinfo import host_of as _host_of
 from models import (
     ADMIN_ROLE,
     ADMIN_MANAGED_ROLES,
@@ -343,6 +344,9 @@ class AdminNodeOut(BaseModel):
     online: bool
     is_enabled: bool
     hourly_rate: float
+    node_url: Optional[str] = None
+    node_url_auto: bool = False
+    # Deprecated mirror of the host part of `node_url`, kept for older clients.
     tailscale_ip: Optional[str] = None
     port: int
     backend: str = "ollama"
@@ -461,7 +465,9 @@ def _node_out(db: Session, node: GpuNode, now: Optional[datetime] = None,
         online=online,
         is_enabled=bool(node.is_enabled),
         hourly_rate=node.hourly_rate,
-        tailscale_ip=node.tailscale_ip,
+        node_url=node.node_url,
+        node_url_auto=bool(node.node_url_auto),
+        tailscale_ip=_host_of(node.node_url) or node.tailscale_ip,
         port=node.port,
         backend=node.backend,
         last_seen=_iso(node.last_seen),
@@ -940,7 +946,7 @@ def admin_revoke_user_key(
 # ----------------------------------------------------------------------------
 @router.get("/nodes", response_model=NodeListResponse)
 def admin_list_nodes(
-    q: Optional[str] = Query(None, description="Substring match on node name, gpu_type or tailscale_ip"),
+    q: Optional[str] = Query(None, description="Substring match on node name, gpu_type or node address"),
     status_filter: Optional[str] = Query(
         None, alias="status",
         description="all | online | offline | busy | disabled (default: all)",
@@ -972,6 +978,7 @@ def admin_list_nodes(
         query = query.filter(
             func.lower(GpuNode.name).like(like.lower())
             | func.lower(GpuNode.gpu_type).like(like.lower())
+            | func.coalesce(GpuNode.node_url, "").like(like)
             | func.coalesce(GpuNode.tailscale_ip, "").like(like)
         )
 
