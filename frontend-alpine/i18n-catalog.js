@@ -2111,6 +2111,78 @@ window.GP_I18N = {
    "es": "con consumo en el periodo",
    "fr": "avec usage sur la période"
   },
+  "admin.credits_system": {
+    "en": "Credits system",
+    "de": "Credits-System",
+    "es": "Sistema de cr\u00e9ditos",
+    "fr": "Syst\u00e8me de cr\u00e9dits"
+  },
+  "admin.credits_on": {
+    "en": "Credits: ON",
+    "de": "Credits: AN",
+    "es": "Cr\u00e9ditos: ACTIVO",
+    "fr": "Cr\u00e9dits : ACTIF"
+  },
+  "admin.credits_off": {
+    "en": "Credits: OFF",
+    "de": "Credits: AUS",
+    "es": "Cr\u00e9ditos: INACTIVO",
+    "fr": "Cr\u00e9dits : INACTIF"
+  },
+  "admin.credits_on_hint": {
+    "en": "Balances are checked and charged \u2014 except for users with quota \u201cUnlimited\u201d.",
+    "de": "Guthaben wird gepr\u00fcft und abgebucht \u2014 au\u00dfer bei Nutzern mit Quota \u201eUnlimitiert\u201c.",
+    "es": "Los saldos se comprueban y cobran \u2014 salvo usuarios con cuota \u00abIlimitado\u00bb.",
+    "fr": "Les soldes sont v\u00e9rifi\u00e9s et d\u00e9bit\u00e9s \u2014 sauf pour les utilisateurs en quota \u00ab Illimit\u00e9 \u00bb."
+  },
+  "admin.credits_off_hint": {
+    "en": "Free for everyone \u2014 usage is unlimited but still logged.",
+    "de": "Kostenlos f\u00fcr alle \u2014 Nutzung unlimitiert, wird aber weiter protokolliert.",
+    "es": "Gratis para todos \u2014 uso ilimitado, pero se sigue registrando.",
+    "fr": "Gratuit pour tous \u2014 usage illimit\u00e9, mais toujours journalis\u00e9."
+  },
+  "admin.credits_confirm_on": {
+    "en": "Enable the credits system? Balance checks and charging will be active.",
+    "de": "Credits-System einschalten? Guthaben-Sperre und Abbuchung werden aktiv.",
+    "es": "\u00bfActivar los cr\u00e9ditos? Se activar\u00e1n la comprobaci\u00f3n de saldo y el cobro.",
+    "fr": "Activer le syst\u00e8me de cr\u00e9dits ? V\u00e9rification du solde et d\u00e9bit seront actifs."
+  },
+  "admin.credits_confirm_off": {
+    "en": "Disable the credits system? Everything becomes free (logging continues).",
+    "de": "Credits-System ausschalten? Alles wird kostenlos (Protokoll bleibt bestehen).",
+    "es": "\u00bfDesactivar los cr\u00e9ditos? Todo ser\u00e1 gratis (el registro contin\u00faa).",
+    "fr": "D\u00e9sactiver le syst\u00e8me de cr\u00e9dits ? Tout devient gratuit (journalisation conserv\u00e9e)."
+  },
+  "admin.quota": {
+    "en": "Quota",
+    "de": "Quota",
+    "es": "Cuota",
+    "fr": "Quota"
+  },
+  "admin.quota.unlimited": {
+    "en": "Unlimited",
+    "de": "Unlimitiert",
+    "es": "Ilimitado",
+    "fr": "Illimit\u00e9"
+  },
+  "admin.quota.balance": {
+    "en": "Balance",
+    "de": "Guthaben",
+    "es": "Saldo",
+    "fr": "Solde"
+  },
+  "admin.quota.blocked": {
+    "en": "Blocked",
+    "de": "Gesperrt",
+    "es": "Bloqueado",
+    "fr": "Bloqu\u00e9"
+  },
+  "admin.quota.change_hint": {
+    "en": "Click the quota to switch modes.",
+    "de": "Klick auf die Quota, um den Modus zu wechseln.",
+    "es": "Haz clic en la cuota para cambiar el modo.",
+    "fr": "Cliquez sur le quota pour changer de mode."
+  },
   "fmt.range_now": {
    "en": "{since} – now",
    "de": "{since} – jetzt",

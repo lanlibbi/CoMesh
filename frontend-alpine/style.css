@@ -1320,3 +1320,15 @@ td.neg { color: var(--err); }
   .auth-controls { top: 12px; right: 12px; }
   .lang-menu { right: 0; min-width: 168px; }
 }
+
+/* --- 2-zeilige Topbar: Meta (Brand+Controls+Logout) oben, Nav darunter --- */
+.topbar-2row { flex-wrap: wrap; }
+.topbar-2row .topbar-row-nav {
+  width: 100%;
+  display: flex;
+  gap: 6px;
+  padding-bottom: 8px;
+  overflow-x: auto;
+}
+.topbar-2row .nav { flex-wrap: nowrap; white-space: nowrap; }
+.topbar-2row .topbar-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }

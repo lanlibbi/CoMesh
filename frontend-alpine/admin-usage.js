@@ -25,8 +25,35 @@ document.addEventListener("alpine:init", () => {
     async init() {
       if (!Auth.requireLogin()) return;
       await this.load();
+      await this.loadSettings();
     },
 
+    settings: { credits_enabled: false },
+    settingsLoaded: false,
+
+    async loadSettings() {
+      try {
+        const r = await API("/admin/settings");
+        this.settings = r; this.settingsLoaded = true;
+      } catch (e) { /* non-admin or error -> banner stays hidden */ }
+    },
+    async toggleCredits() {
+      try {
+        const neu = !this.settings.credits_enabled;
+        if (!confirm(I18n.t("admin.credits_confirm_" + (neu ? "on" : "off")))) return;
+        const r = await API("/admin/settings", { method: "PUT", body: { credits_enabled: neu } });
+        this.settings = r;
+      } catch (e) { alert(e.message || String(e)); }
+    },
+    async setQuota(u, mode) {
+      try {
+        await API(`/admin/users/${u.id}/quota`, { method: "PATCH", body: { quota_mode: mode } });
+        u.quota_mode = mode;
+      } catch (e) { alert(e.message || String(e)); }
+    },
+    quotaLabel(mode) {
+      return I18n.t("admin.quota." + (mode || "unlimited"));
+    },
     isAdmin() {
       const u = Auth.currentUser() || {};
       return (u.role || "").toLowerCase() === "admin";

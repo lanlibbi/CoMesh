@@ -142,6 +142,7 @@ class AdminUsageUserOut(BaseModel):
     name: Optional[str] = None
     role: str = "both"
     is_active: bool = True
+    quota_mode: str = "unlimited"
     requests: int = 0
     total_tokens: int = 0
     credits: float = 0.0
@@ -473,6 +474,7 @@ def build_admin_usage(
                 name=u.name,
                 role=getattr(u, "role", "both") or "both",
                 is_active=bool(u.is_active),
+                quota_mode=getattr(u, "quota_mode", "unlimited") or "unlimited",
                 requests=sum(m.requests for m in models),
                 total_tokens=user_tokens,
                 credits=round(sum(m.credits for m in models), 6),

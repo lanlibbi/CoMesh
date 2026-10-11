@@ -91,7 +91,19 @@
         <button type="button" class="btn-ghost btn-sm btn-quiet" @click="load()" :disabled="loading" data-i18n="aktualisieren">Aktualisieren</button>
       </div>
 
-      <!-- Totals -->
+      
+      <!-- Credits-Schalter (nur Admin) -->
+      <div class="card mb-4" x-show="isAdmin() && settingsLoaded" style="padding:14px 18px; display:flex; align-items:center; gap:14px; flex-wrap:wrap;">
+        <div style="flex:1; min-width:220px;">
+          <div class="eyebrow" data-i18n="admin.credits_system">Credits-System</div>
+          <p class="t-sm text-dim" x-text="settings.credits_enabled ? I18n.t('admin.credits_on_hint') : I18n.t('admin.credits_off_hint')"></p>
+        </div>
+        <button type="button" class="btn-ghost btn-sm"
+                :class="settings.credits_enabled ? 'is-active' : ''"
+                @click="toggleCredits()"
+                x-text="settings.credits_enabled ? I18n.t('admin.credits_on') : I18n.t('admin.credits_off')">Credits an/aus</button>
+      </div>
+<!-- Totals -->
       <div class="grid mb-4">
         <div class="card span-3">
           <div class="stat">
@@ -156,6 +168,7 @@
                 <th>Requests</th>
                 <th>Modelle</th>
                 <th>Credits</th>
+                <th data-i18n="admin.quota">Quota</th>
                 <th data-i18n="zuletzt">Zuletzt</th>
               </tr>
             </thead>
@@ -182,6 +195,10 @@
                   </td>
                   <td class="num" x-text="fmtNumber(u.requests)"></td>
                   <td class="num" x-text="fmtNumber(u.models_used)"></td>
+                  <td>
+                    <button type="button" class="btn-ghost btn-sm" @click="setQuota(u, u.quota_mode === 'unlimited' ? 'balance' : (u.quota_mode === 'balance' ? 'blocked' : 'unlimited'))"
+                            :title="I18n.t('admin.quota.change_hint')" x-text="quotaLabel(u.quota_mode)"></button>
+                  </td>
                   <td class="num brass" x-text="fmtCredits(u.credits)"></td>
                   <td class="t-xs text-dim nowrap" x-text="fmtLastUsed(u.last_used)"></td>
                 </tr>

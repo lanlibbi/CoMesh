@@ -173,7 +173,7 @@ function navHTML(active) {
     .join("");
 
   return `
-    <header class="topbar">
+    <header class="topbar topbar-2row">
       <div class="shell topbar-inner">
         <a href="index.html" class="brand">
           <span class="brand-mark" aria-hidden="true">
@@ -187,14 +187,17 @@ function navHTML(active) {
             <span>${I18n.t("brand.tagline")}</span>
           </span>
         </a>
-        <nav class="nav" aria-label="${I18n.t("nav.aria")}">${links}</nav>
         <div class="topbar-right">
+          <div class="controls"></div>
           <span class="who">
             <b>${user.email || ""}</b>
             <em>${user.role || "both"}</em>
           </span>
           <button type="button" class="btn-ghost btn-sm" onclick="Auth.logout()">${I18n.t("nav.logout.button")}</button>
         </div>
+      </div>
+      <div class="shell topbar-row-nav">
+        <nav class="nav" aria-label="${I18n.t("nav.aria")}">${links}</nav>
       </div>
     </header>
   `;
