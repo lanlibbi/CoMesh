@@ -9,7 +9,7 @@ inference layer. Users send requests to a **Portal**,
 which routes them to the most suitable **Node-Agent** in the pool.
 
 > **Status:** Proof of Concept (POC). Works end-to-end with Portal, Node-Agents,
-> load-balancing and earnings tracking. This repo contains **code + docs**.
+> load-balancing and credits-based billing. This repo contains **code + docs**.
 
 > **Network:** no fixed addresses anywhere. The portal and its nodes find each
 > other over a plain LAN, Docker network or mesh VPN — DHCP is fine. Nothing has
@@ -54,7 +54,7 @@ which routes them to the most suitable **Node-Agent** in the pool.
                               └─────────┘
 ```
 
-- **Portal** (FastAPI): receives requests, picks the best node, dispatches jobs, tracks earnings.
+- **Portal** (FastAPI): receives requests, picks the best node, dispatches jobs, books credits against the caller's balance.
 - **Node-Agent** (Python container): runs on contributor hosts, reports heartbeats (CPU/GPU/RAM/price), proxies requests to the local backend.
 - **Network**: portal → node-agent over `node_url` (DNS/mDNS name, LAN IP, or a
   mesh-VPN name — e.g. Tailscale, optionally). No public ports, no fixed IPs.
@@ -130,7 +130,7 @@ Example client: [examples/client.py](examples/client.py)
 | Component | Stack | Port | Description |
 |---|---|---|---|
 | Portal backend | FastAPI + SQLAlchemy | `8765` | API, pool logic, DB |
-| Portal UI (Alpine) | Tailwind + Alpine | `8767` | Node/pool/earnings dashboard |
+| Portal UI (Alpine) | Tailwind + Alpine | `8767` | Node/pool/usage/admin dashboard |
 | Node-Agent | Python + psutil + pynvml | `8080` | Heartbeat + inference proxy |
 
 ---

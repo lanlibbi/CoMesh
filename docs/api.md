@@ -259,52 +259,16 @@ Details zu einem einzelnen Job.
 
 ---
 
-## Earnings
+## Earnings — entfernt
 
-### `GET /earnings/`
+Das Earnings-/Payout-Modell (Node-Betreiber verdienen Coins) ist vom Tisch. Die
+Earnings-Seite (`/earnings`), ihre UI-Route und der Navigationseintrag wurden entfernt;
+die Verdienstanzeige in der Node-Liste ebenfalls.
 
-Aggregierte Earnings pro Node.
-
-**Query-Parameter:**
-- `hours` (default: 24) — Zeitfenster
-- `node_id` — Optional, alle wenn weggelassen
-
-**Response 200:**
-```json
-[
-  {
-    "node_id": 1,
-    "node_url": "http://node-host:11435",
-    "total_tokens": 1234567,
-    "total_jobs": 234,
-    "total_usd": 0.6173
-  },
-  ...
-]
-```
-
-### `GET /earnings/timeline`
-
-Earnings über Zeit (für Charts).
-
-**Query-Parameter:**
-- `hours` (default: 24)
-- `bucket` (`minute` | `hour` | `day`, default: `hour`)
-
-**Response 200:**
-```json
-[
-  {
-    "timestamp": "2026-06-11T20:00:00",
-    "node_id": 1,
-    "tokens": 5678,
-    "usd": 0.0028
-  },
-  ...
-]
-```
-
----
+Geblieben ist allein die **Abrechnung über Credits**, und die ist im Admin-Bereich
+schaltbar (`PUT /admin/settings` -> `credits_enabled`). Die früher hier dokumentierten
+Endpunkte `GET /earnings/` und `GET /earnings/timeline` gibt es im Code nicht (mehr);
+tatsächlich vorhanden ist nur `GET /pool/earnings/mine` (Node-Sicht des Owners).
 
 ## Admin
 
@@ -455,7 +419,6 @@ Ohne Admin-User wäre die Oberfläche nicht erreichbar. Zwei Wege:
 |---|---|
 | `GET /ui/nodes` | Node-Übersicht mit Live-Metriken |
 | `GET /ui/pool` | Pool-Status + Last-Verteilung |
-| `GET /ui/earnings` | Earnings-Charts (pro Node, kumulativ) |
 | `GET /ui/agent` | Setup-Anleitung für Node-Agents |
 | `GET /ui/jobs/{id}` | Job-Detail mit Token-Usage |
 

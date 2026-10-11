@@ -154,7 +154,6 @@ const NAV_ITEMS = [
   { key: "admin-usage", href: "admin-usage.html", labelKey: "nav.admin", adminOnly: true },
   { key: "pool", href: "pool.html", labelKey: "nav.pool" },
   { key: "nodes", href: "nodes.html", labelKey: "nav.nodes", providerOnly: true },
-  { key: "earnings", href: "earnings.html", labelKey: "nav.earnings", providerOnly: true },
   { key: "agent", href: "agent.html", labelKey: "nav.agent" },
   { key: "profile", href: "profile.html", labelKey: "nav.profile" },
 ];

@@ -31,7 +31,7 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
-from auth import generate_api_key, get_current_user
+from auth import generate_api_key, get_current_user, hash_api_key
 from database import SessionLocal, engine, get_db, init_db
 from netinfo import DEFAULT_AGENT_PORT
 from payments import APP_PUBLIC_URL
@@ -46,6 +46,7 @@ from models import (
     Usage,
     User,
     VALID_ROLES,
+    ADMIN_ROLE,
     get_user_credits,
     _is_cloud_model_name,
 )
@@ -54,8 +55,10 @@ from frontend import router as frontend_router
 from nodes import router as nodes_router
 from pool import router as pool_router, distribute_revenue
 from admin_auth import require_admin
+from admin import router as admin_router  # /admin/* — whoami, overview, users, nodes, usage
 from config import credits_enabled
 from ws import router as ws_router  # Phase 1: WebSocket outbound layer
+from usage_stats import router as usage_stats_router  # /v1/me/usage
 
 # ----------------------------------------------------------------------------
 # Config
@@ -88,6 +91,7 @@ async def lifespan(app: FastAPI):
     _ensure_node_ws_columns()
     _ensure_node_address_columns()
     await seed_test_user_if_empty()
+    await seed_admin_if_configured()
     log.info(f"GPU-Pool POC started. Ollama URL: {OLLAMA_URL}, default model: {DEFAULT_MODEL}")
     yield
 
@@ -117,6 +121,11 @@ app.include_router(frontend_router)
 app.include_router(nodes_router)
 app.include_router(pool_router)
 app.include_router(ws_router)  # Phase 1: WebSocket /agent/connect + /nodes/{id}/connection
+# /admin/* — must come AFTER the app-level routes above so nothing shadows it; the
+# POC create-user/topup handlers that used to live here were removed in favour of
+# the authenticated, idempotent versions in admin.py.
+app.include_router(admin_router)
+app.include_router(usage_stats_router)  # /v1/me/usage — lost in the same merge; the frontend and its tests call it
 
 
 # ----------------------------------------------------------------------------
@@ -709,57 +718,17 @@ async def chat_completions(
 
 
 # ----------------------------------------------------------------------------
-# Admin: create users (POC - in production this would be behind admin auth)
+# Admin user management moved to admin.py (router, prefix /admin, all routes
+# behind require_admin + Idempotency-Key). The POC handlers that lived here were
+# unauthenticated — anyone could create a user or mint credits. Do not reintroduce
+# local /admin/* routes: app-level routes are matched before the router and would
+# shadow the protected versions.
 # ----------------------------------------------------------------------------
-@app.post("/admin/users", response_model=CreateUserResponse)
-def create_user(req: CreateUserRequest, db: Session = Depends(get_db)):
-    if db.query(User).filter(User.email == req.email).first():
-        raise HTTPException(status_code=409, detail="User with that email already exists")
-
-    user = User(email=req.email, name=req.name, is_active=True)
-    db.add(user)
-    db.flush()
-    db.add(CreditTransaction(
-        user_id=user.id,
-        amount=req.initial_credits,
-        balance_after=req.initial_credits,
-        reason="initial credit",
-    ))
-    raw_key, key_hash, key_prefix = generate_api_key()
-    db.add(ApiKey(
-        user_id=user.id,
-        key_hash=key_hash,
-        key_prefix=key_prefix,
-        label="default",
-        is_active=True,
-    ))
-    db.commit()
-
-    log.info(f"Created user {user.email} (id={user.id}) with {req.initial_credits} credits")
-    return CreateUserResponse(
-        user_id=user.id,
-        email=user.email,
-        api_key=raw_key,
-        key_prefix=key_prefix,
-        credits=req.initial_credits,
-    )
 
 
-@app.post("/admin/users/{user_id}/topup")
-def topup_user(user_id: int, amount: float, db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.id == user_id).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    current = get_user_credits(db, user.id)
-    new_balance = round(current + amount, 6)
-    db.add(CreditTransaction(
-        user_id=user.id,
-        amount=amount,
-        balance_after=new_balance,
-        reason="manual topup",
-    ))
-    db.commit()
-    return {"user_id": user.id, "credits": new_balance, "added": amount}
+# ----------------------------------------------------------------------------
+# Global runtime settings (admin-only) — credits_enabled and friends
+# ----------------------------------------------------------------------------
 
 
 # ----------------------------------------------------------------------------
@@ -969,5 +938,90 @@ async def seed_test_user_if_empty():
                     user.password_hash = _hash_pw("password123")
                     db.commit()
                     log.info("Set password_hash=password123 for seed user")
+    finally:
+        db.close()
+
+
+async def seed_admin_if_configured():
+    """Bootstrap the admin identity (see docs/api.md -> Admin-Bootstrap).
+
+    Without this every /admin/* route answers 403 for everyone and the admin UI is
+    unreachable no matter how correct it is.
+
+      1. ADMIN_API_KEY set -> create/promote the admin account and install that key
+         as its ONLY active key (the documented, recommended path).
+      2. otherwise PROMOTE_ADMIN_EMAIL -> promote that existing account. Off by
+         default on purpose: a deployment must not silently grant admin to a
+         seeded/POC account.
+    """
+    admin_key = (os.environ.get("ADMIN_API_KEY") or "").strip()
+    promote_email = (os.environ.get("PROMOTE_ADMIN_EMAIL") or "").strip().lower()
+    if not admin_key and not promote_email:
+        log.info(
+            "No ADMIN_API_KEY / PROMOTE_ADMIN_EMAIL set - skipping admin bootstrap "
+            "(all /admin/* routes stay unreachable)."
+        )
+        return
+
+    email = (os.environ.get("ADMIN_EMAIL") or "admin@gpu-pool.local").strip().lower()
+    name = (os.environ.get("ADMIN_NAME") or "Platform Admin").strip()
+
+    db = SessionLocal()
+    try:
+        if admin_key:
+            user = db.query(User).filter(User.email == email).first()
+            if user is None:
+                user = User(email=email, name=name, role=ADMIN_ROLE, is_active=True)
+                user.password_hash = _hash_pw(secrets.token_urlsafe(24))
+                db.add(user)
+                db.flush()
+                log.info(f"Admin bootstrap: created {email}")
+            else:
+                user.role = ADMIN_ROLE
+                user.is_active = True
+                log.info(f"Admin bootstrap: promoted existing {email} to admin")
+
+            key_hash = hash_api_key(admin_key)
+            # That key is the admin's only active key: rotate any other away.
+            for other in (
+                db.query(ApiKey)
+                .filter(ApiKey.user_id == user.id, ApiKey.is_active == True)  # noqa: E712
+                .all()
+            ):
+                if other.key_hash != key_hash:
+                    other.is_active = False
+
+            existing = db.query(ApiKey).filter(ApiKey.key_hash == key_hash).first()
+            if existing is None:
+                db.add(ApiKey(
+                    user_id=user.id,
+                    key_hash=key_hash,
+                    key_prefix=admin_key[:12],
+                    label="admin-bootstrap",
+                    is_active=True,
+                ))
+            else:
+                existing.user_id = user.id
+                existing.is_active = True
+                existing.label = "admin-bootstrap"
+            db.commit()
+            log.info(f"Admin bootstrap: key installed for {email}")
+
+        elif promote_email:
+            user = db.query(User).filter(User.email == promote_email).first()
+            if user is None:
+                log.warning(
+                    f"PROMOTE_ADMIN_EMAIL={promote_email} matches no user - nothing promoted."
+                )
+            elif user.role != ADMIN_ROLE:
+                user.role = ADMIN_ROLE
+                db.commit()
+                log.warning(
+                    f"Admin bootstrap: promoted EXISTING account {promote_email} to admin "
+                    "via PROMOTE_ADMIN_EMAIL"
+                )
+    except Exception as e:  # a broken bootstrap must not take the portal down
+        db.rollback()
+        log.error(f"Admin bootstrap failed: {e}")
     finally:
         db.close()

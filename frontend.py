@@ -14,8 +14,10 @@ Pages:
   /credits      -> buy credit packages
   /pool         -> community pool overview (new)
   /nodes        -> "share my GPU" page (new)
-  /earnings     -> node-owner earnings dashboard (new)
   /agent        -> node-agent setup instructions (new)
+
+The node-owner earnings dashboard was removed: the crypto-coin payout model is off
+the table, credits billing is the only accounting left.
 
 Pages are static HTML + a small JS file per page. The JS calls the API
 directly. Auth: the user logs in (or registers) and gets an API key,
@@ -58,12 +60,11 @@ PAGES = [
     ("/credits",     "credits.html"),
     ("/pool",        "pool.html"),
     ("/nodes",       "nodes.html"),
-    ("/earnings",    "earnings.html"),
     ("/agent",       "agent.html"),
 ]
 
 # --- JS bundles (each page references one) ---
-JS_BUNDLES = ["app.js", "nodes.js", "pool.js", "earnings.js", "agent.js"]
+JS_BUNDLES = ["app.js", "nodes.js", "pool.js", "agent.js"]
 
 
 for path, filename in PAGES:

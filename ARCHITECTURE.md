@@ -23,10 +23,10 @@ Visuelle Übersicht der CoMesh-Komponenten und Datenflüsse.
                 │               │     DB     │                 │
                 │               └────────────┘                 │
                 │                                               │
-                │   ┌─────────┐  ┌─────────┐  ┌─────────┐      │
-                │   │nodes.   │  │pool.    │  │earnings.│      │
-                │   │  html   │  │  html   │  │  html   │      │
-                │   └─────────┘  └─────────┘  └─────────┘      │
+                │   ┌─────────┐  ┌─────────┐                  │
+                │   │nodes.   │  │pool.    │                  │
+                │   │  html   │  │  html   │                  │
+                │   └─────────┘  └─────────┘                  │
                 └──────────────────────┬────────────────────────┘
                                        │
     HTTP/WS to node_url │ (DNS, mDNS, LAN or mesh VPN)
@@ -127,7 +127,8 @@ Node-Agent
 ## Nicht-Ziele (POC)
 
 - Authentifizierung (kein API-Key, kein Rate-Limit)
-- Abrechnung (Earnings werden getrackt, aber nicht ausgezahlt)
+- Abrechnung über Credits ist optional (Admin-Schalter `credits_enabled`)
+- Kein Payout-Modell für Node-Betreiber (das Coins-/Earnings-Konzept ist entfallen)
 - Multi-Tenancy
 - Model-Catalog-Sync über Nodes hinweg
 - Streaming-Responses (geplant, nicht implementiert)
