@@ -1,7 +1,7 @@
 # GPU-Pool POC - Build Report
 
 **Date:** 2026-06-05 22:58 - 23:05 (Europe/Berlin)
-**Host:** `portal-host` (portal-ip)
+**Host:** `portal-host` (Name des Portal-Hosts in deinem Netz)
 **Status:** ✅ RUNNING — all tests pass
 
 ## What was built
@@ -75,10 +75,10 @@ All on the named Docker volume `opencode-poc_sqlite_data` — survives restarts.
 
 ```bash
 # Health
-curl http://portal-ip:8765/health
+curl http://portal-host:8765/health
 
 # Chat
-curl -X POST http://portal-ip:8765/v1/chat/completions \
+curl -X POST http://portal-host:8765/v1/chat/completions \
   -H "Authorization: Bearer gpu_ScOgpgvZWQDh2OgPY_XmsRI2uELsUud8tWQyEvPn2bs" \
   -H "Content-Type: application/json" \
   -d '{
@@ -87,13 +87,13 @@ curl -X POST http://portal-ip:8765/v1/chat/completions \
   }'
 
 # Create more users (admin key required, see docs/api.md -> Admin)
-curl -X POST http://portal-ip:8765/admin/users \
+curl -X POST http://portal-host:8765/admin/users \
   -H "Authorization: Bearer gpu_admin..." \
   -H "Content-Type: application/json" \
   -d '{"email":"alice@example.com","name":"Alice","initial_credits":50}'
 
 # Top up existing user (Idempotency-Key makes retries safe)
-curl -X POST 'http://portal-ip:8765/admin/users/1/topup' \
+curl -X POST 'http://portal-host:8765/admin/users/1/topup' \
   -H "Authorization: Bearer gpu_admin..." \
   -H "Idempotency-Key: topup-alice-25" \
   -H "Content-Type: application/json" \
@@ -166,6 +166,6 @@ Three HTML pages served by FastAPI itself:
 - `/chat`     — chat UI
 - `/credits`  — buy credit packages (4 buttons per package, transaction history)
 
-Open http://portal-ip:8765/credits in a browser, log in with
+Open http://portal-host:8765/credits in a browser, log in with
 `test@example.com` / `password123`, and click any payment button to test
 the full flow.

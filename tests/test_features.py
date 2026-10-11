@@ -4,7 +4,7 @@ GPU-Pool Feature Tests (POC).
 Run with the api service reachable. Defaults to http://localhost:8000.
 Override with the GPU_POOL_API env var.
 
-    GPU_POOL_API=http://100.126.79.111:8765 python3 tests/test_features.py
+    GPU_POOL_API=http://portal-host:8765 python3 tests/test_features.py
 
 Tests:
   1. Register a provider user

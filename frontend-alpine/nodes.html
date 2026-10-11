@@ -103,9 +103,9 @@
           </div>
 
           <div class="field">
-            <label class="label" for="n-ip" data-i18n="tailscale-ip">Tailscale-IP</label>
-            <input class="input mono" id="n-ip" x-model="form.tailscale_ip" placeholder="100.x.y.z" />
-            <p class="hint" data-i18n="der-pool-routet-ausschliesslich-ueber-das">Der Pool routet ausschließlich über das Tailnet — public erreichbare Nodes sind nicht vorgesehen.</p>
+            <label class="label" for="n-ip" data-i18n="node-adresse-optional">Adresse der Node (optional)</label>
+            <input class="input mono" id="n-ip" x-model="form.node_url" placeholder="node-host:11435" />
+            <p class="hint" data-i18n="adresse-leer-lassen-der-agent-meldet">Leer lassen: der Agent meldet seine Adresse beim ersten Heartbeat selbst (üblich in DHCP-Netzen). Feste Adresse? Dann einen Namen eintragen — DNS/mDNS wie mein-gpu.local:11435 statt einer IP.</p>
           </div>
 
           <div class="field">
@@ -224,7 +224,8 @@
               <div class="t-sm text-dim mt-1">
                 <span x-text="n.gpu_type"></span> ·
                 <span x-text="n.vram_gb"></span> GB VRAM ·
-                <span class="mono" x-text="(n.tailscale_ip || I18n.t('nodes.no_tailscale')) + ':' + n.port"></span>
+                <span class="mono" x-text="n.node_url || ('? — ' + n.port)"></span>
+                <span x-show="n.node_url_auto" class="pill pill-flat t-xs" data-i18n="automatisch-erkannt">automatisch erkannt</span>
               </div>
               <div class="t-xs text-mute mt-1">
                 <span class="mono" x-text="n.hourly_rate"></span> Credits/h ·
@@ -356,6 +357,7 @@
   </main>
 
       <script defer src="https://unpkg.com/alpinejs@3.5.1/dist/cdn.min.js"></script>
+<script src="config.js"></script>
 <script src="i18n-catalog.js"></script>
 <script src="i18n.js"></script>
 <script src="app.js"></script>

@@ -25,6 +25,8 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
+from netinfo import request_base_url
+
 from auth import get_current_user
 from database import get_db
 from models import CreditTransaction, Payment, User, get_user_credits
@@ -40,7 +42,10 @@ STRIPE_WEBHOOK_SECRET = os.environ.get("STRIPE_WEBHOOK_SECRET", "")
 PAYPAL_CLIENT_ID = os.environ.get("PAYPAL_CLIENT_ID", "")
 PAYPAL_CLIENT_SECRET = os.environ.get("PAYPAL_CLIENT_SECRET", "")
 PAYPAL_MODE = os.environ.get("PAYPAL_MODE", "sandbox")  # 'sandbox' | 'live'
-APP_PUBLIC_URL = os.environ.get("APP_PUBLIC_URL", "http://100.126.79.111:8765")
+# Public base URL of this portal. Required in production (payment providers have to
+# redirect the buyer back). Left unset, the portal derives it from the request that
+# started the checkout, so a deployment on DHCP needs no fixed address.
+APP_PUBLIC_URL = os.environ.get("APP_PUBLIC_URL", "").rstrip("/")
 
 # Optional SDKs
 try:
@@ -57,6 +62,21 @@ try:
 except Exception:  # pragma: no cover
     PAYPAL_AVAILABLE = False
     paypalrestsdk = None  # type: ignore
+
+
+def public_base_url(request: Optional[Request] = None) -> str:
+    """Base URL for provider return links: APP_PUBLIC_URL, else the caller's own view.
+
+    Deriving it from the request means a fresh deployment on a DHCP LAN works
+    without configuring anything; set APP_PUBLIC_URL when the portal is reached
+    through a different name than the provider redirect comes back to.
+    """
+    if APP_PUBLIC_URL:
+        return APP_PUBLIC_URL
+    derived = request_base_url(request)
+    if derived:
+        return derived
+    return "http://localhost:8000"
 
 # ----------------------------------------------------------------------------
 # Credit packages (canonical, single source of truth)
@@ -233,7 +253,8 @@ def payments_config(_user: User = Depends(get_current_user)):
 # ----------------------------------------------------------------------------
 # Provider endpoints - all share the same /{provider}/checkout signature
 # ----------------------------------------------------------------------------
-def _stripe_checkout(req: CheckoutRequest, user: User, db: Session) -> CheckoutResponse:
+def _stripe_checkout(req: CheckoutRequest, user: User, db: Session, request: Optional[Request] = None) -> CheckoutResponse:
+    base = public_base_url(request)
     pkg = _get_package(req.package_id)
     total_credits = package_total_credits(pkg)
     txn_id = f"cs_test_{secrets.token_hex(12)}"
@@ -242,8 +263,8 @@ def _stripe_checkout(req: CheckoutRequest, user: User, db: Session) -> CheckoutR
         db, user.id, "stripe", pkg["price_eur"], total_credits, txn_id
     )
 
-    success_url = req.success_url or f"{APP_PUBLIC_URL}/payments/stripe/success?payment_id={payment.id}"
-    cancel_url = req.cancel_url or f"{APP_PUBLIC_URL}/payments/stripe/cancel?payment_id={payment.id}"
+    success_url = req.success_url or f"{base}/payments/stripe/success?payment_id={payment.id}"
+    cancel_url = req.cancel_url or f"{base}/payments/stripe/cancel?payment_id={payment.id}"
 
     if not (STRIPE_SECRET_KEY and STRIPE_AVAILABLE):
         # Mock mode: return a URL the user can hit to simulate success
@@ -251,7 +272,7 @@ def _stripe_checkout(req: CheckoutRequest, user: User, db: Session) -> CheckoutR
             payment_id=payment.id,
             provider="stripe",
             status="pending",
-            checkout_url=f"{APP_PUBLIC_URL}/payments/stripe/success?payment_id={payment.id}&mock=1",
+            checkout_url=f"{base}/payments/stripe/success?payment_id={payment.id}&mock=1",
             session_id=txn_id,
             mock=True,
             message="Stripe SDK not configured — using mock checkout. Click the URL to simulate success.",
@@ -290,7 +311,8 @@ def _stripe_checkout(req: CheckoutRequest, user: User, db: Session) -> CheckoutR
         raise HTTPException(status_code=502, detail=f"Stripe error: {e}")
 
 
-def _paypal_checkout(req: CheckoutRequest, user: User, db: Session) -> CheckoutResponse:
+def _paypal_checkout(req: CheckoutRequest, user: User, db: Session, request: Optional[Request] = None) -> CheckoutResponse:
+    base = public_base_url(request)
     pkg = _get_package(req.package_id)
     total_credits = package_total_credits(pkg)
     txn_id = f"PAYPAL-{secrets.token_hex(8).upper()}"
@@ -304,7 +326,7 @@ def _paypal_checkout(req: CheckoutRequest, user: User, db: Session) -> CheckoutR
             payment_id=payment.id,
             provider="paypal",
             status="pending",
-            approval_url=f"{APP_PUBLIC_URL}/payments/paypal/capture?payment_id={payment.id}&token=mock&mock=1",
+            approval_url=f"{base}/payments/paypal/capture?payment_id={payment.id}&token=mock&mock=1",
             paypal_order_id=txn_id,
             mock=True,
             message="PayPal SDK not configured — using mock checkout. Open the URL to simulate approval.",
@@ -321,8 +343,8 @@ def _paypal_checkout(req: CheckoutRequest, user: User, db: Session) -> CheckoutR
             "intent": "sale",
             "payer": {"payment_method": "paypal"},
             "redirect_urls": {
-                "return_url": f"{APP_PUBLIC_URL}/payments/paypal/capture?payment_id={payment.id}",
-                "cancel_url": f"{APP_PUBLIC_URL}/payments/paypal/cancel?payment_id={payment.id}",
+                "return_url": f"{base}/payments/paypal/capture?payment_id={payment.id}",
+                "cancel_url": f"{base}/payments/paypal/cancel?payment_id={payment.id}",
             },
             "transactions": [{
                 "item_list": {
@@ -360,7 +382,8 @@ def _paypal_checkout(req: CheckoutRequest, user: User, db: Session) -> CheckoutR
         raise HTTPException(status_code=502, detail=f"PayPal error: {e}")
 
 
-def _alipay_checkout(req: CheckoutRequest, user: User, db: Session) -> CheckoutResponse:
+def _alipay_checkout(req: CheckoutRequest, user: User, db: Session, request: Optional[Request] = None) -> CheckoutResponse:
+    base = public_base_url(request)
     """Alipay is exposed via Stripe Checkout (Alipay is a Stripe payment_method)."""
     pkg = _get_package(req.package_id)
     total_credits = package_total_credits(pkg)
@@ -370,15 +393,15 @@ def _alipay_checkout(req: CheckoutRequest, user: User, db: Session) -> CheckoutR
         db, user.id, "alipay", pkg["price_eur"], total_credits, txn_id
     )
 
-    success_url = req.success_url or f"{APP_PUBLIC_URL}/payments/alipay/success?payment_id={payment.id}"
-    cancel_url = req.cancel_url or f"{APP_PUBLIC_URL}/payments/alipay/cancel?payment_id={payment.id}"
+    success_url = req.success_url or f"{base}/payments/alipay/success?payment_id={payment.id}"
+    cancel_url = req.cancel_url or f"{base}/payments/alipay/cancel?payment_id={payment.id}"
 
     if not (STRIPE_SECRET_KEY and STRIPE_AVAILABLE):
         return CheckoutResponse(
             payment_id=payment.id,
             provider="alipay",
             status="pending",
-            payment_url=f"{APP_PUBLIC_URL}/payments/alipay/success?payment_id={payment.id}&mock=1",
+            payment_url=f"{base}/payments/alipay/success?payment_id={payment.id}&mock=1",
             mock=True,
             message="Stripe not configured — using mock Alipay flow.",
         )
@@ -413,7 +436,8 @@ def _alipay_checkout(req: CheckoutRequest, user: User, db: Session) -> CheckoutR
         raise HTTPException(status_code=502, detail=f"Alipay/Stripe error: {e}")
 
 
-def _applepay_checkout(req: CheckoutRequest, user: User, db: Session) -> CheckoutResponse:
+def _applepay_checkout(req: CheckoutRequest, user: User, db: Session, request: Optional[Request] = None) -> CheckoutResponse:
+    base = public_base_url(request)
     """Apple Pay via Stripe — server returns a PaymentIntent client_secret."""
     pkg = _get_package(req.package_id)
     total_credits = package_total_credits(pkg)
@@ -466,10 +490,15 @@ _PROVIDER_HANDLERS = {
 def create_checkout(
     provider: str,
     req: CheckoutRequest,
+    request: Request,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """Unified checkout endpoint for every provider."""
+    """Unified checkout endpoint for every provider.
+
+    The request is passed through so provider return URLs can be derived from the
+    host the buyer is actually using (see `public_base_url`).
+    """
     handler = _PROVIDER_HANDLERS.get(provider.lower())
     if not handler:
         raise HTTPException(
@@ -479,7 +508,7 @@ def create_checkout(
     # Make sure provider on the request matches the path
     if req.provider.lower() != provider.lower():
         req = req.model_copy(update={"provider": provider.lower()})
-    return handler(req, user, db)
+    return handler(req, user, db, request)
 
 
 # ----------------------------------------------------------------------------

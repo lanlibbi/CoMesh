@@ -94,8 +94,44 @@ def get_config() -> Dict[str, Any]:
     return _cache
 
 
-def credits_enabled() -> bool:
-    """True when the credits/billing system enforces balances and charges usage."""
+def credits_enabled(db: Any = None) -> bool:
+    """True when the credits/billing system enforces balances and charges usage.
+
+    Resolution order (first hit wins):
+      1. env override CREDITS_ENABLED (deployment escape hatch)
+      2. DB system_settings row "credits_enabled" (admin-editable at runtime)
+      3. config.yaml value
+      4. default True
+    A DB session may be passed in; without one we open a short-lived session
+    ourselves. DB read failures degrade silently to the static config so a
+    broken/migrated-away table can never take the portal down.
+    """
+    override = _env_override("credits_enabled")
+    if override is not None:
+        return _truthy(override, default=True)
+    try:
+        if db is None:
+            from database import SessionLocal  # lazy: avoid import cycle at module load
+            session = SessionLocal()
+            try:
+                return _credits_enabled_db(session)
+            finally:
+                session.close()
+        return _credits_enabled_db(db)
+    except Exception as e:  # pragma: no cover - defensive fallback
+        log.debug(f"system_settings read failed ({e}); using static config")
+        return _truthy(get_config().get("credits_enabled"), default=True)
+
+
+def _credits_enabled_db(db: Any) -> bool:
+    from models import SystemSetting
+    row = (
+        db.query(SystemSetting)
+        .filter(SystemSetting.key == "credits_enabled")
+        .first()
+    )
+    if row is not None and str(row.value).strip() != "":
+        return _truthy(row.value, default=True)
     return _truthy(get_config().get("credits_enabled"), default=True)
 
 

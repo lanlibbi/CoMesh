@@ -20,7 +20,7 @@
       gpu_type: fd.get("gpu_type"),
       vram_gb: Number(fd.get("vram_gb")),
       hourly_rate: Number(fd.get("hourly_rate")),
-      tailscale_ip: fd.get("tailscale_ip") || null,
+      node_url: fd.get("node_url") || null,
       port: Number(fd.get("port") || 11435),
       description: fd.get("description") || null,
     };
@@ -52,7 +52,7 @@
             <div style="display:flex; justify-content:space-between; align-items:start;">
               <div>
                 <h4>${n.name} <span class="pill pill-${status}">${status}</span></h4>
-                <div class="meta">${n.gpu_type} · ${n.vram_gb} GB VRAM · ${n.tailscale_ip || "no Tailscale"}:${n.port}</div>
+                <div class="meta">${n.gpu_type} · ${n.vram_gb} GB VRAM · ${n.node_url || "Adresse noch unbekannt"}</div>
                 <div class="meta">Stundensatz: ${n.hourly_rate} Credits · Earned: ${n.earnings_total.toFixed(4)} · Last seen: ${last}</div>
               </div>
               <div>

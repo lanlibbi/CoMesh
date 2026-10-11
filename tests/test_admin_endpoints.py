@@ -38,7 +38,7 @@ def _register_node(client, headers, name=None, port=11434):
         "gpu_type": "Test GPU",
         "vram_gb": 24,
         "hourly_rate": 0.05,
-        "tailscale_ip": "100.64.0.1",
+        "node_url": "http://node-1.example.test:11435",
         "port": port,
         "backend": "ollama",
     })

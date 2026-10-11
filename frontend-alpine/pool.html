@@ -110,7 +110,7 @@
 
           <div class="row between mt-3">
             <span class="chip mono" x-text="n.hourly_rate + ' Credits/h'"></span>
-            <span class="t-xs text-mute mono" x-text="n.tailscale_ip ? 'Tailscale' : 'lokal'"></span>
+            <span class="t-xs text-mute mono" x-text="n.node_url || '—'"></span>
           </div>
 
           <p class="t-xs text-mute mt-2" x-show="n.description" x-text="n.description"></p>
@@ -135,6 +135,7 @@
   </main>
 
       <script defer src="https://unpkg.com/alpinejs@3.5.1/dist/cdn.min.js"></script>
+<script src="config.js"></script>
 <script src="i18n-catalog.js"></script>
 <script src="i18n.js"></script>
 <script src="app.js"></script>

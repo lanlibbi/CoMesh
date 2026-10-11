@@ -1,6 +1,8 @@
 # Portal
 
-Das Portal ist die zentrale API- und UI-Instanz des CoMesh-POC. Es läuft im POC auf `portal-host` (Tailscale-IP `portal-ip`).
+Das Portal ist die zentrale API- und UI-Instanz des CoMesh-POC. Es läuft auf dem
+Portal-Host — erreichbar unter einem Namen deiner Wahl (DNS/mDNS im LAN oder ein
+Name aus einem Mesh-VPN). Eine feste IP braucht es nicht.
 
 ## Setup
 
@@ -8,16 +10,17 @@ Das Portal ist die zentrale API- und UI-Instanz des CoMesh-POC. Es läuft im POC
 
 - Python 3.11+
 - Docker + Docker Compose
-- Tailscale (siehe [tailscale.md](tailscale.md))
+- Ein Netz, in dem die Nodes das Portal und das Portal die Nodes erreichen
+  (siehe [network.md](network.md))
 
 ### Installation
 
 ```bash
-cd portal/
 cp .env.example .env
 
 # .env anpassen
 cat .env
+# APP_PUBLIC_URL=http://portal-host:8765   # nur noetig, wenn Zahlungen konfiguriert sind
 PORTAL_PORT=8765
 DB_URL=sqlite:///./gpu_pool.db
 LOCAL_OLLAMA_URL=http://localhost:11434
@@ -32,6 +35,8 @@ docker compose up -d
 ```bash
 curl http://portal-host:8765/health
 # {"status": "ok", "nodes_online": 3, "local_ollama": "ok"}
+# Netz-Check (offen, ohne API-Key):
+curl http://portal-host:8765/net/echo
 ```
 
 ### Logs
@@ -47,6 +52,7 @@ Alle Optionen via `.env`:
 | Variable | Default | Beschreibung |
 |---|---|---|
 | `PORTAL_PORT` | `8765` | HTTP-Port |
+| `APP_PUBLIC_URL` | (leer) | Öffentliche Basis-URL für Zahlungs-Rückkehrlinks. Leer = wird aus dem Request abgeleitet |
 | `DB_URL` | `sqlite:///./gpu_pool.db` | SQLAlchemy-URL |
 | `LOCAL_OLLAMA_URL` | `http://localhost:11434` | Lokales Ollama als Fallback |
 | `NODE_TIMEOUT_SECONDS` | `30` | Nach dieser Zeit ohne Heartbeat → Node als offline markieren |
@@ -108,8 +114,8 @@ Manuelle Registrierung (normalerweise macht das der Agent).
 curl -X POST http://portal-host:8765/nodes/register \
   -H "Content-Type: application/json" \
   -d '{
-    "tailscale_ip": "node-ip",
-    "port": 8080,
+    "node_url": "http://node-host:11435",
+    "port": 11435,
     "gpu_model": "RTX 4090",
     "vram_gb": 24,
     "price_per_1k_tokens": 0.0005
@@ -124,7 +130,8 @@ Wird vom Node-Agent alle 5s aufgerufen.
 curl -X POST http://portal-host:8765/nodes/heartbeat \
   -H "Content-Type: application/json" \
   -d '{
-    "tailscale_ip": "node-ip",
+    "advertise_host": "node-host",
+    "agent_port": 11435,
     "cpu_pct": 23.4,
     "ram_pct": 41.2,
     "gpu_util_pct": 78.5,
@@ -162,7 +169,7 @@ Server-side gerendert mit Jinja2 + Alpine.js. URLs:
 - `http://portal-host:8765/ui/earnings` — Earnings-Charts
 - `http://portal-host:8765/ui/agent` — Agent-Setup-Anleitung
 
-### Alpine-UI (`:3000`)
+### Alpine-UI (`:8767`)
 
 Client-side, Tailwind + Alpine. Identische Seiten, modernes Look-and-Feel. Separater Container, gleiche Backend-API.
 
@@ -186,9 +193,12 @@ docker compose restart portal
 
 ### Nodes werden als offline angezeigt
 
-- Tailscale verbunden? `tailscale status` auf dem Contributor-Host
-- Firewall: Portal muss `:8765` von Tailscale-Netz erreichen können
-- Heartbeats kommen an? `tail -f logs/portal.log | grep heartbeat`
+- Erreicht die Node das Portal? `curl $PORTAL_URL/net/echo`
+- Erreicht das Portal die Node? `curl http://node-host:11435/health`
+  (Adresse steht in `/nodes/my` im Feld `node_url`)
+- Firewall: der Agent-Port muss für das Portal offen sein — oder
+  `AGENT_TRANSPORT=ws` verwenden, dann entfällt der Inbound-Port
+- Heartbeats kommen an? `docker compose logs -f api | grep heartbeat`
 
 ### Load-Balancing wählt immer denselben Node
 

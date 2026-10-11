@@ -98,7 +98,7 @@ setzt das Theme **vor** dem ersten Paint.
   HTML-Werte in allen Locales dieselben Tags tragen und dass **kein** Wert
   CJK-Zeichen enthält (die würden ohne Font-Fallback als Tofu rendern).
 - **Fachbegriffe** (Node, Token, Model, Credits, API-Key, Pool, Provider,
-  Owner, Treasury, VRAM, Tailscale) bleiben in jeder Sprache unübersetzt — das
+  Owner, Treasury, VRAM, Node, Pool) bleiben in jeder Sprache unübersetzt — das
   ist Produktregel, keine fehlende Übersetzung.
 - Ein alter `gp_lang`-Wert außerhalb der vier Locales (z. B. ein früher
   gewähltes `zh`) fällt in `I18n.lang` automatisch auf EN zurück.

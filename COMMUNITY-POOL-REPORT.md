@@ -1,6 +1,11 @@
 # Community GPU-Pool — POC Extension (v0.3.0)
 
 This extends the GPU-Pool POC on `portal-host` with **community GPU-sharing**.
+
+> **Hinweis (LANA-89):** Dieser Bericht ist ein Momentstand. Die darin genannte
+> Netz-Annahme (Tailscale als Voraussetzung) gilt nicht mehr: Nodes werden ueber
+> `node_url` angesprochen, die Adresse wird bei leerem Feld aus dem Heartbeat
+> abgeleitet. Massgeblich ist `docs/network.md`.
 GPU-owners can register their machines, the portal load-balances
 OpenAI-compatible chat requests across the pool, and earnings are split
 70/20/10 (owner / platform / treasury).
@@ -42,7 +47,7 @@ A small FastAPI service that runs on each contributor's machine.
 | `agent.py` | Heartbeat loop + `/v1/chat/completions` proxy to local Ollama |
 | `Dockerfile` | `python:3.11-slim` + `psutil` + `pynvml`; runs as `uvicorn agent:app` on `AGENT_PORT` |
 | `requirements.txt` | Pinned deps |
-| `README.md` | Setup instructions (Tailscale, `docker run`, health check) |
+| `README.md` | Setup instructions (network + `docker run` + health check) |
 
 ### Docker compose
 
@@ -73,7 +78,7 @@ agent runs on each contributor's machine — it's not on the portal host.
 │   └───────────────────────┘                                       │
 └──────────────────────────────────────────────────────────────────┘
             │
-            │  Tailscale (or docker network for testing)
+            │  HTTP/WS to node_url (LAN, Docker net, or mesh VPN)
             ▼
 ┌──────────────────────────────────────────────────────────────────┐
 │  Node-Agent (contributor's machine:11435)                        │
@@ -126,9 +131,9 @@ agent runs on each contributor's machine — it's not on the portal host.
 - **API keys are stored hashed** (SHA-256); the user API key is shown once at
   creation, the `agent_api_key` is shown once at node registration. There
   is **no key-recovery endpoint** — losing either means re-issue.
-- **Tailscale**: the README explicitly tells contributors NOT to expose
+- **Private network**: the README explicitly tells contributors NOT to expose
   the agent's port on the public internet. The portal uses the
-  `tailscale_ip` registered on the node to forward; if the IP is wrong,
+  `node_url` registered for the node (derived from the heartbeat when unset) to forward; if it is wrong,
   the request fails cleanly and the next-best node is tried.
 - **Heartbeat auth**: the agent uses a separate `X-Node-Key` header, NOT
   the user's account API key. This way the user's account key is never
@@ -160,7 +165,7 @@ the load-balancer and the in-pool chat routing are unchanged.
 ### Why
 
 The HTTP heartbeat + reverse-connection model from v0.3.0 forces every
-provider to expose a Tailscale-reachable port. Real contributors
+provider to expose a reachable port. Real contributors
 generally can't or won't open inbound ports. The outbound WSS flips
 that: the agent dials out, the portal never needs to reach into the
 contributor's network. Phase 1 implements the transport + state

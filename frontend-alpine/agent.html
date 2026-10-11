@@ -79,7 +79,7 @@ docker build -t gpu-pool-node-agent .</code></pre>
             <p class="t-sm text-dim mt-4 mb-2" data-i18n="logs-verfolgen">Logs verfolgen:</p>
             <pre class="term mono"><code>docker logs -f gpu-pool-agent</code></pre>
             <p class="t-sm text-dim mt-4 mb-2" data-i18n="health-check-der-node">Health-Check der Node:</p>
-            <pre class="term mono"><code>curl http://&lt;tailscale-ip&gt;:11435/health | jq</code></pre>
+            <pre class="term mono"><code>curl http://&lt;node-host&gt;:11435/health | jq</code></pre>
           </div>
         </div>
       </div>
@@ -105,6 +105,7 @@ docker build -t gpu-pool-node-agent .</code></pre>
   </main>
 
       <script defer src="https://unpkg.com/alpinejs@3.5.1/dist/cdn.min.js"></script>
+<script src="config.js"></script>
 <script src="i18n-catalog.js"></script>
 <script src="i18n.js"></script>
 <script src="app.js"></script>

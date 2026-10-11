@@ -16,7 +16,7 @@ Der Node-Agent ist der leichte Worker, der auf jedem Contributor-Host läuft. Er
 │     - CPU/RAM/GPU/VRAM messen    │
 │     - An Portal senden           │
 │                                  │
-│  3. Inference-Proxy (Port 8080): │
+│  3. Inference-Proxy (AGENT_PORT):│
 │     - Empfängt POST /v1/chat/..  │
 │     - Leitet an lokales Ollama   │
 └──────────────────────────────────┘
@@ -30,8 +30,8 @@ Auf dem Contributor-Host:
 - NVIDIA-GPU mit funktionierenden Treibern
 - NVIDIA Container Toolkit (`nvidia-docker2`)
 - Ollama (lokal, Port 11434) — mit gewünschtem Modell geladen
-- Tailscale, im selben Netz wie das Portal
-- Erreichbarkeit: Portal → Agent (Tailscale-IP:8080)
+- Ein Netz, in dem das Portal den Agent erreichen kann (LAN oder Mesh-VPN)
+- Erreichbarkeit: Portal → Agent auf `AGENT_PORT` (oder `AGENT_TRANSPORT=ws`, dann reicht outbound)
 
 ### Ollama prüfen
 
@@ -63,24 +63,34 @@ cp .env.example .env
 ### `.env`
 
 ```bash
-# Welche Tailscale-IP hat dieser Host?
-# tailscale ip -4
-TAILSCALE_IP=node-ip
+# Portal-URL: Name oder IP des Portal-Hosts. Ein Name (DNS/mDNS/Mesh-VPN)
+# ueberlebt einen DHCP-Lease-Wechsel, eine IP nicht.
+PORTAL_URL=http://portal-host:8765
+
+# Selbst-Registrierung: API-Key eines Kontos mit Rolle provider/both.
+# Damit sind NODE_ID und NODE_API_KEY nicht mehr noetig - der Agent holt sie
+# sich selbst und legt sie in /data/node-state.json ab.
+PORTAL_USER_KEY=gpu_xxxxxxxx
+
+# Optional: Name, unter dem das Portal DIESEN Node anspricht.
+# Leer = automatische Erkennung der Outbound-Adresse.
+ADVERTISE_HOST=mein-gpu.local
 
 # Auf welchem Port lauscht der Agent?
-AGENT_PORT=8080
-
-# Portal-URL (Tailscale-IP oder MagicDNS)
-PORTAL_URL=http://portal-ip:8765
+AGENT_PORT=11435
 
 # Wie oft senden wir Heartbeats?
-HEARTBEAT_INTERVAL_SECONDS=5
-
-# Preis in USD pro 1k Tokens (auch Output)
-PRICE_PER_1K_TOKENS=0.0005
+HEARTBEAT_SEC=30
 
 # Lokales Ollama
 OLLAMA_URL=http://host.docker.internal:11434
+```
+
+Vor dem Start die Netz-Konfiguration prüfen:
+
+```bash
+python agent.py --check          # direkt
+docker compose run --rm agent python agent.py --check   # im Container
 ```
 
 > **Hinweis zu `host.docker.internal`:** Auf Linux muss Docker mit `--add-host=host.docker.internal:host-gateway` gestartet werden. Beispiel im mitgelieferten `docker-compose.yml`.
@@ -94,12 +104,11 @@ docker compose logs -f agent
 
 Erwartete Ausgabe:
 ```
-[agent] Starting CoMesh Node-Agent
-[agent] Detected GPU: NVIDIA GeForce RTX 4090 (24 GB)
-[agent] Registering with portal at http://portal-ip:8765
-[agent] Registered as node_id=3
-[agent] Starting heartbeat loop (interval=5s)
-[agent] Inference proxy listening on :8080
+[agent] Self-registered as node_id=3 name=mein-gpu (RTX 4090)
+[agent] Advertise host detected: mein-gpu.local (set ADVERTISE_HOST to pin a name)
+[agent] Advertised as mein-gpu.local:11435 (portal dials this)
+[agent] Node-agent started. node_id=3 portal=http://portal-host:8765
+[agent] Inference proxy listening on :11435
 ```
 
 ## Verifizierung
@@ -107,30 +116,30 @@ Erwartete Ausgabe:
 ### Agent läuft
 
 ```bash
-curl http://node-ip:8080/health
+curl http://node-host:11435/health
 # {"status": "ok", "agent": "running", "ollama": "ok", "gpu": "RTX 4090"}
 ```
 
 ### Portal sieht den Node
 
 ```bash
-curl http://portal-ip:8765/nodes/ | jq '.[] | select(.tailscale_ip=="node-ip")'
+curl http://portal-host:8765/nodes/my -H "Authorization: Bearer $USER_KEY" | jq '.[] | {id, status, node_url, node_url_auto}'
 ```
 
 ### End-to-End-Test
 
 ```bash
 # Direkt zum Agent
-curl -X POST http://node-ip:8080/v1/chat/completions \
+curl -X POST http://node-host:11435/v1/chat/completions \
   -H "Content-Type: application/json" \
   -d '{"model":"qwen2.5-coder:14b","messages":[{"role":"user","content":"Hi"}]}'
 
 # Über das Portal (Load-Balancing)
-curl -X POST http://portal-ip:8765/v1/chat/completions \
+curl -X POST http://portal-host:8765/v1/chat/completions \
   -H "Content-Type: application/json" \
   -D - \
   -d '{"model":"qwen2.5-coder:14b","messages":[{"role":"user","content":"Hi"}]}'
-# Header x-pool-node: node-ip
+# Header x-pool-node: node-host
 ```
 
 ## Hardware-Anforderungen
@@ -156,30 +165,30 @@ curl -X POST http://portal-ip:8765/v1/chat/completions \
 - `gpu_temp_c` — GPU-Temperatur (TODO)
 - `power_w` — GPU-Power-Draw (TODO)
 
-Anzeige im Portal-UI: `http://portal-host:8765/ui/nodes`
+Anzeige im Portal-UI: `http://portal-host:8765/ui/nodes` (Legacy-UI) bzw. `http://portal-host:8767/nodes`
 
 ### Eigener Node-Status
 
 ```bash
 # Letzte Heartbeats
-curl http://portal-ip:8765/nodes/3/heartbeats?limit=20
+curl http://portal-host:8765/nodes/3/heartbeats?limit=20
 
 # Earnings (letzte 24h)
-curl "http://portal-ip:8765/earnings/?node_id=3&hours=24"
+curl "http://portal-host:8765/earnings/?node_id=3&hours=24"
 ```
 
 ## Troubleshooting
 
 ### Agent registriert sich nicht
 
-**Symptom:** `Registration failed: Connection refused` in den Logs.
+**Symptom:** `Self-registration failed (401)` oder `Connection refused` in den Logs.
 
 **Lösung:**
 ```bash
-# Tailscale aktiv?
-tailscale status
-# Portal erreichbar?
-curl http://portal-ip:8765/health
+# Portal erreichbar? (offener Check, kein Key noetig)
+curl http://portal-host:8765/net/echo
+# Key gueltig und Rolle provider/both?
+curl -H "Authorization: Bearer $USER_KEY" http://portal-host:8765/v1/me
 ```
 
 ### GPU wird nicht erkannt
@@ -205,8 +214,9 @@ docker compose exec agent nvidia-smi
 
 ### Heartbeats kommen durch, aber kein Inference
 
-- Firewall auf Contributor-Host? `sudo ufw status` (Ubuntu)
-- Agent lauscht auf 0.0.0.0:8080? `docker compose logs agent | grep "listening"`
+- Firewall auf dem Contributor-Host? `sudo ufw status` (Ubuntu)
+- Agent lauscht auf 0.0.0.0? `docker compose logs agent | grep -i listening`
+- Erreicht das Portal den Agent? Vom Portal-Host: `curl $NODE_URL/health`
 
 ## Wartung
 
@@ -222,7 +232,7 @@ docker compose up -d
 
 ```bash
 # Im Portal-UI: Node auf "disabled" setzen
-curl -X PATCH http://portal-ip:8765/nodes/3 \
+curl -X PATCH http://portal-host:8765/nodes/3 \
   -H "Content-Type: application/json" \
   -d '{"enabled": false}'
 ```
@@ -230,7 +240,7 @@ curl -X PATCH http://portal-ip:8765/nodes/3 \
 ### Komplett entfernen
 
 ```bash
-docker compose down -v
+docker compose down -v   # loescht auch das State-Volume mit den Node-Credentials
 # Im Portal: Node löschen
-curl -X DELETE http://portal-ip:8765/nodes/3
+curl -X DELETE http://portal-host:8765/nodes/3
 ```

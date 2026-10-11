@@ -19,15 +19,23 @@ account key is never exposed to the agent process.
 import logging
 import secrets
 from datetime import datetime, timedelta
-from typing import List, Optional
+from typing import Any, List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Header, status
+from fastapi import APIRouter, Depends, HTTPException, Header, Request, status
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from auth import get_current_user
 from database import get_db
 from models import GpuNode, NodeHeartbeat, User
+from netinfo import (
+    DEFAULT_AGENT_PORT,
+    derive_node_url,
+    is_auto_url,
+    node_base_url,
+    normalize_node_url,
+    source_host,
+)
 
 log = logging.getLogger("gpu-pool.nodes")
 
@@ -42,8 +50,18 @@ class RegisterNodeRequest(BaseModel):
     gpu_type: str = Field(..., min_length=2, max_length=80)
     vram_gb: int = Field(..., ge=1, le=1024)
     hourly_rate: float = Field(0.05, ge=0.0, le=10.0)
-    tailscale_ip: Optional[str] = Field(None, description="100.x.y.z — Tailscale IP of the node")
-    port: int = Field(11434, ge=1, le=65535)
+    # Reachability of the agent. Optional on purpose: an agent on DHCP can
+    # register without knowing its own address — the portal derives it from the
+    # first heartbeat (see netinfo.derive_node_url) and stores it back.
+    node_url: Optional[str] = Field(
+        None,
+        description="http(s)://<host|ip>[:port] of the node-agent. Prefer a DNS/mDNS name; "
+                    "leave empty to let the portal auto-detect it from the heartbeat.",
+    )
+    # Deprecated alias kept so existing scripts/UI builds keep working. It is
+    # folded into `node_url` at registration time.
+    tailscale_ip: Optional[str] = Field(None, description="Deprecated — use node_url")
+    port: int = Field(DEFAULT_AGENT_PORT, ge=1, le=65535)
     backend: str = Field("ollama", pattern="^(ollama|openai)$", description="Inference backend: ollama (native /api/chat) or openai (OpenAI-compatible: LM Studio, LiteLLM, vLLM…)")
     description: Optional[str] = None
     allowed_models: Optional[List[str]] = Field(
@@ -58,7 +76,8 @@ class UpdateNodeRequest(BaseModel):
     gpu_type: Optional[str] = Field(None, min_length=2, max_length=80)
     vram_gb: Optional[int] = Field(None, ge=1, le=1024)
     hourly_rate: Optional[float] = Field(None, ge=0.0, le=10.0)
-    tailscale_ip: Optional[str] = None
+    node_url: Optional[str] = None
+    tailscale_ip: Optional[str] = Field(None, description="Deprecated — use node_url")
     port: Optional[int] = Field(None, ge=1, le=65535)
     backend: Optional[str] = Field(None, pattern="^(ollama|openai)$")
     description: Optional[str] = None
@@ -66,11 +85,18 @@ class UpdateNodeRequest(BaseModel):
 
 
 class HeartbeatRequest(BaseModel):
-    status: str = Field("online", pattern="^(online|busy|offline)$")
+    status: str = Field("online", pattern="^(online|offline|busy)$")
     gpu_util: float = Field(0.0, ge=0.0, le=1.0)
     vram_used_gb: float = Field(0.0, ge=0.0, le=1024)
     vram_total_gb: Optional[float] = None
     active_jobs: int = Field(0, ge=0, le=64)
+    # Address the agent believes it is reachable under (ADVERTISE_HOST, else its
+    # detected outbound IP/hostname). The portal adopts it only while the node
+    # has no explicitly configured URL — that is the DHCP-friendly path.
+    advertise_host: Optional[str] = Field(
+        None, description="Host (name or IP) the agent is reachable under; usually auto-detected."
+    )
+    agent_port: Optional[int] = Field(None, ge=1, le=65535, description="Port the agent serves on")
     raw: Optional[dict] = None  # arbitrary agent-side stats
 
 
@@ -82,6 +108,9 @@ class NodeOut(BaseModel):
     vram_gb: int
     status: str
     hourly_rate: float
+    node_url: Optional[str]
+    node_url_auto: bool = False
+    # Deprecated mirror of the host part of `node_url`, kept for older UI builds.
     tailscale_ip: Optional[str]
     port: int
     backend: str = "ollama"
@@ -97,6 +126,51 @@ class NodeOut(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+def node_out_fields(node: GpuNode) -> dict:
+    """Serialize a node for the API.
+
+    ``tailscale_ip`` stays in the payload as a deprecated mirror of the host
+    part of ``node_url``: older frontend builds render it, and the legacy
+    pool-dispatch fallback still reads it. Nothing writes it any more.
+    """
+    from netinfo import host_of
+
+    return {
+        "id": node.id,
+        "owner_id": node.owner_id,
+        "name": node.name,
+        "gpu_type": node.gpu_type,
+        "vram_gb": node.vram_gb,
+        "status": node.status,
+        "hourly_rate": node.hourly_rate,
+        "node_url": node.node_url,
+        "node_url_auto": bool(node.node_url_auto),
+        "tailscale_ip": host_of(node.node_url or "") or node.tailscale_ip,
+        "port": node.port,
+        "backend": node.backend or "ollama",
+        "last_seen": node.last_seen.isoformat() if node.last_seen else None,
+        "total_hours": node.total_hours,
+        "earnings_total": node.earnings_total,
+        "current_utilization": node.current_utilization,
+        "vram_used_gb": node.vram_used_gb,
+        "is_enabled": bool(node.is_enabled),
+        "description": node.description,
+        "allowed_models": node.get_allowed_models(),
+        "created_at": node.created_at.isoformat(),
+    }
+
+
+def resolve_node_url(req_url: Optional[str], legacy_ip: Optional[str], port: int) -> Optional[str]:
+    """Explicit URL wins; otherwise a legacy `tailscale_ip` is promoted to one."""
+    explicit = normalize_node_url(req_url, default_port=None)
+    if explicit:
+        return explicit
+    legacy = (legacy_ip or "").strip()
+    if legacy:
+        return normalize_node_url(legacy, default_port=None)
+    return None
 
 
 class NodeRegistered(NodeOut):
@@ -173,7 +247,8 @@ def register_node(
         gpu_type=req.gpu_type,
         vram_gb=req.vram_gb,
         hourly_rate=req.hourly_rate,
-        tailscale_ip=req.tailscale_ip,
+        node_url=resolve_node_url(req.node_url, req.tailscale_ip, req.port),
+        node_url_auto=False,
         port=req.port,
         backend=req.backend,
         description=req.description,
@@ -185,28 +260,8 @@ def register_node(
     db.add(node)
     db.commit()
     db.refresh(node)
-    log.info(f"User {user.email} registered node '{node.name}' id={node.id} (gpu={node.gpu_type}, vram={node.vram_gb}GB, models={node.get_allowed_models()})")
-    return NodeRegistered(
-        id=node.id,
-        owner_id=node.owner_id,
-        name=node.name,
-        gpu_type=node.gpu_type,
-        vram_gb=node.vram_gb,
-        status=node.status,
-        hourly_rate=node.hourly_rate,
-        tailscale_ip=node.tailscale_ip,
-        port=node.port,
-        last_seen=node.last_seen.isoformat() if node.last_seen else None,
-        total_hours=node.total_hours,
-        earnings_total=node.earnings_total,
-        current_utilization=node.current_utilization,
-        vram_used_gb=node.vram_used_gb,
-        is_enabled=node.is_enabled,
-        description=node.description,
-        allowed_models=node.get_allowed_models(),
-        created_at=node.created_at.isoformat(),
-        agent_api_key=agent_key,
-    )
+    log.info(f"User {user.email} registered node '{node.name}' id={node.id} (gpu={node.gpu_type}, vram={node.vram_gb}GB, addr={node.node_url or 'auto'}, models={node.get_allowed_models()})")
+    return NodeRegistered(**node_out_fields(node), agent_api_key=agent_key)
 
 
 @router.put("/{node_id}", response_model=NodeOut)
@@ -228,8 +283,13 @@ def update_node(
         node.vram_gb = req.vram_gb
     if req.hourly_rate is not None:
         node.hourly_rate = req.hourly_rate
-    if req.tailscale_ip is not None:
-        node.tailscale_ip = req.tailscale_ip
+    # An explicit address (or the deprecated tailscale_ip alias) clears the
+    # auto-detected flag; leaving both empty switches the node back to
+    # auto-detect on the next heartbeat.
+    if req.node_url is not None or req.tailscale_ip is not None:
+        resolved = resolve_node_url(req.node_url, req.tailscale_ip, req.port or node.port)
+        node.node_url = resolved
+        node.node_url_auto = False
     if req.port is not None:
         node.port = req.port
     if req.backend is not None:
@@ -240,19 +300,11 @@ def update_node(
         node.set_allowed_models(req.allowed_models)
     db.commit()
     db.refresh(node)
-    log.info(f"User {user.email} updated node {node.id}: models={node.get_allowed_models()}")
-    return NodeOut(
-        id=node.id, owner_id=node.owner_id, name=node.name, gpu_type=node.gpu_type,
-        vram_gb=node.vram_gb, status=node.status if _is_online(node) else "offline",
-        hourly_rate=node.hourly_rate, tailscale_ip=node.tailscale_ip, port=node.port,
-        backend=node.backend,
-        last_seen=node.last_seen.isoformat() if node.last_seen else None,
-        total_hours=node.total_hours, earnings_total=node.earnings_total,
-        current_utilization=node.current_utilization, vram_used_gb=node.vram_used_gb,
-        is_enabled=node.is_enabled, description=node.description,
-        allowed_models=node.get_allowed_models(),
-        created_at=node.created_at.isoformat(),
-    )
+    log.info(f"User {user.email} updated node {node.id}: addr={node.node_url or 'auto'}, models={node.get_allowed_models()}")
+    fields = node_out_fields(node)
+    if not _is_online(node):
+        fields["status"] = "offline"
+    return NodeOut(**fields)
 
 
 @router.get("/list", response_model=List[NodeOut])
@@ -268,27 +320,13 @@ def list_nodes(
         online = _is_online(n)
         if only_online and not online:
             continue
-        out.append(NodeOut(
-            id=n.id,
-            owner_id=n.owner_id,
-            name=n.name,
-            gpu_type=n.gpu_type,
-            vram_gb=n.vram_gb,
-            status="online" if online else n.status,
-            hourly_rate=n.hourly_rate,
-            tailscale_ip=n.tailscale_ip,
-            port=n.port,
-            backend=n.backend,
-            last_seen=n.last_seen.isoformat() if n.last_seen else None,
-            total_hours=n.total_hours,
-            earnings_total=n.earnings_total,
-            current_utilization=n.current_utilization if online else 0.0,
-            vram_used_gb=n.vram_used_gb if online else 0.0,
-            is_enabled=n.is_enabled,
-            description=n.description,
-            allowed_models=n.get_allowed_models(),
-            created_at=n.created_at.isoformat(),
-        ))
+        fields = node_out_fields(n)
+        fields.update({
+            "status": "online" if online else n.status,
+            "current_utilization": n.current_utilization if online else 0.0,
+            "vram_used_gb": n.vram_used_gb if online else 0.0,
+        })
+        out.append(NodeOut(**fields))
     return out
 
 
@@ -298,30 +336,13 @@ def my_nodes(
     db: Session = Depends(get_db),
 ):
     nodes = db.query(GpuNode).filter(GpuNode.owner_id == user.id).all()
-    return [
-        NodeOut(
-            id=n.id,
-            owner_id=n.owner_id,
-            name=n.name,
-            gpu_type=n.gpu_type,
-            vram_gb=n.vram_gb,
-            status=n.status if _is_online(n) else "offline",
-            hourly_rate=n.hourly_rate,
-            tailscale_ip=n.tailscale_ip,
-            port=n.port,
-            backend=n.backend,
-            last_seen=n.last_seen.isoformat() if n.last_seen else None,
-            total_hours=n.total_hours,
-            earnings_total=n.earnings_total,
-            current_utilization=n.current_utilization,
-            vram_used_gb=n.vram_used_gb,
-            is_enabled=n.is_enabled,
-            description=n.description,
-            allowed_models=n.get_allowed_models(),
-            created_at=n.created_at.isoformat(),
-        )
-        for n in nodes
-    ]
+    out: List[NodeOut] = []
+    for n in nodes:
+        fields = node_out_fields(n)
+        if not _is_online(n):
+            fields["status"] = "offline"
+        out.append(NodeOut(**fields))
+    return out
 
 
 @router.get("/{node_id}", response_model=NodeOut)
@@ -329,39 +350,58 @@ def get_node(node_id: int, db: Session = Depends(get_db)):
     node = db.query(GpuNode).filter(GpuNode.id == node_id).first()
     if not node:
         raise HTTPException(status_code=404, detail="Node not found")
-    return NodeOut(
-        id=node.id,
-        owner_id=node.owner_id,
-        name=node.name,
-        gpu_type=node.gpu_type,
-        vram_gb=node.vram_gb,
-        status=node.status if _is_online(node) else "offline",
-        hourly_rate=node.hourly_rate,
-        tailscale_ip=node.tailscale_ip,
-        port=node.port,
-        backend=node.backend,
-        last_seen=node.last_seen.isoformat() if node.last_seen else None,
-        total_hours=node.total_hours,
-        earnings_total=node.earnings_total,
-        current_utilization=node.current_utilization,
-        vram_used_gb=node.vram_used_gb,
-        is_enabled=node.is_enabled,
-        description=node.description,
-        allowed_models=node.get_allowed_models(),
-        created_at=node.created_at.isoformat(),
-    )
+    fields = node_out_fields(node)
+    if not _is_online(node):
+        fields["status"] = "offline"
+    return NodeOut(**fields)
 
 
 @router.post("/{node_id}/heartbeat", status_code=204)
 def heartbeat(
     node_id: int,
     req: HeartbeatRequest,
+    request: Request,
     node: GpuNode = Depends(_get_node_from_header),
     db: Session = Depends(get_db),
 ):
-    """Node-agent pushes a status update. Authenticated via X-Node-Key."""
+    """Node-agent pushes a status update. Authenticated via X-Node-Key.
+
+    Also the point where the portal learns a *node address* it was never told:
+    when the node has no explicitly configured ``node_url``, the address is
+    taken from the request (X-Real-IP / X-Forwarded-For from the reverse proxy,
+    else the socket peer) and stored as an auto-detected URL. A DHCP lease change
+    therefore fixes itself — the agent does not need to know its own address and
+    nothing has to be kept in sync by hand.
+    """
     if node.id != node_id:
         raise HTTPException(status_code=404, detail="Node id mismatch")
+
+    # --- address auto-detection (LANA-89) ---------------------------------
+    if not node.node_url or node.node_url_auto:
+        scheme = request.headers.get("x-forwarded-proto", "http").split(",")[0].strip() or "http"
+        advertised = (req.advertise_host or "").strip()
+        if advertised:
+            # The agent says how it can be reached (ADVERTISE_HOST, else the
+            # outbound IP it detected). Preferred over the packet source, which
+            # is a NAT/proxy address on many home setups.
+            candidate = normalize_node_url(
+                advertised, default_scheme=scheme, default_port=req.agent_port or node.port
+            )
+        else:
+            peer = source_host(request)
+            if peer and peer.startswith(("10.", "172.", "192.168.", "169.254.", "127.")):
+                # A private/loopback peer address is a dead end for the portal:
+                # the agent sits behind NAT, or the portal is being called from
+                # the same host. Keep whatever we have and wait for an
+                # advertise_host from the agent.
+                candidate = None
+            else:
+                candidate = derive_node_url(peer or "", req.agent_port or node.port, scheme=scheme)
+        if candidate:
+            node.node_url = candidate
+            node.node_url_auto = True
+    if req.agent_port:
+        node.port = req.agent_port
 
     # Update live state
     node.status = req.status

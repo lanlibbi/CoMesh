@@ -23,6 +23,7 @@ KEYS = {
     "rtx-4090": {"en": "RTX 4090", "de": "RTX 4090", "es": "RTX 4090", "fr": "RTX 4090"},
     "vram-gb": {"en": "VRAM (GB)", "de": "VRAM (GB)", "es": "VRAM (GB)", "fr": "VRAM (GB)"},
     "stundensatz-credits": {"en": "Rate (Credits)", "de": "Stundensatz (Credits)", "es": "Tarifa (Credits)", "fr": "Tarif (Credits)"},
+    "adresse-leer-lassen-der-agent-meldet": {"en": "Leave empty: the agent reports its own address with the first heartbeat (the usual case on DHCP). Prefer a fixed address? Enter a name — DNS/mDNS such as mein-gpu.local:11435, not an IP.", "de": "Leer lassen: der Agent meldet seine Adresse beim ersten Heartbeat selbst (üblich in DHCP-Netzen). Feste Adresse? Dann einen Namen eintragen — DNS/mDNS wie mein-gpu.local:11435 statt einer IP.", "es": "Déjalo vacío: el agente comunica su dirección con el primer heartbeat (lo habitual en DHCP). ¿Prefieres una dirección fija? Usa un nombre — DNS/mDNS como mein-gpu.local:11435, no una IP.", "fr": "Laissez vide : l’agent annonce sa propre adresse au premier heartbeat (le cas habituel en DHCP). Adresse fixe ? Utilisez un nom — DNS/mDNS comme mein-gpu.local:11435, pas une IP."},
     "der-pool-routet-ausschliesslich-ueber-das": {"en": "The pool routes exclusively over the tailnet — publicly reachable nodes are not intended.", "de": "Der Pool routet ausschließlich über das Tailnet — public erreichbare Nodes sind nicht vorgesehen.", "es": "El pool enruta exclusivamente por el tailnet — no se contemplan nodes accesibles públicamente.", "fr": "Le pool route exclusivement via le tailnet — les nodes accessibles publiquement ne sont pas prévus."},
     "beschreibung-optional": {"en": "Description (optional)", "de": "Beschreibung (optional)", "es": "Descripción (opcional)", "fr": "Description (facultative)"},
     "node-einreichen": {"en": "Submit node", "de": "Node einreichen", "es": "Enviar node", "fr": "Soumettre le node"},
@@ -38,10 +39,10 @@ KEYS = {
     "zur-node-agent-anleitung": {"en": "Go to the node agent guide", "de": "Zur Node-Agent-Anleitung", "es": "Ir a la guía del agente de node", "fr": "Aller au guide de l'agent de node"},
     "meine-registrierten-nodes": {"en": "My registered nodes", "de": "Meine registrierten Nodes", "es": "Mis nodes registrados", "fr": "Mes nodes enregistrés"},
     "span-x-text-n-gpu-type-span-span-x-text-n": {
-        "en": "<span x-text=\"n.gpu_type\"></span> · <span x-text=\"n.vram_gb\"></span> GB VRAM · <span class=\"mono\" x-text=\"(n.tailscale_ip || 'no Tailscale') + ':' + n.port\"></span>",
-        "de": "<span x-text=\"n.gpu_type\"></span> · <span x-text=\"n.vram_gb\"></span> GB VRAM · <span class=\"mono\" x-text=\"(n.tailscale_ip || 'kein Tailscale') + ':' + n.port\"></span>",
-        "es": "<span x-text=\"n.gpu_type\"></span> · <span x-text=\"n.vram_gb\"></span> GB VRAM · <span class=\"mono\" x-text=\"(n.tailscale_ip || 'sin Tailscale') + ':' + n.port\"></span>",
-        "fr": "<span x-text=\"n.gpu_type\"></span> · <span x-text=\"n.vram_gb\"></span> GB VRAM · <span class=\"mono\" x-text=\"(n.tailscale_ip || 'pas de Tailscale') + ':' + n.port\"></span>",
+        "en": "<span x-text=\"n.gpu_type\"></span> · <span x-text=\"n.vram_gb\"></span> GB VRAM · <span class=\"mono\" x-text=\"n.node_url || '—'\"></span>",
+        "de": "<span x-text=\"n.gpu_type\"></span> · <span x-text=\"n.vram_gb\"></span> GB VRAM · <span class=\"mono\" x-text=\"n.node_url || '—'\"></span>",
+        "es": "<span x-text=\"n.gpu_type\"></span> · <span x-text=\"n.vram_gb\"></span> GB VRAM · <span class=\"mono\" x-text=\"n.node_url || '—'\"></span>",
+        "fr": "<span x-text=\"n.gpu_type\"></span> · <span x-text=\"n.vram_gb\"></span> GB VRAM · <span class=\"mono\" x-text=\"n.node_url || '—'\"></span>",
         },
     "span-class-mono-x-text-n-hourly-rate-span": {
         "en": "<span class=\"mono\" x-text=\"n.hourly_rate\"></span> Credits/h · earned <span class=\"mono\" x-text=\"fmtCredits(n.earnings_total)\"></span> · last seen <span x-text=\"fmtDate(n.last_seen)\"></span>",

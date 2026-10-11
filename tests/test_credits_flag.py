@@ -83,6 +83,19 @@ def _new_user(client, initial_credits: float = 0.0):
     })
     assert r.status_code == 200, r.text
     body = r.json()
+
+    # Legacy-Tests pruefen den Balance-Pfad: Tester auf quota_mode=balance
+    # (Default seit Admin-Quota-Feature: 'unlimited' wuerde nie abbuchen)
+    from database import SessionLocal as _SL
+    from models import User as _U
+    _db = _SL()
+    try:
+        _u = _db.query(_U).filter(_U.id == body["user_id"]).first()
+        if _u is not None:
+            _u.quota_mode = "balance"
+            _db.commit()
+    finally:
+        _db.close()
     return {"Authorization": f"Bearer {body['api_key']}"}, body["user_id"], body["api_key"]
 
 

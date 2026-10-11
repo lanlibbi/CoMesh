@@ -62,7 +62,8 @@
             <label>GPU-Typ<input name="gpu_type" required placeholder="z.B. RTX 4090" /></label>
             <label>VRAM (GB)<input name="vram_gb" type="number" min="1" max="1024" required placeholder="24" /></label>
             <label>Stundensatz (Credits)<input name="hourly_rate" type="number" step="0.01" min="0" value="0.05" required /></label>
-            <label>Tailscale-IP<input name="tailscale_ip" placeholder="100.x.y.z" /></label>
+            <label>Adresse (optional)<input name="node_url" placeholder="node-host:11435" />
+            <small>Leer lassen — der Agent meldet seine Adresse beim ersten Heartbeat selbst.</small>
             <label>Port<input name="port" type="number" min="1" max="65535" value="11435" /></label>
             <label>Beschreibung<textarea name="description" rows="2" placeholder="Optional: Standort, Besonderheiten..."></textarea></label>
             <p style="margin-top:12px;"><button type="submit">Registrieren</button></p>

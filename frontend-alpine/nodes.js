@@ -16,7 +16,7 @@ document.addEventListener("alpine:init", () => {
   bulkWhitelistProgress: "",
   bulkWhitelistError: "",
   bulkWhitelistSelection: [],
-  form: { name: "", gpu_type: "", vram_gb: 24, hourly_rate: 0.05, tailscale_ip: "", port: 11435, description: "" },
+  form: { name: "", gpu_type: "", vram_gb: 24, hourly_rate: 0.05, node_url: "", port: 11435, description: "" },
   formAllowed: [],  // selected model names in the register form
   msg: "",
   lastKey: null,
@@ -196,7 +196,7 @@ document.addEventListener("alpine:init", () => {
           gpu_type: this.form.gpu_type,
           vram_gb: Number(this.form.vram_gb),
           hourly_rate: Number(this.form.hourly_rate),
-          tailscale_ip: this.form.tailscale_ip || null,
+          node_url: this.form.node_url || null,
           port: Number(this.form.port || 11435),
           description: this.form.description || null,
           // null = default (all local, no cloud). [] = allow nothing. List = whitelist.
@@ -206,7 +206,7 @@ document.addEventListener("alpine:init", () => {
         this.lastKey = n.agent_api_key;
         this.msg = I18n.t("nodes.registered_hint", { id: n.id });
         toast(I18n.t("nodes.registered"), "ok");
-        this.form = { name: "", gpu_type: "", vram_gb: 24, hourly_rate: 0.05, tailscale_ip: "", port: 11435, description: "" };
+        this.form = { name: "", gpu_type: "", vram_gb: 24, hourly_rate: 0.05, node_url: "", port: 11435, description: "" };
         this.formAllowed = [];
         await this.load();
       } catch (e) {
