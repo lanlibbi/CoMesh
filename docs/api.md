@@ -405,6 +405,11 @@ Ohne Admin-User wäre die Oberfläche nicht erreichbar. Zwei Wege:
    einen existierenden User → dieser wird beim Start zum Admin promovet
    (Warnung im Log). **Default ist leer / aus** — ein Deployment soll nicht
    stillschweigend einem Seed-/POC-Konto Adminrechte geben.
+3. Weder noch: beim Install wird ein Key erzeugt und in
+   `$DATA_DIR/admin_api_key.txt` (chmod 600) abgelegt; jeder weitere Start
+   verwendet denselben. Das ist der **Default** — eine frische Installation hat
+   damit einen erreichbaren Admin-Bereich, ohne dass jemand ein Secret
+   erfinden muss.
 
 > Der frühere Caveat „`/admin/*` ist unauthentifiziert" ist damit erledigt:
 > die alten offenen Routen (`POST /admin/users`, `POST /admin/users/{id}/topup`)

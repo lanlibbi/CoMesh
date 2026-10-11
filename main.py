@@ -32,7 +32,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from auth import generate_api_key, get_current_user, hash_api_key
-from database import SessionLocal, engine, get_db, init_db
+from database import SessionLocal, engine, get_db, init_db, DATA_DIR
 from netinfo import DEFAULT_AGENT_PORT
 from payments import APP_PUBLIC_URL
 from models import (
@@ -942,6 +942,43 @@ async def seed_test_user_if_empty():
         db.close()
 
 
+ADMIN_KEY_FILE = os.path.join(DATA_DIR, "admin_api_key.txt")
+
+
+def _load_or_create_admin_key() -> str:
+    """The admin key of a fresh install: reuse the persisted one, else generate it.
+
+    Only called when ADMIN_API_KEY is unset and no account is named for promotion,
+    so an install ends up with a usable admin console instead of a wall of 403s.
+    The key is written 0600 next to the database, which means it survives restarts
+    and the key you noted down keeps working. Setting ADMIN_API_KEY in the
+    environment always takes precedence.
+    """
+    try:
+        if os.path.exists(ADMIN_KEY_FILE):
+            with open(ADMIN_KEY_FILE, "r", encoding="utf-8") as fh:
+                existing = fh.read().strip()
+            if existing:
+                log.info(f"Admin bootstrap: reusing the key in {ADMIN_KEY_FILE}")
+                return existing
+
+        key = "gpu_admin_" + secrets.token_urlsafe(32)
+        os.makedirs(DATA_DIR, exist_ok=True)
+        # O_CREAT with mode 0600: the key must not be world-readable, not even briefly.
+        fd = os.open(ADMIN_KEY_FILE, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+        with os.fdopen(fd, "w", encoding="utf-8") as fh:
+            fh.write(key + "\n")
+        log.warning(
+            f"Admin bootstrap: no ADMIN_API_KEY set - generated one at install time, "
+            f"stored in {ADMIN_KEY_FILE} (chmod 600). Set ADMIN_API_KEY in the "
+            f"environment to take over from here."
+        )
+        return key
+    except Exception as exc:
+        log.error(f"Admin bootstrap: cannot read/create {ADMIN_KEY_FILE}: {exc}")
+        return ""
+
+
 async def seed_admin_if_configured():
     """Bootstrap the admin identity (see docs/api.md -> Admin-Bootstrap).
 
@@ -953,15 +990,17 @@ async def seed_admin_if_configured():
       2. otherwise PROMOTE_ADMIN_EMAIL -> promote that existing account. Off by
          default on purpose: a deployment must not silently grant admin to a
          seeded/POC account.
+      3. neither of the two -> generate the key at install time and persist it
+         (see _load_or_create_admin_key), so a fresh install has a working admin
+         console without anyone hand-crafting a secret.
     """
     admin_key = (os.environ.get("ADMIN_API_KEY") or "").strip()
     promote_email = (os.environ.get("PROMOTE_ADMIN_EMAIL") or "").strip().lower()
     if not admin_key and not promote_email:
-        log.info(
-            "No ADMIN_API_KEY / PROMOTE_ADMIN_EMAIL set - skipping admin bootstrap "
-            "(all /admin/* routes stay unreachable)."
-        )
-        return
+        admin_key = _load_or_create_admin_key()
+        if not admin_key:
+            log.info("Admin bootstrap: no key available - /admin/* stays unreachable.")
+            return
 
     email = (os.environ.get("ADMIN_EMAIL") or "admin@gpu-pool.local").strip().lower()
     name = (os.environ.get("ADMIN_NAME") or "Platform Admin").strip()
