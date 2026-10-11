@@ -943,40 +943,59 @@ async def seed_test_user_if_empty():
 
 
 ADMIN_KEY_FILE = os.path.join(DATA_DIR, "admin_api_key.txt")
+ADMIN_PW_FILE = os.path.join(DATA_DIR, "admin_password.txt")
+
+
+def _load_or_create_secret(path: str, make, what: str) -> str:
+    """Reuse the secret stored in `path`, else generate it there (mode 0600).
+
+    Called at install time so a fresh deployment ends up with working admin
+    credentials without anyone hand-crafting them. The file lives next to the
+    database, so the secret survives restarts and the one you noted down keeps
+    working. O_CREAT with mode in the same call: the value is never world-readable,
+    not even briefly.
+    """
+    try:
+        if os.path.exists(path):
+            with open(path, "r", encoding="utf-8") as fh:
+                existing = fh.read().strip()
+            if existing:
+                log.info(f"Admin bootstrap: reusing the {what} in {path}")
+                return existing
+
+        value = make()
+        os.makedirs(DATA_DIR, exist_ok=True)
+        fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+        with os.fdopen(fd, "w", encoding="utf-8") as fh:
+            fh.write(value + "\n")
+        log.warning(
+            f"Admin bootstrap: no {what} configured - generated one at install time, "
+            f"stored in {path} (chmod 600)."
+        )
+        return value
+    except Exception as exc:
+        log.error(f"Admin bootstrap: cannot read/create {path}: {exc}")
+        return ""
 
 
 def _load_or_create_admin_key() -> str:
-    """The admin key of a fresh install: reuse the persisted one, else generate it.
+    """The admin API key: read the persisted one, else generate it."""
+    return _load_or_create_secret(
+        ADMIN_KEY_FILE, lambda: "gpu_admin_" + secrets.token_urlsafe(32), "API key"
+    )
 
-    Only called when ADMIN_API_KEY is unset and no account is named for promotion,
-    so an install ends up with a usable admin console instead of a wall of 403s.
-    The key is written 0600 next to the database, which means it survives restarts
-    and the key you noted down keeps working. Setting ADMIN_API_KEY in the
-    environment always takes precedence.
+
+def _load_or_create_admin_password() -> str:
+    """The admin account password — /auth/login only accepts email + password.
+
+    Without this the generated admin could not sign in to the UI at all: it would
+    hold an API key but no usable password. The file is the source of truth, so the
+    documented credentials always work; treat it as the place to change them.
     """
-    try:
-        if os.path.exists(ADMIN_KEY_FILE):
-            with open(ADMIN_KEY_FILE, "r", encoding="utf-8") as fh:
-                existing = fh.read().strip()
-            if existing:
-                log.info(f"Admin bootstrap: reusing the key in {ADMIN_KEY_FILE}")
-                return existing
+    return _load_or_create_secret(
+        ADMIN_PW_FILE, lambda: secrets.token_urlsafe(18), "admin password"
+    )
 
-        key = "gpu_admin_" + secrets.token_urlsafe(32)
-        os.makedirs(DATA_DIR, exist_ok=True)
-        # O_CREAT with mode 0600: the key must not be world-readable, not even briefly.
-        fd = os.open(ADMIN_KEY_FILE, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
-        with os.fdopen(fd, "w", encoding="utf-8") as fh:
-            fh.write(key + "\n")
-        log.warning(
-            f"Admin bootstrap: no ADMIN_API_KEY set - generated one at install time, "
-            f"stored in {ADMIN_KEY_FILE} (chmod 600). Set ADMIN_API_KEY in the "
-            f"environment to take over from here."
-        )
-        return key
-    except Exception as exc:
-        log.error(f"Admin bootstrap: cannot read/create {ADMIN_KEY_FILE}: {exc}")
-        return ""
 
 
 async def seed_admin_if_configured():
@@ -1008,16 +1027,21 @@ async def seed_admin_if_configured():
     db = SessionLocal()
     try:
         if admin_key:
+            admin_password = _load_or_create_admin_password()
             user = db.query(User).filter(User.email == email).first()
             if user is None:
                 user = User(email=email, name=name, role=ADMIN_ROLE, is_active=True)
-                user.password_hash = _hash_pw(secrets.token_urlsafe(24))
+                user.password_hash = _hash_pw(admin_password) if admin_password else None
                 db.add(user)
                 db.flush()
                 log.info(f"Admin bootstrap: created {email}")
             else:
                 user.role = ADMIN_ROLE
                 user.is_active = True
+                if admin_password:
+                    # The password file is the source of truth for /auth/login, not
+                    # whatever a previous start happened to leave in the column.
+                    user.password_hash = _hash_pw(admin_password)
                 log.info(f"Admin bootstrap: promoted existing {email} to admin")
 
             key_hash = hash_api_key(admin_key)

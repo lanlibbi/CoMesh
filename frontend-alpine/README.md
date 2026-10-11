@@ -67,7 +67,7 @@ Topbar und Footer kommen ebenfalls aus `app.js` (`navHTML()`, `footerHTML()`),
 damit die Navigation nicht zwischen Seiten auseinanderläuft.
 
 - `navHTML(activeKey)` — `activeKey` ist `dashboard` | `chat` | `credits` |
-  `pool` | `nodes` | `earnings` | `agent` | `profile`. Einträge mit
+  `pool` | `nodes` | `agent` | `profile`. Einträge mit
   `providerOnly: true` erscheinen nur für Provider-Rollen.
 - Der Footer wird beim Laden angehängt; Seiten brauchen keinen Platzhalter.
 - Mobile: die Nav bekommt eine eigene Zeile und scrollt den aktiven Link
