@@ -79,6 +79,7 @@ from typing import Any, Dict, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, WebSocket, WebSocketDisconnect
 from pydantic import BaseModel
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from database import SessionLocal, get_db
@@ -441,3 +442,187 @@ async def agent_connect(
         # Remove from in-memory registry (idempotent).
         if node_id is not None:
             _WS_REGISTRY.pop(node_id, None)
+
+
+# ----------------------------------------------------------------------------
+# LANA-110: WS chat completions (streaming over WebSocket, proxy/CF-tunnel safe)
+# ----------------------------------------------------------------------------
+import json as _json
+import asyncio as _asyncio
+import time as _time
+import datetime as _dt
+
+_WS_CHAT_DOC = """OpenAI-compatible chat completions over WebSocket.
+
+Framing (JSON, one object per message):
+  client -> server: {"id": <echo>, "model": "...", "messages": [...],
+                     "stream": true|false, "max_tokens": n, "temperature": f}
+  server -> client: {"type": "hello"}                                on connect
+                    {"id": echo, "type": "error", "detail": str, "status": int}
+                    {"id": echo, "type": "status", "note": str}       progress pings
+                    {"id": echo, "type": "chunk", "delta": str}       (stream=true)
+                    {"id": echo, "type": "final", "content": str,
+                     "usage": {...}, "model": str, "credits": str}    summary
+
+Auth: query param ?api_key=<raw> (browsers cannot set headers on WS) or
+Sec-WebSocket-Protocol: api-key.<raw>. Same key rules as the HTTP path.
+
+Quota: mirrors /v1/chat/completions exactly — DB-backed credits flag
+(LANA-88) + per-user quota_mode (blocked -> error frame, balance -> floor
+check, unlimited -> skip charging). Booking (Usage/CreditTransaction/PoolJob/
+revenue) identical to the HTTP path.
+"""
+
+
+def _ws_auth_user(db, user_key):
+    """Resolve a raw api key to its active User (same rule as get_current_user)."""
+    if not user_key:
+        return None
+    from auth import hash_api_key
+    from models import ApiKey, User
+    kh = hash_api_key(user_key)
+    key = db.query(ApiKey).filter(ApiKey.key_hash == kh, ApiKey.is_active == True).first()  # noqa: E712
+    if key is None:
+        return None
+    u = db.query(User).filter(User.id == key.user_id).first()
+    if u is None or not getattr(u, "is_active", True):
+        return None
+    return u
+
+
+@router.websocket("/ws/chat")
+async def ws_chat(websocket: WebSocket):
+    await websocket.accept()
+    await websocket.send_text(_json.dumps({"type": "hello"}))
+
+    user_key = websocket.query_params.get("api_key") or ""
+    if not user_key:
+        for sub in (websocket.headers.get("sec-websocket-protocol") or "").split(","):
+            s = sub.strip()
+            if s.startswith("api-key."):
+                user_key = s[len("api-key."):]
+                break
+
+    from models import ApiKey, User, Usage, CreditTransaction, PoolJob, GpuNode
+    from database import SessionLocal
+    from pool import route_request
+    from config import credits_enabled
+    from main import COST_PER_1K_TOKENS, DEFAULT_MODEL, distribute_revenue
+
+    db = SessionLocal()
+    _ws_open = True
+    try:
+        user = _ws_auth_user(db, user_key)
+        if user is None:
+            await websocket.send_text(_json.dumps({"type": "error", "status": 401,
+                                                   "detail": "Invalid or inactive API key."}))
+            await websocket.close(code=4401)
+            return
+        while _ws_open:
+            raw = await websocket.receive_text()
+            try:
+                req = _json.loads(raw)
+            except Exception:
+                await websocket.send_text(_json.dumps({"type": "error", "status": 400,
+                                                       "detail": "invalid JSON frame"}))
+                continue
+            echo = req.get("id")
+
+            # ---- quota (mirrors main.chat_completions, LANA-88 semantics) ----
+            qm = (getattr(user, "quota_mode", "unlimited") or "unlimited")
+            if qm == "blocked":
+                await websocket.send_text(_json.dumps({"id": echo, "type": "error", "status": 403,
+                                                       "detail": "Your account is blocked from using this pool by the administrator."}))
+                continue
+            billing = credits_enabled(db) and (qm != "unlimited")
+            balance = float(db.query(func.coalesce(func.sum(CreditTransaction.amount), 0.0))
+                            .filter(CreditTransaction.user_id == user.id).scalar() or 0.0)
+            model = req.get("model") or DEFAULT_MODEL
+            if billing and balance < 0.01:
+                await websocket.send_text(_json.dumps({"id": echo, "type": "error", "status": 402,
+                                                       "detail": f"Insufficient credits. Current balance: {balance:.4f}"}))
+                continue
+
+            stream = bool(req.get("stream", False))
+
+            async def _send_status(note):
+                await websocket.send_text(_json.dumps({"id": echo, "type": "status", "note": note}))
+
+            await _send_status("routing")
+            ollama_payload = {
+                "model": model,
+                "messages": req.get("messages", []),
+                "stream": False,  # Phase 2: upstream non-streaming; WS carries progress
+                "options": {"temperature": req.get("temperature")},
+            }
+            if req.get("max_tokens") is not None:
+                ollama_payload["options"]["num_predict"] = int(req["max_tokens"])
+
+            t0 = _time.time()
+            routed = await route_request(db, user, ollama_payload, model)
+            if not routed["ok"]:
+                status = 403 if routed["source"] == "denied" else (503 if routed["source"] == "cloud" else 502)
+                await websocket.send_text(_json.dumps({"id": echo, "type": "error", "status": status,
+                                                       "detail": routed.get("error") or "Routing failed"}))
+                continue
+
+            await _send_status("generating")
+            resp = routed["response"]
+            msg = (resp.get("choices", [{}])[0].get("message", {}) or {})
+            content = msg.get("content", "")
+            usage_d = resp.get("usage", {}) or {}
+            prompt_tokens = int(usage_d.get("prompt_tokens", 0) or 0)
+            completion_tokens = int(usage_d.get("completion_tokens", 0) or 0)
+            total_tokens = int(usage_d.get("total_tokens", prompt_tokens + completion_tokens) or 0)
+
+            if stream and content:
+                # Phase 2: chunk the finished content (progressive feel). Phase 3
+                # streams true upstream deltas via the node WS job stream.
+                CH = 24
+                for i in range(0, len(content), CH):
+                    await websocket.send_text(_json.dumps({"id": echo, "type": "chunk",
+                                                           "delta": content[i:i + CH]}))
+                    await _asyncio.sleep(0)
+
+            cost = round((total_tokens / 1000.0) * COST_PER_1K_TOKENS, 6)
+            api_key = db.query(ApiKey).filter(ApiKey.user_id == user.id, ApiKey.is_active == True).first()  # noqa: E712
+            db.add(Usage(user_id=user.id,
+                         api_key_id=api_key.id if api_key else None,
+                         model=model,
+                         prompt_tokens=prompt_tokens,
+                         completion_tokens=completion_tokens,
+                         total_tokens=total_tokens,
+                         credits_charged=cost))
+            if billing:
+                db.add(CreditTransaction(user_id=user.id, amount=-cost,
+                                         balance_after=round(balance - cost, 6),
+                                         reason=f"ws-chat: {model} ({total_tokens} tokens, src={routed['source']})"))
+            pj = PoolJob(user_id=user.id, node_id=routed.get("node_id"), model=model,
+                         source=routed["source"], status="succeeded",
+                         prompt_tokens=prompt_tokens, completion_tokens=completion_tokens,
+                         total_tokens=total_tokens, job_cost=cost,
+                         latency_ms=int((_time.time() - t0) * 1000),
+                         finished_at=_dt.datetime.utcnow())
+            db.add(pj)
+            db.flush()
+            if routed["source"] == "community" and routed.get("node_id"):
+                node = db.query(GpuNode).filter(GpuNode.id == routed["node_id"]).first()
+                if node is not None:
+                    distribute_revenue(db, node, cost, pool_job=pj)
+            db.commit()
+
+            await websocket.send_text(_json.dumps({"id": echo, "type": "final", "model": model,
+                                                   "content": content, "usage": usage_d,
+                                                   "credits": (f"-{cost}" if billing else f"informational:{cost}")}))
+    except WebSocketDisconnect:
+        return
+    except Exception as e:  # never crash the socket silently
+        import logging as _log_mod
+        _log_mod.getLogger("ws").exception("ws_chat failed")
+        try:
+            await websocket.send_text(_json.dumps({"type": "error", "status": 500, "detail": str(e)[:200]}))
+            await websocket.close()
+        except Exception:
+            pass
+    finally:
+        db.close()

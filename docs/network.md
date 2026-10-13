@@ -110,3 +110,19 @@ mehr eine konkrete Tailnet-Adresse. Details zu ACLs und Betrieb eines Tailnets
 stehen bewusst nicht mehr in diesem Repo — dafür ist die Tailscale-Doku
 zuständig. Wer ein anderes Overlay (Headscale, NetBird, ZeroTier) nutzt: gleiches
 Prinzip, nur andere Namen.
+
+## Internet-Exposure via Cloudflare Tunnel (LANA-110)
+
+Wenn das Portal übers Internet erreichbar sein soll (z.B. via Cloudflare Tunnel oder
+einen anderen Reverse-Proxy), gilt:
+
+- **Control-Plane** (Portal-UI, Registrierung, Heartbeats, Admin) läuft problemlos
+  über HTTP durch den Tunnel — Requests sind kurzlebig.
+- **Chat/Inference NICHT über lange HTTP-Requests**: Cloudflare beantwortet HTTP mit
+  einer ~100s-Obergrenze (Error 524). Lange LLM-Läufe brechen ab.
+- **Lösung: WS-Chat.** Der Endpunkt `/ws/chat` (LANA-110) führt Chat-Completions über
+  eine ausdauernde WebSocket-Verbindung aus — WebSockets laufen durch Cloudflare ohne
+  die 100s-HTTP-Grenze. Framing/Beispiel in `ws.py` (WS_CHAT_DOC).
+
+Frontend-Nutzung: `chat.html` nutzt den WS-Pfad mit Fallback auf HTTP
+(`/v1/chat/completions`), falls WS nicht möglich ist (z.B. strikte Corporate-Proxies).
