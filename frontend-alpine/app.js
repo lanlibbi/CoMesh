@@ -355,3 +355,78 @@ window.footerHTML = footerHTML;
 window.mountBackground = mountBackground;
 window.renderUsageChart = renderUsageChart;
 window.refreshUser = refreshUser;
+
+// ---------- WS chat (LANA-112) ----------
+// Prefer WebSockets for /v1-style chat (CF-tunnel-safe, no 100 s HTTP cap).
+// The API key is transported in the Sec-WebSocket-Protocol subprotocol
+// (api-key.<raw>) so it never lands in proxy/Cloudflare URL logs; the
+// ?api_key= query param exists server-side only as a documented fallback.
+// On handshake/open failure we fall back to plain HTTP automatically.
+// Server frames: hello | keepalive (ignored) | status | chunk (progress
+// rendering of the finished answer, not token streaming) | final | error.
+async function apiChatCompletion({ model, messages, stream = false, onChunk = null, temperature, max_tokens }) {
+  const key = LS.get("api_key");
+  if (!key) throw new Error(I18n.t("app.login_required"));
+  const body = { model, messages, stream };
+  if (temperature != null) body.temperature = temperature;
+  if (max_tokens != null) body.max_tokens = max_tokens;
+
+  const proto = location.protocol === "https:" ? "wss:" : "ws:";
+  const wsUrl = `${proto}//${location.host}${API_BASE ? API_BASE.replace(/\/$/, "") : ""}/ws/chat`;
+  const ws = await new Promise((resolve, reject) => {
+    let sock;
+    try {
+      sock = new WebSocket(wsUrl, [`api-key.${key}`]);
+    } catch (e) { reject(e); return; }
+    const timer = setTimeout(() => {
+      try { sock.close(); } catch {}
+      reject(new Error("ws handshake timeout"));
+    }, 8000);
+    sock.onopen = () => { clearTimeout(timer); resolve(sock); };
+    sock.onerror = () => { clearTimeout(timer); reject(new Error("ws handshake failed")); };
+  });
+
+  try {
+    return await new Promise((resolve, reject) => {
+      const timer = setTimeout(() => reject(new Error("ws chat timeout")), 300000);
+      ws.onmessage = (ev) => {
+        let f; try { f = JSON.parse(ev.data); } catch { return; }
+        switch (f.type) {
+          case "keepalive":
+          case "hello":
+          case "status":
+            break; // progress signals — nothing to render for status today
+          case "chunk":
+            if (onChunk) onChunk(f.delta || "");
+            break;
+          case "error":
+            clearTimeout(timer);
+            ws.close();
+            reject(new Error(`Upstream-Fehler (WS ${f.status})`));
+            break;
+          case "final":
+            clearTimeout(timer);
+            ws.close();
+            resolve({
+              choices: [{ message: { role: "assistant", content: f.content || "" } }],
+              usage: f.usage || { total_tokens: 0 },
+              transport: "ws",
+            });
+            break;
+          default:
+            break;
+        }
+      };
+      ws.onerror = () => { clearTimeout(timer); reject(new Error("ws connection lost")); };
+      // (LANA-113 A) A clean close from an intermediary fires onclose without
+      // onerror — reject immediately so the HTTP fallback kicks in instead of
+      // waiting out the 300 s timer. Already-settled promises ignore this.
+      ws.onclose = () => { clearTimeout(timer); reject(new Error("ws closed")); };
+      ws.send(JSON.stringify({ id: `c${Date.now()}`, ...body }));
+    });
+  } catch (e) {
+    try { ws.close(); } catch {}
+    throw e;
+  }
+}
+window.apiChatCompletion = apiChatCompletion;

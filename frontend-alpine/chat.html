@@ -146,6 +146,17 @@
           this.input = text;
         },
 
+        // LANA-112: render WS chunk frames incrementally (progress display).
+        appendStreaming(delta) {
+          const last = this.messages[this.messages.length - 1];
+          if (last && last.role === "assistant" && last.__streaming) {
+            last.content += delta;
+          } else {
+            if (last && last.role === "assistant" && last.__partial) this.messages.pop();
+            this.messages.push({ role: "assistant", content: delta, __streaming: true, __partial: true });
+          }
+        },
+
         async loadModels() {
           try {
             const r = await API("/v1/models", { auth: true });
@@ -170,26 +181,40 @@
             return;
           }
 
+          // Send the full history so the model keeps context. Long sessions
+          // would need trimming; fine for the POC.
+          const payload = {
+            model: this.model,
+            messages: this.messages.map(m => ({ role: m.role, content: m.content })),
+            temperature: 0.7,
+            max_tokens: 512,
+          };
           try {
-            // Send the full history so the model keeps context. Long sessions
-            // would need trimming; fine for the POC.
-            const r = await API("/v1/chat/completions", {
-              method: "POST",
-              auth: true,
-              body: {
-                model: this.model,
-                messages: this.messages.map(m => ({ role: m.role, content: m.content })),
-                temperature: 0.7,
-                max_tokens: 512,
-              },
+            // LANA-112: WS first (CF-tunnel-safe; key via subprotocol).
+            const r = await apiChatCompletion({
+              ...payload,
+              onChunk: (d) => this.appendStreaming(d),
             });
             const reply = r.choices?.[0]?.message?.content || "(keine Antwort)";
+            // final frame supersedes the streaming partial — drop it
+            this.messages = this.messages.filter(m => !m.__streaming);
             this.messages.push({ role: "assistant", content: reply });
             const total = r.usage?.total_tokens || 0;
             this.lastUsage = { total_tokens: total, credits_used: total / 1000 * 0.001 };
             this.me = await refreshUser();
-          } catch (e) {
-            toast("Chat-Fehler: " + e.message, "err", 5000);
+          } catch (wsErr) {
+            // HTTP fallback (e.g. strikte Proxies ohne WS)
+            this.messages = this.messages.filter(m => !m.__streaming);
+            try {
+              const r = await API("/v1/chat/completions", { method: "POST", auth: true, body: payload });
+              const reply = r.choices?.[0]?.message?.content || "(keine Antwort)";
+              this.messages.push({ role: "assistant", content: reply });
+              const total = r.usage?.total_tokens || 0;
+              this.lastUsage = { total_tokens: total, credits_used: total / 1000 * 0.001 };
+              this.me = await refreshUser();
+            } catch (e) {
+              toast("Chat-Fehler: " + e.message, "err", 5000);
+            }
           } finally {
             this.loading = false;
           }

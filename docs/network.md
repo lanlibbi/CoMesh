@@ -120,9 +120,77 @@ einen anderen Reverse-Proxy), gilt:
   über HTTP durch den Tunnel — Requests sind kurzlebig.
 - **Chat/Inference NICHT über lange HTTP-Requests**: Cloudflare beantwortet HTTP mit
   einer ~100s-Obergrenze (Error 524). Lange LLM-Läufe brechen ab.
-- **Lösung: WS-Chat.** Der Endpunkt `/ws/chat` (LANA-110) führt Chat-Completions über
-  eine ausdauernde WebSocket-Verbindung aus — WebSockets laufen durch Cloudflare ohne
-  die 100s-HTTP-Grenze. Framing/Beispiel in `ws.py` (WS_CHAT_DOC).
+- **Lösung: WS-Chat.** Der Endpunkt `/ws/chat` (LANA-110, gehärtet in LANA-112)
+  führt Chat-Completions über eine ausdauernde WebSocket-Verbindung aus.
+  Framing/Beispiel im Docstring von `ws.py`.
 
-Frontend-Nutzung: `chat.html` nutzt den WS-Pfad mit Fallback auf HTTP
-(`/v1/chat/completions`), falls WS nicht möglich ist (z.B. strikte Corporate-Proxies).
+### Cloudflare-Realität bei WebSockets (LANA-112)
+
+„WebSockets laufen uneingeschränkt durch Cloudflare" stimmt **nicht**:
+
+- **Idle-Timeout in beide Richtungen:** Cloudflare trennt eine WS-Verbindung,
+  wenn für ~100 s keine Frames fließen — in *beiden* Richtungen. Ein lange
+  laufender LLM-Job, der während `route_request` nichts sendet, wird
+  abgebrochen. Deshalb sendet der Server während des Routings alle 15 s ein
+  App-Level-Frame `{"type": "keepalive"}` (Keepalive-Task in `ws.py`,
+  Intervall via `WS_KEEPALIVE_INTERVAL_S` einstellbar). Nachweis:
+  `tests/test_ws_chat.py::test_ws_keepalive_frames_close_gap` —
+  `max(frame_gap) < 25 s` bei einem 3-s-Upstream-Stub.
+- **Edge-Deploys:** Cloudflare Workers/Edge-Runtimes unterstützen keine
+  frei dauerhaften Client-Sockets; klassische Tunnel-CSWs-Proxys schon.
+  Der Portal-Betrieb läuft bewusst als normaler `cloudflared`-Tunnel, nicht
+  als Worker.
+- **Netzweite Code-Rollouts (Cloudflare "Technical note"):** Cloudflare kann
+  WebSocket-Verbindungen auch ohne Idle-Timeout beenden — z. B. beim Deploy
+  neuer Edge-Software im Netz (Close Code 1012 "service restart"). Das ist
+  kein Fehlerfall im eigenen Code und lässt sich nicht verhindern. Genau
+  deshalb muss der Client (LANA-113 A) `onclose` ohne `onerror` sofort
+  behandeln und auf den HTTP-Fallback wechseln, statt das 300-s-Timeout
+  auszusitzen.
+
+### Streaming-Entscheid (LANA-112 Fix 2; Phase 3 via LANA-114)
+
+Seit Phase 3 (LANA-114) sind `chunk`-Frames bei `stream=true` **echte
+Upstream-Token-Deltas**: der Node-Agent streamt die ND-JSON-Antwort seines
+Ollama und schickt sie als `job_result_chunk`-Frames über den
+Node-Job-Stream (`ws.py`), das Portal reicht sie unverzüglich als
+`chunk` an `/ws/chat` weiter. Damit stimmt auch der TTFT: das erste
+`chunk`-Frame kommt mit dem ersten Token, nicht erst mit der fertigen
+Antwort.
+
+Verbindlich bleibt in jedem Fall der `final`-Frame: sein `content` ist die
+exakte Aggregation aller Deltas. Fallback-Szenarien ohne echtes Streaming
+(HTTP-Fallback-Pfad, Agent mit `BACKEND=openai`, ältere Agent-Versionen)
+liefern weiterhin das 24-Zeichen-Progress-Chunking der fertigen Antwort —
+Clients behandeln `chunk` als Anzeige, `final` als Wahrheit.
+
+Agent-Vertrag (Phase 3):
+
+- Job mit `stream: true` im Payload → Agent streamt Ollama
+  `/api/chat` (NDJSON), sendet pro Delta
+  `{"type": "job_result_chunk", "job_id": ..., "delta": "..."}` und danach
+  das bindende `job_result` mit aggregiertem Content.
+- `BACKEND=openai`-Agenten antworten Phase-2-mäßig non-streaming — das
+  Portal erkennt das am Fehlen von Deltas und nutzt den Fallback-Chunking.
+- Bricht der Stream nach bereits gesendeten Deltas ab, folgt ein
+  `job_result` mit `ok: false`; Clients müssen die Partial-Content dann
+  verwerfen (final/error ist bindend).
+
+### Key-Transport (LANA-112, Fix 6)
+
+Der API-Key wird standardmäßig über das WS-Subprotocol
+`Sec-WebSocket-Protocol: api-key.<raw>` transportiert — der Server akzeptiert
+das angebotene Subprotocol explizit zurück (RFC 6455 §4.1, sonst brechen
+Browser den Handshake ab). Der Query-Parameter `?api_key=` bleibt als
+dokumentierter Fallback (z.B. Clients, die keine Subprotocols setzen können),
+landet aber in Cloudflare-HTTP-Request-Logs (CF protokolliert die
+Upgrade-Request-URL) und sollte im Internet-Exposure vermieden werden.
+Das Frontend nutzt beide Pfade: Subprotocol zuerst, Query nur als Fallback.
+
+### Frontend-Nutzung (LANA-112, Fix 5)
+
+`chat.html` (plain und Alpine) **bevorzugt WS** (`API.chatCompletion` bzw.
+`apiChatCompletion`): Key per Subprotocol, `keepalive` wird ignoriert,
+`chunk` wird inkrementell gerendert, bei Handshake-Fehler fällt der Client
+automatisch auf HTTP (`POST /v1/chat/completions`) zurück — z.B. bei
+strikten Corporate-Proxies, die WS nicht durchlassen.

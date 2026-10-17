@@ -155,7 +155,8 @@ async def _infer(payload: dict, timeout: float = 180.0) -> dict:
     """Run one inference against the configured backend and return an OpenAI-shaped response.
 
     Accepts an OpenAI-shaped /v1/chat/completions body (``model``, ``messages``,
-    ``temperature``, ``max_tokens``, ``stream``). Non-streaming only.
+    ``temperature``, ``max_tokens``, ``stream``). Non-streaming; for chunked
+    delivery see `_infer_streaming` (Phase 3, BACKEND=ollama only).
 
     - BACKEND=ollama: translates to Ollama's /api/chat (options.temperature/num_predict).
     - BACKEND=openai: forwards the OpenAI body verbatim to /v1/chat/completions
@@ -209,6 +210,76 @@ async def _infer(payload: dict, timeout: float = 180.0) -> dict:
             "completion_tokens": usage.get("completion_tokens") or data.get("eval_count") or 0,
             "total_tokens": (usage.get("total_tokens") or 0)
                 or ((data.get("prompt_eval_count") or 0) + (data.get("eval_count") or 0)),
+        },
+        "_agent": {"node_id": NODE_ID, "gpu": get_gpu_info()},
+    }
+
+
+# ----------------------------------------------------------------------------
+# Phase 3 (LANA-114): chunked inference. See `_infer_streaming`.
+# ----------------------------------------------------------------------------
+async def _infer_streaming(payload: dict, timeout: float, send_delta) -> dict:
+    """Chunked upstream inference, BACKEND=ollama only.
+
+    Streams Ollama's NDJSON /api/chat response and forwards every non-empty
+    `message.content` delta to `send_delta(delta)` (an async callable that
+    emits one `job_result_chunk` WS frame). Returns the same OpenAI-shaped
+    envelope as `_infer`, with `message.content` being the exact
+    concatenation of the emitted deltas and usage aggregated from the final
+    `done` line: the final `job_result` frame stays binding, chunk frames
+    are advisory.
+
+    Raises like `_infer` (httpx errors bubble up). If the stream breaks
+    mid-way after deltas were already sent, the caller reports ok:false in
+    `job_result` and the pool falls back to HTTP; clients that received
+    partial chunks must discard them (final/error frame is binding).
+    """
+    ollama_payload = {
+        "model": payload.get("model", ""),
+        "messages": payload.get("messages", []),
+        "stream": True,
+        "options": {},
+    }
+    if "temperature" in payload and payload["temperature"] is not None:
+        ollama_payload["options"]["temperature"] = payload["temperature"]
+    if payload.get("max_tokens") is not None:
+        ollama_payload["options"]["num_predict"] = payload["max_tokens"]
+
+    prompt_tokens = 0
+    completion_tokens = 0
+    content_parts: list = []
+
+    async def _track(delta: str) -> None:
+        content_parts.append(delta)
+        await send_delta(delta)
+
+    async with httpx.AsyncClient(timeout=timeout) as client:
+        async with client.stream("POST", backend_chat_url(), json=ollama_payload) as r:
+            r.raise_for_status()
+            async for line in r.aiter_lines():
+                if not line.strip():
+                    continue
+                data = json.loads(line)
+                delta = (data.get("message") or {}).get("content") or ""
+                if delta:
+                    await _track(delta)
+                if data.get("done"):
+                    prompt_tokens = data.get("prompt_eval_count") or 0
+                    completion_tokens = data.get("eval_count") or 0
+    return {
+        "id": f"chatcmpl-agent-{int(time.time())}",
+        "object": "chat.completion",
+        "created": int(time.time()),
+        "model": payload.get("model", ""),
+        "choices": [{
+            "index": 0,
+            "message": {"role": "assistant", "content": "".join(content_parts)},
+            "finish_reason": "stop",
+        }],
+        "usage": {
+            "prompt_tokens": prompt_tokens,
+            "completion_tokens": completion_tokens,
+            "total_tokens": prompt_tokens + completion_tokens,
         },
         "_agent": {"node_id": NODE_ID, "gpu": get_gpu_info()},
     }
@@ -639,11 +710,13 @@ async def ws_loop():
 async def _handle_job_frame(ws, frame: dict) -> None:
     """Handle one `{"type":"job", job_id, payload}` message from the pool.
 
-    Phase 2: NON-STREAMING ONLY.
-      - We force `stream=False` in the payload before forwarding to Ollama
-        (the agent never returns `job_result_chunk` frames in Phase 2).
-      - On success, reply with the full OpenAI-shaped response.
-      - On any failure, reply with `ok: false` and the error string.
+    Phase 3 (LANA-114): the handler supports chunked delivery. When the
+    pool requests `stream: true` AND the backend is Ollama, the agent
+    streams ND-JSON deltas as `job_result_chunk` frames and then sends the
+    binding full `job_result` (content aggregated from the deltas). Both
+    BACKEND=openai and any stream failure fall back to the Phase-2
+    non-streaming path — chunk frames are advisory; errors after deltas
+    must make clients discard partial content (final/error is binding).
     Timeouts: 180s for the Ollama call. The pool typically uses 120s for
     send_job_via_ws; we leave some headroom on the agent side.
     """
@@ -653,17 +726,29 @@ async def _handle_job_frame(ws, frame: dict) -> None:
     if not job_id:
         log.warning(f"WS job frame without job_id: {frame}")
         return
-    # Phase 2: non-streaming only — force stream=False so we never try to
-    # stream back over WS (Phase 3 will add `job_result_chunk` ND-JSON).
-    if payload.get("stream"):
-        log.info(f"WS job {job_id}: stream=true requested, forcing non-streaming (Phase 2 limit)")
     payload = dict(payload)
-    payload["stream"] = False
+    want_stream = bool(payload.get("stream")) and BACKEND == "ollama"
+
+    async def _send_chunk(delta: str) -> None:
+        # Fire-and-forget: a failed chunk send means the socket is dying;
+        # the stream will break on the next send and `_handle_job_frame`
+        # reports ok:false in the final job_result.
+        try:
+            await ws.send(json.dumps({"type": "job_result_chunk",
+                                      "job_id": job_id, "delta": delta}))
+        except Exception as e:
+            raise RuntimeError(f"chunk send failed: {e!r}") from e
 
     _active_jobs += 1
     try:
         ollama_timeout = float(os.environ.get("AGENT_OLLAMA_TIMEOUT", "180"))
-        response = await _ollama_chat_non_streaming(payload, timeout=ollama_timeout)
+        if want_stream:
+            response = await _infer_streaming(payload, timeout=ollama_timeout,
+                                              send_delta=_send_chunk)
+            # Binding full result: content is the exact aggregation of the
+            # chunk deltas we already sent (filled by _infer_streaming).
+        else:
+            response = await _infer(payload, timeout=ollama_timeout)
         reply = {"type": "job_result", "job_id": job_id, "ok": True, "response": response}
     except httpx.HTTPStatusError as e:
         err = f"Ollama HTTP {e.response.status_code}: {e.response.text[:200]}"

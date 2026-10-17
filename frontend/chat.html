@@ -42,17 +42,29 @@
       if (!prompt) return;
       const out = document.getElementById("out");
       out.textContent = "Thinking...";
+      let resp = null;
+      // LANA-112: WS first (CF-tunnel-safe; key via subprotocol), HTTP fallback.
       try {
-        const resp = await API.post("/v1/chat/completions", {
+        resp = await API.chatCompletion({
           model: null,
           messages: [{ role: "user", content: prompt }],
+          onChunk: (d) => { out.textContent += d; },
         });
-        out.textContent = resp.choices[0].message.content +
-          "\n\n-- tokens: " + JSON.stringify(resp.usage);
-        API.refreshMe();
-      } catch (err) {
-        out.textContent = "Error: " + err.message;
+      } catch (wsErr) {
+        try {
+          resp = await API.post("/v1/chat/completions", {
+            model: null,
+            messages: [{ role: "user", content: prompt }],
+          });
+        } catch (err) {
+          out.textContent = "Error: " + err.message;
+          return;
+        }
       }
+      out.textContent = resp.choices[0].message.content +
+        "\n\n-- tokens: " + JSON.stringify(resp.usage) +
+        (resp.transport ? " (via " + resp.transport + ")" : "");
+      API.refreshMe();
     });
   </script>
 </body>

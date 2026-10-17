@@ -19,6 +19,7 @@ Endpoints (mounted under /pool):
                              useful for the admin dashboard.
 """
 import asyncio
+import json
 import logging
 import time
 from datetime import datetime
@@ -203,7 +204,8 @@ async def _forward_to_node(node: GpuNode, ollama_payload: dict, timeout: float =
     }
 
 
-async def _forward_to_node_ws(node: GpuNode, ollama_payload: dict, timeout: float = 120.0) -> dict:
+async def _forward_to_node_ws(node: GpuNode, ollama_payload: dict, timeout: float = 120.0,
+                              on_delta=None) -> dict:
     """Forward a job to a community node over its WebSocket (Phase 2 path).
 
     Builds the OpenAI-shaped /v1/chat/completions body from the
@@ -212,6 +214,14 @@ async def _forward_to_node_ws(node: GpuNode, ollama_payload: dict, timeout: floa
     whose `response` field is the same OpenAI-shaped dict the HTTP path
     would have returned. We then normalize it to the Ollama-style dict
     the caller expects.
+
+    Phase 3 (LANA-114): with on_delta set, the payload requests
+    stream=true and the agent may emit job_result_chunk frames; they are
+    forwarded to on_delta as they arrive. The binding job_result is then
+    the source of truth for content/usage (its content equals the deltas
+    the Ollama agent emitted). If the agent cannot stream (old agent
+    version, BACKEND=openai), it answers Phase-2 style with the full
+    response — callers can detect that by comparing on-delta count.
     """
     from ws import send_job_via_ws  # late import: avoid circular at module load
     openai_payload = {
@@ -219,9 +229,10 @@ async def _forward_to_node_ws(node: GpuNode, ollama_payload: dict, timeout: floa
         "messages": ollama_payload.get("messages", []),
         "temperature": (ollama_payload.get("options") or {}).get("temperature", 1.0),
         "max_tokens": (ollama_payload.get("options") or {}).get("num_predict"),
-        "stream": False,  # Phase 2: non-streaming only
+        "stream": bool(ollama_payload.get("stream")) and on_delta is not None,
     }
-    result = await send_job_via_ws(node.id, openai_payload, timeout=timeout)
+    result = await send_job_via_ws(node.id, openai_payload, timeout=timeout,
+                                   on_delta=on_delta)
     data = result.get("response") or {}
     msg = (data.get("choices") or [{}])[0].get("message") or {}
     usage = data.get("usage") or {}
@@ -230,6 +241,41 @@ async def _forward_to_node_ws(node: GpuNode, ollama_payload: dict, timeout: floa
         "message": {"role": msg.get("role", "assistant"), "content": msg.get("content", "")},
         "prompt_eval_count": usage.get("prompt_tokens", 0),
         "eval_count": usage.get("completion_tokens", 0),
+    }
+
+
+async def _local_ollama_streaming(ollama_payload: dict, on_delta) -> dict:
+    """Phase 3 (LANA-114): local Ollama ND-JSON streaming.
+
+    Streams /api/chat from the local backend, forwards every content delta
+    via on_delta and returns the same normalized Ollama-style dict the
+    non-streaming local path produces (content aggregated from deltas).
+    Raises httpx errors like the non-streaming path so callers keep their
+    existing fallback semantics.
+    """
+    from main import OLLAMA_URL  # late import to avoid circulars
+    prompt_tokens = 0
+    completion_tokens = 0
+    parts: list = []
+    async with httpx.AsyncClient(timeout=120.0) as client:
+        async with client.stream("POST", f"{OLLAMA_URL}/api/chat", json=ollama_payload) as r:
+            r.raise_for_status()
+            async for line in r.aiter_lines():
+                if not line.strip():
+                    continue
+                data = json.loads(line)
+                delta = (data.get("message") or {}).get("content") or ""
+                if delta:
+                    parts.append(delta)
+                    await on_delta(delta)
+                if data.get("done"):
+                    prompt_tokens = data.get("prompt_eval_count") or 0
+                    completion_tokens = data.get("eval_count") or 0
+    return {
+        "model": ollama_payload.get("model", ""),
+        "message": {"role": "assistant", "content": "".join(parts)},
+        "prompt_eval_count": prompt_tokens,
+        "eval_count": completion_tokens,
     }
 
 
@@ -277,6 +323,7 @@ async def route_request(
     user: User,
     ollama_payload: dict,
     model: str,
+    on_delta=None,
 ) -> dict:
     """
     Main entry point used by main.py's /v1/chat/completions.
@@ -289,6 +336,10 @@ async def route_request(
     Returns a dict with the OpenAI-shaped response plus routing metadata:
       { "ok": True/False, "source": "local|community|cloud|none",
         "node_id": int|None, "response": {...}, "error": str|None }
+
+    Phase 3 (LANA-114): on_delta (optional async callable receiving str
+    deltas) is forwarded to the WS community path. The local path streams
+    Ollama ND-JSON directly when on_delta is set.
     """
     from main import OLLAMA_URL  # late import to avoid circulars
 
@@ -323,6 +374,17 @@ async def route_request(
     # sees a clear error rather than getting silently re-routed.
     import httpx as _hx
     try:
+        if on_delta is not None and ollama_payload.get("stream"):
+            # Phase 3 (LANA-114): local streaming — forward Ollama ND-JSON
+            # deltas immediately, then return the aggregated response.
+            local_resp = await _local_ollama_streaming(ollama_payload, on_delta)
+            return {
+                "ok": True,
+                "source": "local",
+                "node_id": None,
+                "response": _ollama_to_openai_shape(local_resp, model),
+                "error": None,
+            }
         async with httpx.AsyncClient(timeout=120.0) as client:
             r = await client.post(f"{OLLAMA_URL}/api/chat", json=ollama_payload)
             r.raise_for_status()
@@ -370,7 +432,7 @@ async def route_request(
         if _ws_connected(node):
             transport = "ws"
             try:
-                ollama_resp = await _forward_to_node_ws(node, ollama_payload)
+                ollama_resp = await _forward_to_node_ws(node, ollama_payload, on_delta=on_delta)
             except (NodeOfflineError, JobTimeoutError) as e:
                 # Node went offline mid-call, or timed out. Fall back to
                 # HTTP for THIS node, then continue to the next.
