@@ -1468,3 +1468,49 @@ td.neg { color: var(--err); }
   .brand-mark { width: 36px; height: 36px; border-radius: 10px; }
   .brand-mark .brand-glyph { width: 22px; height: 22px; }
 }
+
+
+/* ============================================ Marke, dritte Fassung: noch größer
+   52px Kachel, 1.85rem Name, 300x60 Animation, Kopfzeile 84px. Die Marke darf
+   jetzt den Kopf tragen statt ihn nur zu schmücken.
+   ============================================================================ */
+.topbar-inner { min-height: 84px; }
+
+.brand { gap: 16px; }
+.brand-mark {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+}
+.brand-mark .brand-glyph { width: 32px; height: 32px; }
+
+.brand-text strong {
+  font-size: 1.85rem;
+  letter-spacing: -0.028em;
+}
+.brand-text span {
+  font-size: 0.7rem;
+  letter-spacing: 0.19em;
+  margin-top: 3px;
+}
+
+.brand-mesh {
+  width: 300px;
+  height: 60px;
+  margin-left: 10px;
+}
+
+@media (max-width: 1280px) {
+  .brand-mesh { width: 240px; height: 50px; }
+}
+@media (max-width: 1080px) {
+  .brand-mesh { width: 200px; height: 44px; }
+}
+@media (max-width: 980px) {
+  .brand-mesh { display: none; }
+  .topbar-inner { min-height: 72px; }
+  .brand-mark { width: 44px; height: 44px; border-radius: 12px; }
+  .brand-mark .brand-glyph { width: 26px; height: 26px; }
+  .brand-text strong { font-size: 1.5rem; }
+  .brand-text span { font-size: 0.64rem; }
+}
