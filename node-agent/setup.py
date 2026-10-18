@@ -18,6 +18,38 @@ from __future__ import annotations
 
 import os
 import sys
+from datetime import datetime
+
+# Schluessel, die dieses Skript besitzt und bei jedem Lauf auf den aktuellen
+# Stand bringt. Alles andere in der .env (PORTAL_USER_KEY, NODE_ID, ...) bleibt
+# unangetastet.
+MANAGED_KEYS = (
+    "PORTAL_URL",
+    "ADVERTISE_HOST",
+    "BACKEND",
+    "OLLAMA_URL",
+    "INFERENCE_URL",
+    "AGENT_PORT",
+    "AGENT_TRANSPORT",
+)
+
+BACKEND_MARKER_PREFIX = "# --- Backend:"
+
+# Grundgeruest der Datei beim allerersten Lauf. Die Werte selbst setzt
+# `upsert_env()` - so gibt es nur eine Stelle, die Keys schreibt.
+INITIAL_ENV_LINES = (
+    "# GPU-Pool Node-Agent Environment",
+    "# Variante A (am einfachsten): der Agent registriert sich selbst.",
+    "# Nur PORTAL_URL + PORTAL_USER_KEY (Account-API-Key) setzen - sonst nichts.",
+    "PORTAL_URL=",
+    "PORTAL_USER_KEY=dein-account-api-key",
+    "# Optional: eigenen Namen festnageln statt erkannter IP (mDNS/DNS empfohlen).",
+    "ADVERTISE_HOST=",
+    "#",
+    "# Variante B: Node im Portal registrieren und Werte hier eintragen.",
+    "# NODE_ID=1",
+    "# NODE_API_KEY=node_...",
+)
 
 BACKENDS = {
     "ollama": {
@@ -64,6 +96,113 @@ def ask_choice(prompt: str, choices: list[str], default: int | None = None) -> s
 def ask(prompt: str, default: str) -> str:
     val = input(f"{prompt} [{default}]: ").strip()
     return val or default
+
+
+def read_env(path: str) -> dict[str, str]:
+    """Liest KEY=VALUE aus einer vorhandenen .env (Kommentare zaehlen nicht)."""
+    values: dict[str, str] = {}
+    if not os.path.exists(path):
+        return values
+    with open(path, encoding="utf-8") as f:
+        for line in f:
+            stripped = line.strip()
+            if not stripped or stripped.startswith("#") or "=" not in stripped:
+                continue
+            key, value = stripped.split("=", 1)
+            values[key.strip()] = value.strip()
+    return values
+
+
+def guess_backend_key(env: dict[str, str]) -> str | None:
+    """Errät das bereits konfigurierte Backend (fuer den Vorschlagswert)."""
+    backend = env.get("BACKEND", "").strip().lower()
+    if backend == "ollama":
+        return "ollama"
+    if backend == "openai":
+        url = env.get("INFERENCE_URL", "").rstrip("/")
+        for key, spec in BACKENDS.items():
+            if spec["backend"] == "openai" and url.endswith(":" + spec["default_url"].rsplit(":", 1)[-1]):
+                return key
+        return "openai"
+    return None
+
+
+def upsert_env(
+    path: str,
+    updates: dict[str, str],
+    remove: list[str] | tuple[str, ...] = (),
+) -> tuple[list[str], list[str], list[str]]:
+    """Schreibt ``updates`` in die .env, ohne den Rest der Datei zu verlieren.
+
+    Vorhandene Schluessel werden an ihrer Stelle ersetzt statt angehaengt,
+    fehlende am Ende ergaenzt. Dubletten verwalteter Schluessel (Altlast
+    frueherer Laeufe) fliegen raus. Alle nicht verwalteten Keys bleiben
+    unangetastet. ``remove`` nennt Keys, die komplett verschwinden sollen
+    (z. B. die URL des alten Backends).
+
+    Rueckgabe: (ersetzte Keys, neu angelegte Keys, entfernte Keys).
+    """
+    pending = dict(updates)
+    doomed = {k for k in remove if k not in pending}
+    if os.path.exists(path):
+        with open(path, encoding="utf-8") as f:
+            lines = f.read().splitlines()
+    else:
+        lines = [INITIAL_ENV_LINES[0], f"# Generiert am {datetime.now().isoformat()}", *INITIAL_ENV_LINES[1:]]
+
+    replaced: list[str] = []
+    added: list[str] = []
+    removed: list[str] = []
+    seen: set[str] = set()
+    marker_written = False
+    out: list[str] = []
+
+    for line in lines:
+        stripped = line.strip()
+        if stripped.startswith(BACKEND_MARKER_PREFIX):
+            # Marker stammt vom Skript: genau einer, immer mit aktuellem Backend.
+            if marker_written:
+                continue
+            marker_written = True
+            out.append(f"{BACKEND_MARKER_PREFIX} {updates['BACKEND']} ---" if "BACKEND" in updates else line)
+            continue
+        if stripped and not stripped.startswith("#") and "=" in stripped:
+            key = stripped.split("=", 1)[0].strip()
+            if key in doomed:
+                if key not in removed:
+                    removed.append(key)
+                continue
+            if key in pending:
+                out.append(f"{key}={pending.pop(key)}")
+                replaced.append(key)
+                seen.add(key)
+                continue
+            if key in seen:
+                # Dublette eines bereits ersetzten Keys (alter Append-Lauf).
+                continue
+        out.append(line)
+
+    if pending:
+        if out and out[-1].strip():
+            out.append("")
+        if "BACKEND" in pending and not marker_written:
+            out.append(f"{BACKEND_MARKER_PREFIX} {pending['BACKEND']} ---")
+            marker_written = True
+        for key in MANAGED_KEYS:
+            if key in pending:
+                out.append(f"{key}={pending[key]}")
+                added.append(key)
+                del pending[key]
+        for key, value in pending.items():
+            out.append(f"{key}={value}")
+            added.append(key)
+
+    text = "\n".join(out)
+    if not text.endswith("\n"):
+        text += "\n"
+    with open(path, "w", encoding="utf-8") as f:
+        f.write(text)
+    return replaced, added, removed
 
 
 def build_compose(backend_key: str, backend_value: str, agent_port: int, url: str, nvidia: bool, transport: str) -> str:
@@ -150,33 +289,54 @@ def main() -> None:
     print("Konfiguriert dieses Node als Contributor im GPU-Pool")
     print("=" * 62)
 
-    backend_key = ask_choice(
+    # Vorhandene .env einlesen: ihre Werte sind die Vorschlagswerte, damit ein
+    # zweiter Lauf die Konfiguration nicht mit den Platzhalter-Defaults
+    # ueberschreibt.
+    env_path = ".env"
+    existing = read_env(env_path)
+
+    labels = [b["label"] for b in BACKENDS.values()]
+    known_backend = guess_backend_key(existing)
+    default_index = list(BACKENDS).index(known_backend) + 1 if known_backend else 1
+    choice = ask_choice(
         "\nWelches GPU-Backend nutzt dieser Node?",
-        [b["label"] for b in BACKENDS.values()],
-        default=1,
+        labels,
+        default=default_index,
     )
     # ask_choice returns the chosen label — map back to the backend key
-    backend_key = [k for k, v in BACKENDS.items() if v["label"] == backend_key][0]
+    backend_key = [k for k, v in BACKENDS.items() if v["label"] == choice][0]
     b = BACKENDS[backend_key]
 
-    url = ask(f"\n{b['url_desc']} (z. B. {b['default_url']}):", b["default_url"]).rstrip("/")
+    url_default = existing.get(
+        "OLLAMA_URL" if b["backend"] == "ollama" else "INFERENCE_URL",
+        b["default_url"],
+    ) or b["default_url"]
+    url = ask(f"\n{b['url_desc']} (z. B. {b['default_url']}):", url_default).rstrip("/")
 
     portal_url = ask(
         "\nPortal-URL (Name oder IP des Portal-Hosts; Name bevorzugt, ueberlebt DHCP-Wechsel):",
-        "http://portal-host:8765",
+        existing.get("PORTAL_URL") or "http://portal-host:8765",
     ).rstrip("/")
     advertise = ask(
         "\nName/IP, unter der das Portal DIESEN Node erreichen soll (leer = automatisch erkennen):",
-        "",
+        existing.get("ADVERTISE_HOST", ""),
     ).strip()
 
-    agent_port = int(ask("Port für den Node-Agent (inbound):", "11435"))
+    port_default = existing.get("AGENT_PORT", "").strip()
+    if not port_default.isdigit():
+        port_default = "11435"
+    while True:
+        raw_port = ask("Port für den Node-Agent (inbound):", port_default)
+        if raw_port.isdigit():
+            agent_port = int(raw_port)
+            break
+        print("  Ungültig — bitte eine Portnummer.")
 
     # WebSocket-Transport ist Standard (kein offener Inbound-Port nötig)
     transport = ask_choice(
         "\nTransport für die Verbindung zum Portal?",
         ["WebSocket (empfohlen, outbound, kein offener Port nötig)", "HTTP (offener Port)"],
-        default=1,
+        default=2 if existing.get("AGENT_TRANSPORT", "").strip().lower() == "http" else 1,
     )
     transport_val = "ws" if transport.startswith("WebSocket") else "http"
 
@@ -187,37 +347,34 @@ def main() -> None:
     )
     nvidia_bool = nvidia.startswith("Ja")
 
-    # Dateien schreiben
-    env_path = ".env"
-    exists = os.path.exists(env_path)
-    if exists:
-        print(f"\n⚠️  {env_path} existiert bereits — ich überschreibe nur die Backend-Zeilen.")
-    with open(env_path, "a") as f:
-        if not exists:
-            f.write("# GPU-Pool Node-Agent Environment\n")
-            f.write(f"# Generiert am {__import__('datetime').datetime.now().isoformat()}\n")
-            f.write("# Variante A (am einfachsten): der Agent registriert sich selbst.\n")
-            f.write("# Nur PORTAL_URL + PORTAL_USER_KEY (Account-API-Key) setzen - sonst nichts.\n")
-            f.write(f"PORTAL_URL={portal_url}\n")
-            f.write("PORTAL_USER_KEY=dein-account-api-key\n")
-            f.write("# Optional: eigenen Namen festnageln statt erkannter IP (mDNS/DNS empfohlen).\n")
-            f.write(f"ADVERTISE_HOST={advertise}\n")
-            f.write("#\n")
-            f.write("# Variante B: Node im Portal registrieren und Werte hier eintragen.\n")
-            f.write("# NODE_ID=1\n")
-            f.write("# NODE_API_KEY=node_...\n")
-        f.write(f"\n# --- Backend: {backend_key} ---\n")
-        f.write(f"BACKEND={b['backend']}\n")
-        if b["backend"] == "ollama":
-            f.write(f"OLLAMA_URL={url}\n")
-        else:
-            f.write(f"INFERENCE_URL={url}\n")
-        f.write(f"AGENT_PORT={agent_port}\n")
-        f.write(f"AGENT_TRANSPORT={transport_val}\n")
+    # Dateien schreiben: die verwalteten Keys werden ersetzt, nicht angehaengt.
+    url_key = "OLLAMA_URL" if b["backend"] == "ollama" else "INFERENCE_URL"
+    stale_url_key = "INFERENCE_URL" if url_key == "OLLAMA_URL" else "OLLAMA_URL"
+    updates = {
+        "PORTAL_URL": portal_url,
+        "ADVERTISE_HOST": advertise,
+        "BACKEND": b["backend"],
+        url_key: url,
+        "AGENT_PORT": str(agent_port),
+        "AGENT_TRANSPORT": transport_val,
+    }
+    if existing:
+        print(
+            f"\n⚠️  {env_path} existiert bereits — ich ersetze die Keys dieses Skripts "
+            f"({', '.join(sorted(updates))}) und lasse alle anderen unangetastet."
+        )
+    replaced, added, removed = upsert_env(env_path, updates, remove=[stale_url_key])
 
     compose = build_compose(backend_key, b["backend"], agent_port, url, nvidia_bool, transport_val)
     with open("docker-compose.yml", "w") as f:
         f.write(compose)
+
+    if replaced:
+        print(f"\n  .env: ersetzt  {', '.join(replaced)}")
+    if added:
+        print(f"  .env: ergaenzt {', '.join(added)}")
+    if removed:
+        print(f"  .env: entfernt {', '.join(removed)} (Backend-Wechsel)")
 
     print("\n✅ Fertig!")
     print(f"  Backend:        {backend_key} ({b['backend']})")

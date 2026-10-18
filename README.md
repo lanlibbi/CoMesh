@@ -107,6 +107,12 @@ python agent.py --check     # which address will the portal dial?
 docker compose up -d
 ```
 
+Re-running `setup.py` is safe: it rewrites the keys it owns in `.env`
+(`PORTAL_URL`, `ADVERTISE_HOST`, `BACKEND`, `…_URL`, `AGENT_PORT`,
+`AGENT_TRANSPORT`) in place — no duplicates, no growth — and leaves your own
+keys (`PORTAL_USER_KEY`, `NODE_ID`, …) untouched. Existing values are offered
+as the defaults, so plain Enter keeps the current config.
+
 All it needs is the portal's address; the agent registers itself and reports the
 address it is reachable under:
 
@@ -264,6 +270,12 @@ python3 setup.py          # interaktiv: Backend, Portal-URL, optional eigener Na
 python agent.py --check   # welche Adresse spricht das Portal an?
 docker compose up -d
 ```
+
+Ein zweiter Lauf von `setup.py` ist unschaedlich: er ersetzt die Keys, die das
+Skript besitzt (`PORTAL_URL`, `ADVERTISE_HOST`, `BACKEND`, `…_URL`,
+`AGENT_PORT`, `AGENT_TRANSPORT`) an Ort und Stelle — keine Dubletten, die Datei
+waechst nicht — und laesst eigene Keys (`PORTAL_USER_KEY`, `NODE_ID`, …)
+unangetastet. Vorhandene Werte sind die Vorgaben, Enter behaelt sie.
 
 Nötig ist nur die Adresse des Portals; der Agent registriert sich selbst und
 meldet die Adresse, unter der er erreichbar ist:

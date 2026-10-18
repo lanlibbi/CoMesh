@@ -86,6 +86,15 @@ HEARTBEAT_SEC=30
 OLLAMA_URL=http://host.docker.internal:11434
 ```
 
+### Installer erneut ausfuehren
+
+`python3 setup.py` darf beliebig oft laufen: es ersetzt die von ihm verwalteten
+Keys (`PORTAL_URL`, `ADVERTISE_HOST`, `BACKEND`, `OLLAMA_URL`/`INFERENCE_URL`,
+`AGENT_PORT`, `AGENT_TRANSPORT`) an Ort und Stelle und laesst alles andere —
+insbesondere `PORTAL_USER_KEY`, `NODE_ID`, `NODE_API_KEY` — unangetastet.
+Vorhandene Werte sind die Vorgaben im Dialog, Enter behaelt sie. Wechselt das
+Backend, verschwindet die URL des alten Backends.
+
 Vor dem Start die Netz-Konfiguration prüfen:
 
 ```bash
