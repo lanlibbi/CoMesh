@@ -34,7 +34,8 @@ from sqlalchemy.orm import Session
 
 from auth import (generate_api_key, get_current_user, hash_api_key, hash_password,
     verify_password, revoke_tokens, parse_bearer_header, resolve_token, is_admin,
-    issue_token, require_admin, API_KEY_TTL_DAYS, SESSION_TOKEN_TTL_HOURS)
+    issue_token, require_admin, API_KEY_TTL_DAYS, SESSION_TOKEN_TTL_HOURS,
+    verify_password_dummy)
 from ratelimit import (limit_register, limit_login, limit_chat, client_ip, enforce, limit_node,
     LOGIN_GUARD, login_keys)
 from database import SessionLocal, engine, get_db, init_db, DATA_DIR
@@ -1127,9 +1128,13 @@ def auth_login(req: LoginRequest, request: Request, db: Session = Depends(get_db
     email = (req.email or "").strip().lower()
     user = db.query(User).filter(User.email == email).first()
 
-    # Empty-ish record for timing protection even when user unknown.
+    # Unknown e-mail: still burn the password-hash time (timing protection) and
+    # count the failure, otherwise brute-force probing of unknown addresses
+    # never trips the IP lockout.
     if not user:
+        LOGIN_GUARD.check(*login_keys(client_ip(request), email))
         verify_password_dummy(req.password or "")
+        LOGIN_GUARD.record_failure(*login_keys(client_ip(request), email))
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
     ok, needs_upgrade = verify_password(req.password or "", user.password_hash)
@@ -1170,6 +1175,9 @@ def auth_login(req: LoginRequest, request: Request, db: Session = Depends(get_db
 @app.post("/auth/logout")
 def auth_logout(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     revoked = revoke_tokens(db, user, token_type="session")
+    # get_db() never commits on its own: without this the revocation was
+    # rolled back on session close and the "logged out" token kept working.
+    db.commit()
     return {"revoked": revoked}
 
 

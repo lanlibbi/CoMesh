@@ -67,6 +67,17 @@ from usage_stats import AdminUsageOut, build_admin_usage
 
 log = logging.getLogger("gpu-pool.admin")
 
+
+def _admin_label(admin) -> str:
+    """Loggable name of the acting admin.
+
+    `require_admin` returns None when the caller authenticated with the static
+    ADMIN_TOKEN (operator mode, no user context). Every audit/log line must
+    survive that: previously `admin.email` raised AttributeError *after* the
+    mutation, so the caller saw a 500 for a change that had already happened.
+    """
+    return getattr(admin, "email", None) or "operator"
+
 router = APIRouter(prefix="/admin", tags=["admin"])
 
 ONLINE_GRACE = timedelta(seconds=90)
@@ -789,7 +800,7 @@ def admin_approve_registration(
     user.registration_status = "approved"
     user.updated_at = __import__("datetime").datetime.utcnow()
     db.commit()
-    log.info(f"admin {admin.email or 'operator'}: approved registration {user.id} ({user.email})")
+    log.info(f"admin {_admin_label(admin)}: approved registration {user.id} ({user.email})")
     return {
         "id": user.id,
         "user_id": user.id,
@@ -827,7 +838,7 @@ def admin_reject_registration(
     user.registration_status = "rejected"
     user.updated_at = __import__("datetime").datetime.utcnow()
     db.commit()
-    log.info(f"admin {admin.email or 'operator'}: rejected registration {user.id} ({user.email})")
+    log.info(f"admin {_admin_label(admin)}: rejected registration {user.id} ({user.email})")
     return {
         "id": user.id,
         "user_id": user.id,
@@ -982,7 +993,7 @@ def admin_update_user(
         db.rollback()
         log.warning(f"audit write failed for user.update/{user.id}: {e}")
 
-    log.info(f"admin {admin.email or 'operator'}: update user {user.email} changes={list(changes.keys())}")
+    log.info(f"admin {_admin_label(admin)}: update user {user.email} changes={list(changes.keys())}")
     return _user_out(db, user)
 
 
@@ -1086,7 +1097,7 @@ def admin_topup_user(
         db, admin, idempotency_key, "user.topup", "user", user.id,
         {"amount": req.amount, "reason": req.reason}, mutate,
     )
-    log.info(f"admin {admin.email or 'operator'}: topup user {user.email} +{req.amount} -> {result['credits']}")
+    log.info(f"admin {_admin_label(admin)}: topup user {user.email} +{req.amount} -> {result['credits']}")
     return _build(TopupResponse, result)
 
 
@@ -1140,7 +1151,7 @@ def admin_rotate_user_key(
         {"label": label}, mutate,
         store_fields=["user_id", "key_prefix", "key_id", "revoked_key_ids"],
     )
-    log.info(f"admin {admin.email or 'operator'}: rotated key for {user.email} (new key id={result.get('key_id')}, replayed={result.get('replayed', False)})")
+    log.info(f"admin {_admin_label(admin)}: rotated key for {user.email} (new key id={result.get('key_id')}, replayed={result.get('replayed', False)})")
     return _build(KeyRotateResponse, result)
 
 
@@ -1173,7 +1184,7 @@ def admin_revoke_user_key(
         db, admin, idempotency_key, "user.key.revoke", "api_key", key.id,
         {}, mutate,
     )
-    log.info(f"admin {admin.email or 'operator'}: revoked key {key_id} of user {user_id}")
+    log.info(f"admin {_admin_label(admin)}: revoked key {key_id} of user {user_id}")
     return _build(RevokeKeyResponse, result)
 
 
@@ -1354,7 +1365,7 @@ def admin_enable_node(
         db, admin, idempotency_key, "node.enable", "gpu_node", node.id,
         {"enabled": bool(enabled)}, mutate,
     )
-    log.info(f"admin {admin.email or 'operator'}: node {node.id} is_enabled -> {result.get('is_enabled')} (owner {user_id})")
+    log.info(f"admin {_admin_label(admin)}: node {node.id} is_enabled -> {result.get('is_enabled')} (owner {user_id})")
     return _build(EnableNodeResponse, result)
 
 
@@ -1375,7 +1386,7 @@ def admin_usage(
     """
     result = build_admin_usage(db, window=window, limit=limit, include_inactive=include_inactive)
     log.info(
-        f"admin {admin.email or 'operator'}: usage window={result.window} users={len(result.users)} "
+        f"admin {_admin_label(admin)}: usage window={result.window} users={len(result.users)} "
         f"tokens={result.totals.total_tokens}"
     )
     return result
