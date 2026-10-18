@@ -368,10 +368,11 @@ async def test_admin_gate(api, env):
     st, b, _h = await api.request("POST", "/admin/users", body, headers={"X-Admin-Token": "nope-not-the-token"})
     check("wrong operator token -> 401", st == 401, f"got {st}: {str(b)[:100]}")
     st, b, _h = await api.request("POST", "/admin/users", body, headers={"X-Admin-Token": TEST_ADMIN_TOKEN})
-    check("correct operator token -> 200", st == 200, f"got {st}: {str(b)[:120]}")
+    check("correct operator token -> 201 (created)", st == 201, f"got {st}: {str(b)[:120]}")
     check("admin-created user gets a key", bool((b or {}).get("api_key")), str(b)[:60])
 
-    st, b, _h = await api.request("POST", "/admin/users/1/topup?amount=5", headers={"X-Admin-Token": TEST_ADMIN_TOKEN})
+    st, b, _h = await api.request("POST", "/admin/users/1/topup", {"amount": 5},
+                                  headers={"X-Admin-Token": TEST_ADMIN_TOKEN})
     check("topup accepts the operator token", st == 200, f"got {st}: {str(b)[:100]}")
 
     # An ordinary user token must not pass the admin gate.
@@ -398,7 +399,7 @@ async def test_admin_gate(api, env):
         st, b, _h = await api.request("POST", "/admin/users",
                                 {"email": fresh_email("viaadmin"), "name": "ViaAdmin"},
                                 token=admin_reg["api_key"])
-        check("allowlisted admin account token -> 200", st == 200, f"got {st}: {str(b)[:120]}")
+        check("allowlisted admin account token -> 201 (created)", st == 201, f"got {st}: {str(b)[:120]}")
 
 
 # ---------------------------------------------------------------------------

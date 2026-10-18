@@ -26,6 +26,9 @@ collect_ignore = [
     "test_ws_job_stream.py",
     "test_ws_phase3_stream.py",
     "e2e_dhcp_flow.py",
+    # Standalone check-script: `python3 tests/test_auth_hardening.py`
+    # (spawns uvicorn via tests/_testutil.py, has no pytest fixtures).
+    "test_auth_hardening.py",
 ]
 
 if str(REPO_ROOT) not in sys.path:
