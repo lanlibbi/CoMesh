@@ -33,6 +33,11 @@ Auf dem Contributor-Host:
 - Ein Netz, in dem das Portal den Agent erreichen kann (LAN oder Mesh-VPN)
 - Erreichbarkeit: Portal → Agent auf `AGENT_PORT` (oder `AGENT_TRANSPORT=ws`, dann reicht outbound)
 
+> **Windows:** der Agent läuft auch **nativ ohne Docker** — Python plus venv genügen.
+> Was auf einem frischen Windows-Rechner fehlt (Python, Docker, WSL), wie LM Studio als
+> Backend konfiguriert wird und wie der Autostart über die Aufgabenplanung läuft, steht in
+> [windows.md](windows.md). Die Liste oben ist der Docker-Weg.
+
 ### Ollama prüfen
 
 ```bash
@@ -84,7 +89,21 @@ HEARTBEAT_SEC=30
 
 # Lokales Ollama
 OLLAMA_URL=http://host.docker.internal:11434
+
+# Backend-Wahl. ollama -> /api/chat (mit Streaming), openai -> /v1/chat/completions
+# (ohne Streaming, siehe unten). INFERENCE_URL ist die Adresse des Backends.
+#   Ollama nativ:      BACKEND=ollama  INFERENCE_URL=http://127.0.0.1:11434
+#   LM Studio nativ:   BACKEND=openai  INFERENCE_URL=http://127.0.0.1:1234
+#   vLLM/llama.cpp:    BACKEND=openai  INFERENCE_URL=http://127.0.0.1:8000
+#
+# Windows braucht einen eigenen Pfad für den Zustand (Vorgabe /data/ gibt es dort nicht):
+#   NODE_STATE_FILE=C:\\Users\\<du>\\AppData\\Local\\CoMesh\\node-state.json
 ```
+
+> **Streaming nur mit Ollama.** Mit `BACKEND=openai` (LM Studio, LiteLLM, vLLM) schickt der
+> Agent den OpenAI-Body unverändert weiter und die Antwort kommt am Stück zurück — das
+> gestückelte Weiterreichen ist im Code auf `BACKEND=ollama` beschränkt. Für den Betrieb
+> brauchbar, im Chat fühlt es sich träger an.
 
 Vor dem Start die Netz-Konfiguration prüfen:
 

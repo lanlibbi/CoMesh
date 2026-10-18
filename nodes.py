@@ -25,7 +25,8 @@ from fastapi import APIRouter, Depends, HTTPException, Header, Request, status
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
-from auth import get_current_user
+from auth import get_current_user, generate_node_key, verify_node_key, hash_api_key
+from ratelimit import limit_node
 from database import get_db
 from models import GpuNode, NodeHeartbeat, User
 from netinfo import (
@@ -128,6 +129,23 @@ class NodeOut(BaseModel):
         from_attributes = True
 
 
+class NodePublicOut(BaseModel):
+    id: int
+    name: str
+    gpu_type: str
+    vram_gb: int
+    status: str
+    hourly_rate: float
+    backend: str = "ollama"
+    last_seen: Optional[str]
+    current_utilization: float
+    vram_used_gb: float
+    description: Optional[str]
+    allowed_models: Optional[List[str]] = None
+    created_at: str
+
+
+
 def node_out_fields(node: GpuNode) -> dict:
     """Serialize a node for the API.
 
@@ -188,6 +206,13 @@ class PoolStats(BaseModel):
     highest_rate: Optional[float]
 
 
+def _node_is_owner_or_admin(node: GpuNode, user: Optional[User]) -> bool:
+    if user is None:
+        return False
+    if getattr(user, "role", None) == "admin":
+        return True
+    return node.owner_id == user.id
+
 # ----------------------------------------------------------------------------
 # Auth: node-agent uses its own key in `X-Node-Key`
 # ----------------------------------------------------------------------------
@@ -202,11 +227,21 @@ def _get_node_from_header(
             detail="Missing X-Node-Key header (issued at /nodes/register).",
         )
     node = db.query(GpuNode).filter(GpuNode.id == node_id).first()
-    if not node or node.api_key != x_node_key:
+    if not node or not verify_node_key(x_node_key, node.api_key_hash, node.api_key):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid node credentials.",
         )
+    if not node.is_enabled:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Node is disabled by its owner.",
+        )
+    # one-time migration of legacy plaintext keys
+    if not node.api_key_hash and node.api_key:
+        node.api_key_hash = hash_api_key(x_node_key)
+        node.api_key = None
+        db.commit()
     return node
 
 
@@ -240,7 +275,8 @@ def register_node(
             status_code=403,
             detail="Your role is 'consumer' — switch to 'provider' or 'both' in your profile to register nodes.",
         )
-    agent_key = f"node_{secrets.token_urlsafe(24)}"
+    limit_node(user.id)
+    agent_key, agent_key_hash, _prefix = generate_node_key()
     node = GpuNode(
         owner_id=user.id,
         name=req.name,
@@ -252,7 +288,8 @@ def register_node(
         port=req.port,
         backend=req.backend,
         description=req.description,
-        api_key=agent_key,
+        api_key=None,
+        api_key_hash=agent_key_hash,
         status="offline",
     )
     if req.allowed_models is not None:
@@ -307,7 +344,31 @@ def update_node(
     return NodeOut(**fields)
 
 
-@router.get("/list", response_model=List[NodeOut])
+
+@router.post("/{node_id}/rotate-key")
+def rotate_node_key(
+    node_id: int,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    node = db.query(GpuNode).filter(GpuNode.id == node_id).first()
+    if not node or not _node_is_owner_or_admin(node, user):
+        raise HTTPException(status_code=404, detail="Node not found or not owned by you")
+
+    raw_key, key_hash, key_prefix = generate_node_key()
+    node.api_key_hash = key_hash
+    node.api_key = None
+    db.commit()
+    log.info(f"Node {node.id} agent key rotated by user {user.id} (prefix {key_prefix})")
+    return {
+        "id": node.id,
+        "agent_api_key": raw_key,
+        "key_prefix": key_prefix,
+        "note": "Restart the node-agent with this key; the previous key is now invalid.",
+    }
+
+
+@router.get("/list", response_model=List[NodePublicOut])
 def list_nodes(
     only_online: bool = True,
     db: Session = Depends(get_db),
@@ -320,13 +381,21 @@ def list_nodes(
         online = _is_online(n)
         if only_online and not online:
             continue
-        fields = node_out_fields(n)
-        fields.update({
-            "status": "online" if online else n.status,
-            "current_utilization": n.current_utilization if online else 0.0,
-            "vram_used_gb": n.vram_used_gb if online else 0.0,
-        })
-        out.append(NodeOut(**fields))
+        out.append(NodePublicOut(
+            id=n.id,
+            name=n.name,
+            gpu_type=n.gpu_type,
+            vram_gb=n.vram_gb,
+            status="online" if online else n.status,
+            hourly_rate=n.hourly_rate,
+            backend=n.backend or "ollama",
+            last_seen=n.last_seen.isoformat() if n.last_seen else None,
+            current_utilization=n.current_utilization if online else 0.0,
+            vram_used_gb=n.vram_used_gb if online else 0.0,
+            description=n.description,
+            allowed_models=n.get_allowed_models(),
+            created_at=n.created_at.isoformat(),
+        ))
     return out
 
 

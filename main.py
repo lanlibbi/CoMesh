@@ -31,7 +31,11 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
-from auth import generate_api_key, get_current_user, hash_api_key
+from auth import (generate_api_key, get_current_user, hash_api_key, hash_password,
+    verify_password, revoke_tokens, parse_bearer_header, resolve_token, is_admin,
+    issue_token, require_admin, API_KEY_TTL_DAYS, SESSION_TOKEN_TTL_HOURS)
+from ratelimit import (limit_register, limit_login, limit_chat, client_ip, enforce, limit_node,
+    LOGIN_GUARD, login_keys)
 from database import SessionLocal, engine, get_db, init_db, DATA_DIR
 from netinfo import DEFAULT_AGENT_PORT
 from payments import APP_PUBLIC_URL
@@ -54,7 +58,7 @@ from payments import router as payments_router
 from frontend import router as frontend_router
 from nodes import router as nodes_router
 from pool import router as pool_router, distribute_revenue
-from admin_auth import require_admin
+from auth import require_admin
 from admin import router as admin_router  # /admin/* — whoami, overview, users, nodes, usage
 from config import credits_enabled
 from ws import router as ws_router  # Phase 1: WebSocket outbound layer
@@ -622,7 +626,8 @@ async def list_available_models(_user: User = Depends(get_current_user)):
 
 @app.post("/v1/chat/completions")
 async def chat_completions(
-    request: ChatCompletionRequest,
+    request: Request,
+    body: ChatCompletionRequest,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
@@ -635,7 +640,8 @@ async def chat_completions(
       3. If community is unavailable, return 503 (cloud overflow is stubbed).
     """
     from pool import route_request
-    model = request.model or DEFAULT_MODEL
+    model = body.model or DEFAULT_MODEL
+    limit_chat(user.id, client_ip(request))
 
     # Credits are behind a feature flag (config.yaml: credits_enabled).
     # When the flag is off the portal is free to use: no balance floor and no
@@ -656,12 +662,12 @@ async def chat_completions(
 
     ollama_payload = {
         "model": model,
-        "messages": [m.model_dump() for m in request.messages],
+        "messages": [m.model_dump() for m in body.messages],
         "stream": False,
-        "options": {"temperature": request.temperature},
+        "options": {"temperature": body.temperature},
     }
-    if request.max_tokens is not None:
-        ollama_payload["options"]["num_predict"] = request.max_tokens
+    if body.max_tokens is not None:
+        ollama_payload["options"]["num_predict"] = body.max_tokens
 
     t0 = time.time()
     routed = await route_request(db, user, ollama_payload, model)
@@ -774,8 +780,12 @@ async def chat_completions(
 # Public auth: register + login (POC). Login = "I own this API key" proof.
 # Production: replace with proper password hashing (bcrypt/argon2) + JWT.
 # ----------------------------------------------------------------------------
+MIN_PASSWORD_LENGTH = 8
+
+
 def _hash_pw(pw: str) -> str:
-    return hashlib.sha256(pw.encode("utf-8")).hexdigest()
+    # Back-compat shim: new code should use auth.hash_password.
+    return hash_password(pw)
 
 
 class RegisterRequest(BaseModel):
@@ -805,11 +815,14 @@ class AuthResponse(BaseModel):
     credits_enabled: bool = True
     registration_status: str = "approved"
     status: Optional[str] = None
+    token_type: str = "api_key"
+    expires_at: Optional[str] = None
+    expires_in: Optional[int] = None
 
 
 
 @app.put("/admin/settings", response_model=AdminSettingsResponse)
-def admin_update_settings(body: AdminSettingsUpdate, db: Session = Depends(get_db), user: User = Depends(require_admin)):
+def admin_update_settings(body: AdminSettingsUpdate, db: Session = Depends(get_db), user = Depends(require_admin)):
     """Global runtime settings (admin-only). Currently: credits_enabled."""
     row = db.query(SystemSetting).filter(SystemSetting.key == "credits_enabled").first()
     if row is None:
@@ -823,12 +836,12 @@ def admin_update_settings(body: AdminSettingsUpdate, db: Session = Depends(get_d
 
 
 @app.get("/admin/settings", response_model=AdminSettingsResponse)
-def admin_get_settings(db: Session = Depends(get_db), user: User = Depends(require_admin)):
+def admin_get_settings(db: Session = Depends(get_db), user = Depends(require_admin)):
     return AdminSettingsResponse(credits_enabled=credits_enabled(db))
 
 
 @app.patch("/admin/users/{user_id}/quota", response_model=AdminQuotaResponse)
-def admin_set_user_quota(user_id: int, body: AdminQuotaUpdate, db: Session = Depends(get_db), user: User = Depends(require_admin)):
+def admin_set_user_quota(user_id: int, body: AdminQuotaUpdate, db: Session = Depends(get_db), user = Depends(require_admin)):
     """Set a user's quota mode when credits are enabled: unlimited | balance | blocked."""
     mode = (body.quota_mode or "").strip().lower()
     if mode not in ("unlimited", "balance", "blocked"):
@@ -842,101 +855,128 @@ def admin_set_user_quota(user_id: int, body: AdminQuotaUpdate, db: Session = Dep
     return AdminQuotaResponse(user_id=target.id, quota_mode=target.quota_mode)
 
 
-@app.post("/auth/register", response_model=AuthResponse)
-def auth_register(req: RegisterRequest, db: Session = Depends(get_db)):
-    if db.query(User).filter(User.email == req.email).first():
-        raise HTTPException(status_code=409, detail="Email already registered")
-
-    # Build the user (with optional role + allowed_models).
-    allowed_models_value: Optional[List[str]] = None
-    role = req.role if req.role in VALID_ROLES else "both"
-    if req.allowed_models is not None:
-        # Same cloud-stripping logic as PUT /v1/me/allowed-models.
-        if req.allow_cloud:
-            allowed_models_value = list(req.allowed_models)
-        else:
-            allowed_models_value = [m for m in req.allowed_models if not _is_cloud_model_name(m)]
-    elif req.allow_cloud:
-        # allow_cloud=True but no explicit list -> empty list (must pick at least one).
-        allowed_models_value = []
-
-    user = User(
-        email=req.email,
-        name=req.name,
-        is_active=False,
-        registration_status="pending",
-        signup_credits=req.initial_credits,
-        password_hash=_hash_pw(req.password),
-        role=role,
-    )
-    db.add(user)
-    db.flush()
-    if allowed_models_value is not None:
-        user.set_allowed_models(allowed_models_value)
-    # Credits and active API key are only granted on manual approval.
-
-    raw_key, key_hash, key_prefix = generate_api_key()
-    db.add(ApiKey(
-        user_id=user.id,
-        key_hash=key_hash,
-        key_prefix=key_prefix,
-        label="registration",
-        is_active=False,
-    ))
-    db.commit()
-
-    log.info(f"Public register (pending approval): {user.email} (id={user.id})")
-    return AuthResponse(
-        user_id=user.id,
-        email=user.email,
-        name=user.name,
-        role=user.role,
-        allowed_models=user.get_allowed_models(),
-        api_key=raw_key,
-        key_prefix=key_prefix,
-        credits=0.0,
-        credits_enabled=credits_enabled(),
-        registration_status="pending",
-        status="pending",
-    )
-
-
-@app.post("/auth/login", response_model=AuthResponse)
-def auth_login(req: LoginRequest, db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.email == req.email).first()
-    if not user:
-        raise HTTPException(status_code=401, detail="Invalid credentials")
-    if not user.password_hash or user.password_hash != _hash_pw(req.password):
-        raise HTTPException(status_code=401, detail="Invalid credentials")
-    if getattr(user, "registration_status", "approved") != "approved" or not getattr(user, "is_active", True):
-        raise HTTPException(status_code=403, detail="Registration pending manual approval")
-
-    raw_key, key_hash, key_prefix = generate_api_key()
-    for k in db.query(ApiKey).filter(ApiKey.user_id == user.id, ApiKey.is_active == True).all():
-        k.is_active = False
-    db.add(ApiKey(
-        user_id=user.id,
-        key_hash=key_hash,
-        key_prefix=key_prefix,
-        label="login-issued",
-        is_active=True,
-    ))
-    db.commit()
-
-    balance = get_user_credits(db, user.id)
+def _auth_response(user, raw_token, key_prefix, credits,
+                    *, token_type: str, expires_at=None) -> AuthResponse:
     return AuthResponse(
         user_id=user.id,
         email=user.email,
         name=user.name,
         role=getattr(user, "role", "both") or "both",
         allowed_models=user.get_allowed_models(),
-        api_key=raw_key,
+        api_key=raw_token,
         key_prefix=key_prefix,
-        credits=balance,
-        credits_enabled=credits_enabled(),
-        registration_status=getattr(user, "registration_status", "approved") or "approved",
-        status=getattr(user, "registration_status", "approved") or "approved",
+        credits=credits,
+        token_type=token_type,
+        expires_at=expires_at.isoformat() if expires_at else None,
+        expires_in=(int((expires_at - __import__("datetime").datetime.utcnow()).total_seconds()) if expires_at else None),
     )
+
+
+@app.post("/auth/register", response_model=AuthResponse)
+def auth_register(req: RegisterRequest, request: Request, db: Session = Depends(get_db)):
+    limit_register(client_ip(request))
+
+    email = (req.email or "").strip().lower()
+    if db.query(User).filter(User.email == email).first():
+        raise HTTPException(status_code=409, detail="Email already registered")
+    if len(req.password or "") < MIN_PASSWORD_LENGTH:
+        raise HTTPException(
+            status_code=422,
+            detail=f"Password must be at least {MIN_PASSWORD_LENGTH} characters.",
+        )
+
+    allowed_models_value = None
+    role = req.role if req.role in VALID_ROLES else "both"
+    if req.allowed_models is not None:
+        if req.allow_cloud:
+            allowed_models_value = list(req.allowed_models)
+        else:
+            allowed_models_value = [m for m in req.allowed_models if not _is_cloud_model_name(m)]
+    elif req.allow_cloud:
+        allowed_models_value = []
+
+    user = User(
+        email=email,
+        name=req.name,
+        is_active=True,
+        registration_status="approved",
+        password_hash=hash_password(req.password),
+        role=role,
+        signup_credits=req.initial_credits,
+    )
+    db.add(user)
+    db.flush()
+    if allowed_models_value is not None:
+        user.set_allowed_models(allowed_models_value)
+    from datetime import datetime as _dt, timedelta as _td
+    db.add(CreditTransaction(
+        user_id=user.id,
+        amount=req.initial_credits,
+        balance_after=req.initial_credits,
+        reason="signup credit",
+    ))
+    raw_key, key_hash, key_prefix = issue_token(
+        db, user, token_type="api_key", ttl_days=API_KEY_TTL_DAYS, label="default"
+    )
+    db.commit()
+    db.refresh(user)
+
+    expires = (_dt.utcnow() + _td(days=API_KEY_TTL_DAYS)) if API_KEY_TTL_DAYS > 0 else None
+    return _auth_response(user, raw_key, key_prefix, req.initial_credits,
+                          token_type="api_key", expires_at=expires)
+
+
+@app.post("/auth/login", response_model=AuthResponse)
+def auth_login(req: LoginRequest, request: Request, db: Session = Depends(get_db)):
+    limit_login(client_ip(request), (req.email or "").strip().lower())
+
+    email = (req.email or "").strip().lower()
+    user = db.query(User).filter(User.email == email).first()
+
+    # Empty-ish record for timing protection even when user unknown.
+    if not user:
+        verify_password_dummy(req.password or "")
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+
+    ok, needs_upgrade = verify_password(req.password or "", user.password_hash)
+    if not ok:
+        LOGIN_GUARD.record_failure(*login_keys(client_ip(request), email))
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+    if getattr(user, "registration_status", "approved") != "approved" or not getattr(user, "is_active", True):
+        raise HTTPException(status_code=403, detail="Registration pending manual approval")
+
+    # Brute-force guard: per account + per IP.
+    guard_keys = login_keys(client_ip(request), email)
+    LOGIN_GUARD.check(*guard_keys)
+
+    # Consume failures? record success clears.
+    LOGIN_GUARD.record_success(*guard_keys)
+
+    if needs_upgrade:
+        user.password_hash = hash_password(req.password or "")
+        db.commit()
+
+    # Rotate old sessions, issue a new session token.
+    revoke_tokens(db, user, token_type="session")
+    raw_key, key_hash, key_prefix = issue_token(
+        db, user, token_type="session", ttl_hours=SESSION_TOKEN_TTL_HOURS, label="login"
+    )
+    # Rotate pointer stored separately? issue_token already creates row.
+    db.commit()
+
+    # unlock path? not needed.
+
+    balance = get_user_credits(db, user.id)
+    from datetime import datetime as _dt, timedelta as _td
+    expires = _dt.utcnow() + _td(hours=SESSION_TOKEN_TTL_HOURS)
+    return _auth_response(user, raw_key, key_prefix, balance,
+                          token_type="session", expires_at=expires)
+
+
+@app.post("/auth/logout")
+def auth_logout(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    revoked = revoke_tokens(db, user, token_type="session")
+    return {"revoked": revoked}
 
 
 # ----------------------------------------------------------------------------

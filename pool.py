@@ -74,6 +74,15 @@ def _node_allows_model(node: GpuNode, model: str) -> bool:
     return node.can_serve_model(model)
 
 
+def _is_admin_user(user: User) -> bool:
+    """Local copy of the admin check."""
+    import os
+    if getattr(user, "role", None) == "admin":
+        return True
+    admins = [e.strip().lower() for e in (os.environ.get("ADMIN_EMAILS") or "").split(",") if e.strip()]
+    return (getattr(user, "email", None) or "").lower() in admins
+
+
 def _user_allows_model(user: User, model: str) -> bool:
     """True if the user's whitelist (or default) admits the model."""
     return user.can_use_model(model)
@@ -572,12 +581,18 @@ def route_preview(
 @router.get("/jobs")
 def recent_jobs(
     limit: int = 20,
+    user: User = Depends(__import__("auth").get_current_user),
     db: Session = Depends(get_db),
 ):
-    """Recent pool jobs across the community (used by admin dashboard)."""
+    """Recent pool jobs for the caller; admins see everything."""
+    q = db.query(PoolJob)
+    if not _is_admin_user(user):
+        my_node_ids = [n.id for n in db.query(GpuNode).filter(GpuNode.owner_id == user.id).all()]
+        from sqlalchemy import or_ as _or
+        q = q.filter(_or(PoolJob.user_id == user.id, PoolJob.node_id.in_(my_node_ids or [-1])))
+
     rows = (
-        db.query(PoolJob)
-        .order_by(PoolJob.started_at.desc())
+        q.order_by(PoolJob.started_at.desc())
         .limit(min(max(limit, 1), 200))
         .all()
     )

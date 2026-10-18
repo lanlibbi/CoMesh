@@ -149,6 +149,21 @@ Example client: [examples/client.py](examples/client.py)
 
 ---
 
+## Who needs what
+
+| Role | What it takes |
+|---|---|
+| **User** (send requests) | **nothing.** A browser on `http://<portal>:8767`, or any
+OpenAI-compatible client against `http://<portal>:8765/v1` with an API key. |
+| **Provider** (contribute a GPU) | a local inference backend (Ollama, LM Studio, vLLM …)
+**plus** the node-agent in front of it. The portal only ever calls the agent (`node_url`
+→ port `11435`), never the backend directly. |
+| **Operator** (run the portal) | Docker Compose (Linux, or Docker Desktop with WSL2), or
+Python natively. |
+
+On Windows a provider needs Python (or the planned `comesh-agent.exe`) — a plain
+LM Studio install alone does not make a node. See [docs/windows.md](docs/windows.md).
+
 ## Components
 
 | Component | Stack | Port | Description |
@@ -219,6 +234,8 @@ bash scripts/smoke_admin.sh http://localhost:8765 "$ADMIN_API_KEY"   # live HTTP
 - [docs/node-agent.md](docs/node-agent.md) — node-agent setup and deployment
 - [docs/api.md](docs/api.md) — full API reference
 - [docs/network.md](docs/network.md) — addressing, DHCP, mDNS, optional mesh VPN
+- [docs/windows.md](docs/windows.md) — running a **provider** on Windows (LM Studio or
+  Ollama, native or Docker, autostart via Task Scheduler)
 
 ---
 
@@ -307,6 +324,20 @@ setzen, Credits buchen, Schlüssel ausstellen, Konten deaktivieren und anlegen �
 Der erste Admin entsteht beim Start aus `ADMIN_API_KEY` / `ADMIN_EMAIL` (siehe
 `.env.example`); weitere Admins ernennt ein bestehender Admin. Die API schützt sich
 selbst: ein Admin kann sich weder degradieren noch deaktivieren.
+
+## Wer braucht was (Deutsch)
+
+| Rolle | Was nötig ist |
+|---|---|
+| **Nutzer** | **nichts.** Browser auf `http://<portal>:8767` oder ein OpenAI-kompatibler
+Client auf `http://<portal>:8765/v1` mit einem API-Schlüssel. |
+| **Provider** | ein lokales Backend (Ollama, LM Studio, vLLM …) **und** der Node-Agent
+davor. Das Portal ruft ausschließlich den Agenten an (`node_url` → Port `11435`). |
+| **Betreiber** | Docker Compose oder Python nativ. |
+
+Unter Windows braucht ein Provider Python (oder die geplante `comesh-agent.exe`) —
+LM Studio allein macht noch keinen Node. Details, inklusive der Streaming-Grenze bei
+`BACKEND=openai`, in [docs/windows.md](docs/windows.md).
 
 ## Dokumentation (Deutsch)
 

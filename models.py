@@ -126,11 +126,23 @@ class ApiKey(Base):
     key_hash = Column(String, unique=True, index=True, nullable=False)
     key_prefix = Column(String, nullable=False)  # First 12 chars for display
     label = Column(String, nullable=True)
+    token_type = Column(String, default="api_key", nullable=False)  # api_key | session
+    expires_at = Column(DateTime, nullable=True)                   # NULL = never expires
     is_active = Column(Boolean, default=True, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     last_used_at = Column(DateTime, nullable=True)
 
     user = relationship("User", back_populates="api_keys")
+
+    @property
+    def is_expired(self) -> bool:
+        return self.expires_at is not None and self.expires_at <= datetime.utcnow()
+
+    @property
+    def expires_in_seconds(self) -> Optional[int]:
+        if self.expires_at is None:
+            return None
+        return int((self.expires_at - datetime.utcnow()).total_seconds())
 
 
 class CreditTransaction(Base):
@@ -234,7 +246,8 @@ class GpuNode(Base):
     # Inference backend this node exposes. "ollama" (default) talks Ollama's
     # /api/chat; "openai" talks any OpenAI-compatible server (LM Studio, LiteLLM, vLLM…).
     backend = Column(String, default="ollama", nullable=False)
-    api_key = Column(String, nullable=True)              # raw key the agent uses to call back to portal
+    api_key = Column(String, nullable=True)              # legacy raw key (deprecated, no longer written)
+    api_key_hash = Column(String, nullable=True)             # SHA-256 of agent key; preferred
     last_seen = Column(DateTime, nullable=True)
     total_hours = Column(Float, default=0.0, nullable=False)
     earnings_total = Column(Float, default=0.0, nullable=False)

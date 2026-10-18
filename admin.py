@@ -42,7 +42,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from admin_auth import require_admin
+from auth import require_admin
 from auth import generate_api_key
 from database import get_db
 from config import credits_enabled
@@ -185,7 +185,7 @@ def run_idempotent(
         stored = {k: result.get(k) for k in store_fields if k in result}
 
     db.add(AdminAuditLog(
-        admin_user_id=admin.id,
+        admin_user_id=getattr(admin, "id", 0),
         action=action,
         target_type=target_type,
         target_id=target_id,
@@ -501,8 +501,8 @@ def _node_out(db: Session, node: GpuNode, now: Optional[datetime] = None,
 def whoami(admin: User = Depends(require_admin)):
     """Cheap probe clients can use to verify an admin key before doing work."""
     return AdminIdentity(
-        id=admin.id,
-        email=admin.email,
+        id=getattr(admin, "id", 0),
+        email=getattr(admin, "email", None) or "operator",
         name=admin.name,
         role=getattr(admin, "role", ADMIN_ROLE) or ADMIN_ROLE,
     )
@@ -642,7 +642,7 @@ def admin_create_user(
         None, req.model_dump(), mutate,
         store_fields=["user_id", "email", "name", "role", "key_prefix", "credits", "created"],
     )
-    log.info(f"admin {admin.email}: create user {email} (id={result.get('user_id')}, created={result.get('created')})")
+    log.info(f"admin {getattr(admin, "email", None) or "operator"}: create user {email} (id={result.get('user_id')}, created={result.get('created')})")
     return _build(CreateUserResponse, result)
 
 
@@ -788,7 +788,7 @@ def admin_approve_registration(
     user.registration_status = "approved"
     user.updated_at = __import__("datetime").datetime.utcnow()
     db.commit()
-    log.info(f"admin {admin.email}: approved registration {user.id} ({user.email})")
+    log.info(f"admin {getattr(admin, "email", None) or "operator"}: approved registration {user.id} ({user.email})")
     return {
         "id": user.id,
         "user_id": user.id,
@@ -826,7 +826,7 @@ def admin_reject_registration(
     user.registration_status = "rejected"
     user.updated_at = __import__("datetime").datetime.utcnow()
     db.commit()
-    log.info(f"admin {admin.email}: rejected registration {user.id} ({user.email})")
+    log.info(f"admin {getattr(admin, "email", None) or "operator"}: rejected registration {user.id} ({user.email})")
     return {
         "id": user.id,
         "user_id": user.id,
@@ -918,14 +918,14 @@ def admin_update_user(
     if req.role is not None:
         if req.role not in ADMIN_MANAGED_ROLES:
             raise _client_error(422, f"Invalid role '{req.role}'. Valid: {', '.join(ADMIN_MANAGED_ROLES)}")
-        if user.id == admin.id and req.role != ADMIN_ROLE:
+        if user.id == getattr(admin, "id", 0) and req.role != ADMIN_ROLE:
             raise _client_error(409, "Refusing to remove your own admin role (lockout guard).")
         if user.role != req.role:
             changes["role"] = {"from": user.role, "to": req.role}
             user.role = req.role
 
     if req.is_active is not None:
-        if user.id == admin.id and req.is_active is False:
+        if user.id == getattr(admin, "id", 0) and req.is_active is False:
             raise _client_error(409, "Refusing to deactivate your own admin account (lockout guard).")
         if bool(user.is_active) != bool(req.is_active):
             changes["is_active"] = {"from": bool(user.is_active), "to": bool(req.is_active)}
@@ -968,7 +968,7 @@ def admin_update_user(
 
     try:
         db.add(AdminAuditLog(
-            admin_user_id=admin.id,
+            admin_user_id=getattr(admin, "id", 0),
             action="user.update",
             target_type="user",
             target_id=user.id,
@@ -981,7 +981,7 @@ def admin_update_user(
         db.rollback()
         log.warning(f"audit write failed for user.update/{user.id}: {e}")
 
-    log.info(f"admin {admin.email}: update user {user.email} changes={list(changes.keys())}")
+    log.info(f"admin {getattr(admin, "email", None) or "operator"}: update user {user.email} changes={list(changes.keys())}")
     return _user_out(db, user)
 
 
@@ -1085,7 +1085,7 @@ def admin_topup_user(
         db, admin, idempotency_key, "user.topup", "user", user.id,
         {"amount": req.amount, "reason": req.reason}, mutate,
     )
-    log.info(f"admin {admin.email}: topup user {user.email} +{req.amount} -> {result['credits']}")
+    log.info(f"admin {getattr(admin, "email", None) or "operator"}: topup user {user.email} +{req.amount} -> {result['credits']}")
     return _build(TopupResponse, result)
 
 
@@ -1139,7 +1139,7 @@ def admin_rotate_user_key(
         {"label": label}, mutate,
         store_fields=["user_id", "key_prefix", "key_id", "revoked_key_ids"],
     )
-    log.info(f"admin {admin.email}: rotated key for {user.email} (new key id={result.get('key_id')}, replayed={result.get('replayed', False)})")
+    log.info(f"admin {getattr(admin, "email", None) or "operator"}: rotated key for {user.email} (new key id={result.get('key_id')}, replayed={result.get('replayed', False)})")
     return _build(KeyRotateResponse, result)
 
 
@@ -1172,7 +1172,7 @@ def admin_revoke_user_key(
         db, admin, idempotency_key, "user.key.revoke", "api_key", key.id,
         {}, mutate,
     )
-    log.info(f"admin {admin.email}: revoked key {key_id} of user {user_id}")
+    log.info(f"admin {getattr(admin, "email", None) or "operator"}: revoked key {key_id} of user {user_id}")
     return _build(RevokeKeyResponse, result)
 
 
@@ -1353,7 +1353,7 @@ def admin_enable_node(
         db, admin, idempotency_key, "node.enable", "gpu_node", node.id,
         {"enabled": bool(enabled)}, mutate,
     )
-    log.info(f"admin {admin.email}: node {node.id} is_enabled -> {result.get('is_enabled')} (owner {user_id})")
+    log.info(f"admin {getattr(admin, "email", None) or "operator"}: node {node.id} is_enabled -> {result.get('is_enabled')} (owner {user_id})")
     return _build(EnableNodeResponse, result)
 
 
@@ -1374,7 +1374,7 @@ def admin_usage(
     """
     result = build_admin_usage(db, window=window, limit=limit, include_inactive=include_inactive)
     log.info(
-        f"admin {admin.email}: usage window={result.window} users={len(result.users)} "
+        f"admin {getattr(admin, "email", None) or "operator"}: usage window={result.window} users={len(result.users)} "
         f"tokens={result.totals.total_tokens}"
     )
     return result
