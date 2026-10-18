@@ -8,12 +8,36 @@ CoMesh joins local and remote self-hosted inference servers into one shared
 inference layer. Users send requests to a **Portal**,
 which routes them to the most suitable **Node-Agent** in the pool.
 
-> **Status:** Proof of Concept (POC). Works end-to-end with Portal, Node-Agents,
-> load-balancing and credits-based billing. This repo contains **code + docs**.
+> **Status:** Proof of Concept (POC), running end-to-end: Portal, Node-Agents,
+> load-balancing, credits-based billing and a role-gated **admin console** with an
+> audit log. This repo contains **code + docs**.
+>
+> **Version:** `0.4.0` — Portal and Node-Agent share one version from here on.
+> See [CHANGELOG.md](CHANGELOG.md).
 
 > **Network:** no fixed addresses anywhere. The portal and its nodes find each
 > other over a plain LAN, Docker network or mesh VPN — DHCP is fine. Nothing has
 > to be configured beyond `.env` variables. See [docs/network.md](docs/network.md).
+
+---
+
+## Screenshots
+
+Admin console and portal, real captures (1440×900, dark and light theme):
+
+| | |
+|---|---|
+| ![Dashboard](docs/screenshots/dashboard.webp) | ![Admin · Accounts](docs/screenshots/freigaben.webp) |
+| **Dashboard** — pool status, credits, own usage | **Admin · Accounts** — approve, roles, passwords, credits, keys |
+| ![Admin · Audit log](docs/screenshots/protokoll.webp) | ![Login](docs/screenshots/login.webp) |
+| **Admin · Audit log** — who changed what, when | **Sign in** — brand, theme and language switch |
+| ![Dashboard, light theme](docs/screenshots/dashboard-hell.webp) | |
+| **Light theme** — same UI, brass accents follow the theme | |
+
+The header animation is a small canvas (`frontend-alpine/brand-mesh.js`): a miniature of
+the pool — nodes, links, packets travelling along them. It follows the theme colours,
+stops when the tab is hidden, and renders a single static frame under
+`prefers-reduced-motion`.
 
 ---
 
@@ -130,7 +154,7 @@ Example client: [examples/client.py](examples/client.py)
 | Component | Stack | Port | Description |
 |---|---|---|---|
 | Portal backend | FastAPI + SQLAlchemy | `8765` | API, pool logic, DB |
-| Portal UI (Alpine) | Tailwind + Alpine | `8767` | Node/pool/usage/admin dashboard |
+| Portal UI (Alpine) | Alpine.js + canvas, no build step | `8767` | Node/pool/usage/admin dashboard |
 | Node-Agent | Python + psutil + pynvml | `8080` | Heartbeat + inference proxy |
 
 ---
@@ -152,7 +176,20 @@ curl -H "Authorization: Bearer $ADMIN_API_KEY" "http://localhost:8765/admin/node
 curl -H "Authorization: Bearer $ADMIN_API_KEY" http://localhost:8765/admin/overview
 ```
 
-What an operator can do:
+### Admin console (UI)
+
+Everything below is available in the web UI as well — no curl needed. Three pages,
+all gated on `role = admin` server-side, every mutation lands in the audit log:
+
+| Page | Menu | What it does |
+|---|---|---|
+| `admin-registrations.html` | **Freigaben** | approve / reject sign-ups, status filter, search, paging; per account: role, **set password**, **top up credits**, **issue a new API key** (the old one dies, the new one is shown once), activate / deactivate; **create an account** by hand |
+| `admin-usage.html` | **Verbrauch (alle)** | tokens, requests and credits per account and model over 24h / 7d / 30d / all; quota per account; credits system on/off |
+| `admin-audit.html` | **Protokoll** | every change with timestamp, acting admin, target and a readable diff (`role: both → admin`); filter by action. Passwords and key values are never stored |
+
+`usage.html` (**Mein Verbrauch**) is the non-admin view of your own consumption.
+
+What an operator can do via the API:
 
 - **Users** — list (including deactivated ones), create, change role/state/model
   whitelist, top up credits, rotate or revoke API keys. Admins can only be
@@ -258,6 +295,18 @@ Auslastung. Die Antwort enthält den `x-pool-node`-Header mit der Adresse des
 gewählten Nodes.
 
 ---
+
+## Adminbereich (Deutsch)
+
+Alles unter `/admin` verlangt einen Schlüssel eines Kontos mit `role = admin`.
+Im Browser gibt es dafür drei Seiten (Menü **Freigaben**, **Verbrauch (alle)**,
+**Protokoll**): Registrierungen freigeben und ablehnen, Rollen vergeben, Passwörter
+setzen, Credits buchen, Schlüssel ausstellen, Konten deaktivieren und anlegen — jede
+Änderung landet im Protokoll. Screenshots oben im Abschnitt *Screenshots*.
+
+Der erste Admin entsteht beim Start aus `ADMIN_API_KEY` / `ADMIN_EMAIL` (siehe
+`.env.example`); weitere Admins ernennt ein bestehender Admin. Die API schützt sich
+selbst: ein Admin kann sich weder degradieren noch deaktivieren.
 
 ## Dokumentation (Deutsch)
 

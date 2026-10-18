@@ -98,13 +98,14 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="GPU-Pool POC",
+    title="CoMesh Portal",
     description=(
-        "GPU-Sharing Platform POC - OpenAI-compatible API on top of Ollama. "
-        "Includes payments, community GPU-pool (node registration, "
-        "load-balancing, revenue distribution)."
+        "CoMesh — a community GPU pool. Contribute GPUs and use the whole pool "
+        "through one OpenAI-compatible API. Includes node registration, "
+        "load-balancing, usage accounting, credits, and a role-gated admin "
+        "console with an audit log."
     ),
-    version="0.3.0",
+    version="0.4.0",
     lifespan=lifespan,
 )
 
@@ -355,6 +356,21 @@ def _ensure_node_tables():
 # ----------------------------------------------------------------------------
 # Endpoints
 # ----------------------------------------------------------------------------
+NODE_AGENT_VERSION = "0.4.0"
+VERSION = "0.4.0"
+
+
+@app.get("/version")
+def version_info():
+    """Portal-, Vertrags- und Agent-Version an einer Stelle."""
+    return {
+        "product": "CoMesh",
+        "portal_version": VERSION,
+        "api_contract": "v1",
+        "node_agent_version": NODE_AGENT_VERSION,
+    }
+
+
 @app.get("/health")
 async def health():
     """Liveness + Ollama reachability + community-pool summary."""
