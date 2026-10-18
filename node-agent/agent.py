@@ -290,6 +290,64 @@ async def _infer_streaming(payload: dict, timeout: float, send_delta) -> dict:
 AGENT_TRANSPORT = os.environ.get("AGENT_TRANSPORT", "http").lower().strip()
 # WS-specific tunables
 WS_HEARTBEAT_SEC = int(os.environ.get("WS_HEARTBEAT_SEC", "15"))
+
+
+# ---------------------------------------------------------------------------
+# .env support for direct runs
+# ---------------------------------------------------------------------------
+# The interactive installer writes .env next to docker-compose.yml. Nobody reads
+# that file when the agent is started directly (`python agent.py --check`, which
+# docs/node-agent.md advertises), so the check reported "PORTAL_URL is unset"
+# although .env set it. Compose injects the values itself, so this only adds a
+# path for direct runs — and a real environment variable always wins.
+def _load_env_file(path: str = ".env") -> None:
+    """Read KEY=VALUE lines from *path* into os.environ, never overriding."""
+    try:
+        with open(path, "r", encoding="utf-8") as fh:
+            raw_lines = fh.readlines()
+    except OSError:
+        return
+    for raw in raw_lines:
+        line = raw.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        if line.startswith("export "):
+            line = line[len("export "):].lstrip()
+        key, _, value = line.partition("=")
+        key = key.strip()
+        value = value.strip()
+        if len(value) >= 2 and value[0] == value[-1] and value[0] in "\"'":
+            value = value[1:-1]
+        if key and key not in os.environ:
+            os.environ[key] = value
+
+
+def _refresh_config_from_environ() -> None:
+    """Re-read the config globals above after _load_env_file() ran.
+
+    Same expressions as the module-level config block, applied a second time so
+    values that only exist in .env take effect for a direct run.
+    """
+    global PORTAL_URL, NODE_ID, NODE_API_KEY, PORTAL_USER_KEY, NODE_NAME
+    global NODE_GPU_TYPE, NODE_VRAM_GB, ADVERTISE_HOST, OLLAMA_URL, BACKEND
+    global INFERENCE_URL, AGENT_PORT, HEARTBEAT_SEC, AGENT_TRANSPORT, WS_HEARTBEAT_SEC
+    PORTAL_URL = os.environ.get("PORTAL_URL", "").rstrip("/")
+    if PORTAL_URL and "://" not in PORTAL_URL:
+        PORTAL_URL = "http://" + PORTAL_URL
+    NODE_ID = str(os.environ.get("NODE_ID", "") or "").strip()
+    NODE_API_KEY = os.environ.get("NODE_API_KEY", "")
+    PORTAL_USER_KEY = os.environ.get("PORTAL_USER_KEY", "")
+    NODE_NAME = os.environ.get("NODE_NAME", "")
+    NODE_GPU_TYPE = os.environ.get("NODE_GPU_TYPE", "")
+    NODE_VRAM_GB = os.environ.get("NODE_VRAM_GB", "")
+    ADVERTISE_HOST = os.environ.get("ADVERTISE_HOST", "").strip()
+    OLLAMA_URL = os.environ.get("OLLAMA_URL", "http://localhost:11434").rstrip("/")
+    BACKEND = os.environ.get("BACKEND", "ollama").lower().strip()
+    INFERENCE_URL = os.environ.get("INFERENCE_URL", OLLAMA_URL).rstrip("/")
+    AGENT_PORT = int(os.environ.get("AGENT_PORT", "11435"))
+    HEARTBEAT_SEC = int(os.environ.get("HEARTBEAT_SEC", "30"))
+    AGENT_TRANSPORT = os.environ.get("AGENT_TRANSPORT", "http").lower().strip()
+    WS_HEARTBEAT_SEC = int(os.environ.get("WS_HEARTBEAT_SEC", "15"))
 WS_RECONNECT_MAX_SEC = int(os.environ.get("WS_RECONNECT_MAX_SEC", "30"))
 
 if not NODE_ID or not NODE_API_KEY:
@@ -787,6 +845,10 @@ async def _on_start():
 
 
 if __name__ == "__main__":
+    # A direct run (`python agent.py`) gets its settings from .env in the
+    # working directory — that is the file the interactive installer writes.
+    _load_env_file()
+    _refresh_config_from_environ()
     import argparse
     parser = argparse.ArgumentParser(description="CoMesh Node-Agent")
     parser.add_argument(

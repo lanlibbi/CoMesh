@@ -89,9 +89,14 @@ OLLAMA_URL=http://host.docker.internal:11434
 Vor dem Start die Netz-Konfiguration prüfen:
 
 ```bash
-python agent.py --check          # direkt
+python agent.py --check          # direkt (liest .env aus dem Arbeitsverzeichnis)
 docker compose run --rm agent python agent.py --check   # im Container
 ```
+
+> Ein direktes `python agent.py --check` liest die `.env` aus dem aktuellen
+> Verzeichnis — also genau die Datei, die `setup.py` schreibt. Bereits gesetzte
+> Environment-Variablen haben Vorrang. Im Container kommen die Werte aus der
+> `docker-compose.yml`; `--env-file .env` braucht es dort nicht.
 
 > **Hinweis zu `host.docker.internal`:** Auf Linux muss Docker mit `--add-host=host.docker.internal:host-gateway` gestartet werden. Beispiel im mitgelieferten `docker-compose.yml`.
 
