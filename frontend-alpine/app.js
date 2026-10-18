@@ -149,9 +149,9 @@ function mountBackground() {
 const NAV_ITEMS = [
   { key: "dashboard", href: "index.html", labelKey: "nav.dashboard" },
   { key: "chat", href: "chat.html", labelKey: "nav.chat" },
-  { key: "usage", href: "usage.html", labelKey: "nav.usage" },
+  { key: "usage", href: "usage.html", labelKey: "nav.usage", label: "Mein Verbrauch" },
   // Admin-only view of every user's consumption; the server gates /admin/usage too.
-  { key: "admin-usage", href: "admin-usage.html", labelKey: "nav.admin", label: "Verbrauch", adminOnly: true },
+  { key: "admin-usage", href: "admin-usage.html", labelKey: "nav.admin", label: "Verbrauch (alle)", adminOnly: true },
   { key: "admin-registrations", href: "admin-registrations.html", labelKey: "nav.admin", label: "Freigaben", adminOnly: true },
   { key: "pool", href: "pool.html", labelKey: "nav.pool" },
   { key: "nodes", href: "nodes.html", labelKey: "nav.nodes", providerOnly: true },
