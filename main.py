@@ -698,8 +698,20 @@ async def _stream_chat_completion(db, user, model, ollama_payload, balance, bill
     async def runner() -> None:
         try:
             state.update(await route_request(db, user, payload, model, on_delta=on_delta))
+        except _asyncio.CancelledError:
+            # Client hat den Stream verlassen — kein Fehler, nur ein Abbruch.
+            log.info("stream cancelled by client")
+            raise
         except Exception as e:  # noqa: BLE001 - Fehler gehoert in den Stream
-            log.exception("stream routing failed")
+            # Ein Abbruch (Client weg, Queue zu) ist kein Serverfehler: dann nur
+            # eine kurze Zeile statt Traceback, sonst sieht jeder Tunnel-Test wie
+            # ein Ausfall aus.
+            name = type(e).__name__
+            if "cancel" in str(e).lower() or "disconnect" in str(e).lower() or \
+                    name in ("ClientDisconnect", "ClosedResourceError", "CancelledError"):
+                log.info(f"stream aborted: {name}")
+            else:
+                log.exception("stream routing failed")
             state.update({"ok": False, "error": str(e), "source": "error", "node_id": None})
 
     async def gen():
