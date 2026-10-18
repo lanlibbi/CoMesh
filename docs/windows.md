@@ -131,15 +131,14 @@ die Vorgaben im Assistenten gemacht sind.
 | Backend | `BACKEND` | `INFERENCE_URL` | Modelle | Streaming |
 |---|---|---|---|---|
 | Ollama | `ollama` | `http://127.0.0.1:11434` | `/api/tags` | **ja** |
-| LM Studio | `openai` | `http://127.0.0.1:1234` | `/v1/models` | **nein** |
-| LiteLLM-Proxy | `openai` | `http://127.0.0.1:4000` | `/v1/models` | nein |
-| vLLM, llama.cpp u. a. | `openai` | `http://127.0.0.1:8000` | `/v1/models` | nein |
+| LM Studio | `openai` | `http://127.0.0.1:1234` | `/v1/models` | **ja** (ab 0.5.0) |
+| LiteLLM-Proxy | `openai` | `http://127.0.0.1:4000` | `/v1/models` | ja (ab 0.5.0) |
+| vLLM, llama.cpp u. a. | `openai` | `http://127.0.0.1:8000` | `/v1/models` | ja (ab 0.5.0) |
 
 Mit `BACKEND=openai` schickt der Agent den OpenAI-Body unverändert an
-`/v1/chat/completions`; mit `BACKEND=ollama` übersetzt er auf Ollamas `/api/chat`. Das
-gestückelte Weiterreichen von Antworten ist im Code ausdrücklich auf das Ollama-Backend
-beschränkt — **mit LM Studio kommen Antworten am Stück zurück.** Für den Betrieb brauchbar,
-im Chat fühlt es sich träger an.
+`/v1/chat/completions` und reicht die SSE-Zeilen des Backends durch; mit `BACKEND=ollama`
+übersetzt er auf Ollamas `/api/chat` und baut daraus OpenAI-Rahmen. Beide Wege streamen seit
+0.5.0 — `stream: true` vom Client genügt.
 
 In LM Studio muss der Server eingeschaltet sein („Start Server", Port 1234). Die Option
 „Serve on Local Network" braucht es **nicht**: der Agent läuft auf demselben Rechner und
@@ -190,7 +189,7 @@ bequemer als „bei Systemstart", weil die GPU-Treiberkontexte dann bereits steh
 | `[Errno 2] No such file or directory: '/data/node-state.json'` | `NODE_STATE_FILE` nicht gesetzt — Windows-Pfad in die `.env`. |
 | `--check` meldet Backend nicht erreichbar | LM Studio/Server läuft nicht, oder `INFERENCE_URL` zeigt auf `host.docker.internal` statt `127.0.0.1`. |
 | Agent läuft, Portal sieht ihn nicht | Firewall (Port 11435), falsche `ADVERTISE_HOST`, oder der Key hat nicht die Rolle `provider`/`both`. |
-| Antworten kommen ohne Streaming | Mit `BACKEND=openai` (LM Studio) normal — Streaming gibt es nur mit Ollama. |
+| Antworten kommen ohne Streaming | Seit 0.5.0 nicht mehr nötig: beide Backends streamen. Kommt trotzdem alles auf einmal, fordert der Client kein `stream: true` an oder ein Proxy puffert — `X-Accel-Buffering: no` prüfen. |
 | GPU wird nicht erkannt | `nvidia-smi` in derselben Konsole prüfen. Der Agent fällt sonst auf Stub-Werte zurück und meldet keine GPU. |
 
 Nach dem Start: `curl http://127.0.0.1:11435/health` liefert `{"status":"ok","agent":"running",

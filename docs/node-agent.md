@@ -100,10 +100,11 @@ OLLAMA_URL=http://host.docker.internal:11434
 #   NODE_STATE_FILE=C:\\Users\\<du>\\AppData\\Local\\CoMesh\\node-state.json
 ```
 
-> **Streaming nur mit Ollama.** Mit `BACKEND=openai` (LM Studio, LiteLLM, vLLM) schickt der
-> Agent den OpenAI-Body unverändert weiter und die Antwort kommt am Stück zurück — das
-> gestückelte Weiterreichen ist im Code auf `BACKEND=ollama` beschränkt. Für den Betrieb
-> brauchbar, im Chat fühlt es sich träger an.
+> **Streaming (ab 0.5.0).** Der Agent liefert auf `/v1/chat/completions` Server-Sent Events,
+> wenn der Client `stream: true` setzt — für **beide** Backends: `BACKEND=ollama` übersetzt
+> Ollamas NDJSON in OpenAI-Rahmen, `BACKEND=openai` reicht die SSE-Zeilen des Backends
+> unverändert weiter. Wichtig für Tunnel: ohne Streaming ist eine lange Antwort ein einziger
+> Request, und Cloudflare kappt bei rund 100 s mit 524.
 
 Vor dem Start die Netz-Konfiguration prüfen:
 

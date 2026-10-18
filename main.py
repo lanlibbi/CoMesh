@@ -17,6 +17,7 @@ deduction on /v1/chat/completions. The credit tables themselves are never
 dropped, so the flag can be flipped back on without a migration.
 """
 import hashlib
+import json
 import logging
 import os
 import secrets
@@ -92,6 +93,7 @@ async def lifespan(app: FastAPI):
     _ensure_user_settings()
     _ensure_system_settings()
     _ensure_registration_columns()
+    _ensure_api_key_and_node_columns()
     _ensure_node_allowed_models()
     _ensure_node_ws_columns()
     _ensure_node_address_columns()
@@ -109,7 +111,7 @@ app = FastAPI(
         "load-balancing, usage accounting, credits, and a role-gated admin "
         "console with an audit log."
     ),
-    version="0.4.0",
+    version="0.5.0",
     lifespan=lifespan,
 )
 
@@ -277,6 +279,32 @@ def _ensure_system_settings():
     Base.metadata.create_all(bind=engine, tables=[SystemSetting.__table__])
 
 
+
+def _ensure_api_key_and_node_columns():
+    """Add api_keys.token_type/expires_at and gpu_nodes.api_key_hash if missing.
+
+    These columns belong to the auth-hardening work (session tokens, hashed agent
+    keys). They were added to models.py but never migrated into a live database,
+    so every query touching ApiKey failed with "no such column" until the schema
+    caught up. Idempotent, runs on every start.
+    """
+    with engine.begin() as conn:
+        cols = [row[1] for row in conn.exec_driver_sql("PRAGMA table_info(api_keys)").fetchall()]
+        if "token_type" not in cols:
+            conn.exec_driver_sql(
+                "ALTER TABLE api_keys ADD COLUMN token_type VARCHAR DEFAULT 'api_key' NOT NULL"
+            )
+            log.info("Added api_keys.token_type column (default 'api_key')")
+        if "expires_at" not in cols:
+            conn.exec_driver_sql("ALTER TABLE api_keys ADD COLUMN expires_at DATETIME")
+            log.info("Added api_keys.expires_at column (NULL = never expires)")
+
+        node_cols = [row[1] for row in conn.exec_driver_sql("PRAGMA table_info(gpu_nodes)").fetchall()]
+        if node_cols and "api_key_hash" not in node_cols:
+            conn.exec_driver_sql("ALTER TABLE gpu_nodes ADD COLUMN api_key_hash VARCHAR")
+            log.info("Added gpu_nodes.api_key_hash column")
+
+
 def _ensure_registration_columns():
     """Add registration_status and signup_credits columns if missing (idempotent)."""
     with engine.begin() as conn:
@@ -360,8 +388,8 @@ def _ensure_node_tables():
 # ----------------------------------------------------------------------------
 # Endpoints
 # ----------------------------------------------------------------------------
-NODE_AGENT_VERSION = "0.4.0"
-VERSION = "0.4.0"
+NODE_AGENT_VERSION = "0.5.0"
+VERSION = "0.5.0"
 
 
 @app.get("/version")
@@ -624,6 +652,153 @@ async def list_available_models(_user: User = Depends(get_current_user)):
     return {"models": out}
 
 
+# ---------------------------------------------------------------------------
+# SSE (Phase 4) — /v1/chat/completions mit stream=true
+#
+# Ohne Streaming ist eine lange Antwort ein einziger HTTP-Request; ein
+# Cloudflare-Tunnel kappt den bei rund 100 s mit 524. Mit SSE fliessen sofort
+# Bytes und die Kappung greift nicht. Der Delta-Kanal (`on_delta`) existierte
+# bereits fuer /ws/chat — hier wird er auf SSE abgebildet.
+# ---------------------------------------------------------------------------
+def _sse_pack(obj: dict) -> str:
+    return "data: " + json.dumps(obj, ensure_ascii=False) + "\n\n"
+
+
+def _sse_chunk(model: str, delta: str = "", finish=None, role=None) -> str:
+    d = {}
+    if role:
+        d["role"] = role
+    if delta:
+        d["content"] = delta
+    return _sse_pack({
+        "id": f"chatcmpl-sse-{int(time.time() * 1000)}",
+        "object": "chat.completion.chunk",
+        "created": int(time.time()),
+        "model": model,
+        "choices": [{"index": 0, "delta": d, "finish_reason": finish}],
+    })
+
+
+async def _stream_chat_completion(db, user, model, ollama_payload, balance, billing, t0, req_ip):
+    """SSE-Generator: routet, streamt Deltas, bucht danach ab."""
+    import asyncio as _asyncio
+
+    from pool import route_request
+    from fastapi.responses import StreamingResponse
+
+    queue: "_asyncio.Queue[str]" = _asyncio.Queue()
+    state: dict = {}
+
+    async def on_delta(delta: str) -> None:
+        await queue.put(delta)
+
+    payload = dict(ollama_payload)
+    payload["stream"] = True
+
+    async def runner() -> None:
+        try:
+            state.update(await route_request(db, user, payload, model, on_delta=on_delta))
+        except Exception as e:  # noqa: BLE001 - Fehler gehoert in den Stream
+            log.exception("stream routing failed")
+            state.update({"ok": False, "error": str(e), "source": "error", "node_id": None})
+
+    async def gen():
+        task = _asyncio.create_task(runner())
+        yield _sse_chunk(model, role="assistant")
+        try:
+            while True:
+                getter = _asyncio.create_task(queue.get())
+                fertig, _ = await _asyncio.wait({getter, task}, return_when=_asyncio.FIRST_COMPLETED)
+                if getter in fertig:
+                    yield _sse_chunk(model, delta=getter.result())
+                    continue
+                getter.cancel()
+                while not queue.empty():
+                    yield _sse_chunk(model, delta=queue.get_nowait())
+                break
+
+            if not state.get("ok"):
+                yield _sse_pack({"error": {"message": state.get("error") or "routing failed",
+                                           "type": state.get("source") or "error"}})
+                yield "data: [DONE]\n\n"
+                return
+
+            resp = state.get("response") or {}
+            usage = resp.get("usage") or {}
+            prompt_tokens = int(usage.get("prompt_tokens", 0) or 0)
+            completion_tokens = int(usage.get("completion_tokens", 0) or 0)
+            total_tokens = int(usage.get("total_tokens", prompt_tokens + completion_tokens) or 0)
+            latency_ms = int((time.time() - t0) * 1000)
+
+            # Abschluss-Rahmen mit Nutzung, wie OpenAI-Clients es erwarten
+            abschluss = json.loads(_sse_chunk(model, finish="stop")[len("data: "):].strip())
+            abschluss["usage"] = {
+                "prompt_tokens": prompt_tokens,
+                "completion_tokens": completion_tokens,
+                "total_tokens": total_tokens,
+            }
+            yield _sse_pack(abschluss)
+            yield "data: [DONE]\n\n"
+
+            # --- Buchhaltung wie im blockierenden Weg ---
+            credits_used = round((total_tokens / 1000.0) * COST_PER_1K_TOKENS, 6)
+            new_balance = round(balance - credits_used, 6)
+            api_key = db.query(ApiKey).filter(ApiKey.user_id == user.id, ApiKey.is_active == True).first()  # noqa: E712
+            db.add(Usage(
+                user_id=user.id,
+                api_key_id=api_key.id if api_key else None,
+                model=model,
+                prompt_tokens=prompt_tokens,
+                completion_tokens=completion_tokens,
+                total_tokens=total_tokens,
+                credits_charged=credits_used,
+            ))
+            if billing:
+                db.add(CreditTransaction(
+                    user_id=user.id,
+                    amount=-credits_used,
+                    balance_after=new_balance,
+                    reason=f"chat(sse): {model} ({total_tokens} tokens, src={state.get('source')})",
+                ))
+            pool_job = PoolJob(
+                user_id=user.id,
+                node_id=state.get("node_id"),
+                model=model,
+                source=state.get("source"),
+                status="succeeded",
+                prompt_tokens=prompt_tokens,
+                completion_tokens=completion_tokens,
+                total_tokens=total_tokens,
+                job_cost=credits_used,
+                latency_ms=latency_ms,
+                finished_at=__import__("datetime").datetime.utcnow(),
+            )
+            db.add(pool_job)
+            db.flush()
+            if state.get("source") == "community" and state.get("node_id"):
+                node = db.query(GpuNode).filter(GpuNode.id == state["node_id"]).first()
+                if node is not None:
+                    distribute_revenue(db, node, credits_used, pool_job=pool_job)
+            db.commit()
+            log.info(
+                f"User {user.email} -> {model} src={state.get('source')} node={state.get('node_id')} "
+                f"| SSE in:{prompt_tokens} out:{completion_tokens} | {latency_ms}ms"
+            )
+        finally:
+            if not task.done():
+                task.cancel()
+
+    return StreamingResponse(
+        gen(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache, no-transform",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        },
+    )
+
+
 @app.post("/v1/chat/completions")
 async def chat_completions(
     request: Request,
@@ -670,6 +845,13 @@ async def chat_completions(
         ollama_payload["options"]["num_predict"] = body.max_tokens
 
     t0 = time.time()
+
+    # Phase 4: streamender Weg. Gleiche Pruefungen, nur andere Auslieferung.
+    if body.stream:
+        return await _stream_chat_completion(
+            db, user, model, ollama_payload, balance, billing, t0, client_ip(request)
+        )
+
     routed = await route_request(db, user, ollama_payload, model)
     latency_ms = int((time.time() - t0) * 1000)
 

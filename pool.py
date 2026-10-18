@@ -213,6 +213,66 @@ async def _forward_to_node(node: GpuNode, ollama_payload: dict, timeout: float =
     }
 
 
+async def _forward_to_node_stream(node: GpuNode, ollama_payload: dict, on_delta, timeout: float = 300.0) -> dict:
+    """Weiterleitung an einen Node mit SSE: liefert Deltas weiter und sammelt die Antwort.
+
+    Gegenstueck zu `_forward_to_node`, aber streamend. Der Agent antwortet mit
+    OpenAI-konformen SSE-Rahmen; jedes `choices[0].delta.content` geht sofort an
+    `on_delta`, sodass ein Client die Antwort mitliest, statt auf das Ende zu
+    warten. Am Ende steht dieselbe OpenAI-foermige Antwort wie beim blockierenden
+    Weg, inklusive `usage` aus dem Schluss-Rahmen des Agenten.
+    """
+    import httpx as _hx
+
+    from netinfo import node_base_url
+
+    base = node_base_url(getattr(node, "node_url", None), getattr(node, "port", None) or 11435,
+                         fallback_scheme="http") or f"http://{node.tailscale_ip}:{node.port or 11435}"
+    payload = dict(ollama_payload)
+    payload["stream"] = True
+
+    content_parts: list = []
+    usage: dict = {}
+    prompt_tokens = 0
+    completion_tokens = 0
+
+    async with _hx.AsyncClient(timeout=timeout) as client:
+        async with client.stream("POST", f"{base.rstrip('/')}/v1/chat/completions", json=payload) as r:
+            r.raise_for_status()
+            async for line in r.aiter_lines():
+                if not line or not line.startswith("data:"):
+                    continue
+                body = line[len("data:"):].strip()
+                if body == "[DONE]":
+                    break
+                try:
+                    obj = json.loads(body)
+                except ValueError:
+                    continue
+                if "error" in obj:
+                    raise RuntimeError((obj.get("error") or {}).get("message") or "node stream error")
+                for ch in obj.get("choices") or []:
+                    delta = ((ch.get("delta") or {}).get("content")) or ""
+                    if delta:
+                        content_parts.append(delta)
+                        if on_delta is not None:
+                            await on_delta(delta)
+                if obj.get("usage"):
+                    usage = obj["usage"] or {}
+                    prompt_tokens = int(usage.get("prompt_tokens") or prompt_tokens or 0)
+                    completion_tokens = int(usage.get("completion_tokens") or completion_tokens or 0)
+
+    text = "".join(content_parts)
+    return {
+        "choices": [{"index": 0, "message": {"role": "assistant", "content": text}, "finish_reason": "stop"}],
+        "usage": {
+            "prompt_tokens": prompt_tokens,
+            "completion_tokens": completion_tokens,
+            "total_tokens": prompt_tokens + completion_tokens,
+        },
+    }
+
+
 async def _forward_to_node_ws(node: GpuNode, ollama_payload: dict, timeout: float = 120.0,
                               on_delta=None) -> dict:
     """Forward a job to a community node over its WebSocket (Phase 2 path).
@@ -465,7 +525,12 @@ async def route_request(
         else:
             transport = "http"
             try:
-                ollama_resp = await _forward_to_node(node, ollama_payload)
+                if on_delta is not None and ollama_payload.get("stream"):
+                    # Phase 4: streamend zum Agenten, Deltas sofort weiterreichen
+                    ollama_resp = await _forward_to_node_stream(node, ollama_payload, on_delta)
+                    transport = "http+stream"
+                else:
+                    ollama_resp = await _forward_to_node(node, ollama_payload)
             except Exception as e:
                 log.warning(f"Community node {node.id} ({node.name}) failed: {e}")
                 continue

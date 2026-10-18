@@ -4,6 +4,28 @@ Alle nennenswerten Änderungen. Versionierung ab 18.10.2026 einheitlich für Por
 und Node-Agent; vorher liefen die Komponenten auseinander (Portal 0.3.0, Agent 0.1.0,
 einziger Git-Tag `v0.1.0`).
 
+## 0.5.0 — 2026-10-18
+
+**Streaming (SSE)**
+- `POST /v1/chat/completions` mit `stream: true` liefert jetzt echtes
+  `text/event-stream` statt einer kompletten JSON-Antwort. Damit überlebt eine lange
+  Antwort einen Cloudflare-Tunnel (der kappt sonst bei rund 100 s mit 524).
+- Der Node-Agent streamt auf seinem HTTP-Endpunkt für beide Backends: `BACKEND=ollama`
+  übersetzt Ollamas NDJSON in OpenAI-Rahmen, `BACKEND=openai` reicht die SSE-Zeilen des
+  Backends unverändert weiter. LM-Studio-Provider streamen damit ebenfalls.
+- Der Portal-Weg zum Agenten streamt mit (`_forward_to_node_stream`), Nutzung und
+  Buchhaltung werden aus dem Schluss-Rahmen übernommen.
+- Nicht-streamende Anfragen bleiben unverändert.
+
+**Nebenbei repariert**
+- `admin.py`: neun Log-Zeilen nutzten verschachtelte Anführungszeichen in f-Strings —
+  das ist erst ab Python 3.12 gültig, das Image läuft mit 3.11. Beim ersten Neubau
+  brach der Start mit `SyntaxError`.
+- Migration ergänzt: `api_keys.token_type`, `api_keys.expires_at` und
+  `gpu_nodes.api_key_hash` fehlten in der laufenden Datenbank (die Auth-Härtung war
+  nie migriert worden). Jede Abfrage auf `ApiKey` scheiterte mit „no such column".
+  `_ensure_api_key_and_node_columns()` rüstet das beim Start idempotent nach.
+
 ## 0.4.0 — 2026-10-18
 
 **Adminbereich**

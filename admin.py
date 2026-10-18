@@ -642,7 +642,8 @@ def admin_create_user(
         None, req.model_dump(), mutate,
         store_fields=["user_id", "email", "name", "role", "key_prefix", "credits", "created"],
     )
-    log.info(f"admin {getattr(admin, "email", None) or "operator"}: create user {email} (id={result.get('user_id')}, created={result.get('created')})")
+    _admin_email = getattr(admin, "email", None) or "operator"
+    log.info(f"admin {_admin_email}: create user {email} (id={result.get('user_id')}, created={result.get('created')})")
     return _build(CreateUserResponse, result)
 
 
@@ -788,7 +789,7 @@ def admin_approve_registration(
     user.registration_status = "approved"
     user.updated_at = __import__("datetime").datetime.utcnow()
     db.commit()
-    log.info(f"admin {getattr(admin, "email", None) or "operator"}: approved registration {user.id} ({user.email})")
+    log.info(f"admin {admin.email or 'operator'}: approved registration {user.id} ({user.email})")
     return {
         "id": user.id,
         "user_id": user.id,
@@ -826,7 +827,7 @@ def admin_reject_registration(
     user.registration_status = "rejected"
     user.updated_at = __import__("datetime").datetime.utcnow()
     db.commit()
-    log.info(f"admin {getattr(admin, "email", None) or "operator"}: rejected registration {user.id} ({user.email})")
+    log.info(f"admin {admin.email or 'operator'}: rejected registration {user.id} ({user.email})")
     return {
         "id": user.id,
         "user_id": user.id,
@@ -981,7 +982,7 @@ def admin_update_user(
         db.rollback()
         log.warning(f"audit write failed for user.update/{user.id}: {e}")
 
-    log.info(f"admin {getattr(admin, "email", None) or "operator"}: update user {user.email} changes={list(changes.keys())}")
+    log.info(f"admin {admin.email or 'operator'}: update user {user.email} changes={list(changes.keys())}")
     return _user_out(db, user)
 
 
@@ -1085,7 +1086,7 @@ def admin_topup_user(
         db, admin, idempotency_key, "user.topup", "user", user.id,
         {"amount": req.amount, "reason": req.reason}, mutate,
     )
-    log.info(f"admin {getattr(admin, "email", None) or "operator"}: topup user {user.email} +{req.amount} -> {result['credits']}")
+    log.info(f"admin {admin.email or 'operator'}: topup user {user.email} +{req.amount} -> {result['credits']}")
     return _build(TopupResponse, result)
 
 
@@ -1139,7 +1140,7 @@ def admin_rotate_user_key(
         {"label": label}, mutate,
         store_fields=["user_id", "key_prefix", "key_id", "revoked_key_ids"],
     )
-    log.info(f"admin {getattr(admin, "email", None) or "operator"}: rotated key for {user.email} (new key id={result.get('key_id')}, replayed={result.get('replayed', False)})")
+    log.info(f"admin {admin.email or 'operator'}: rotated key for {user.email} (new key id={result.get('key_id')}, replayed={result.get('replayed', False)})")
     return _build(KeyRotateResponse, result)
 
 
@@ -1172,7 +1173,7 @@ def admin_revoke_user_key(
         db, admin, idempotency_key, "user.key.revoke", "api_key", key.id,
         {}, mutate,
     )
-    log.info(f"admin {getattr(admin, "email", None) or "operator"}: revoked key {key_id} of user {user_id}")
+    log.info(f"admin {admin.email or 'operator'}: revoked key {key_id} of user {user_id}")
     return _build(RevokeKeyResponse, result)
 
 
@@ -1353,7 +1354,7 @@ def admin_enable_node(
         db, admin, idempotency_key, "node.enable", "gpu_node", node.id,
         {"enabled": bool(enabled)}, mutate,
     )
-    log.info(f"admin {getattr(admin, "email", None) or "operator"}: node {node.id} is_enabled -> {result.get('is_enabled')} (owner {user_id})")
+    log.info(f"admin {admin.email or 'operator'}: node {node.id} is_enabled -> {result.get('is_enabled')} (owner {user_id})")
     return _build(EnableNodeResponse, result)
 
 
@@ -1374,7 +1375,7 @@ def admin_usage(
     """
     result = build_admin_usage(db, window=window, limit=limit, include_inactive=include_inactive)
     log.info(
-        f"admin {getattr(admin, "email", None) or "operator"}: usage window={result.window} users={len(result.users)} "
+        f"admin {admin.email or 'operator'}: usage window={result.window} users={len(result.users)} "
         f"tokens={result.totals.total_tokens}"
     )
     return result

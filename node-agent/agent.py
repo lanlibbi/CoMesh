@@ -413,7 +413,7 @@ def get_gpu_info() -> dict:
 # ----------------------------------------------------------------------------
 # FastAPI app
 # ----------------------------------------------------------------------------
-app = FastAPI(title="CoMesh Node-Agent", version="0.4.0")
+app = FastAPI(title="CoMesh Node-Agent", version="0.5.0")
 app.add_middleware(
     CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"],
 )
@@ -466,20 +466,149 @@ class ChatRequest(BaseModel):
     stream: Optional[bool] = False
 
 
+# ----------------------------------------------------------------------------
+# Server-Sent Events (SSE) — Phase 4
+#
+# Bis hierher hat der HTTP-Endpunkt `stream: true` stillschweigend ignoriert und
+# immer eine komplette Antwort geliefert. Ueber einen Cloudflare-Tunnel ist das
+# ein Problem: eine lange Antwort ist ein einziger Request, und Cloudflare kappt
+# bei rund 100 s mit 524. Mit SSE fliessen sofort Bytes, die Kappung greift nicht.
+#
+# BACKEND=openai: der Body wird mit stream=true unveraendert weitergegeben und
+#                 die SSE-Zeilen des Backends durchgereicht.
+# BACKEND=ollama: Ollamas NDJSON wird in OpenAI-konforme SSE-Rahmen uebersetzt.
+# ----------------------------------------------------------------------------
+def _sse_frame(model: str, delta: str = "", finish=None, choices=None) -> str:
+    """One OpenAI-compatible `chat.completion.chunk` frame."""
+    payload = {
+        "id": f"chatcmpl-agent-{int(time.time() * 1000)}",
+        "object": "chat.completion.chunk",
+        "created": int(time.time()),
+        "model": model,
+        "choices": choices if choices is not None else [{
+            "index": 0,
+            "delta": ({"content": delta} if delta else {}),
+            "finish_reason": finish,
+        }],
+    }
+    return "data: " + json.dumps(payload, ensure_ascii=False) + "\n\n"
+
+
+def _sse_error(message: str, kind: str = "backend_error") -> str:
+    return "data: " + json.dumps({"error": {"message": message, "type": kind}}) + "\n\n"
+
+
+async def _stream_sse(payload: dict, model: str):
+    """Yield OpenAI-compatible SSE frames from whichever backend is configured."""
+    # Erster Rahmen mit der Rolle, wie OpenAI-Clients es erwarten
+    yield _sse_frame(model, choices=[{"index": 0, "delta": {"role": "assistant"}, "finish_reason": None}])
+
+    if BACKEND == "openai":
+        upstream = dict(payload)
+        upstream["stream"] = True
+        async with httpx.AsyncClient(timeout=180.0) as client:
+            async with client.stream("POST", backend_chat_url(), json=upstream) as r:
+                r.raise_for_status()
+                async for line in r.aiter_lines():
+                    if not line:
+                        continue
+                    if line.startswith("data:"):
+                        if line.strip() == "data: [DONE]":
+                            continue          # wir senden das Ende selbst
+                        yield line + "\n\n"
+        yield "data: [DONE]\n\n"
+        return
+
+    # Ollama: NDJSON -> SSE
+    ollama_payload = {
+        "model": payload.get("model", ""),
+        "messages": payload.get("messages", []),
+        "stream": True,
+        "options": {},
+    }
+    if payload.get("temperature") is not None:
+        ollama_payload["options"]["temperature"] = payload["temperature"]
+    if payload.get("max_tokens") is not None:
+        ollama_payload["options"]["num_predict"] = payload["max_tokens"]
+
+    prompt_tokens = 0
+    completion_tokens = 0
+
+    async with httpx.AsyncClient(timeout=180.0) as client:
+        async with client.stream("POST", backend_chat_url(), json=ollama_payload) as r:
+            r.raise_for_status()
+            async for line in r.aiter_lines():
+                if not line.strip():
+                    continue
+                try:
+                    data = json.loads(line)
+                except ValueError:
+                    continue
+                delta = (data.get("message") or {}).get("content") or ""
+                if delta:
+                    yield _sse_frame(model, delta=delta)
+                if data.get("done"):
+                    prompt_tokens = int(data.get("prompt_eval_count") or prompt_tokens or 0)
+                    completion_tokens = int(data.get("eval_count") or completion_tokens or 0)
+                    break
+
+    usage_choices = [{"index": 0, "delta": {}, "finish_reason": "stop"}]
+    frame = _sse_frame(model, choices=usage_choices)
+    # Usage anhaengen, ohne den Rahmen zu verbiegen
+    obj = json.loads(frame[len("data: "):].strip())
+    obj["usage"] = {
+        "prompt_tokens": prompt_tokens,
+        "completion_tokens": completion_tokens,
+        "total_tokens": prompt_tokens + completion_tokens,
+    }
+    yield "data: " + json.dumps(obj, ensure_ascii=False) + "\n\n"
+    yield "data: [DONE]\n\n"
+
+
 @app.post("/v1/chat/completions")
 async def chat_completions(req: ChatRequest):
+    """Chat completion. `stream: true` liefert Server-Sent Events (Phase 4)."""
     global _active_jobs
+
+    payload = {
+        "model": req.model,
+        "messages": [m.model_dump() for m in req.messages],
+        "stream": bool(req.stream),
+    }
+    if req.temperature is not None:
+        payload["temperature"] = req.temperature
+    if req.max_tokens is not None:
+        payload["max_tokens"] = req.max_tokens
+
+    if req.stream:
+        async def _gen():
+            global _active_jobs
+            _active_jobs += 1
+            try:
+                async for frame in _stream_sse(payload, req.model):
+                    yield frame
+            except httpx.HTTPStatusError as e:
+                yield _sse_error(f"Backend {e.response.status_code}: {e.response.text[:200]}")
+                yield "data: [DONE]\n\n"
+            except Exception as e:  # noqa: BLE001 - ein Stream darf nicht hart brechen
+                log.exception("agent stream failed")
+                yield _sse_error(f"Agent error: {e}", "agent_error")
+                yield "data: [DONE]\n\n"
+            finally:
+                _active_jobs = max(0, _active_jobs - 1)
+
+        return StreamingResponse(
+            _gen(),
+            media_type="text/event-stream",
+            headers={
+                "Cache-Control": "no-cache, no-transform",
+                "Connection": "keep-alive",
+                "X-Accel-Buffering": "no",
+            },
+        )
+
     _active_jobs += 1
     try:
-        payload = {
-            "model": req.model,
-            "messages": [m.model_dump() for m in req.messages],
-            "stream": req.stream,
-        }
-        if req.temperature is not None:
-            payload["temperature"] = req.temperature
-        if req.max_tokens is not None:
-            payload["max_tokens"] = req.max_tokens
         response = await _infer(payload, timeout=180.0)
         # For BACKEND=openai, _infer returns the OpenAI response verbatim (already
         # has choices/usage). For Ollama it returns our translated envelope.
