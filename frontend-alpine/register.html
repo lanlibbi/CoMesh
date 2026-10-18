@@ -198,6 +198,12 @@ function registerForm() {
           initial_credits: 100,
         };
         const r = await API("/auth/register", { method: "POST", body });
+        if ((r.registration_status || r.status) === "pending") {
+          toast("Registrierung eingereicht — wartet auf Freigabe durch einen Administrator.");
+          this.loading = false;
+          setTimeout(() => { window.location.href = "login.html"; }, 1200);
+          return;
+        }
         Auth.save({
           id: r.user_id, email: r.email, name: r.name,
           credits: r.credits, role: r.role, allowed_models: r.allowed_models,

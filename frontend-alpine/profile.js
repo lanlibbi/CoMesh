@@ -55,7 +55,17 @@ document.addEventListener("alpine:init", () => {
       else this.selectedModels.push(name);
     },
 
+    /** Admins verwalten ihre Rolle nicht selbst — sonst hebt ein Profil-Speichern die Rechte auf. */
+    isAdminRole() {
+      const u = Auth.currentUser() || {};
+      return (u.role || "").toLowerCase() === "admin";
+    },
+
     async saveRole() {
+      if (this.isAdminRole()) {
+        this.roleWarning = "Die Admin-Rolle wird von der Administration verwaltet.";
+        return;
+      }
       this.savingRole = true;
       this.roleWarning = "";
       this.lastRoleChange = "";

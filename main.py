@@ -87,6 +87,7 @@ async def lifespan(app: FastAPI):
     _ensure_password_column()
     _ensure_user_settings()
     _ensure_system_settings()
+    _ensure_registration_columns()
     _ensure_node_allowed_models()
     _ensure_node_ws_columns()
     _ensure_node_address_columns()
@@ -269,6 +270,18 @@ def _ensure_system_settings():
     runtime settings editable by admins (e.g. the credits_enabled flag)."""
     from models import Base
     Base.metadata.create_all(bind=engine, tables=[SystemSetting.__table__])
+
+
+def _ensure_registration_columns():
+    """Add registration_status and signup_credits columns if missing (idempotent)."""
+    with engine.begin() as conn:
+        cols = [row[1] for row in conn.exec_driver_sql("PRAGMA table_info(users)").fetchall()]
+        if "registration_status" not in cols:
+            conn.exec_driver_sql("ALTER TABLE users ADD COLUMN registration_status VARCHAR DEFAULT 'approved' NOT NULL")
+            log.info("Added users.registration_status column (default 'approved')")
+        if "signup_credits" not in cols:
+            conn.exec_driver_sql("ALTER TABLE users ADD COLUMN signup_credits REAL DEFAULT 100.0 NOT NULL")
+            log.info("Added users.signup_credits column (default 100.0)")
 
 
 def _ensure_node_allowed_models():
@@ -477,6 +490,16 @@ def update_my_role(
             warnings.append(
                 f"Du hast noch {owned} registrierte Node(s) — diese werden nicht mehr für andere User verfügbar sein, solange deine Rolle 'consumer' ist."
             )
+
+    # RiegelAdminRolle: ein Admin, der sein Profil speichert, darf sich nicht
+    # selbst degradieren. Rollen werden fuer Admins ausschliesslich ueber
+    # /admin/users verwaltet (siehe admin.py).
+    if getattr(user, "role", "") == ADMIN_ROLE:
+        raise HTTPException(
+            status_code=409,
+            detail="Die Admin-Rolle wird von der Administration verwaltet (/admin/users) "
+                   "und kann hier nicht geaendert werden.",
+        )
     user.role = req.role
     db.commit()
     db.refresh(user)
@@ -764,6 +787,8 @@ class AuthResponse(BaseModel):
     key_prefix: str
     credits: float
     credits_enabled: bool = True
+    registration_status: str = "approved"
+    status: Optional[str] = None
 
 
 
@@ -822,7 +847,9 @@ def auth_register(req: RegisterRequest, db: Session = Depends(get_db)):
     user = User(
         email=req.email,
         name=req.name,
-        is_active=True,
+        is_active=False,
+        registration_status="pending",
+        signup_credits=req.initial_credits,
         password_hash=_hash_pw(req.password),
         role=role,
     )
@@ -830,27 +857,19 @@ def auth_register(req: RegisterRequest, db: Session = Depends(get_db)):
     db.flush()
     if allowed_models_value is not None:
         user.set_allowed_models(allowed_models_value)
-    if credits_enabled():
-        # Signup grants stay tied to the billing system: with credits off they
-        # would be meaningless (and the user gets unlimited usage anyway).
-        db.add(CreditTransaction(
-            user_id=user.id,
-            amount=req.initial_credits,
-            balance_after=req.initial_credits,
-            reason="signup credit",
-        ))
+    # Credits and active API key are only granted on manual approval.
 
     raw_key, key_hash, key_prefix = generate_api_key()
     db.add(ApiKey(
         user_id=user.id,
         key_hash=key_hash,
         key_prefix=key_prefix,
-        label="default",
-        is_active=True,
+        label="registration",
+        is_active=False,
     ))
     db.commit()
 
-    log.info(f"Public register: {user.email} (id={user.id}) with {req.initial_credits} credits")
+    log.info(f"Public register (pending approval): {user.email} (id={user.id})")
     return AuthResponse(
         user_id=user.id,
         email=user.email,
@@ -859,8 +878,10 @@ def auth_register(req: RegisterRequest, db: Session = Depends(get_db)):
         allowed_models=user.get_allowed_models(),
         api_key=raw_key,
         key_prefix=key_prefix,
-        credits=req.initial_credits,
+        credits=0.0,
         credits_enabled=credits_enabled(),
+        registration_status="pending",
+        status="pending",
     )
 
 
@@ -871,6 +892,8 @@ def auth_login(req: LoginRequest, db: Session = Depends(get_db)):
         raise HTTPException(status_code=401, detail="Invalid credentials")
     if not user.password_hash or user.password_hash != _hash_pw(req.password):
         raise HTTPException(status_code=401, detail="Invalid credentials")
+    if getattr(user, "registration_status", "approved") != "approved" or not getattr(user, "is_active", True):
+        raise HTTPException(status_code=403, detail="Registration pending manual approval")
 
     raw_key, key_hash, key_prefix = generate_api_key()
     for k in db.query(ApiKey).filter(ApiKey.user_id == user.id, ApiKey.is_active == True).all():
@@ -895,6 +918,8 @@ def auth_login(req: LoginRequest, db: Session = Depends(get_db)):
         key_prefix=key_prefix,
         credits=balance,
         credits_enabled=credits_enabled(),
+        registration_status=getattr(user, "registration_status", "approved") or "approved",
+        status=getattr(user, "registration_status", "approved") or "approved",
     )
 
 

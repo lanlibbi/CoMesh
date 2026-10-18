@@ -75,6 +75,11 @@ async def get_current_user(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="User not found or inactive.",
         )
+    if getattr(user, "registration_status", "approved") != "approved":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Registration pending manual approval.",
+        )
 
     api_key.last_used_at = datetime.utcnow()
     db.commit()

@@ -8,6 +8,7 @@ Run from the repo root:
 """
 import hashlib
 import json
+import os
 import uuid
 
 import pytest
@@ -25,6 +26,11 @@ def _non_admin_headers(client):
         "email": email, "name": "Plain User", "password": "pw12345", "role": "both",
     })
     if r.status_code == 409:
+        r = client.post("/auth/login", json={"email": email, "password": "pw12345"})
+    else:
+        body_tmp = r.json()
+        admin_headers = {"Authorization": f"Bearer {os.environ['ADMIN_API_KEY']}"}
+        client.post(f"/admin/registrations/{body_tmp['user_id']}/approve", headers=admin_headers)
         r = client.post("/auth/login", json={"email": email, "password": "pw12345"})
     assert r.status_code in (200, 201), r.text
     body = r.json()

@@ -82,6 +82,9 @@
   --brass-dim:     rgba(201, 162, 74, 0.14);
   --brass-line:    rgba(201, 162, 74, 0.30);
   --brass-grad-1:  #f0dcab;
+  --brass-grad-2:  #c9a24a;   /* fehlte: ohne diese Stufe ist der ganze */
+                              /* linear-gradient ungueltig und .stat-value.brass */
+                              /* malt transparenten Text auf Nichts = unsichtbar */
   --brass-grad-3:  #9d7c31;
   --brass-hover-1: #ecd79c;
   --brass-hover-2: #d3ac56;

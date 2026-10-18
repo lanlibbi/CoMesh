@@ -151,7 +151,8 @@ const NAV_ITEMS = [
   { key: "chat", href: "chat.html", labelKey: "nav.chat" },
   { key: "usage", href: "usage.html", labelKey: "nav.usage" },
   // Admin-only view of every user's consumption; the server gates /admin/usage too.
-  { key: "admin-usage", href: "admin-usage.html", labelKey: "nav.admin", adminOnly: true },
+  { key: "admin-usage", href: "admin-usage.html", labelKey: "nav.admin", label: "Verbrauch", adminOnly: true },
+  { key: "admin-registrations", href: "admin-registrations.html", labelKey: "nav.admin", label: "Freigaben", adminOnly: true },
   { key: "pool", href: "pool.html", labelKey: "nav.pool" },
   { key: "nodes", href: "nodes.html", labelKey: "nav.nodes", providerOnly: true },
   { key: "agent", href: "agent.html", labelKey: "nav.agent" },
@@ -168,7 +169,7 @@ function navHTML(active) {
   const links = NAV_ITEMS
     .filter((i) => !i.providerOnly || isProvider)
     .filter((i) => !i.adminOnly || isAdmin)
-    .map((i) => `<a href="${i.href}" class="nav-link${active === i.key ? " active" : ""}">${I18n.t(i.labelKey)}</a>`)
+    .map((i) => `<a href="${i.href}" class="nav-link${active === i.key ? " active" : ""}">${i.label || I18n.t(i.labelKey)}</a>`)
     .join("");
 
   return `
@@ -312,6 +313,29 @@ document.addEventListener("DOMContentLoaded", () => {
     holder.innerHTML = footerHTML();
     document.body.appendChild(holder.firstElementChild);
   }
+});
+
+/**
+ * Die Rolle kann serverseitig wechseln (ein Admin ernennt jemanden). Der
+ * zwischengespeicherte Nutzer in localStorage wird nur beim Login geschrieben,
+ * deshalb hier einmal pro Seitenaufbau erneuern — sonst bleibt der Admin-Tab
+ * verborgen, bis man sich von Hand neu anmeldet. Ein einmaliger Reload laesst
+ * Alpine die Navigation mit der neuen Rolle zeichnen.
+ */
+document.addEventListener("DOMContentLoaded", async () => {
+  if (!Auth.isLoggedIn()) return;
+  let vorher = "";
+  try { vorher = ((Auth.currentUser() || {}).role || "").toLowerCase(); } catch (e) { /* egal */ }
+  try {
+    const me = await refreshUser();
+    const nachher = ((me && me.role) || "").toLowerCase();
+    if (nachher && nachher !== vorher && !sessionStorage.getItem("nav_role_reload")) {
+      sessionStorage.setItem("nav_role_reload", "1");
+      window.location.reload();
+    } else if (nachher && nachher === vorher) {
+      sessionStorage.removeItem("nav_role_reload");
+    }
+  } catch (e) { /* offline oder Schluessel ungueltig: zwischengespeicherten Nutzer stehen lassen */ }
 });
 
 /**

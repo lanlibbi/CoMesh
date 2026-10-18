@@ -56,7 +56,18 @@
         </div>
       </div>
 
-      <div class="stack" style="gap:2px">
+      <div x-show="isAdminRole()" x-cloak class="notice">
+        <div class="grow">
+          <div class="semibold">Admin-Konto</div>
+          <p class="t-sm text-dim mt-1">
+            Die Admin-Rolle wird von der Administration verwaltet und kann hier nicht
+            geändert werden. Rollen anderer Konten ändern:
+            <a href="admin-registrations.html" class="link">Konten und Freigaben</a>.
+          </p>
+        </div>
+      </div>
+
+      <div class="stack" style="gap:2px" x-show="!isAdminRole()">
         <label class="check">
           <input type="radio" name="role" value="consumer" x-model="role" />
           <span class="check-body">
@@ -82,7 +93,7 @@
 
       <div x-show="roleWarning" class="t-sm text-err mt-2" x-text="roleWarning"></div>
 
-      <div class="row mt-3" style="gap:12px">
+      <div class="row mt-3" style="gap:12px" x-show="!isAdminRole()">
         <button class="btn-primary btn-sm" @click="saveRole()" :disabled="savingRole">
           <span x-show="!savingRole" data-i18n="rolle-speichern">Rolle speichern</span>
           <span x-show="savingRole" data-i18n="speichere">Speichere…</span>

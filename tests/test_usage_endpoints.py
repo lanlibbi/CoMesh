@@ -6,6 +6,7 @@ credit sums, gap-filled series, share calculation, role gating and tenant
 isolation. Requests are inserted straight into the `usages` table (no Ollama
 involved), so the suite stays offline and fast.
 """
+import os
 import uuid
 from datetime import datetime, timedelta
 
@@ -19,12 +20,18 @@ from models import PoolJob, Usage, User
 # ---------------------------------------------------------------------------
 def _register(client, role="both", credits=None):
     email = f"usage-{uuid.uuid4().hex[:8]}@example.com"
-    r = client.post("/auth/register", json={
-        "email": email, "name": "Usage Tester", "password": "pw12345", "role": role,
-    })
+    payload = {"email": email, "name": "Usage Tester", "password": "pw12345", "role": role}
+    if credits is not None:
+        payload["initial_credits"] = credits
+    r = client.post("/auth/register", json=payload)
     assert r.status_code in (200, 201), r.text
     body = r.json()
-    return {"Authorization": f"Bearer {body['api_key']}"}, body
+    admin_headers = {"Authorization": f"Bearer {os.environ['ADMIN_API_KEY']}"}
+    client.post(f"/admin/registrations/{body['user_id']}/approve", headers=admin_headers)
+    r2 = client.post("/auth/login", json={"email": email, "password": "pw12345"})
+    assert r2.status_code in (200, 201), r2.text
+    body2 = r2.json()
+    return {"Authorization": f"Bearer {body2['api_key']}"}, body2
 
 
 def _user_id(email):

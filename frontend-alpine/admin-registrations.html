@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Admin · Freigaben · CoMesh</title>
+<meta name="color-scheme" content="dark light" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<script>
+/* Theme vor dem Stylesheet setzen, damit der erste Aufbau schon stimmt. */
+(function () {
+  try {
+    var stored = localStorage.getItem("gp_theme");
+    var theme = (stored === "light" || stored === "dark") ? stored
+      : (window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
+    document.documentElement.setAttribute("data-theme", theme);
+  } catch (e) {
+    document.documentElement.setAttribute("data-theme", "dark");
+  }
+})();
+</script>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body x-data="registrationAdminPage()" x-init="init()">
+  <div x-html="navHTML('admin-registrations')"></div>
+
+  <main class="shell">
+    <div class="page-head">
+      <div class="eyebrow">Admin</div>
+      <h1>Konten und Freigaben</h1>
+      <p class="lede">
+        Neue Registrierungen freigeben oder ablehnen, Rollen vergeben und Konten
+        deaktivieren. Alles serverseitig auf <code class="inline">role = admin</code> beschränkt.
+      </p>
+    </div>
+
+    <div x-show="denied" x-cloak class="notice mb-4">
+      <div class="grow">
+        <div class="semibold">Admin-Rolle erforderlich</div>
+        <p class="t-sm text-dim mt-1">
+          Dieser Bereich verwaltet alle Konten. Deine Rolle:
+          <span class="mono" x-text="(Auth.currentUser() || {}).role || 'both'"></span>.
+        </p>
+      </div>
+    </div>
+    <div x-show="error" x-cloak class="notice mb-4">
+      <div class="grow">
+        <div class="semibold">Laden fehlgeschlagen</div>
+        <p class="t-sm text-dim mt-1" x-text="error"></p>
+      </div>
+    </div>
+    <div x-show="actionError" x-cloak class="notice mb-4">
+      <div class="grow"><p class="t-sm" x-text="actionError"></p></div>
+    </div>
+    <div x-show="actionOk" x-cloak class="notice mb-4">
+      <div class="grow"><p class="t-sm" x-text="actionOk"></p></div>
+    </div>
+
+    <!-- Zähler -->
+    <div class="grid mb-4" x-show="!denied">
+      <div class="card span-3">
+        <div class="stat">
+          <div class="eyebrow">Ausstehend</div>
+          <div class="stat-value brass" x-text="counts.pending == null ? '—' : fmtNumber(counts.pending)"></div>
+          <div class="stat-sub">warten auf Freigabe</div>
+        </div>
+      </div>
+      <div class="card span-3">
+        <div class="stat">
+          <div class="eyebrow">Freigegeben</div>
+          <div class="stat-value" x-text="counts.approved == null ? '—' : fmtNumber(counts.approved)"></div>
+          <div class="stat-sub">aktive Konten</div>
+        </div>
+      </div>
+      <div class="card span-3">
+        <div class="stat">
+          <div class="eyebrow">Abgelehnt</div>
+          <div class="stat-value" x-text="counts.rejected == null ? '—' : fmtNumber(counts.rejected)"></div>
+          <div class="stat-sub">gesperrt</div>
+        </div>
+      </div>
+      <div class="card span-3">
+        <div class="stat">
+          <div class="eyebrow">Admins</div>
+          <div class="stat-value" x-text="counts.admins == null ? '—' : fmtNumber(counts.admins)"></div>
+          <div class="stat-sub">dürfen verwalten</div>
+        </div>
+      </div>
+    </div>
+
+    <div x-show="!denied" class="card">
+      <div class="panel-head">
+        <div>
+          <div class="eyebrow">Konten</div>
+          <h3 x-text="statuses.find(s => s.key === status)?.label || 'Alle'"></h3>
+          <p x-text="loading ? 'Lädt…' : (total + ' Einträge' + (items.length < total ? ' — ' + items.length + ' angezeigt' : ''))"></p>
+        </div>
+        <div class="row wrap" style="gap:8px">
+          <input class="input" style="max-width:240px" placeholder="Suche E-Mail/Name"
+                 x-model="q" @keyup.enter="search()" />
+          <select class="input" style="max-width:190px" x-model="status" @change="search()">
+            <template x-for="s in statuses" :key="s.key">
+              <option :value="s.key" x-text="s.label"></option>
+            </template>
+          </select>
+          <button class="btn-ghost btn-sm" @click="search()">Suchen</button>
+        </div>
+      </div>
+
+      <div x-show="loading && !items.length" class="t-sm text-mute">Lädt…</div>
+
+      <div x-show="!loading && !items.length" class="empty">
+        <p>Keine Einträge in dieser Auswahl.</p>
+        <p class="t-sm text-dim mt-2">Anderen Status wählen oder Suche leeren.</p>
+      </div>
+
+      <div x-show="items.length" class="table-wrap">
+        <table class="tbl">
+          <thead>
+            <tr>
+              <th>Konto</th>
+              <th>Rolle</th>
+              <th>Status</th>
+              <th>Aktiv</th>
+              <th>Credits</th>
+              <th>Registriert</th>
+              <th>Aktionen</th>
+            </tr>
+          </thead>
+          <tbody>
+            <template x-for="r in items" :key="r.id">
+              <tr>
+                <td>
+                  <div class="semibold" x-text="r.name || r.email"></div>
+                  <div class="t-xs text-mute" x-text="r.email"></div>
+                </td>
+                <td>
+                  <select class="input" style="max-width:200px"
+                          :value="r.role"
+                          :disabled="busyId === r.id"
+                          @change="setRole(r, $event.target.value)">
+                    <template x-for="role in roles" :key="role.key">
+                      <option :value="role.key" x-text="role.label" :selected="role.key === r.role"></option>
+                    </template>
+                  </select>
+                </td>
+                <td><span :class="statusClass(r.status)" x-text="statusLabel(r.status)"></span></td>
+                <td>
+                  <button type="button" class="btn-ghost btn-sm"
+                          :disabled="busyId === r.id"
+                          @click="toggleActive(r)"
+                          x-text="r.is_active ? 'aktiv' : 'inaktiv'"></button>
+                </td>
+                <td class="num brass" x-text="fmtCredits(r.credits)"></td>
+                <td class="t-xs text-dim nowrap" x-text="fmtDate(r.created_at)"></td>
+                <td>
+                  <div class="row wrap" style="gap:6px">
+                    <button class="btn-ghost btn-sm" x-show="r.status === 'pending'" :disabled="busyId === r.id" @click="approve(r.id)">Freigeben</button>
+                    <button class="btn-ghost btn-sm" x-show="r.status === 'pending'" :disabled="busyId === r.id" @click="reject(r.id)">Ablehnen</button>
+                    <button class="btn-ghost btn-sm" x-show="r.status !== 'pending'" :disabled="busyId === r.id" @click="toggleActive(r)" x-text="r.is_active ? 'Deaktivieren' : 'Wieder aktivieren'"></button>
+                  </div>
+                </td>
+              </tr>
+            </template>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="row wrap mt-3" style="gap:8px" x-show="total > limit">
+        <button class="btn-ghost btn-sm" :disabled="offset === 0" @click="prev()">Zurück</button>
+        <button class="btn-ghost btn-sm" :disabled="offset + limit >= total" @click="next()">Weiter</button>
+      </div>
+
+      <p class="hint mt-3">
+        Der letzte Admin kann sich die Rolle nicht selbst entziehen — erst ein weiteres Konto
+        zum Admin machen. Quelle: <code class="inline">GET /admin/registrations</code>,
+        <code class="inline">POST /admin/registrations/&#123;id&#125;/approve|reject</code>,
+        <code class="inline">PATCH /admin/users/&#123;id&#125;</code>.
+      </p>
+    </div>
+  </main>
+
+<script defer src="https://unpkg.com/alpinejs@3.5.1/dist/cdn.min.js"></script>
+<script src="config.js"></script>
+<script src="i18n-catalog.js"></script>
+<script src="i18n.js"></script>
+<script src="app.js"></script>
+<script src="admin-registrations.js"></script>
+</body>
+</html>

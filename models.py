@@ -42,6 +42,8 @@ class User(Base):
     name = Column(String, nullable=False)
     password_hash = Column(String, nullable=True)  # SHA-256 hash; POC: use bcrypt/argon2 in prod
     is_active = Column(Boolean, default=True, nullable=False)
+    registration_status = Column(String, default="approved", nullable=False)  # pending | approved | rejected
+    signup_credits = Column(Float, default=100.0, nullable=False)              # credits granted on approval
     role = Column(String, default="both", nullable=False)        # provider | consumer | both
     allowed_models = Column(Text, nullable=True)                 # JSON list or NULL = "all local, no cloud"
     # Quota mode when the credits system is enabled (admin-controlled):

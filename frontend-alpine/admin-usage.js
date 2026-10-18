@@ -33,7 +33,7 @@ document.addEventListener("alpine:init", () => {
 
     async loadSettings() {
       try {
-        const r = await API("/admin/settings");
+        const r = await api("/admin/settings", { auth: true });
         this.settings = r; this.settingsLoaded = true;
       } catch (e) { /* non-admin or error -> banner stays hidden */ }
     },
@@ -41,13 +41,13 @@ document.addEventListener("alpine:init", () => {
       try {
         const neu = !this.settings.credits_enabled;
         if (!confirm(I18n.t("admin.credits_confirm_" + (neu ? "on" : "off")))) return;
-        const r = await API("/admin/settings", { method: "PUT", body: { credits_enabled: neu } });
+        const r = await api("/admin/settings", { method: "PUT", body: { credits_enabled: neu }, auth: true });
         this.settings = r;
       } catch (e) { alert(e.message || String(e)); }
     },
     async setQuota(u, mode) {
       try {
-        await API(`/admin/users/${u.id}/quota`, { method: "PATCH", body: { quota_mode: mode } });
+        await api(`/admin/users/${u.id}/quota`, { method: "PATCH", body: { quota_mode: mode }, auth: true });
         u.quota_mode = mode;
       } catch (e) { alert(e.message || String(e)); }
     },

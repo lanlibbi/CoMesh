@@ -84,6 +84,14 @@ def _new_user(client, initial_credits: float = 0.0):
     assert r.status_code == 200, r.text
     body = r.json()
 
+    admin_headers = {"Authorization": f"Bearer {os.environ['ADMIN_API_KEY']}"}
+    client.post(f"/admin/registrations/{body['user_id']}/approve", headers=admin_headers)
+
+    # login to get active key + credits
+    r2 = client.post("/auth/login", json={"email": email, "password": "pw12345"})
+    assert r2.status_code == 200, r2.text
+    body2 = r2.json()
+
     # Legacy-Tests pruefen den Balance-Pfad: Tester auf quota_mode=balance
     # (Default seit Admin-Quota-Feature: 'unlimited' wuerde nie abbuchen)
     from database import SessionLocal as _SL
@@ -96,7 +104,7 @@ def _new_user(client, initial_credits: float = 0.0):
             _db.commit()
     finally:
         _db.close()
-    return {"Authorization": f"Bearer {body['api_key']}"}, body["user_id"], body["api_key"]
+    return {"Authorization": f"Bearer {body2['api_key']}"}, body["user_id"], body2["api_key"]
 
 
 def _stub_upstream(monkeypatch, tokens: int = 1000):

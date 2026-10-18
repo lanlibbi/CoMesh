@@ -45,6 +45,7 @@ from sqlalchemy.orm import Session
 from admin_auth import require_admin
 from auth import generate_api_key
 from database import get_db
+from config import credits_enabled
 from netinfo import host_of as _host_of
 from models import (
     ADMIN_ROLE,
@@ -213,6 +214,7 @@ class UserAdminOut(BaseModel):
     name: str
     role: str
     is_active: bool
+    registration_status: str = "approved"
     credits: float
     allowed_models: Optional[List[str]] = None
     allow_cloud: bool = False
@@ -430,6 +432,7 @@ def _user_out(db: Session, user: User, now: Optional[datetime] = None) -> UserAd
         name=user.name,
         role=role,
         is_active=bool(user.is_active),
+        registration_status=getattr(user, "registration_status", "approved") or "approved",
         credits=round(get_user_credits(db, user.id), 6),
         allowed_models=user.get_allowed_models(),
         allow_cloud=bool(user.allow_cloud),
@@ -674,6 +677,160 @@ def admin_list_users(
         offset=offset,
         users=[_user_out(db, u, now) for u in rows],
     )
+
+
+# ---------------------------------------------------------------------------
+# Registrations (manual approval of new public sign-ups)
+# ---------------------------------------------------------------------------
+
+
+@router.get("/registrations")
+def admin_list_registrations(
+    q: Optional[str] = Query(None, description="Substring match on email or name"),
+    search: Optional[str] = Query(None, description="Alias for q"),
+    status: Optional[str] = Query(None, description="pending | approved | rejected"),
+    registration_status: Optional[str] = Query(None, description="Alias for status"),
+    limit: int = Query(50, ge=1, le=MAX_PAGE),
+    offset: int = Query(0, ge=0),
+    admin: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    """List registration requests with server-side search + status filter + paging."""
+    query_text = q if q is not None else search
+    status_filter = status if status is not None else registration_status
+    limit, offset = _paging(limit, offset)
+    query = db.query(User)
+    if status_filter:
+        s = status_filter.strip().lower()
+        if s not in ("pending", "approved", "rejected"):
+            raise _client_error(422, f"Unknown status '{status_filter}'. Valid: pending, approved, rejected")
+        query = query.filter(User.registration_status == s)
+    if query_text:
+        like = f"%{query_text.strip()}%"
+        query = query.filter(func.lower(User.email).like(like.lower()) | func.lower(User.name).like(like.lower()))
+
+    total = query.count()
+    rows = query.order_by(User.id.asc()).limit(limit).offset(offset).all()
+    items = []
+    for u in rows:
+        credits = round(get_user_credits(db, u.id), 6)
+        rs = getattr(u, "registration_status", "approved") or "approved"
+        created = _iso(u.created_at)
+        items.append({
+            "id": u.id,
+            "user_id": u.id,
+            "email": u.email,
+            "name": u.name,
+            "role": getattr(u, "role", "both") or "both",
+            "status": rs,
+            "registration_status": rs,
+            "is_active": bool(u.is_active),
+            "credits": credits,
+            "created_at": created,
+            "date": created,
+            "registered_at": created,
+            "signup_credits": getattr(u, "signup_credits", None),
+        })
+    return {
+        "total": int(total),
+        "returned": len(items),
+        "limit": limit,
+        "offset": offset,
+        "registrations": items,
+        "users": items,
+        "items": items,
+    }
+
+
+@router.post("/registrations/{registration_id}/approve")
+def admin_approve_registration(
+    registration_id: int,
+    admin: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    user = db.query(User).filter(User.id == registration_id).first()
+    if not user:
+        raise _client_error(404, "Registration not found")
+    rs = getattr(user, "registration_status", "approved") or "approved"
+    if rs == "approved":
+        return {
+            "id": user.id,
+            "user_id": user.id,
+            "email": user.email,
+            "status": "approved",
+            "registration_status": "approved",
+            "credits": round(get_user_credits(db, user.id), 6),
+            "replayed": True,
+        }
+    credits_to_add = getattr(user, "signup_credits", None)
+    if credits_to_add is None:
+        credits_to_add = 100.0
+    try:
+        credits_to_add = float(credits_to_add)
+    except (TypeError, ValueError):
+        credits_to_add = 100.0
+    if credits_enabled() and credits_to_add > 0:
+        balance_before = get_user_credits(db, user.id)
+        db.add(CreditTransaction(
+            user_id=user.id,
+            amount=credits_to_add,
+            balance_after=balance_before + credits_to_add,
+            reason="signup credit (approved)",
+        ))
+    for k in db.query(ApiKey).filter(ApiKey.user_id == user.id).all():
+        k.is_active = True
+    user.is_active = True
+    user.registration_status = "approved"
+    user.updated_at = __import__("datetime").datetime.utcnow()
+    db.commit()
+    log.info(f"admin {admin.email}: approved registration {user.id} ({user.email})")
+    return {
+        "id": user.id,
+        "user_id": user.id,
+        "email": user.email,
+        "name": user.name,
+        "status": "approved",
+        "registration_status": "approved",
+        "credits": round(get_user_credits(db, user.id), 6),
+        "replayed": False,
+    }
+
+
+@router.post("/registrations/{registration_id}/reject")
+def admin_reject_registration(
+    registration_id: int,
+    admin: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    user = db.query(User).filter(User.id == registration_id).first()
+    if not user:
+        raise _client_error(404, "Registration not found")
+    rs = getattr(user, "registration_status", "approved") or "approved"
+    if rs == "rejected":
+        return {
+            "id": user.id,
+            "user_id": user.id,
+            "email": user.email,
+            "status": "rejected",
+            "registration_status": "rejected",
+            "replayed": True,
+        }
+    for k in db.query(ApiKey).filter(ApiKey.user_id == user.id).all():
+        k.is_active = False
+    user.is_active = False
+    user.registration_status = "rejected"
+    user.updated_at = __import__("datetime").datetime.utcnow()
+    db.commit()
+    log.info(f"admin {admin.email}: rejected registration {user.id} ({user.email})")
+    return {
+        "id": user.id,
+        "user_id": user.id,
+        "email": user.email,
+        "name": user.name,
+        "status": "rejected",
+        "registration_status": "rejected",
+        "replayed": False,
+    }
 
 
 @router.get("/users/{user_id}", response_model=UserDetailOut)
