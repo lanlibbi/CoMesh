@@ -13,6 +13,21 @@ from pathlib import Path
 import pytest
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
+
+# `test_features.py`, `test_ws_connectivity.py`, `test_ws_job_stream.py` and
+# `test_ws_phase3_stream.py` are standalone check-scripts, not pytest modules:
+# they drive a *running* portal over HTTP/WebSocket, print PASS/FAIL lines and
+# exit via sys.exit(). Collecting them turns a green suite into 3 failures and
+# 11 setup errors (async entrypoints without pytest-asyncio, no live server).
+# Run them directly or via scripts/test_live.sh.
+collect_ignore = [
+    "test_features.py",
+    "test_ws_connectivity.py",
+    "test_ws_job_stream.py",
+    "test_ws_phase3_stream.py",
+    "e2e_dhcp_flow.py",
+]
+
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
