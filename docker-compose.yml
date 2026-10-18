@@ -48,6 +48,43 @@ services:
     depends_on:
       - api
 
+  # ---------------------------------------------------------------- #
+  # node-agent - Node 1 auf dem Portal-Host selbst                     #
+  # Netzwerk und Ports sind Teil der Definition (Compose-Default-      #
+  # Netzwerk = gpu-pool-live_default, gleiches Netz wie api). Damit    #
+  # ueberlebt der Node `docker rm`, `docker compose up` und Reboots    #
+  # ohne manuelles `docker network connect` (LANA-132, Ausfall 25.09.).#
+  # PORTAL_URL zeigt auf den Service-Namen statt host.docker.internal. #
+  # ---------------------------------------------------------------- #
+  node-agent:
+    build: ./node-agent
+    image: gpu-pool-node-agent:local
+    container_name: gpu-pool-agent
+    restart: unless-stopped
+    depends_on:
+      - api
+    environment:
+      - PORTAL_URL=http://api:8000
+      - NODE_ID=1
+      # Aus .env (nicht im Repo): Knoten-Schluessel aus POST /nodes/register
+      - NODE_API_KEY=${NODE_API_KEY:?NODE_API_KEY muss in .env stehen}
+      - OLLAMA_URL=http://host.docker.internal:11434
+      - AGENT_PORT=11435
+      - HEARTBEAT_SEC=30
+    ports:
+      # Portal erreicht den Node unter gpu_nodes.tailscale_ip:11435
+      - "100.126.79.111:11435:11435"
+      - "127.0.0.1:11435:11435"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
 volumes:
   sqlite_data:
     name: opencode-poc_sqlite_data
