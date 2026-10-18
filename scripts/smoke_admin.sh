@@ -8,7 +8,7 @@
 set -euo pipefail
 
 BASE="${1:-http://127.0.0.1:8765}"
-KEY="${2:-${ADMIN_API_KEY:-}}"
+KEY="${2:-${ADMIN_API_KEY:?ADMIN_API_KEY muss gesetzt sein}}"
 AH="Authorization: Bearer ${KEY}"
 
 say() { printf '\n== %s\n' "$1"; }
