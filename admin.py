@@ -286,6 +286,11 @@ class UpdateUserRequest(BaseModel):
     is_active: Optional[bool] = None
     allowed_models: Optional[List[str]] = None
     allow_cloud: bool = False
+    # Neu: ein Admin kann ein Passwort setzen (Supportfall "Passwort vergessen").
+    # Ohne dieses Feld liess sich das nur direkt in der Datenbank erledigen.
+    password: Optional[str] = Field(None, min_length=1, max_length=200,
+                                    description="Neues Passwort. Wird nur gehasht gespeichert "
+                                                "und nie ins Protokoll geschrieben.")
     expected_updated_at: Optional[str] = Field(
         None,
         description="Optimistic concurrency: if the stored users.updated_at "
@@ -946,9 +951,20 @@ def admin_update_user(
             user.set_allowed_models(target)
             changes["allowed_models"] = {"from": None, "to": target}
 
+    if req.password:
+        import hashlib as _hashlib
+        user.password_hash = _hashlib.sha256(req.password.encode("utf-8")).hexdigest()
+        # Der Wert selbst gehoert nie ins Protokoll, nur die Tatsache.
+        changes["password"] = {"changed": True}
+
     user.updated_at = _now()
     db.commit()
     db.refresh(user)
+
+    # Passwort im Klartext darf nicht im Audit-Land landen.
+    _audit_payload = req.model_dump()
+    if _audit_payload.get("password"):
+        _audit_payload["password"] = "[gesetzt]"
 
     try:
         db.add(AdminAuditLog(
@@ -957,7 +973,7 @@ def admin_update_user(
             target_type="user",
             target_id=user.id,
             idempotency_key=None,
-            payload=json.dumps(req.model_dump(), default=str),
+            payload=json.dumps(_audit_payload, default=str),
             result=json.dumps({"changed": changes}, default=str),
         ))
         db.commit()
@@ -967,6 +983,68 @@ def admin_update_user(
 
     log.info(f"admin {admin.email}: update user {user.email} changes={list(changes.keys())}")
     return _user_out(db, user)
+
+
+@router.get("/audit")
+def admin_list_audit(
+    action: Optional[str] = Query(None, description="z. B. user.update, user.create, user.topup"),
+    admin_user_id: Optional[int] = Query(None, description="Nur Aktionen dieses Admins"),
+    target_id: Optional[int] = Query(None, description="Nur Aktionen an diesem Ziel"),
+    limit: int = Query(50, ge=1, le=MAX_PAGE),
+    offset: int = Query(0, ge=0),
+    admin: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    """Protokoll aller Admin-Aenderungen, neueste zuerst.
+
+    Die Tabelle `admin_audit_log` wurde bisher nur geschrieben, nie gelesen —
+    ohne diesen Endpunkt war nicht nachvollziehbar, wer wann Rechte geaendert hat.
+    Geheimnisse stehen nicht drin (Schluessel- und Passwortwerte werden vor dem
+    Schreiben entfernt).
+    """
+    limit, offset = _paging(limit, offset)
+    query = db.query(AdminAuditLog)
+    if action:
+        query = query.filter(AdminAuditLog.action == action.strip())
+    if admin_user_id is not None:
+        query = query.filter(AdminAuditLog.admin_user_id == admin_user_id)
+    if target_id is not None:
+        query = query.filter(AdminAuditLog.target_id == target_id)
+    total = query.count()
+    rows = query.order_by(AdminAuditLog.id.desc()).limit(limit).offset(offset).all()
+
+    ids = {r.admin_user_id for r in rows if r.admin_user_id}
+    emails = {}
+    if ids:
+        for u in db.query(User).filter(User.id.in_(ids)).all():
+            emails[u.id] = u.email
+
+    items = []
+    for r in rows:
+        geaendert = None
+        if r.result:
+            try:
+                geaendert = json.loads(r.result).get("changed")
+            except Exception:
+                geaendert = None
+        items.append({
+            "id": r.id,
+            "admin_user_id": r.admin_user_id,
+            "admin_email": emails.get(r.admin_user_id) or "-",
+            "action": r.action,
+            "target_type": r.target_type,
+            "target_id": r.target_id,
+            "changed": geaendert,
+            "created_at": _iso(r.created_at),
+        })
+    return {
+        "total": int(total),
+        "returned": len(items),
+        "limit": limit,
+        "offset": offset,
+        "events": items,
+        "items": items,
+    }
 
 
 @router.post("/users/{user_id}/topup", response_model=TopupResponse)

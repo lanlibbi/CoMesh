@@ -3,22 +3,19 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Admin · Freigaben · CoMesh</title>
+<title>Admin · Konten · CoMesh</title>
 <meta name="color-scheme" content="dark light" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
 <script>
-/* Theme vor dem Stylesheet setzen, damit der erste Aufbau schon stimmt. */
 (function () {
   try {
     var stored = localStorage.getItem("gp_theme");
     var theme = (stored === "light" || stored === "dark") ? stored
       : (window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
     document.documentElement.setAttribute("data-theme", theme);
-  } catch (e) {
-    document.documentElement.setAttribute("data-theme", "dark");
-  }
+  } catch (e) { document.documentElement.setAttribute("data-theme", "dark"); }
 })();
 </script>
 <link rel="stylesheet" href="style.css" />
@@ -31,8 +28,9 @@
       <div class="eyebrow">Admin</div>
       <h1>Konten und Freigaben</h1>
       <p class="lede">
-        Neue Registrierungen freigeben oder ablehnen, Rollen vergeben und Konten
-        deaktivieren. Alles serverseitig auf <code class="inline">role = admin</code> beschränkt.
+        Registrierungen freigeben oder ablehnen, Rollen vergeben, Passwörter setzen,
+        Credits buchen, Schlüssel ausstellen und Konten deaktivieren. Serverseitig auf
+        <code class="inline">role = admin</code> beschränkt und protokolliert.
       </p>
     </div>
 
@@ -40,8 +38,7 @@
       <div class="grow">
         <div class="semibold">Admin-Rolle erforderlich</div>
         <p class="t-sm text-dim mt-1">
-          Dieser Bereich verwaltet alle Konten. Deine Rolle:
-          <span class="mono" x-text="(Auth.currentUser() || {}).role || 'both'"></span>.
+          Deine Rolle: <span class="mono" x-text="(Auth.currentUser() || {}).role || 'both'"></span>.
         </p>
       </div>
     </div>
@@ -57,35 +54,61 @@
     <div x-show="actionOk" x-cloak class="notice mb-4">
       <div class="grow"><p class="t-sm" x-text="actionOk"></p></div>
     </div>
+    <div x-show="neuerSchluessel" x-cloak class="notice mb-4">
+      <div class="grow">
+        <div class="semibold">Neuer API-Schlüssel — nur jetzt sichtbar</div>
+        <p class="mono t-sm mt-1" style="word-break:break-all" x-text="neuerSchluessel"></p>
+        <p class="t-sm text-dim mt-1">Jetzt kopieren. Nach dem Verlassen der Seite ist er nicht mehr abrufbar.</p>
+      </div>
+    </div>
 
-    <!-- Zähler -->
     <div class="grid mb-4" x-show="!denied">
-      <div class="card span-3">
-        <div class="stat">
-          <div class="eyebrow">Ausstehend</div>
-          <div class="stat-value brass" x-text="counts.pending == null ? '—' : fmtNumber(counts.pending)"></div>
-          <div class="stat-sub">warten auf Freigabe</div>
+      <div class="card span-3"><div class="stat">
+        <div class="eyebrow">Ausstehend</div>
+        <div class="stat-value brass" x-text="counts.pending == null ? '—' : fmtNumber(counts.pending)"></div>
+        <div class="stat-sub">warten auf Freigabe</div>
+      </div></div>
+      <div class="card span-3"><div class="stat">
+        <div class="eyebrow">Freigegeben</div>
+        <div class="stat-value" x-text="counts.approved == null ? '—' : fmtNumber(counts.approved)"></div>
+        <div class="stat-sub">aktive Konten</div>
+      </div></div>
+      <div class="card span-3"><div class="stat">
+        <div class="eyebrow">Abgelehnt</div>
+        <div class="stat-value" x-text="counts.rejected == null ? '—' : fmtNumber(counts.rejected)"></div>
+        <div class="stat-sub">gesperrt</div>
+      </div></div>
+      <div class="card span-3"><div class="stat">
+        <div class="eyebrow">Admins</div>
+        <div class="stat-value" x-text="counts.admins == null ? '—' : fmtNumber(counts.admins)"></div>
+        <div class="stat-sub">dürfen verwalten</div>
+      </div></div>
+    </div>
+
+    <!-- Konto anlegen -->
+    <div class="card mb-4" x-show="!denied">
+      <div class="panel-head">
+        <div>
+          <div class="eyebrow">Anlegen</div>
+          <h3>Konto von Hand erstellen</h3>
+          <p>Für Konten, die sich nicht selbst registrieren sollen. Der Schlüssel wird einmal angezeigt.</p>
         </div>
+        <button class="btn-ghost btn-sm" @click="formOffen = !formOffen" x-text="formOffen ? 'Schließen' : 'Konto anlegen'"></button>
       </div>
-      <div class="card span-3">
-        <div class="stat">
-          <div class="eyebrow">Freigegeben</div>
-          <div class="stat-value" x-text="counts.approved == null ? '—' : fmtNumber(counts.approved)"></div>
-          <div class="stat-sub">aktive Konten</div>
+      <div x-show="formOffen" x-cloak class="stack" style="gap:12px">
+        <div class="row wrap" style="gap:10px">
+          <input class="input" style="max-width:260px" placeholder="E-Mail" x-model="form.email" />
+          <input class="input" style="max-width:220px" placeholder="Name" x-model="form.name" />
+          <input class="input" style="max-width:220px" type="password" placeholder="Startpasswort (optional)" x-model="form.password" />
         </div>
-      </div>
-      <div class="card span-3">
-        <div class="stat">
-          <div class="eyebrow">Abgelehnt</div>
-          <div class="stat-value" x-text="counts.rejected == null ? '—' : fmtNumber(counts.rejected)"></div>
-          <div class="stat-sub">gesperrt</div>
-        </div>
-      </div>
-      <div class="card span-3">
-        <div class="stat">
-          <div class="eyebrow">Admins</div>
-          <div class="stat-value" x-text="counts.admins == null ? '—' : fmtNumber(counts.admins)"></div>
-          <div class="stat-sub">dürfen verwalten</div>
+        <div class="row wrap" style="gap:10px">
+          <select class="input" style="max-width:260px" x-model="form.role">
+            <template x-for="r in roles" :key="r.key">
+              <option :value="r.key" x-text="r.label" :selected="r.key === form.role"></option>
+            </template>
+          </select>
+          <input class="input" style="max-width:170px" type="number" placeholder="Start-Credits" x-model="form.initial_credits" />
+          <button class="btn-primary btn-sm" @click="anlegen()" :disabled="busyId === -1">Anlegen</button>
         </div>
       </div>
     </div>
@@ -94,12 +117,11 @@
       <div class="panel-head">
         <div>
           <div class="eyebrow">Konten</div>
-          <h3 x-text="statuses.find(s => s.key === status)?.label || 'Alle'"></h3>
+          <h3 x-text="(statuses.find(s => s.key === status) || {}).label || 'Alle'"></h3>
           <p x-text="loading ? 'Lädt…' : (total + ' Einträge' + (items.length < total ? ' — ' + items.length + ' angezeigt' : ''))"></p>
         </div>
         <div class="row wrap" style="gap:8px">
-          <input class="input" style="max-width:240px" placeholder="Suche E-Mail/Name"
-                 x-model="q" @keyup.enter="search()" />
+          <input class="input" style="max-width:240px" placeholder="Suche E-Mail/Name" x-model="q" @keyup.enter="search()" />
           <select class="input" style="max-width:190px" x-model="status" @change="search()">
             <template x-for="s in statuses" :key="s.key">
               <option :value="s.key" x-text="s.label"></option>
@@ -110,7 +132,6 @@
       </div>
 
       <div x-show="loading && !items.length" class="t-sm text-mute">Lädt…</div>
-
       <div x-show="!loading && !items.length" class="empty">
         <p>Keine Einträge in dieser Auswahl.</p>
         <p class="t-sm text-dim mt-2">Anderen Status wählen oder Suche leeren.</p>
@@ -123,10 +144,9 @@
               <th>Konto</th>
               <th>Rolle</th>
               <th>Status</th>
-              <th>Aktiv</th>
               <th>Credits</th>
               <th>Registriert</th>
-              <th>Aktionen</th>
+              <th>Werkzeuge</th>
             </tr>
           </thead>
           <tbody>
@@ -134,12 +154,13 @@
               <tr>
                 <td>
                   <div class="semibold" x-text="r.name || r.email"></div>
-                  <div class="t-xs text-mute" x-text="r.email"></div>
+                  <div class="t-xs text-mute">
+                    <span x-text="r.email"></span>
+                    <span x-show="!r.is_active" class="pill pill-paused" style="margin-left:6px">inaktiv</span>
+                  </div>
                 </td>
                 <td>
-                  <select class="input" style="max-width:200px"
-                          :value="r.role"
-                          :disabled="busyId === r.id"
+                  <select class="input" style="max-width:190px" :value="r.role" :disabled="busyId === r.id"
                           @change="setRole(r, $event.target.value)">
                     <template x-for="role in roles" :key="role.key">
                       <option :value="role.key" x-text="role.label" :selected="role.key === r.role"></option>
@@ -147,19 +168,17 @@
                   </select>
                 </td>
                 <td><span :class="statusClass(r.status)" x-text="statusLabel(r.status)"></span></td>
-                <td>
-                  <button type="button" class="btn-ghost btn-sm"
-                          :disabled="busyId === r.id"
-                          @click="toggleActive(r)"
-                          x-text="r.is_active ? 'aktiv' : 'inaktiv'"></button>
-                </td>
                 <td class="num brass" x-text="fmtCredits(r.credits)"></td>
-                <td class="t-xs text-dim nowrap" x-text="fmtDate(r.created_at)"></td>
+                <td class="t-xs text-dim nowrap" x-text="r.created_at ? fmtDate(r.created_at) : '—'"></td>
                 <td>
                   <div class="row wrap" style="gap:6px">
                     <button class="btn-ghost btn-sm" x-show="r.status === 'pending'" :disabled="busyId === r.id" @click="approve(r.id)">Freigeben</button>
                     <button class="btn-ghost btn-sm" x-show="r.status === 'pending'" :disabled="busyId === r.id" @click="reject(r.id)">Ablehnen</button>
-                    <button class="btn-ghost btn-sm" x-show="r.status !== 'pending'" :disabled="busyId === r.id" @click="toggleActive(r)" x-text="r.is_active ? 'Deaktivieren' : 'Wieder aktivieren'"></button>
+                    <button class="btn-ghost btn-sm" :disabled="busyId === r.id" @click="setPasswort(r)">Passwort</button>
+                    <button class="btn-ghost btn-sm" :disabled="busyId === r.id" @click="credits(r)">Credits</button>
+                    <button class="btn-ghost btn-sm" :disabled="busyId === r.id" @click="schluessel(r)">Schlüssel</button>
+                    <button class="btn-ghost btn-sm" :disabled="busyId === r.id" @click="toggleActive(r)"
+                            x-text="r.is_active ? 'Deaktivieren' : 'Aktivieren'"></button>
                   </div>
                 </td>
               </tr>
@@ -174,10 +193,9 @@
       </div>
 
       <p class="hint mt-3">
-        Der letzte Admin kann sich die Rolle nicht selbst entziehen — erst ein weiteres Konto
-        zum Admin machen. Quelle: <code class="inline">GET /admin/registrations</code>,
-        <code class="inline">POST /admin/registrations/&#123;id&#125;/approve|reject</code>,
-        <code class="inline">PATCH /admin/users/&#123;id&#125;</code>.
+        Der letzte Admin kann sich weder degradieren noch deaktivieren — das prüft die API selbst.
+        Alle Änderungen stehen im <a href="admin-audit.html" class="link">Protokoll</a>.
+        Ein neuer Schlüssel macht den bisherigen sofort ungültig.
       </p>
     </div>
   </main>

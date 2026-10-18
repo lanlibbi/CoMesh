@@ -153,6 +153,7 @@ const NAV_ITEMS = [
   // Admin-only view of every user's consumption; the server gates /admin/usage too.
   { key: "admin-usage", href: "admin-usage.html", labelKey: "nav.admin", label: "Verbrauch (alle)", adminOnly: true },
   { key: "admin-registrations", href: "admin-registrations.html", labelKey: "nav.admin", label: "Freigaben", adminOnly: true },
+  { key: "admin-audit", href: "admin-audit.html", labelKey: "nav.admin", label: "Protokoll", adminOnly: true },
   { key: "pool", href: "pool.html", labelKey: "nav.pool" },
   { key: "nodes", href: "nodes.html", labelKey: "nav.nodes", providerOnly: true },
   { key: "agent", href: "agent.html", labelKey: "nav.agent" },
