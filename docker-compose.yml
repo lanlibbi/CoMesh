@@ -55,8 +55,11 @@ services:
   # ueberlebt der Node `docker rm`, `docker compose up` und Reboots    #
   # ohne manuelles `docker network connect` (LANA-132, Ausfall 25.09.).#
   # PORTAL_URL zeigt auf den Service-Namen statt host.docker.internal. #
+  # Profil "node": auf dem Portal-Host per COMPOSE_PROFILES=node in der  #
+  # .env aktiv, auf fremden Hosts startet der Service nicht mit.        #
   # ---------------------------------------------------------------- #
   node-agent:
+    profiles: ["node"]
     build: ./node-agent
     image: gpu-pool-node-agent:local
     container_name: gpu-pool-agent
@@ -67,14 +70,15 @@ services:
       - PORTAL_URL=http://api:8000
       - NODE_ID=1
       # Aus .env (nicht im Repo): Knoten-Schluessel aus POST /nodes/register
-      - NODE_API_KEY=${NODE_API_KEY:?NODE_API_KEY muss in .env stehen}
+      - NODE_API_KEY=${NODE_API_KEY:-}
       - OLLAMA_URL=http://host.docker.internal:11434
       - AGENT_PORT=11435
       - HEARTBEAT_SEC=30
     ports:
-      # Portal erreicht den Node unter gpu_nodes.tailscale_ip:11435
-      - "100.126.79.111:11435:11435"
-      - "127.0.0.1:11435:11435"
+      # Portal erreicht den Node unter gpu_nodes.tailscale_ip:11435.
+      # Lokal (Default) nur 127.0.0.1; auf dem Portal-Host steht
+      # NODE_AGENT_BIND_IP=<tailscale-ip> in der .env.
+      - "${NODE_AGENT_BIND_IP:-127.0.0.1}:11435:11435"
     extra_hosts:
       - "host.docker.internal:host-gateway"
     deploy:
