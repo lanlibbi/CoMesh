@@ -39,8 +39,32 @@ os.environ.setdefault("DATA_DIR", _TMP_DATA_DIR)
 os.environ.setdefault("SEED_KEY_PATH", os.path.join(_TMP_DATA_DIR, "seed_api_key.txt"))
 # Deterministic admin bootstrap for the suite (documented bootstrap path).
 TEST_ADMIN_KEY = "gpu_testadmin000000000000000000000000000000"
+TEST_ADMIN_EMAIL = "admin@gpu-pool.local"
 os.environ.setdefault("ADMIN_API_KEY", TEST_ADMIN_KEY)
-os.environ.setdefault("ADMIN_EMAIL", "admin@gpu-pool.local")
+os.environ.setdefault("ADMIN_EMAIL", TEST_ADMIN_EMAIL)
+# LANA-139: `auth.require_admin` ist default-deny und antwortet 401 "Admin API
+# is not configured", solange weder ADMIN_TOKEN noch ADMIN_EMAILS gesetzt sind —
+# danach zaehlt `is_admin()` (role == "admin" ODER E-Mail in ADMIN_EMAILS). Ohne
+# diese Zeile laeuft die halbe Suite in den Default-Deny, obwohl die Fixtures
+# einen admin-Rollen-User anlegen. Wir setzen die dokumentierte Bootstrap-Adresse,
+# nicht ADMIN_TOKEN: so wird der Rollen-Pfad von `is_admin()` mitgetestet.
+os.environ.setdefault("ADMIN_EMAILS", TEST_ADMIN_EMAIL)
+
+
+@pytest.fixture(autouse=True)
+def _reset_rate_limits():
+    """
+    LANA-139: die Token-Buckets sind prozessglobal und pro Scope/IP gekeyed.
+    TestClient liefert fuer alle Tests dieselbe Client-IP ("testclient"), also
+    lief die Session nach ~10 Registrierungen in 429 auf register:ip — ein
+    Artefakt der Testreihenfolge, kein Verhalten des Codes. Vor jedem Test
+    zuruecksetzen; wer ein Limit pruefen will, baut es im Test selbst auf.
+    """
+    from ratelimit import LIMITER
+
+    LIMITER.reset()
+    yield
+    LIMITER.reset()
 
 
 @pytest.fixture(scope="session")

@@ -19,8 +19,9 @@ from models import PoolJob, Usage, User
 # Helpers
 # ---------------------------------------------------------------------------
 def _register(client, role="both", credits=None):
+    """Register + approve + login. LANA-139: Passwort >= 8 (MIN_PASSWORD_LENGTH)."""
     email = f"usage-{uuid.uuid4().hex[:8]}@example.com"
-    payload = {"email": email, "name": "Usage Tester", "password": "pw12345", "role": role}
+    payload = {"email": email, "name": "Usage Tester", "password": "pw123456", "role": role}
     if credits is not None:
         payload["initial_credits"] = credits
     r = client.post("/auth/register", json=payload)
@@ -28,7 +29,7 @@ def _register(client, role="both", credits=None):
     body = r.json()
     admin_headers = {"Authorization": f"Bearer {os.environ['ADMIN_API_KEY']}"}
     client.post(f"/admin/registrations/{body['user_id']}/approve", headers=admin_headers)
-    r2 = client.post("/auth/login", json={"email": email, "password": "pw12345"})
+    r2 = client.post("/auth/login", json={"email": email, "password": "pw123456"})
     assert r2.status_code in (200, 201), r2.text
     body2 = r2.json()
     return {"Authorization": f"Bearer {body2['api_key']}"}, body2

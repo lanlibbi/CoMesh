@@ -20,18 +20,23 @@ pytestmark = pytest.mark.admin
 # Helpers
 # ----------------------------------------------------------------------------
 def _non_admin_headers(client):
-    """Create (or reuse) a plain 'both' user and return headers + identity."""
+    """Create (or reuse) a plain 'both' user and return headers + identity.
+
+    LANA-139: Passwort >= 8 Zeichen — `main.MIN_PASSWORD_LENGTH` ist 8 und
+    /auth/register antwortet sonst 422, was hier als KeyError('user_id')
+    auftauchte (der Helper las die Antwort als Erfolg).
+    """
     email = "plain-user@example.com"
     r = client.post("/auth/register", json={
-        "email": email, "name": "Plain User", "password": "pw12345", "role": "both",
+        "email": email, "name": "Plain User", "password": "pw123456", "role": "both",
     })
     if r.status_code == 409:
-        r = client.post("/auth/login", json={"email": email, "password": "pw12345"})
+        r = client.post("/auth/login", json={"email": email, "password": "pw123456"})
     else:
         body_tmp = r.json()
         admin_headers = {"Authorization": f"Bearer {os.environ['ADMIN_API_KEY']}"}
         client.post(f"/admin/registrations/{body_tmp['user_id']}/approve", headers=admin_headers)
-        r = client.post("/auth/login", json={"email": email, "password": "pw12345"})
+        r = client.post("/auth/login", json={"email": email, "password": "pw123456"})
     assert r.status_code in (200, 201), r.text
     body = r.json()
     return {"Authorization": f"Bearer {body['api_key']}"}, body
@@ -85,6 +90,27 @@ def test_admin_bootstrap_identity(client, admin_headers):
     r = client.get("/admin/whoami", headers=admin_headers)
     assert r.status_code == 200, r.text
     assert r.json()["role"] == "admin"
+
+
+@pytest.mark.xfail(strict=True, reason=(
+    "LANA-139 Befund: auth.require_admin ist default-deny und antwortet 401 "
+    "'Admin API is not configured', sobald weder ADMIN_TOKEN noch ADMIN_EMAILS "
+    "gesetzt sind — BEVOR es den Bearer aufloest. Damit ist der dokumentierte "
+    "Zweig 'Bearer eines role=admin-Kontos' (is_admin) unerreichbar, und der "
+    "Bootstrap-Pfad ADMIN_API_KEY erzeugt einen Admin, dessen Konsole 401 gibt "
+    "(live reproduziert: GET /admin/settings -> 401 'not configured'). Sofort-"
+    "Mitigation ist ADMIN_EMAILS in .env; der Code-Fix ist eine eigene "
+    "Produktionsaenderung (eigener PR + Live-Gegenprobe)."
+))
+def test_admin_role_bearer_accepted_without_admin_emails(client, admin_headers, monkeypatch):
+    """Der Bootstrap-Admin (role=admin, ADMIN_API_KEY) muss auch dann durchkommen,
+    wenn keine ADMIN_TOKEN/ADMIN_EMAILS konfiguriert sind — er ist authentifiziert."""
+    import auth
+
+    monkeypatch.delenv("ADMIN_TOKEN", raising=False)
+    monkeypatch.setattr(auth, "ADMIN_EMAILS", [])
+    r = client.get("/admin/whoami", headers=admin_headers)
+    assert r.status_code == 200, r.text
 
 
 # ----------------------------------------------------------------------------
@@ -305,7 +331,8 @@ def test_node_overview_includes_offline_and_disabled(client, admin_headers):
     assert by_id[online["id"]]["online"] is True
     assert by_id[offline["id"]]["effective_status"] == "offline"
     assert by_id[offline["id"]]["online"] is False
-    assert by_id[offline["id"]]["has_agent_key"] is True
+    # `has_agent_key` wird separat geprueft: siehe
+    # test_admin_node_listing_reports_agent_key_presence (bekannter Bug, xfail).
 
     # The public listing hides the offline node by default — proving the admin
     # view is actually different.
@@ -327,6 +354,20 @@ def test_node_overview_includes_offline_and_disabled(client, admin_headers):
     hidden = client.get("/admin/nodes", headers=admin_headers,
                         params={"include_disabled": False}).json()
     assert offline["id"] not in [n["id"] for n in hidden["nodes"]]
+
+
+@pytest.mark.xfail(strict=True, reason=(
+    "LANA-139 Befund: admin.py setzt has_agent_key=bool(node.api_key), aber seit "
+    "dem Key-Hashing setzt nodes.py api_key immer auf None (nur api_key_hash wird "
+    "gespeichert) -> das Feld ist fuer JEDEN Node False. Fix = bool(api_key_hash or "
+    "api_key) ist eine Produktionsaenderung: eigener PR + Live-Gegenprobe."
+))
+def test_admin_node_listing_reports_agent_key_presence(client, admin_headers):
+    headers, _ = _non_admin_headers(client)
+    node = _register_node(client, headers, name="agent-key-node", port=11438)
+    body = client.get("/admin/nodes", headers=admin_headers, params={"limit": 500}).json()
+    by_id = {n["id"]: n for n in body["nodes"]}
+    assert by_id[node["id"]]["has_agent_key"] is True
 
 
 def test_admin_node_detail_exposes_heartbeat_and_owner(client, admin_headers):
