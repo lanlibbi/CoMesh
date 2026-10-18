@@ -1414,3 +1414,57 @@ td.neg { color: var(--err); }
 /* Die alte Segment-Optik wird nicht mehr erzeugt; falls eine Seite sie noch
    im Markup hat, bleibt sie unauffaellig. */
 .seg { display: none; }
+
+
+/* ================================================== Marke, größere Fassung (18.10.)
+   Das Zeichen ist jetzt eine Mesh-Zelle statt eines Blitzes — dieselbe Bildsprache
+   wie die Animation daneben. Alles eine Nummer größer: 42px Kachel, 1.5rem Name,
+   232x48 Animation. Die Kopfzeile waechst mit, damit nichts klemmt.
+   ========================================================================= */
+.topbar-inner { min-height: 70px; }
+
+.brand { gap: 14px; }
+.brand-mark {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  border: 1px solid var(--brass-line);
+  background:
+    radial-gradient(120% 120% at 30% 15%, rgb(var(--tint-rgb) / 0.10), transparent 60%),
+    linear-gradient(180deg, rgb(var(--brass-dim)), transparent 70%),
+    var(--surface-2);
+  color: var(--brass-soft);
+  box-shadow: var(--shadow-1), inset 0 1px 0 rgb(var(--tint-rgb) / 0.10);
+  transition: border-color 0.18s ease, color 0.18s ease, transform 0.18s ease;
+}
+.brand:hover .brand-mark { border-color: var(--brass); color: var(--brass); transform: translateY(-1px); }
+.brand-glyph { display: block; }
+
+.brand-text strong {
+  font-size: 1.5rem;
+  font-weight: 600;
+  letter-spacing: -0.022em;
+  line-height: 1.05;
+}
+.brand-text span {
+  font-size: 0.64rem;
+  letter-spacing: 0.17em;
+  margin-top: 2px;
+}
+
+/* Animation mit: breiter und hoeher, damit sie zum groesseren Namen passt */
+.brand-mesh {
+  width: 232px;
+  height: 48px;
+  margin-left: 8px;
+}
+
+@media (max-width: 1180px) {
+  .brand-mesh { width: 180px; height: 40px; }
+}
+@media (max-width: 980px) {
+  .brand-mesh { display: none; }
+  .brand-text strong { font-size: 1.3rem; }
+  .brand-mark { width: 36px; height: 36px; border-radius: 10px; }
+  .brand-mark .brand-glyph { width: 22px; height: 22px; }
+}

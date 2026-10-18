@@ -1,20 +1,21 @@
 /* CoMesh — Kopf-Animation: ein winziges Mesh.
  *
- * Gedacht als Miniatur der Szene aus dem Erklär-Deck: ein paar Knoten, verbunden
- * durch Leitungen, auf denen Datenpakete wandern. Bewusst klein und leise — sie
- * soll den Kopf beleben, nicht davon ablenken.
+ * Miniatur der Szene aus dem Erklär-Deck: Knoten, verbunden durch Leitungen, auf
+ * denen Datenpakete wandern. Zwei Größenordnungen von Knoten (Hubs und Blätter),
+ * damit es nach Netz aussieht und nicht nach Perlenkette.
  *
- * Regeln, die eingehalten werden:
- *   - Farben kommen aus den CSS-Variablen, damit Hell/Dunkel automatisch stimmt
- *   - prefers-reduced-motion: genau ein statisches Bild, keine Dauerschleife
- *   - Tab im Hintergrund: Zeichnen pausiert (kein Stromverbrauch)
- *   - Canvas wird mit devicePixelRatio skaliert, sonst franst es auf Retina aus
+ * Regeln:
+ *   - Farben aus den CSS-Variablen (Hell/Dunkel automatisch richtig)
+ *   - prefers-reduced-motion: genau ein Standbild, keine Schleife
+ *   - Hintergrund-Tab: Zeichnen pausiert
+ *   - devicePixelRatio-skaliert, maximal 30 Bilder/s
  */
 (function () {
   "use strict";
 
-  var KNOTEN = 6;
-  var FPS_MAX = 30;                 // mehr braucht es nicht, spart Rechenzeit
+  var KNOTEN = 9;
+  var PAKETE = 4;
+  var FPS_MAX = 30;
   var laeuft = false;
   var raf = 0;
   var letzteZeit = 0;
@@ -29,7 +30,7 @@
   }
 
   function farbenLesen() {
-    farben.linie = cssVar("--line-strong", "rgba(255,255,255,0.14)");
+    farben.linie = cssVar("--line-strong", "rgba(255,255,255,0.16)");
     farben.knoten = cssVar("--text-mute", "rgba(255,255,255,0.45)");
     farben.akzent = cssVar("--brass-soft", "#e2c885");
     farben.aktiv = cssVar("--brand", "#c9a24a");
@@ -39,26 +40,43 @@
     knoten = [];
     kanten = [];
     pakete = [];
+    // Knoten über die ganze Fläche verteilen, nicht in einer Mittellinie:
+    // zwei Reihen mit Versatz, damit Leitungen schräg laufen.
     for (var i = 0; i < KNOTEN; i++) {
-      // Gleichmäßig verteilt mit etwas Streuung, mittig in der Höhe
-      var x = (i + 0.5) / KNOTEN * w + (Math.random() - 0.5) * (w / (KNOTEN * 2.2));
-      var y = h / 2 + (Math.random() - 0.5) * (h * 0.44);
+      var spalte = i % 5;
+      var reihe = i < 5 ? 0 : 1;
+      var x = (spalte + 0.5) / 5 * w + (reihe ? w / 10 : 0) + (Math.random() - 0.5) * (w / 16);
+      var y = h * (reihe ? 0.72 : 0.28) + (Math.random() - 0.5) * (h * 0.26);
+      var hub = i % 4 === 0;
       knoten.push({
-        x0: x, y0: y,
+        x0: Math.min(w - 6, Math.max(6, x)), y0: Math.min(h - 6, Math.max(6, y)),
         phase: Math.random() * Math.PI * 2,
-        amp: 1.4 + Math.random() * 1.6,
-        r: 1.5 + Math.random() * 0.9,
-        x: x, y: y,
+        amp: 1.2 + Math.random() * 2.0,
+        r: hub ? 2.5 : 1.5 + Math.random() * 0.6,
+        hub: hub,
+        x: 0, y: 0,
       });
+      knoten[i].x = knoten[i].x0;
+      knoten[i].y = knoten[i].y0;
     }
-    // Kanten: jeder Knoten hängt am nächsten und am übernächsten
-    for (var a = 0; a < knoten.length; a++) {
-      kanten.push([a, (a + 1) % knoten.length]);
-      if (a % 2 === 0) kanten.push([a, (a + 2) % knoten.length]);
+    // Kanten: benachbarte Knoten gleicher Reihe, plus Kreuzverbindungen zur anderen Reihe
+    for (var a = 0; a < 5; a++) {
+      if (a < 4) kanten.push([a, a + 1]);
+      if (a >= 4) { /* Reihe 2 */ }
     }
-    // Drei Pakete, versetzt
-    for (var p = 0; p < 3; p++) {
-      pakete.push({ kante: Math.floor(Math.random() * kanten.length), t: Math.random(), speed: 0.16 + Math.random() * 0.12 });
+    for (var b = 5; b < KNOTEN; b++) {
+      if (b < KNOTEN - 1) kanten.push([b, b + 1]);
+    }
+    for (var c = 0; c < 4; c++) kanten.push([c, 5 + c]);          // Kreuz
+    kanten.push([1, 7]);
+    kanten.push([3, 6]);
+
+    for (var p = 0; p < PAKETE; p++) {
+      pakete.push({
+        kante: Math.floor(Math.random() * kanten.length),
+        t: Math.random(),
+        speed: 0.14 + Math.random() * 0.16,
+      });
     }
   }
 
@@ -78,67 +96,64 @@
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, w, h);
 
-    // Knotenpositionen: langsame, organische Bewegung
-    var t = statisch ? 0.6 : performance.now() / 1000;
+    var t = statisch ? 0.8 : performance.now() / 1000;
     for (var i = 0; i < knoten.length; i++) {
       var k = knoten[i];
-      k.x = k.x0 + Math.sin(t * 0.5 + k.phase) * k.amp;
-      k.y = k.y0 + Math.cos(t * 0.4 + k.phase * 1.3) * k.amp;
+      k.x = k.x0 + Math.sin(t * 0.45 + k.phase) * k.amp;
+      k.y = k.y0 + Math.cos(t * 0.36 + k.phase * 1.3) * k.amp;
     }
 
     // Leitungen
-    ctx.lineWidth = 1;
     for (var e = 0; e < kanten.length; e++) {
       var a = knoten[kanten[e][0]], b = knoten[kanten[e][1]];
       var dx = b.x - a.x, dy = b.y - a.y;
       var d = Math.sqrt(dx * dx + dy * dy);
-      var naehe = Math.max(0, 1 - d / (w * 0.55));
-      ctx.strokeStyle = farben.linie;
-      ctx.globalAlpha = 0.10 + naehe * 0.22;
+      var naehe = Math.max(0, 1 - d / (w * 0.6));
+      var mitPaket = pakete.some(function (pk) { return pk.kante === e; });
+      ctx.strokeStyle = mitPaket ? farben.aktiv : farben.linie;
+      ctx.lineWidth = mitPaket ? 1.1 : 1;
+      ctx.globalAlpha = 0.14 + naehe * 0.34 + (mitPaket ? 0.16 : 0);
       ctx.beginPath();
       ctx.moveTo(a.x, a.y);
-      // leichte Wölbung, damit es nicht nach Gitter aussieht
-      ctx.quadraticCurveTo(a.x + dx * 0.5, a.y + dy * 0.5 - 4 * naehe, b.x, b.y);
+      ctx.quadraticCurveTo(a.x + dx * 0.5, a.y + dy * 0.5 - 5 * naehe, b.x, b.y);
       ctx.stroke();
     }
 
-    // Knoten
+    // Knoten: Hubs mit Ring, Blätter als Punkt
     for (var n = 0; n < knoten.length; n++) {
       var kn = knoten[n];
-      ctx.globalAlpha = 0.55;
+      ctx.globalAlpha = 0.62;
       ctx.fillStyle = farben.knoten;
       ctx.beginPath();
       ctx.arc(kn.x, kn.y, kn.r, 0, Math.PI * 2);
       ctx.fill();
-      ctx.globalAlpha = 0.9;
-      ctx.strokeStyle = farben.akzent;
-      ctx.lineWidth = 0.8;
-      ctx.beginPath();
-      ctx.arc(kn.x, kn.y, kn.r + 2.1, 0, Math.PI * 2);
-      ctx.stroke();
+      if (kn.hub) {
+        ctx.globalAlpha = 0.85;
+        ctx.strokeStyle = farben.akzent;
+        ctx.lineWidth = 0.9;
+        ctx.beginPath();
+        ctx.arc(kn.x, kn.y, kn.r + 2.6, 0, Math.PI * 2);
+        ctx.stroke();
+      }
     }
 
-    // Datenpakete auf den Leitungen
+    // Datenpakete
     for (var pi = 0; pi < pakete.length; pi++) {
       var pk = pakete[pi];
       if (!statisch) {
         pk.t += dt * pk.speed;
-        if (pk.t > 1) {
-          pk.t = 0;
-          pk.kante = Math.floor(Math.random() * kanten.length);
-        }
+        if (pk.t > 1) { pk.t = 0; pk.kante = Math.floor(Math.random() * kanten.length); }
       }
       var pa = knoten[kanten[pk.kante][0]], pb = knoten[kanten[pk.kante][1]];
       var mx = pa.x + (pb.x - pa.x) * 0.5;
       var my = pa.y + (pb.y - pa.y) * 0.5 - 3;
-      // quadratische Bézier an der Stelle t
       var mt = 1 - pk.t;
       var px = mt * mt * pa.x + 2 * mt * pk.t * mx + pk.t * pk.t * pb.x;
       var py = mt * mt * pa.y + 2 * mt * pk.t * my + pk.t * pk.t * pb.y;
-      ctx.globalAlpha = 0.85;
-      ctx.fillStyle = farben.aktiv;
+      ctx.globalAlpha = 0.9;
+      ctx.fillStyle = farben.akzent;
       ctx.beginPath();
-      ctx.arc(px, py, 1.6, 0, Math.PI * 2);
+      ctx.arc(px, py, 1.9, 0, Math.PI * 2);
       ctx.fill();
     }
     ctx.globalAlpha = 1;
@@ -147,8 +162,8 @@
   function schleife(jetzt) {
     if (!laeuft) return;
     raf = requestAnimationFrame(schleife);
-    var dt = Math.min(0.05, (jetzt - letzteZeit) / 1000 || 0);
     if (jetzt - letzteZeit < 1000 / FPS_MAX) return;
+    var dt = Math.min(0.05, (jetzt - letzteZeit) / 1000 || 0.033);
     letzteZeit = jetzt;
     zeichnen(dt, false);
   }
@@ -163,9 +178,9 @@
     if (cv.dataset.bereit === "1") return true;
     cv.dataset.bereit = "1";
     farbenLesen();
-    knotenBauen(cv.clientWidth || 150, cv.clientHeight || 34);
+    knotenBauen(cv.clientWidth || 232, cv.clientHeight || 48);
     if (reduzierteBewegung()) {
-      zeichnen(0, true);            // ein Standbild, keine Schleife
+      zeichnen(0, true);
       return true;
     }
     laeuft = true;
@@ -174,7 +189,6 @@
     return true;
   }
 
-  // Theme-Wechsel: Farben neu lesen, einmal neu zeichnen
   function themenWechselBeobachten() {
     if (typeof MutationObserver === "undefined") return;
     new MutationObserver(function () {
@@ -184,15 +198,21 @@
     }).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
   }
 
-  // Die Topbar kommt über x-html und wird bei Sprachwechseln neu gebaut —
-  // deshalb beobachten statt auf einen Zeitpunkt zu raten (idempotent über data-bereit).
+  // Die Topbar wird ueber x-html gebaut und bei jedem Sprachwechsel ersetzt.
+  // Dann ist das Canvas ein NEUES Element: der Beobachter muss weiterlaufen und
+  // das neue Element entweder anwerfen (Schleife) oder wenigstens einmal
+  // statisch zeichnen (reduzierte Bewegung). Vorher disconnectete er sich nach
+  // dem ersten Erfolg — nach einem Sprachwechsel blieb die Grafik leer.
   function beobachten() {
-    if (starten()) return;
+    starten();
     if (typeof MutationObserver === "undefined") return;
-    var mo = new MutationObserver(function () {
-      if (starten()) mo.disconnect();
-    });
-    mo.observe(document.body, { childList: true, subtree: true });
+    new MutationObserver(function () {
+      var cv = document.getElementById("brand-mesh");
+      if (!cv) return;
+      if (cv.dataset.bereit === "1") return;
+      cv.dataset.bereit = "1";
+      if (!laeuft) zeichnen(0, true);
+    }).observe(document.body, { childList: true, subtree: true });
   }
 
   document.addEventListener("visibilitychange", function () {
@@ -208,7 +228,7 @@
 
   window.addEventListener("resize", function () {
     var cv = document.getElementById("brand-mesh");
-    if (cv) { cv.dataset.bereit = ""; knotenBauen(cv.clientWidth || 150, cv.clientHeight || 34); }
+    if (cv) { cv.dataset.bereit = ""; knotenBauen(cv.clientWidth || 232, cv.clientHeight || 48); }
   });
 
   if (document.readyState === "loading") {

@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title data-i18n="title.login">Anmelden · CoMesh</title>
+<meta name="color-scheme" content="dark light" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<script>
+/* Apply the stored theme BEFORE the stylesheet loads, so the first paint is
+   already the right palette. Dark is the default; a first-time visitor follows
+   the OS setting until they choose explicitly. Kept inline and tiny on purpose —
+   it must not depend on the rest of the JS. */
+(function () {
+  try {
+    var stored = localStorage.getItem("gp_theme");
+    var theme = (stored === "light" || stored === "dark") ? stored
+      : (window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
+    document.documentElement.setAttribute("data-theme", theme);
+  } catch (e) {
+    document.documentElement.setAttribute("data-theme", "dark");
+  }
+})();
+</script>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<main class="auth-wrap">
+  <section class="auth-aside">
+    <a href="index.html" class="brand">
+      <span class="brand-mark" aria-hidden="true">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M13 2 4.5 13.5H11l-1 8.5 8.5-11.5H12l1-8.5Z"/>
+        </svg>
+      </span>
+      <span class="brand-text">
+        <strong>CoMesh</strong>
+        <span>Your compute, meshed.</span>
+      </span>
+    </a>
+
+    <h1 data-i18n="login.tagline">Stelle GPUs für den Pool bereit und nutze den ganzen Pool über eine einzige OpenAI-kompatible API — kostenlos und von deiner Community getragen.</h1>
+    <p data-i18n="rechner-mit-freier-gpu-stellen-ihre">
+      Ein Pool aus Rechnern mit freier GPU, ein einziger OpenAI-kompatibler Zugang.
+      Kostenlos, getragen von der Community — kein Abo, keine Abrechnung pro Token.
+    </p>
+
+    <ul class="auth-points">
+      <li><span class="idx">01</span><span><b>OpenAI-kompatible API.</b> Bestehende Clients und SDKs funktionieren ohne Anpassung.</span></li>
+      <li><span class="idx">02</span><span><b>Eigene Hardware einbringen.</b> Der Node-Agent läuft als Container und meldet die GPU an den Pool.</span></li>
+      <li><span class="idx">03</span><span><b>Modelle bleiben kontrollierbar.</b> Pro Node und pro Konto als Whitelist steuerbar, Cloud-Modelle explizit freizuschalten.</span></li>
+    </ul>
+  </section>
+
+  <section class="card auth-card" x-data="loginForm()">
+    <div class="eyebrow" data-i18n="konto">Konto</div>
+    <h2 data-i18n="anmelden">Anmelden</h2>
+    <p class="t-sm text-dim mt-2" data-i18n="melde-dich-an-um-credits-nodes-und-api-keys">Melde dich an, um Credits, Nodes und API-Keys zu verwalten.</p>
+
+    <form @submit.prevent="submit()" class="stack tight mt-4">
+      <div class="field">
+        <label class="label" for="email" data-i18n="e-mail">E-Mail</label>
+        <input class="input" id="email" type="email" x-model="email" required
+               autocomplete="email" placeholder="name@beispiel.de" data-i18n-placeholder="name-beispiel-de" />
+      </div>
+      <div class="field">
+        <label class="label" for="password" data-i18n="passwort">Passwort</label>
+        <input class="input" id="password" type="password" x-model="password" required
+               autocomplete="current-password" placeholder="••••••••" />
+      </div>
+
+      <div x-show="error" class="t-sm text-err" x-text="error"></div>
+
+      <button type="submit" class="btn-primary btn-block mt-1" :disabled="loading">
+        <span x-show="!loading" data-i18n="anmelden">Anmelden</span>
+        <span x-show="loading" data-i18n="anmeldung-laeuft">Anmeldung läuft…</span>
+      </button>
+    </form>
+
+    <p class="auth-alt">
+      Noch kein Konto?
+      <a href="register.html" class="link">Registrieren</a>.
+    </p>
+  </section>
+</main>
+
+<script defer src="https://unpkg.com/alpinejs@3.5.1/dist/cdn.min.js"></script>
+<script src="config.js"></script>
+<script src="i18n-catalog.js"></script>
+<script src="i18n.js"></script>
+<script src="app.js"></script>
+<script>
+function loginForm() {
+  return {
+    email: "",
+    password: "",
+    loading: false,
+    error: "",
+    async submit() {
+      this.loading = true;
+      this.error = "";
+      try {
+        const r = await API("/auth/login", { method: "POST", body: { email: this.email, password: this.password } });
+        Auth.save({ id: r.user_id, email: r.email, name: r.name, credits: r.credits, role: r.role }, r.api_key);
+        toast("Willkommen zurück, " + r.name);
+        setTimeout(() => { window.location.href = "index.html"; }, 400);
+      } catch (e) {
+        this.error = e.message || "Anmeldung fehlgeschlagen";
+      } finally {
+        this.loading = false;
+      }
+    }
+  };
+}
+</script>
+<script src="brand-mesh.js"></script>
+</body>
+</html>
