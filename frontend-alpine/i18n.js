@@ -199,17 +199,15 @@ const ICON = {
 function themeToggleHTML() {
   const dark = Theme.current() === "dark";
   const label = (t) => I18n.t(t);
+  // Ein Knopf statt zweier: zeigt den aktuellen Zustand, Klick wechselt.
+  // Die Beschriftung nennt die Aktion, aria-pressed den Zustand.
+  const ziel = dark ? "light" : "dark";
+  const titel = dark ? label("chrome.theme.light") : label("chrome.theme.dark");
   return `
-    <div class="seg" role="group" aria-label="${I18n.t("chrome.theme")}">
-      <button type="button" class="seg-btn" data-theme-set="dark"
-              aria-pressed="${dark}" title="${label("chrome.theme.dark")}">
-        ${ICON.dark}<span class="seg-lab">${label("chrome.theme.dark.short")}</span>
-      </button>
-      <button type="button" class="seg-btn" data-theme-set="light"
-              aria-pressed="${!dark}" title="${label("chrome.theme.light")}">
-        ${ICON.light}<span class="seg-lab">${label("chrome.theme.light.short")}</span>
-      </button>
-    </div>`;
+    <button type="button" class="chrome-btn theme-toggle" data-theme-set="${ziel}"
+            aria-pressed="${dark}" aria-label="${titel}" title="${titel}">
+      <span class="theme-face" aria-hidden="true">${dark ? ICON.dark : ICON.light}</span>
+    </button>`;
 }
 
 function langSwitchHTML() {
@@ -223,10 +221,10 @@ function langSwitchHTML() {
       </button>`).join("");
   return `
     <details class="lang">
-      <summary title="${I18n.t("chrome.language")}">
-        ${cur.toUpperCase()}
-        <svg class="chev" width="9" height="6" viewBox="0 0 10 6" fill="none" aria-hidden="true">
-          <path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+      <summary title="${I18n.t("chrome.language")}" aria-label="${I18n.t("chrome.language")}">
+        <span class="lang-code">${cur.toUpperCase()}</span>
+        <svg class="chev" width="8" height="5" viewBox="0 0 10 6" fill="none" aria-hidden="true">
+          <path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
         </svg>
       </summary>
       <div class="lang-menu" role="menu" aria-label="${I18n.t("chrome.language")}">${items}</div>

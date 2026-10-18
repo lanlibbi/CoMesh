@@ -188,6 +188,9 @@ function navHTML(active) {
             <span>${I18n.t("brand.tagline")}</span>
           </span>
         </a>
+        <!-- Miniatur der Deck-Szene: Knoten, Leitungen, wandernde Pakete.
+             Bewusst ausserhalb des Links, damit ein Klick nichts ausloest. -->
+        <canvas id="brand-mesh" class="brand-mesh" aria-hidden="true"></canvas>
         <div class="topbar-right">
           <div class="controls"></div>
           <span class="who">

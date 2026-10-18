@@ -1335,3 +1335,82 @@ td.neg { color: var(--err); }
 }
 .topbar-2row .nav { flex-wrap: nowrap; white-space: nowrap; }
 .topbar-2row .topbar-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+
+
+/* ======================================================== chrome, zweite Fassung
+   Der alte Zustand (zwei Pillen mit Beschriftung fuer das Theme, eine dritte
+   fuer die Sprache) war laut und unruhig. Jetzt: zwei gleich gebaute, leise
+   Knoepfe mit denselben Massen, Brass erst beim Anfassen. Der Zustand steckt
+   im aria-Attribut, nicht in der Groesse.
+   ========================================================================= */
+.chrome-btn,
+.lang > summary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  height: 30px;
+  min-width: 32px;
+  padding: 0 9px;
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+  background: rgb(var(--tint-rgb) / 0.035);
+  color: var(--text-dim);
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: color 0.16s ease, background-color 0.16s ease,
+              border-color 0.16s ease, box-shadow 0.16s ease;
+}
+.chrome-btn:hover,
+.lang > summary:hover {
+  color: var(--text);
+  border-color: var(--brass-line);
+  background: rgb(var(--tint-rgb) / 0.07);
+}
+.chrome-btn:focus-visible,
+.lang > summary:focus-visible,
+.lang > summary:focus-visible {
+  outline: 2px solid var(--brass-line);
+  outline-offset: 2px;
+}
+.chrome-btn:active { transform: translateY(0.5px); }
+
+/* Theme-Knopf: das Icon dreht sich beim Anfassen, nicht der ganze Knopf */
+.theme-toggle .theme-face {
+  display: inline-flex;
+  align-items: center;
+  transition: transform 0.3s cubic-bezier(0.2, 0.7, 0.3, 1), opacity 0.2s ease;
+}
+.theme-toggle:hover .theme-face { transform: rotate(-22deg) scale(1.06); }
+.theme-toggle[aria-pressed="true"] .theme-face { color: var(--brass-soft); }
+
+/* Sprachschalter: nur der Code, kleiner Pfeil */
+.lang > summary { list-style: none; padding: 0 8px 0 10px; }
+.lang-code { letter-spacing: 0.1em; }
+.lang > summary .chev { opacity: 0.65; transition: transform 0.18s ease; }
+.lang[open] > summary .chev { transform: rotate(180deg); }
+
+/* Kopfgrafik: Miniatur der Deck-Szene, ruhig und klein */
+.brand-mesh {
+  width: 150px;
+  height: 34px;
+  margin-left: 4px;
+  flex: none;
+  opacity: 0.9;
+  pointer-events: none;
+}
+@media (max-width: 980px) {
+  .brand-mesh { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .brand-mesh { opacity: 0.75; }
+  .theme-toggle:hover .theme-face { transform: none; }
+}
+
+/* Die alte Segment-Optik wird nicht mehr erzeugt; falls eine Seite sie noch
+   im Markup hat, bleibt sie unauffaellig. */
+.seg { display: none; }
