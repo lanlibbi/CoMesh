@@ -255,14 +255,6 @@ def test_flag_is_exposed_to_clients(client, flag):
     assert client.get("/v1/me", headers=fresh).json()["credits_enabled"] is True
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
-        "LANA-141: /auth/login and /auth/register always return credits_enabled=true "
-        "(AuthResponse default, _auth_response never sets it). Remove this marker "
-        "once the auth-payload fix lands."
-    ),
-)
 def test_auth_payload_carries_the_credits_flag(client, flag):
     """A fresh session must learn the flag from the login payload.
 

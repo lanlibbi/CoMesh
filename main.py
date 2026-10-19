@@ -1050,7 +1050,7 @@ def admin_set_user_quota(user_id: int, body: AdminQuotaUpdate, db: Session = Dep
     return AdminQuotaResponse(user_id=target.id, quota_mode=target.quota_mode)
 
 
-def _auth_response(user, raw_token, key_prefix, credits,
+def _auth_response(db, user, raw_token, key_prefix, credits,
                     *, token_type: str, expires_at=None) -> AuthResponse:
     return AuthResponse(
         user_id=user.id,
@@ -1061,6 +1061,7 @@ def _auth_response(user, raw_token, key_prefix, credits,
         api_key=raw_token,
         key_prefix=key_prefix,
         credits=credits,
+        credits_enabled=credits_enabled(db),
         token_type=token_type,
         expires_at=expires_at.isoformat() if expires_at else None,
         expires_in=(int((expires_at - __import__("datetime").datetime.utcnow()).total_seconds()) if expires_at else None),
@@ -1117,7 +1118,7 @@ def auth_register(req: RegisterRequest, request: Request, db: Session = Depends(
     db.refresh(user)
 
     expires = (_dt.utcnow() + _td(days=API_KEY_TTL_DAYS)) if API_KEY_TTL_DAYS > 0 else None
-    return _auth_response(user, raw_key, key_prefix, req.initial_credits,
+    return _auth_response(db, user, raw_key, key_prefix, req.initial_credits,
                           token_type="api_key", expires_at=expires)
 
 
@@ -1168,7 +1169,7 @@ def auth_login(req: LoginRequest, request: Request, db: Session = Depends(get_db
     balance = get_user_credits(db, user.id)
     from datetime import datetime as _dt, timedelta as _td
     expires = _dt.utcnow() + _td(hours=SESSION_TOKEN_TTL_HOURS)
-    return _auth_response(user, raw_key, key_prefix, balance,
+    return _auth_response(db, user, raw_key, key_prefix, balance,
                           token_type="session", expires_at=expires)
 
 
