@@ -373,16 +373,18 @@ async def require_admin(
         if x_admin_token and hmac.compare_digest(x_admin_token, operator_token):
             return None
 
-    if not operator_token and not ADMIN_EMAILS:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=(
-                "Admin API is not configured. Set ADMIN_TOKEN (and/or ADMIN_EMAILS) "
-                "on the portal, or ADMIN_AUTH_DISABLED=1 for a throwaway POC instance."
-            ),
-        )
-
     if not presented:
+        # Default-deny only for callers presenting no admin identity at all (LANA-140):
+        # a presented bearer is resolved and checked via is_admin() regardless of
+        # ADMIN_TOKEN/ADMIN_EMAILS configuration.
+        if not operator_token and not ADMIN_EMAILS:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail=(
+                    "Admin API is not configured. Set ADMIN_TOKEN (and/or ADMIN_EMAILS) "
+                    "on the portal, or ADMIN_AUTH_DISABLED=1 for a throwaway POC instance."
+                ),
+            )
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=(
