@@ -514,7 +514,11 @@ def whoami(admin: User = Depends(require_admin)):
     return AdminIdentity(
         id=getattr(admin, "id", 0),
         email=getattr(admin, "email", None) or "operator",
-        name=admin.name,
+        # require_admin yields None for the static ADMIN_TOKEN (operator mode,
+        # no user context). Reading admin.name unconditionally made /admin/whoami
+        # - the probe every admin client calls first - crash with 500 in exactly
+        # that configuration.
+        name=getattr(admin, "name", None) or "operator",
         role=getattr(admin, "role", ADMIN_ROLE) or ADMIN_ROLE,
     )
 
