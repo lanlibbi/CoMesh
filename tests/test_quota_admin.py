@@ -21,6 +21,33 @@ from models import ApiKey, CreditTransaction, SystemSetting, User
 from auth import generate_api_key
 
 
+@pytest.fixture(autouse=True)
+def _offline_router(monkeypatch):
+    """Keep the quota tests offline: stub the pool router with a canned answer.
+
+    Without this the /v1/chat/completions calls fall through to a real Ollama
+    on the test host ('test-model' -> HTTP 404) and the assertions measure the
+    transport instead of the quota decision. Same stub as test_credits_flag.py.
+    """
+    import pool
+
+    async def fake_route_request(db, user, ollama_payload, model, on_delta=None, **kwargs):
+        return {
+            "ok": True,
+            "source": "local",
+            "node_id": None,
+            "error": None,
+            "response": {
+                "model": model,
+                "choices": [{"index": 0, "message": {"role": "assistant", "content": "ok"},
+                             "finish_reason": "stop"}],
+                "usage": {"prompt_tokens": 10, "completion_tokens": 10, "total_tokens": 20},
+            },
+        }
+
+    monkeypatch.setattr(pool, "route_request", fake_route_request)
+
+
 @pytest.fixture(scope="module")
 def admin_hdr(db_session):
     """Real admin user with API key (seeded in DB — ADMIN_API_KEY env is not consumed)."""

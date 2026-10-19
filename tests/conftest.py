@@ -38,9 +38,12 @@ _TMP_DATA_DIR = tempfile.mkdtemp(prefix="gpu-pool-tests-")
 os.environ.setdefault("DATA_DIR", _TMP_DATA_DIR)
 os.environ.setdefault("SEED_KEY_PATH", os.path.join(_TMP_DATA_DIR, "seed_api_key.txt"))
 # Deterministic admin bootstrap for the suite (documented bootstrap path).
+# Since LANA-46 (auth hardening) the portal reads ADMIN_TOKEN / ADMIN_EMAILS;
+# ADMIN_API_KEY / ADMIN_EMAIL are no longer consumed. Setting the old names here
+# made every /admin/* call fail with 401 "Admin API is not configured".
 TEST_ADMIN_KEY = "gpu_testadmin000000000000000000000000000000"
-os.environ.setdefault("ADMIN_API_KEY", TEST_ADMIN_KEY)
-os.environ.setdefault("ADMIN_EMAIL", "admin@gpu-pool.local")
+os.environ.setdefault("ADMIN_TOKEN", TEST_ADMIN_KEY)
+os.environ.setdefault("ADMIN_EMAILS", "admin@gpu-pool.local")
 
 
 @pytest.fixture(scope="session")
@@ -53,9 +56,26 @@ def client():
         yield c
 
 
+@pytest.fixture(autouse=True)
+def _reset_rate_limits():
+    """Clear the rate-limit buckets around every test.
+
+    The limiter is per client IP and the whole suite talks to the app from the
+    single "testclient" address, so consecutive tests inherit each other's
+    /auth/login budget (burst 5) and fail with 429 instead of the behaviour they
+    assert. The limiter itself stays enabled and is covered by
+    tests/test_auth_hardening.py.
+    """
+    from ratelimit import LIMITER
+
+    LIMITER.reset()
+    yield
+    LIMITER.reset()
+
+
 @pytest.fixture(scope="session")
 def admin_headers():
-    return {"Authorization": f"Bearer {os.environ['ADMIN_API_KEY']}"}
+    return {"Authorization": f"Bearer {os.environ['ADMIN_TOKEN']}"}
 
 
 @pytest.fixture(scope="session")
