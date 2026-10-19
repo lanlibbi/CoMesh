@@ -500,7 +500,7 @@ def _node_out(db: Session, node: GpuNode, now: Optional[datetime] = None,
         allowed_models=node.get_allowed_models(),
         connection_state=(getattr(node, "connection_state", None) or "disconnected"),
         last_ws_seen=getattr(node, "last_ws_seen", None),
-        has_agent_key=bool(node.api_key),
+        has_agent_key=bool(node.api_key_hash or node.api_key),
         created_at=_iso(node.created_at),
     )
 

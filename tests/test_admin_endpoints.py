@@ -341,14 +341,6 @@ def test_node_overview_includes_offline_and_disabled(client, admin_headers):
     assert offline["id"] not in [n["id"] for n in hidden["nodes"]]
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
-        "LANA-142: /admin/nodes reports has_agent_key=false for every node "
-        "(admin.py reads node.api_key, which does not exist on GpuNode). Remove "
-        "this marker once the fix lands."
-    ),
-)
 def test_admin_node_listing_reports_agent_key_presence(client, admin_headers):
     """Split out of test_node_overview_* so the rest of the listing stays green."""
     headers, _ = _non_admin_headers(client)
