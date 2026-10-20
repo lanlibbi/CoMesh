@@ -93,11 +93,6 @@ document.addEventListener("alpine:init", () => {
     },
 
     async saveModels() {
-      // Der Server lehnt das für Consumer mit 403 ab; hier gleich gar nicht erst senden.
-      if (this.currentRole === "consumer") {
-        this.modelWarning = I18n.t("profile.models_available_hint");
-        return;
-      }
       this.savingModels = true;
       this.modelWarning = "";
       this.lastModelChange = "";

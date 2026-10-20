@@ -659,6 +659,18 @@ def update_my_role(
     )
 
 
+def _alle_modellnamen() -> List[str]:
+    """Namen aller Modelle, die die lokale Ollama-Instanz kennt."""
+    try:
+        with httpx.Client(timeout=10.0) as client:
+            r = client.get(f"{OLLAMA_URL}/api/tags")
+            r.raise_for_status()
+            return [m.get("name") for m in (r.json().get("models") or []) if m.get("name")]
+    except Exception as e:  # noqa: BLE001
+        log.warning(f"model list unavailable: {e}")
+        return []
+
+
 @app.put("/v1/me/allowed-models", response_model=UserSettingsResponse)
 def update_my_allowed_models(
     req: UpdateAllowedModelsRequest,
@@ -676,12 +688,23 @@ def update_my_allowed_models(
         models because that would defeat the purpose of the toggle.
       - Cloud models in `models` are kept as-is (the user explicitly opted in).
     """
-    # Freigeben darf nur, wer selbst einen Node beiträgt. Ein reiner Consumer
-    # würde sonst den Pool auf Modelle einschränken, die er gar nicht anbietet.
+    # Ein Consumer gibt keine Modelle frei — er entscheidet nur, ob sein Konto
+    # Cloud-Modelle nutzen darf. Lokale Modelle bleiben erlaubt; einzelne Modelle
+    # auszuwählen oder zu sperren ist Sache von Provider und "beides".
     if (getattr(user, "role", "") or "").lower() == "consumer":
-        raise HTTPException(
-            status_code=403,
-            detail="Only providers release models. Consumers can read the list of available models.",
+        if req.allow_cloud:
+            namen = _alle_modellnamen()
+            # Ohne Cloud-Modell in der Liste bliebe "erlaubt" wirkungslos, deshalb
+            # die vollständige Liste (lokal + Cloud).
+            user.set_allowed_models(namen if namen else None)
+        else:
+            user.set_allowed_models(None)
+        db.commit()
+        return UserSettingsResponse(
+            role=getattr(user, "role", "both") or "both",
+            allowed_models=user.get_allowed_models(),
+            allow_cloud=user.allow_cloud,
+            warnings=[],
         )
 
     warnings: List[str] = []

@@ -110,7 +110,7 @@
           <h3 x-show="currentRole !== 'consumer'" data-i18n="freigegebene-modelle">Freigegebene Modelle</h3>
           <h3 x-show="currentRole === 'consumer'" data-i18n="profile.models_available_title">Verfügbare Modelle</h3>
           <p x-show="currentRole !== 'consumer'" data-i18n="leer-bedeutet-alle-lokalen-modelle-keine">Leer bedeutet: alle lokalen Modelle, keine Cloud. Explizit wählen, um einzuschränken oder Cloud freizuschalten.</p>
-          <p x-show="currentRole === 'consumer'" data-i18n="profile.models_available_hint">Diese Modelle bietet der Pool zurzeit an. Freigeben kann sie nur, wer selbst einen Node beiträgt — Rolle Provider oder beides. Im Client (Hermes, SDK) erscheinen nur die Modelle, die für dein Konto freigegeben sind.</p>
+          <p x-show="currentRole === 'consumer'" data-i18n="profile.models_available_hint">Diese Modelle bietet der Pool zurzeit an. Welche dein Konto nutzen darf, legt die Administration fest; Cloud-Modelle kannst du unten selbst erlauben. Im Client (Hermes, SDK) erscheinen nur die Modelle, die für dein Konto freigegeben sind.</p>
         </div>
       </div>
 
@@ -170,6 +170,24 @@
               style="padding:10px" data-i18n="profile.models_none">Dir sind derzeit keine Modelle
             freigegeben — deshalb lehnt der Dienst jeden Aufruf ab. Ein Administrator kann das ändern.</li>
         </ul>
+
+        <!-- Cloud-Modelle darf jedes Konto für sich erlauben -->
+        <label class="check mt-2">
+          <input type="checkbox" x-model="allowCloud" />
+          <span class="check-body">
+            <span class="check-title" data-i18n="cloud-modelle-erlauben">Cloud-Modelle erlauben</span>
+            <span class="check-sub" data-i18n="sinnvoll-wenn-die-lokale-hardware-gerade">Sinnvoll, wenn die lokale Hardware gerade nicht verfügbar ist.</span>
+          </span>
+        </label>
+
+        <div class="row wrap mt-3" style="gap:10px">
+          <button class="btn-primary btn-sm" @click="saveModels()" :disabled="savingModels">
+            <span x-show="!savingModels" data-i18n="modelle-speichern">Modelle speichern</span>
+            <span x-show="savingModels" data-i18n="speichere">Speichere…</span>
+          </button>
+          <span x-show="lastModelChange" class="t-xs text-mute" x-text="lastModelChange"></span>
+        </div>
+        <div x-show="modelWarning" class="t-sm text-err mt-2" x-text="modelWarning"></div>
       </div>
     </section>
   </main>

@@ -173,9 +173,9 @@ KEYS = {
         "fr": 'Model disponibles',
     },
     "profile.models_available_hint": {
-        "en": 'These are the models the pool currently offers. Only members who contribute a Node can release them — role provider or both. A client (Hermes, SDK) only shows the models released for your account.',
-        "de": 'Diese Modelle bietet der Pool zurzeit an. Freigeben kann sie nur, wer selbst einen Node beiträgt — Rolle Provider oder beides. Im Client (Hermes, SDK) erscheinen nur die Modelle, die für dein Konto freigegeben sind.',
-        "es": 'Estos son los Model que el Pool ofrece ahora. Solo quien aporta un Node puede liberarlos: rol provider o ambos. Un cliente (Hermes, SDK) solo muestra los Model liberados para tu cuenta.',
+        "en": 'These are the models the pool currently offers. Which ones your account may use is decided by the administration; cloud models you can allow yourself below. A client (Hermes, SDK) only shows the models released for your account.',
+        "de": 'Diese Modelle bietet der Pool zurzeit an. Welche dein Konto nutzen darf, legt die Administration fest; Cloud-Modelle kannst du unten selbst erlauben. Im Client (Hermes, SDK) erscheinen nur die Modelle, die für dein Konto freigegeben sind.',
+        "es": 'Estos son los Model que el Pool ofrece ahora. La administración decide cuáles puede usar tu cuenta; los Model en la nube puedes permitirlos abajo. Un cliente (Hermes, SDK) solo muestra los Model liberados para tu cuenta.',
         "fr": 'Voici les Model que le Pool propose actuellement. Seuls ceux qui apportent un Node peuvent les libérer — rôle provider ou les deux.',
     },
     "api_key_issue": {
