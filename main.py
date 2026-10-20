@@ -493,12 +493,16 @@ async def net_echo(request: Request):
 
 
 @app.get("/v1/models")
-async def list_models(_user: User = Depends(get_current_user)):
-    """Modelle in der OpenAI-Form, plus die rohe Ollama-Liste für die Oberfläche.
+async def list_models(user: User = Depends(get_current_user)):
+    """Modelle, die **dieses Konto** nutzen darf — in der OpenAI-Form.
 
-    OpenAI-Clients lesen `data[].id`, die Chat-Seite liest `models[].name`. Wer nur
-    die Ollama-Form zurückgibt, liefert externen Clients eine leere Modellliste —
-    sie können dann kein Modell auswählen, ohne dass ein Fehler sichtbar wird.
+    OpenAI-Clients lesen `data[].id`, die Chat-Seite liest `models[].name`, deshalb
+    stehen beide Formen in der Antwort.
+
+    Gefiltert wird mit derselben Prüfung wie im Aufrufpfad (`can_use_model`). Ohne
+    Filter zeigt ein Client Modelle zur Auswahl, die beim ersten Aufruf mit 403
+    abgelehnt werden — und wer die Freigabe nicht kennt, kann nicht wissen, welche
+    Auswahl für ihn gilt.
     """
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
@@ -508,7 +512,12 @@ async def list_models(_user: User = Depends(get_current_user)):
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"Upstream Ollama error: {e}")
 
-    modelle = roh.get("models") or []
+    # Nur was das Konto nutzen darf. Dieselbe Prüfung wie im Aufrufpfad, damit
+    # Auswahl und Ergebnis nicht auseinanderlaufen.
+    modelle = [
+        m for m in (roh.get("models") or [])
+        if user.can_use_model(m.get("name") or m.get("model") or "")
+    ]
 
     def _erstellt(eintrag: dict) -> int:
         # Ollama liefert modified_at als ISO-Zeit; OpenAI-Clients erwarten eine Zahl.
