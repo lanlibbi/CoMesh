@@ -419,15 +419,23 @@ async def route_request(
     if not _user_allows_model(user, model):
         from models import _is_cloud_model_name
         if _is_cloud_model_name(model):
+            # Ein Consumer kann Cloud-Modelle nicht selbst freischalten — die Auswahl
+            # im Profil gibt es nur fuer Provider und "beides". Fuer ihn ist der Weg
+            # ueber die Administration der einzige.
+            rolle = (getattr(user, "role", "") or "").lower()
+            if rolle == "consumer":
+                hinweis = (
+                    "Ask an administrator to release it for your account "
+                    "(Freigaben → Konto → Modelle)."
+                )
+            else:
+                hinweis = "Enable it in your profile (Profil → Cloud-Modelle erlauben)."
             return {
                 "ok": False,
                 "source": "denied",
                 "node_id": None,
                 "response": None,
-                "error": (
-                    f"Cloud model '{model}' is not allowed for your account. "
-                    "Enable it in your profile (Profil → Cloud-Modelle erlauben)."
-                ),
+                "error": f"Cloud model '{model}' is not allowed for your account. {hinweis}",
             }
         return {
             "ok": False,

@@ -28,6 +28,10 @@ document.addEventListener("alpine:init", () => {
         this.role = me.role || "both";
         this.currentRole = me.role || "both";
         this.selectedModels = Array.isArray(me.allowed_models) ? [...me.allowed_models] : [];
+        // None (Standard) und [] (nichts erlaubt) müssen unterscheidbar bleiben.
+        this.allowedRaw = me.allowed_models === null || me.allowed_models === undefined
+          ? null
+          : [...me.allowed_models];
         this.allowCloud = (this.selectedModels || []).some(m => this.isCloud(m));
         // Keep the cached user object in sync
         Auth.save({ ...(Auth.currentUser() || {}), role: this.role, allowed_models: me.allowed_models }, LS.get("api_key"));

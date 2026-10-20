@@ -1343,6 +1343,12 @@ window.GP_I18N = {
    "es": "Contraseña para confirmar:",
    "fr": "Mot de passe pour confirmer :"
   },
+  "profile.models_none": {
+   "en": "Dir sind derzeit keine Modelle freigegeben — deshalb lehnt der Dienst jeden Aufruf ab. Ein Administrator kann das ändern.",
+   "de": "Dir sind derzeit keine Modelle freigegeben — deshalb lehnt der Dienst jeden Aufruf ab. Ein Administrator kann das ändern.",
+   "es": "Ahora mismo no tienes Model liberados: por eso el servicio rechaza cada llamada. Un administrador puede cambiarlo.",
+   "fr": "Aucun Model ne vous est actuellement libéré — c'est pourquoi le service refuse chaque appel. Un administrateur peut le modifier."
+  },
   "gpu-bereitstellen": {
    "en": "Contribute a GPU",
    "de": "GPU bereitstellen",
