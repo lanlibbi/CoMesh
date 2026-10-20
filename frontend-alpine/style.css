@@ -1603,3 +1603,52 @@ td.neg { color: var(--err); }
   opacity: 1;
   box-shadow: 0 0 7px rgb(111 211 160 / 0.65);
 }
+
+/* Die drei Kopfelemente auf den Anmeldeseiten als eine Gruppe — Cluster-Regel.
+   Bisher stand .auth-controls ohne Gestaltung da: drei Knöpfe mit eigenem Rahmen,
+   display:block, also in zwei Zeilen umgebrochen. */
+.auth-controls {
+  position: absolute;
+  top: 4px;
+  right: 0;
+  z-index: 4;
+  display: inline-flex !important;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 11px;
+  border: 1px solid var(--line-strong);
+  background: color-mix(in srgb, var(--surface) 76%, transparent);
+  backdrop-filter: blur(9px);
+  -webkit-backdrop-filter: blur(9px);
+  box-shadow: inset 0 1px 0 rgb(var(--tint-rgb) / 0.09), 0 12px 30px -20px rgb(0 0 0 / 0.5);
+}
+.auth-controls .chrome-btn,
+.auth-controls .lang > summary {
+  height: 26px;
+  min-width: 30px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-dim);
+}
+.auth-controls .chrome-btn:hover,
+.auth-controls .lang > summary:hover {
+  background: rgb(var(--tint-rgb) / 0.08);
+  color: var(--text);
+}
+.auth-controls > * + * { position: relative; margin-left: 5px; }
+.auth-controls > * + *::before {
+  content: "";
+  position: absolute;
+  left: -5px;
+  top: 5px;
+  bottom: 5px;
+  width: 1px;
+  background: var(--line-strong);
+}
+@media (max-width: 780px) {
+  .auth-controls { position: static; margin-bottom: 18px; }
+  .auth-controls > * + *::before { display: none; }
+}
+
