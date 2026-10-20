@@ -107,11 +107,15 @@
       <div class="panel-head">
         <div>
           <div class="eyebrow">Modelle</div>
-          <h3 data-i18n="freigegebene-modelle">Freigegebene Modelle</h3>
-          <p data-i18n="leer-bedeutet-alle-lokalen-modelle-keine">Leer bedeutet: alle lokalen Modelle, keine Cloud. Explizit wählen, um einzuschränken oder Cloud freizuschalten.</p>
+          <h3 x-show="currentRole !== 'consumer'" data-i18n="freigegebene-modelle">Freigegebene Modelle</h3>
+          <h3 x-show="currentRole === 'consumer'" data-i18n="profile.models_available_title">Verfügbare Modelle</h3>
+          <p x-show="currentRole !== 'consumer'" data-i18n="leer-bedeutet-alle-lokalen-modelle-keine">Leer bedeutet: alle lokalen Modelle, keine Cloud. Explizit wählen, um einzuschränken oder Cloud freizuschalten.</p>
+          <p x-show="currentRole === 'consumer'" data-i18n="profile.models_available_hint">Diese Modelle bietet der Pool zurzeit an. Freigeben kann sie nur, wer selbst einen Node beiträgt — Rolle Provider oder beides.</p>
         </div>
       </div>
 
+      <!-- Freigabe: nur Provider und „beides" -->
+      <div x-show="currentRole !== 'consumer'">
       <div class="option-list" style="max-height:300px">
         <template x-for="m in availableModels" :key="m.name">
           <label class="check">
@@ -145,6 +149,24 @@
         </button>
         <button class="btn-ghost btn-sm" @click="resetToDefault()" data-i18n="auf-standard-zuruecksetzen">Auf Standard zurücksetzen</button>
         <span x-show="lastModelChange" class="t-xs text-mute" x-text="lastModelChange"></span>
+      </div>
+      </div>
+
+      <!-- Consumer: dieselbe Liste, aber ohne Kästchen -->
+      <div x-show="currentRole === 'consumer'">
+        <ul class="option-list" style="max-height:300px;padding:0;list-style:none">
+          <template x-for="m in availableModels" :key="m.name">
+            <li class="check" style="cursor:default">
+              <span class="check-body row" style="gap:8px">
+                <span class="grow mono t-sm" x-text="m.name"></span>
+                <span x-show="m.is_cloud" class="pill pill-busy pill-flat">cloud</span>
+                <span class="t-xs text-mute num" x-text="(m.size_gb || 0) + ' GB'"></span>
+              </span>
+            </li>
+          </template>
+          <li x-show="availableModels.length === 0" class="t-xs text-mute" style="padding:8px 10px"
+              data-i18n="modelle-werden-geladen">Modelle werden geladen…</li>
+        </ul>
       </div>
     </section>
   </main>

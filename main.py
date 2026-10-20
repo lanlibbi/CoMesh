@@ -611,6 +611,14 @@ def update_my_allowed_models(
         models because that would defeat the purpose of the toggle.
       - Cloud models in `models` are kept as-is (the user explicitly opted in).
     """
+    # Freigeben darf nur, wer selbst einen Node beiträgt. Ein reiner Consumer
+    # würde sonst den Pool auf Modelle einschränken, die er gar nicht anbietet.
+    if (getattr(user, "role", "") or "").lower() == "consumer":
+        raise HTTPException(
+            status_code=403,
+            detail="Only providers release models. Consumers can read the list of available models.",
+        )
+
     warnings: List[str] = []
     if req.models is None:
         if req.allow_cloud:

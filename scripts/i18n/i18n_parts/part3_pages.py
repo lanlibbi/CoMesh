@@ -166,4 +166,16 @@ KEYS = {
         "fr": "Dès que le node apparaît dans le <a href=\"pool.html\" class=\"link\">pool communautaire</a>, il est actif. Les requêtes y sont routées automatiquement ; 70 % du coût du job arrivent en Credits sur votre compte.",
         },
     "pool-ansehen": {"en": "View pool", "de": "Pool ansehen", "es": "Ver el pool", "fr": "Voir le pool"},
+    "profile.models_available_title": {
+        "en": 'Available models',
+        "de": 'Verfügbare Modelle',
+        "es": 'Model disponibles',
+        "fr": 'Model disponibles',
+    },
+    "profile.models_available_hint": {
+        "en": 'These are the models the pool currently offers. Only members who contribute a Node can release them — role provider or both.',
+        "de": 'Diese Modelle bietet der Pool zurzeit an. Freigeben kann sie nur, wer selbst einen Node beiträgt — Rolle Provider oder beides.',
+        "es": 'Estos son los Model que el Pool ofrece ahora. Solo quien aporta un Node puede liberarlos: rol provider o ambos.',
+        "fr": 'Voici les Model que le Pool propose actuellement. Seuls ceux qui apportent un Node peuvent les libérer — rôle provider ou les deux.',
+    },
 }
