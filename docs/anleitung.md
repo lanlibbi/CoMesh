@@ -1,5 +1,24 @@
 # CoMesh — Anleitung für Einsteiger
 
+**Sprachen:** die Seite im Portal (`/hilfe.html`) schaltet zwischen **Deutsch und Englisch**
+um; die Wahl liegt in `localStorage.gp_lang` und gilt damit auch für die übrigen Seiten.
+Die Langfassung hier ist deutsch — bei Abweichungen gilt die Seite.
+
+---
+
+## English summary
+
+CoMesh is a shared way to reach computing power for AI models: members contribute machines
+with free GPUs, everyone else uses them through one OpenAI-compatible endpoint. Two roles,
+combinable: **users** need an OpenAI-compatible client and a key (nothing to install),
+**providers** run the node agent as a container and decide which models their machine offers.
+
+Getting started: create an account → wait for administrator approval → copy the key from the
+profile (shown once) → call `<portal>:8765/v1` → watch usage under *My usage*. Usage is
+measured in credits; contributing a GPU earns them. Errors: 401 key, 403 not approved,
+429 too fast, 502 no machine offering the model, 524 timeout (use `stream=True`).
+Your input runs on someone else's machine — no secrets, no personal data.
+
 Diese Seite erklärt CoMesh für Menschen, die es nicht kennen. Die kurze Fassung liegt als
 `frontend-alpine/hilfe.html` im Portal und ist dort ohne Anmeldung erreichbar (Menü „Anleitung").
 
