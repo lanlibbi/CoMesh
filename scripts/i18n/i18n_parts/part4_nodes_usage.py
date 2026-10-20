@@ -136,4 +136,6 @@ KEYS = {
     "modelle": {"en": "Models", "de": "Modelle", "es": "Modelos", "fr": "Modèles"},
     "anteil": {"en": "share", "de": "Anteil", "es": "cuota", "fr": "part"},
     "keine-nutzung": {"en": "no usage", "de": "keine Nutzung", "es": "sin consumo", "fr": "aucun usage"},
+    "admin.credits_system": {"en": "Credits system", "de": "Credits-System", "es": "Sistema de créditos", "fr": "Système de crédits"},
+    "admin.quota": {"en": "Quota", "de": "Quota", "es": "Cuota", "fr": "Quota"},
 }
