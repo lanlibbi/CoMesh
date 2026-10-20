@@ -1349,6 +1349,18 @@ window.GP_I18N = {
    "es": "Ahora mismo no tienes Model liberados: por eso el servicio rechaza cada llamada. Un administrador puede cambiarlo.",
    "fr": "Aucun Model ne vous est actuellement libéré — c'est pourquoi le service refuse chaque appel. Un administrateur peut le modifier."
   },
+  "api_key_scope": {
+   "en": "This key belongs to the signed-in account:",
+   "de": "Dieser Schlüssel gilt für das angemeldete Konto:",
+   "es": "Esta clave pertenece a la cuenta conectada:",
+   "fr": "Cette clé appartient au compte connecté :"
+  },
+  "api_key_scope_hint": {
+   "en": "Models and releases belong to this account — not to the one you expect.",
+   "de": "Modelle und Freigaben hängen an diesem Konto — nicht an dem, das du erwartest.",
+   "es": "Los Model y las liberaciones dependen de esta cuenta, no de la que esperas.",
+   "fr": "Les Model et les libérations dépendent de ce compte — pas de celui que vous attendez."
+  },
   "gpu-bereitstellen": {
    "en": "Contribute a GPU",
    "de": "GPU bereitstellen",

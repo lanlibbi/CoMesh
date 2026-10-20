@@ -156,6 +156,12 @@
       <template x-if="isApiKey">
         <pre class="code mono" x-text="revealKey ? apiKey : maskKey(apiKey)"></pre>
       </template>
+      <p class="hint">
+        <span data-i18n="api_key_scope">Dieser Schlüssel gilt für das angemeldete Konto:</span>
+        <b x-text="me &amp;&amp; me.email"></b>
+        <span class="pill pill-flat pill-busy" x-text="me &amp;&amp; me.role"></span>
+        <span class="t-sm text-dim" data-i18n="api_key_scope_hint">Modelle und Freigaben hängen an diesem Konto — nicht an dem, das du erwartest.</span>
+      </p>
       <template x-if="!isApiKey">
         <p class="hint" data-i18n="api_key_session_only">Im Browser arbeitest du mit einer Sitzung, nicht mit einem API-Schlüssel. Für ein Programm, einen Hermes oder ein SDK stelle hier einen Schlüssel aus — er beginnt mit <code class="inline">gpu_</code> und wird genau einmal angezeigt.</p>
       </template>
