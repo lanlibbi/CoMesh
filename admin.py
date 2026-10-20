@@ -966,6 +966,11 @@ def admin_update_user(
         elif user.get_allowed_models() is None and target == []:
             user.set_allowed_models(target)
             changes["allowed_models"] = {"from": None, "to": target}
+        # Das Cloud-Kennzeichen ist eine eigene Spalte und muss mitgeschrieben werden,
+        # sonst meldet die Antwort "false", obwohl der Admin es gesetzt hat.
+        if bool(req.allow_cloud) != bool(user.allow_cloud):
+            changes["allow_cloud"] = {"from": bool(user.allow_cloud), "to": bool(req.allow_cloud)}
+            user.allow_cloud = bool(req.allow_cloud)
 
     if req.password:
         import hashlib as _hashlib
