@@ -1361,6 +1361,12 @@ window.GP_I18N = {
    "es": "Los Model y las liberaciones dependen de esta cuenta, no de la que esperas.",
    "fr": "Les Model et les libérations dépendent de ce compte — pas de celui que vous attendez."
   },
+  "cloud_ack": {
+   "en": "I am aware that this lets me use paid models and may require additional credits.",
+   "de": "Ich bin mir bewusst, dass ich damit kostenpflichtige Modelle nutze und gegebenenfalls zusätzliche Credits dafür brauche.",
+   "es": "Soy consciente de que así uso Model de pago y puede que necesite Credits adicionales.",
+   "fr": "Je suis conscient que cela me permet d'utiliser des Model payants et peut nécessiter des Credits supplémentaires."
+  },
   "gpu-bereitstellen": {
    "en": "Contribute a GPU",
    "de": "GPU bereitstellen",

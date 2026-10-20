@@ -115,7 +115,7 @@
       </div>
 
       <!-- Freigabe: nur Provider und „beides" -->
-      <div x-show="currentRole !== 'consumer'">
+      <div x-show="['provider', 'both', 'admin'].includes(currentRole)" x-cloak>
       <div class="option-list" style="max-height:300px">
         <template x-for="m in availableModels" :key="m.name">
           <label class="check">
@@ -176,7 +176,7 @@
           <input type="checkbox" x-model="allowCloud" />
           <span class="check-body">
             <span class="check-title" data-i18n="cloud-modelle-erlauben">Cloud-Modelle erlauben</span>
-            <span class="check-sub" data-i18n="sinnvoll-wenn-die-lokale-hardware-gerade">Sinnvoll, wenn die lokale Hardware gerade nicht verfügbar ist.</span>
+            <span class="check-sub" data-i18n="cloud_ack">Ich bin mir bewusst, dass ich damit kostenpflichtige Modelle nutze und gegebenenfalls zusätzliche Credits dafür brauche.</span>
           </span>
         </label>
 

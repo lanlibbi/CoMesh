@@ -46,6 +46,9 @@ class User(Base):
     signup_credits = Column(Float, default=100.0, nullable=False)              # credits granted on approval
     role = Column(String, default="both", nullable=False)        # provider | consumer | both
     allowed_models = Column(Text, nullable=True)                 # JSON list or NULL = "all local, no cloud"
+    # Cloud-Modelle sind kostenpflichtig und werden bewusst zugeschaltet. Getrennt von
+    # `allowed_models`, damit eine gezielte Freigabe erhalten bleibt.
+    allow_cloud = Column(Boolean, default=False, nullable=False)
     # Quota mode when the credits system is enabled (admin-controlled):
     #   "unlimited" -> no credit checks for this user (default, free usage)
     #   "balance"   -> legacy behaviour: balance floor + deduction apply
@@ -90,26 +93,24 @@ class User(Base):
 
     def can_use_model(self, model: str) -> bool:
         """
-        Authorization check for a single model. Cloud models are blocked
-        by default (None whitelist + cloud model = no).
+        Authorization check for a single model.
+
+        Zwei getrennte Entscheidungen:
+          * `allowed_models` sagt, welche lokalen Modelle freigegeben sind
+            (None = alle lokalen, Liste = genau diese, [] = nichts),
+          * `allow_cloud` schaltet Cloud-Modelle zusätzlich frei, ohne die lokale
+            Freigabe zu verändern.
         """
         if not model:
             return True
-        m = model.lower()
         is_cloud = _is_cloud_model_name(model)
         allowed = self.get_allowed_models()
         if allowed is None:
-            # Default: all local allowed, no cloud.
-            return not is_cloud
-        return model in allowed
-
-    @property
-    def allow_cloud(self) -> bool:
-        """True if the user's whitelist explicitly contains at least one cloud model."""
-        allowed = self.get_allowed_models()
-        if not allowed:
-            return False
-        return any(_is_cloud_model_name(m) for m in allowed)
+            # Default: alle lokalen; Cloud nur, wenn ausdrücklich zugeschaltet.
+            return (not is_cloud) or bool(self.allow_cloud)
+        if model in allowed:
+            return True
+        return is_cloud and bool(self.allow_cloud)
 
 
 def _is_cloud_model_name(name: str) -> bool:

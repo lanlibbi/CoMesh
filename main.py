@@ -91,6 +91,7 @@ async def lifespan(app: FastAPI):
     _ensure_payments_table()
     _ensure_node_tables()
     _ensure_password_column()
+    _ensure_allow_cloud_column()
     _ensure_user_settings()
     _ensure_system_settings()
     _ensure_registration_columns()
@@ -212,6 +213,7 @@ class UserInfo(BaseModel):
     is_active: bool
     role: str = "both"
     allowed_models: Optional[List[str]] = None
+    allow_cloud: bool = False
     created_at: str
     # Feature flag (config.yaml: credits_enabled). False = unlimited usage:
     # the UI must not show balances, prices or top-up flows.
@@ -256,6 +258,15 @@ def _ensure_password_column():
         if "password_hash" not in cols:
             conn.exec_driver_sql("ALTER TABLE users ADD COLUMN password_hash VARCHAR")
             log.info("Added users.password_hash column")
+
+
+def _ensure_allow_cloud_column():
+    """Add users.allow_cloud if missing (idempotent)."""
+    with engine.begin() as conn:
+        cols = [row[1] for row in conn.exec_driver_sql("PRAGMA table_info(users)").fetchall()]
+        if "allow_cloud" not in cols:
+            conn.exec_driver_sql("ALTER TABLE users ADD COLUMN allow_cloud BOOLEAN DEFAULT 0")
+            log.info("Added users.allow_cloud column")
 
 
 def _ensure_user_settings():
@@ -613,6 +624,7 @@ def me(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
         is_active=user.is_active,
         role=getattr(user, "role", "both") or "both",
         allowed_models=user.get_allowed_models(),
+        allow_cloud=bool(getattr(user, "allow_cloud", False)),
         created_at=user.created_at.isoformat(),
         credits_enabled=credits_enabled(),
     )
@@ -692,13 +704,10 @@ def update_my_allowed_models(
     # Cloud-Modelle nutzen darf. Lokale Modelle bleiben erlaubt; einzelne Modelle
     # auszuwählen oder zu sperren ist Sache von Provider und "beides".
     if (getattr(user, "role", "") or "").lower() == "consumer":
-        if req.allow_cloud:
-            namen = _alle_modellnamen()
-            # Ohne Cloud-Modell in der Liste bliebe "erlaubt" wirkungslos, deshalb
-            # die vollständige Liste (lokal + Cloud).
-            user.set_allowed_models(namen if namen else None)
-        else:
-            user.set_allowed_models(None)
+        # Consumer wählt keine Modelle aus — er entscheidet nur, ob sein Konto
+        # kostenpflichtige Cloud-Modelle nutzen darf. Die Freigabe der Administration
+        # bleibt dabei unangetastet.
+        user.allow_cloud = bool(req.allow_cloud)
         db.commit()
         return UserSettingsResponse(
             role=getattr(user, "role", "both") or "both",
@@ -730,6 +739,12 @@ def update_my_allowed_models(
             user.set_allowed_models(kept)
         else:
             user.set_allowed_models(req.models)
+    # Cloud-Kennzeichen getrennt von der Liste führen. Eine Liste mit Cloud-Modell
+    # bedeutet "Cloud erlaubt", auch wenn der Schalter nicht gesetzt ist.
+    if req.allow_cloud:
+        user.allow_cloud = True
+    elif req.models is not None and not any(_is_cloud_model_name(m) for m in (req.models or [])):
+        user.allow_cloud = False
     db.commit()
     db.refresh(user)
     return UserSettingsResponse(
