@@ -96,6 +96,9 @@
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, w, h);
 
+    // Größenstufe aus dem Markup: 1 = Kopfanimation, 3 = Hintergrundfläche.
+    var stufe = parseFloat(cv.dataset.meshScale || "1") || 1;
+
     var t = statisch ? 0.8 : performance.now() / 1000;
     for (var i = 0; i < knoten.length; i++) {
       var k = knoten[i];
@@ -111,11 +114,11 @@
       var naehe = Math.max(0, 1 - d / (w * 0.6));
       var mitPaket = pakete.some(function (pk) { return pk.kante === e; });
       ctx.strokeStyle = mitPaket ? farben.aktiv : farben.linie;
-      ctx.lineWidth = mitPaket ? 1.1 : 1;
+      ctx.lineWidth = (mitPaket ? 1.1 : 1) * stufe;
       ctx.globalAlpha = 0.14 + naehe * 0.34 + (mitPaket ? 0.16 : 0);
       ctx.beginPath();
       ctx.moveTo(a.x, a.y);
-      ctx.quadraticCurveTo(a.x + dx * 0.5, a.y + dy * 0.5 - 5 * naehe, b.x, b.y);
+      ctx.quadraticCurveTo(a.x + dx * 0.5, a.y + dy * 0.5 - 5 * naehe * stufe, b.x, b.y);
       ctx.stroke();
     }
 
@@ -125,14 +128,14 @@
       ctx.globalAlpha = 0.62;
       ctx.fillStyle = farben.knoten;
       ctx.beginPath();
-      ctx.arc(kn.x, kn.y, kn.r, 0, Math.PI * 2);
+      ctx.arc(kn.x, kn.y, kn.r * stufe, 0, Math.PI * 2);
       ctx.fill();
       if (kn.hub) {
         ctx.globalAlpha = 0.85;
         ctx.strokeStyle = farben.akzent;
-        ctx.lineWidth = 0.9;
+        ctx.lineWidth = 0.9 * stufe;
         ctx.beginPath();
-        ctx.arc(kn.x, kn.y, kn.r + 2.6, 0, Math.PI * 2);
+        ctx.arc(kn.x, kn.y, kn.r * stufe + 2.6 * stufe, 0, Math.PI * 2);
         ctx.stroke();
       }
     }
@@ -153,7 +156,7 @@
       ctx.globalAlpha = 0.9;
       ctx.fillStyle = farben.akzent;
       ctx.beginPath();
-      ctx.arc(px, py, 1.9, 0, Math.PI * 2);
+      ctx.arc(px, py, 1.9 * stufe, 0, Math.PI * 2);
       ctx.fill();
     }
     ctx.globalAlpha = 1;
@@ -179,8 +182,10 @@
     cv.dataset.bereit = "1";
     farbenLesen();
     knotenBauen(cv.clientWidth || 232, cv.clientHeight || 48);
+    // Erst ein Standbild: das setzt den Zeichenpuffer auf die richtige Größe und
+    // füllt die Fläche auch dann, wenn die Schleife nicht anläuft (versteckter Tab).
+    zeichnen(0, true);
     if (reduzierteBewegung()) {
-      zeichnen(0, true);
       return true;
     }
     laeuft = true;

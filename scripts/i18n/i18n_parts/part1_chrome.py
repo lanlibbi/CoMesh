@@ -24,7 +24,7 @@ KEYS = {
     "nav.earnings":         {"en": "Earnings", "de": "Einnahmen", "es": "Ingresos", "fr": "Revenus"},
     "nav.agent":            {"en": "Agent", "de": "Agent", "es": "Agente", "fr": "Agent"},
     "nav.profile":          {"en": "Profile", "de": "Profil", "es": "Perfil", "fr": "Profil"},
-    "nav.help":             {"en": "Guide", "de": "Anleitung", "es": "Guía", "fr": "Guide"},
+    "help.link":            {"en": "Guide", "de": "Anleitung", "es": "Guía", "fr": "Guide"},
     "nav.logout":           {"en": "Log out", "de": "Abmelden", "es": "Cerrar sesión", "fr": "Déconnexion"},
     "nav.aria":             {"en": "Main navigation", "de": "Hauptnavigation", "es": "Navegación principal", "fr": "Navigation principale"},
     "brand.tagline": {"en": "Your compute, meshed.", "de": "Your compute, meshed.", "es": "Your compute, meshed.", "fr": "Your compute, meshed."},

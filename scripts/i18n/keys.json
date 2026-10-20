@@ -2242,12 +2242,5 @@
   "pages": [
    "usage.html"
   ]
- },
- "nav.help": {
-  "src": "Anleitung",
-  "where": "js",
-  "pages": [
-   "app.js"
-  ]
  }
 }

@@ -125,7 +125,7 @@ window.GP_I18N = {
    "es": "Perfil",
    "fr": "Profil"
   },
-  "nav.help": {
+  "help.link": {
    "en": "Guide",
    "de": "Anleitung",
    "es": "Guía",
@@ -400,6 +400,12 @@ window.GP_I18N = {
    "de": "<b>Eigene Hardware einbringen.</b> Der Node-Agent läuft als Container, 70 % der Job-Kosten gehen an den Owner.",
    "es": "<b>Aporta tu propio hardware.</b> El agente de node se ejecuta como contenedor; el 70 % del coste del job va al owner.",
    "fr": "<b>Apportez votre matériel.</b> L'agent de node tourne en conteneur ; 70 % du coût du job revient à l'owner."
+  },
+  "login.no_account": {
+   "en": "No account yet? <a href=\"register.html\" class=\"link\">Register</a>.",
+   "de": "Noch kein Konto? <a href=\"register.html\" class=\"link\">Registrieren</a>.",
+   "es": "¿Aún sin cuenta? <a href=\"register.html\" class=\"link\">Registrarse</a>.",
+   "fr": "Pas encore de compte ? <a href=\"register.html\" class=\"link\">S'inscrire</a>."
   },
   "login.tagline": {
    "en": "Contribute GPUs to the pool, use the whole pool through one OpenAI-compatible API — free and powered by your community.",

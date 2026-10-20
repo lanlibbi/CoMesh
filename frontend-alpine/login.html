@@ -27,7 +27,10 @@
 <link rel="stylesheet" href="style.css" />
 </head>
 <body>
+<canvas id="brand-mesh" class="auth-mesh" data-mesh-scale="2.6" aria-hidden="true"></canvas>
+
 <main class="auth-wrap">
+
   <section class="auth-aside">
     <a href="index.html" class="brand">
       <span class="brand-mark" aria-hidden="true">
@@ -85,10 +88,7 @@
       </button>
     </form>
 
-    <p class="auth-alt">
-      Noch kein Konto?
-      <a href="register.html" class="link">Registrieren</a>.
-    </p>
+    <p class="auth-alt" data-i18n-html="login.no_account">Noch kein Konto? <a href="register.html" class="link">Registrieren</a>.</p>
   </section>
 </main>
 
@@ -122,5 +122,17 @@ function loginForm() {
 }
 </script>
 <script src="brand-mesh.js"></script>
+<script>
+/* Nach dem Aufbau neu vermessen: brand-mesh merkt sich beim ersten Start, dass es
+   bereit ist, und zeichnet bei reduzierter Bewegung nur ein Standbild — dann bleibt
+   der Puffer auf seiner Vorgabegröße. Ein zweiter Start nach `load` korrigiert das. */
+window.addEventListener("load", function () {
+  var cv = document.getElementById("brand-mesh");
+  if (!cv || !window.mountBrandMesh) return;
+  cv.dataset.bereit = "";
+  window.mountBrandMesh();
+});
+</script>
+
 </body>
 </html>

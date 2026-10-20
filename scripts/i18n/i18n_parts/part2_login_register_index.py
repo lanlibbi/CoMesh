@@ -13,6 +13,12 @@ KEYS = {
     "konto-anlegen-und-mitmachen": {"en": "Create an account and join in.", "de": "Konto anlegen und mitmachen.", "es": "Crea una cuenta y participa.", "fr": "Créez un compte et participez."},
     "b-eigene-hardware-einbringen-b-der-node": {"en": "<b>Bring your own hardware.</b> The node agent runs as a container and announces the GPU to the pool.", "de": "<b>Eigene Hardware einbringen.</b> Der Node-Agent läuft als Container und meldet die GPU an den Pool.", "es": "<b>Aporta tu propio hardware.</b> El agente de node se ejecuta como contenedor y anuncia la GPU al pool.", "fr": "<b>Apportez votre matériel.</b> L'agent de node tourne en conteneur et annonce le GPU au pool."},
     "login.intro": {"en": "One pool of machines with a free GPU, one OpenAI-compatible entry point. Free, carried by the community — no subscription, no per-token billing.", "de": "Ein Pool aus Rechnern mit freier GPU, ein einziger OpenAI-kompatibler Zugang. Kostenlos, getragen von der Community — kein Abo, keine Abrechnung pro Token.", "es": "Un pool de máquinas con GPU libre, un único acceso compatible con OpenAI. Gratis y sostenido por la comunidad: sin suscripción ni facturación por Token.", "fr": "Un pool de machines avec un GPU libre, un seul accès compatible OpenAI. Gratuit et porté par la communauté — sans abonnement, sans facturation par Token."},
+    "login.no_account": {
+        "en": 'No account yet? <a href="register.html" class="link">Register</a>.',
+        "de": 'Noch kein Konto? <a href="register.html" class="link">Registrieren</a>.',
+        "es": '¿Aún sin cuenta? <a href="register.html" class="link">Registrarse</a>.',
+        "fr": 'Pas encore de compte ? <a href="register.html" class="link">S\'inscrire</a>.',
+    },
     "login.tagline": {"en": "Contribute GPUs to the pool, use the whole pool through one OpenAI-compatible API — free and powered by your community.", "de": "Stelle GPUs für den Pool bereit und nutze den ganzen Pool über eine einzige OpenAI-kompatible API — kostenlos und von deiner Community getragen.", "es": "Aporta GPUs al pool y usa todo el pool a través de una única API compatible con OpenAI: gratis y sostenido por tu comunidad.", "fr": "Apportez des GPU au pool et utilisez tout le pool via une seule API compatible OpenAI — gratuit et porté par votre communauté."},
     # =========================================================== login.html
 

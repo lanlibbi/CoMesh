@@ -1514,3 +1514,25 @@ td.neg { color: var(--err); }
   .brand-text strong { font-size: 1.5rem; }
   .brand-text span { font-size: 0.64rem; }
 }
+
+/* ---------------------------------------------------------------- Anleitung */
+/* Der Knopf ist ein Link, kein Button — er soll wie die übrigen Kopfelemente aussehen. */
+.chrome-btn.help-link { text-decoration: none; }
+.chrome-btn.help-link .help-face { display: inline-flex; }
+
+/* Auf den Anmeldeseiten liegt das Mesh riesig hinter dem Inhalt: dieselbe Szene
+   wie im Kopf, nur als Fläche. Der Radialverlauf blendet die Ränder weg, damit
+   der Text lesbar bleibt; das Kartendeck sitzt darüber. */
+.auth-mesh {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  pointer-events: none;
+  opacity: .8;
+  -webkit-mask-image: radial-gradient(ellipse 105% 95% at 30% 25%, #000 0%, rgba(0,0,0,.75) 55%, transparent 92%);
+  mask-image: radial-gradient(ellipse 105% 95% at 30% 25%, #000 0%, rgba(0,0,0,.75) 55%, transparent 92%);
+}
+@media (prefers-reduced-motion: reduce) { .auth-mesh { opacity: .7; } }
+
