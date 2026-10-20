@@ -494,14 +494,47 @@ async def net_echo(request: Request):
 
 @app.get("/v1/models")
 async def list_models(_user: User = Depends(get_current_user)):
-    """List models from Ollama (auth required)."""
+    """Modelle in der OpenAI-Form, plus die rohe Ollama-Liste für die Oberfläche.
+
+    OpenAI-Clients lesen `data[].id`, die Chat-Seite liest `models[].name`. Wer nur
+    die Ollama-Form zurückgibt, liefert externen Clients eine leere Modellliste —
+    sie können dann kein Modell auswählen, ohne dass ein Fehler sichtbar wird.
+    """
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
             r = await client.get(f"{OLLAMA_URL}/api/tags")
             r.raise_for_status()
-            return r.json()
+            roh = r.json()
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"Upstream Ollama error: {e}")
+
+    modelle = roh.get("models") or []
+
+    def _erstellt(eintrag: dict) -> int:
+        # Ollama liefert modified_at als ISO-Zeit; OpenAI-Clients erwarten eine Zahl.
+        wert = eintrag.get("modified_at")
+        if not wert:
+            return 0
+        try:
+            return int(__import__("datetime").datetime.fromisoformat(wert.replace("Z", "+00:00")).timestamp())
+        except Exception:
+            return 0
+
+    return {
+        "object": "list",
+        "data": [
+            {
+                "id": m.get("name") or m.get("model"),
+                "object": "model",
+                "created": _erstellt(m),
+                "owned_by": "comesh",
+            }
+            for m in modelle
+            if m.get("name") or m.get("model")
+        ],
+        # Kompatibilität: chat.html liest models[].name
+        "models": modelle,
+    }
 
 
 @app.get("/v1/me")
