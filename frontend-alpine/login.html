@@ -57,9 +57,9 @@
     </p>
 
     <ul class="auth-points">
-      <li><span class="idx">01</span><span><b>OpenAI-kompatible API.</b> Bestehende Clients und SDKs funktionieren ohne Anpassung.</span></li>
-      <li><span class="idx">02</span><span><b>Eigene Hardware einbringen.</b> Der Node-Agent läuft als Container und meldet die GPU an den Pool.</span></li>
-      <li><span class="idx">03</span><span><b>Modelle bleiben kontrollierbar.</b> Pro Node und pro Konto als Whitelist steuerbar, Cloud-Modelle explizit freizuschalten.</span></li>
+      <li><span class="idx">01</span><span data-i18n-html="login.point.api"><b>OpenAI-kompatible API.</b> Bestehende Clients und SDKs funktionieren ohne Anpassung.</span></li>
+      <li><span class="idx">02</span><span data-i18n-html="login.point.hardware"><b>Eigene Hardware einbringen.</b> Der Node-Agent läuft als Container und meldet die GPU an den Pool.</span></li>
+      <li><span class="idx">03</span><span data-i18n-html="login.point.models"><b>Modelle bleiben kontrollierbar.</b> Pro Node und pro Konto als Whitelist steuerbar, Cloud-Modelle explizit freizuschalten.</span></li>
     </ul>
   </section>
 
@@ -91,6 +91,35 @@
     <p class="auth-alt" data-i18n-html="login.no_account">Noch kein Konto? <a href="register.html" class="link">Registrieren</a>.</p>
   </section>
 </main>
+
+<footer class="auth-foot">
+  <span id="auth-foot-version">CoMesh</span>
+  <span class="dot" aria-hidden="true">·</span>
+  <span data-i18n="login.foot.openai">OpenAI-kompatible API</span>
+  <span class="dot" aria-hidden="true">·</span>
+  <a href="hilfe.html" class="link" data-i18n="help.link">Anleitung</a>
+</footer>
+<script>
+/* Produkt und Version aus der laufenden API — eine Fußzeile mit echter Information
+   ist ehrlicher als eine mit einem dekorativen Strich. */
+(function () {
+  var ziel = document.getElementById("auth-foot-version");
+  if (!ziel) return;
+  // Erst nach dem Laden fragen: config.js und app.js setzen die API-Adresse und
+  // stehen weiter unten im Dokument.
+  function fuellen() {
+  // /version ist über den Frontend-Port nicht erreichbar (der Proxy kennt nur
+  // /api/v1/...), /api/health schon. Also kein Versionsnummer-Raten, sondern ein
+  // ehrliches Signal: Punkt leuchtet, wenn das Portal antwortet.
+  fetch((window.API_BASE || "") + "/health", { cache: "no-store" })
+    .then(function (r) { if (r.ok) ziel.classList.add("is-online"); })
+    .catch(function () { /* Punkt bleibt blass */ });
+  }
+  if (document.readyState === "complete") fuellen();
+  else window.addEventListener("load", fuellen);
+})();
+</script>
+
 
 <script defer src="https://unpkg.com/alpinejs@3.5.1/dist/cdn.min.js"></script>
 <script src="config.js"></script>

@@ -57,9 +57,9 @@
     </p>
 
     <ul class="auth-points">
-      <li><span class="idx">→</span><span><b>Consumer.</b> API nutzen, keine Hardware bereitstellen. Für Rechner ohne nutzbare GPU.</span></li>
-      <li><span class="idx">→</span><span><b>Provider.</b> Nodes registrieren und Credits verdienen, keine eigenen API-Calls.</span></li>
-      <li><span class="idx">→</span><span><b>Beides.</b> Voller Zugriff — Einbringen und Nutzen gleichzeitig.</span></li>
+      <li><span class="idx">→</span><span data-i18n-html="register.role.consumer"><b>Consumer.</b> API nutzen, keine Hardware bereitstellen. Für Rechner ohne nutzbare GPU.</span></li>
+      <li><span class="idx">→</span><span data-i18n-html="register.role.provider"><b>Provider.</b> Nodes registrieren und Credits verdienen, keine eigenen API-Calls.</span></li>
+      <li><span class="idx">→</span><span data-i18n-html="register.role.both"><b>Beides.</b> Voller Zugriff — Einbringen und Nutzen gleichzeitig.</span></li>
     </ul>
   </section>
 
@@ -112,8 +112,8 @@
 
       <details class="disclosure">
         <summary>
-          Modelle einschränken
-          <span class="hint">optional — leer bedeutet: alle lokalen Modelle, keine Cloud</span>
+          <span data-i18n="register.models_limited">Modelle einschränken</span>
+          <span class="hint" data-i18n="register.models_optional">optional — leer bedeutet: alle lokalen Modelle, keine Cloud</span>
         </summary>
         <div class="mt-3 stack tight">
           <div class="option-list">
@@ -138,7 +138,7 @@
               <span class="check-sub" data-i18n="sinnvoll-wenn-die-lokale-hardware-gerade">Sinnvoll, wenn die lokale Hardware gerade nicht verfügbar ist.</span>
             </span>
           </label>
-          <p class="hint">Später im <a href="profile.html" class="link">Profil</a> jederzeit änderbar.</p>
+          <p class="hint" data-i18n-html="register.role_hint">Später im <a href="profile.html" class="link">Profil</a> jederzeit änderbar.</p>
         </div>
       </details>
 
@@ -156,6 +156,35 @@
     </p>
   </section>
 </main>
+
+<footer class="auth-foot">
+  <span id="auth-foot-version">CoMesh</span>
+  <span class="dot" aria-hidden="true">·</span>
+  <span data-i18n="login.foot.openai">OpenAI-kompatible API</span>
+  <span class="dot" aria-hidden="true">·</span>
+  <a href="hilfe.html" class="link" data-i18n="help.link">Anleitung</a>
+</footer>
+<script>
+/* Produkt und Version aus der laufenden API — eine Fußzeile mit echter Information
+   ist ehrlicher als eine mit einem dekorativen Strich. */
+(function () {
+  var ziel = document.getElementById("auth-foot-version");
+  if (!ziel) return;
+  // Erst nach dem Laden fragen: config.js und app.js setzen die API-Adresse und
+  // stehen weiter unten im Dokument.
+  function fuellen() {
+  // /version ist über den Frontend-Port nicht erreichbar (der Proxy kennt nur
+  // /api/v1/...), /api/health schon. Also kein Versionsnummer-Raten, sondern ein
+  // ehrliches Signal: Punkt leuchtet, wenn das Portal antwortet.
+  fetch((window.API_BASE || "") + "/health", { cache: "no-store" })
+    .then(function (r) { if (r.ok) ziel.classList.add("is-online"); })
+    .catch(function () { /* Punkt bleibt blass */ });
+  }
+  if (document.readyState === "complete") fuellen();
+  else window.addEventListener("load", fuellen);
+})();
+</script>
+
 
 <script defer src="https://unpkg.com/alpinejs@3.5.1/dist/cdn.min.js"></script>
 <script src="config.js"></script>

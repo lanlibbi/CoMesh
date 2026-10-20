@@ -407,6 +407,66 @@ window.GP_I18N = {
    "es": "¿Aún sin cuenta? <a href=\"register.html\" class=\"link\">Registrarse</a>.",
    "fr": "Pas encore de compte ? <a href=\"register.html\" class=\"link\">S'inscrire</a>."
   },
+  "login.point.api": {
+   "en": "<b>OpenAI-compatible API.</b> Existing clients and SDKs work without changes.",
+   "de": "<b>OpenAI-kompatible API.</b> Bestehende Clients und SDKs funktionieren ohne Anpassung.",
+   "es": "<b>API compatible con OpenAI.</b> Los clientes y SDK existentes funcionan sin cambios.",
+   "fr": "<b>API compatible OpenAI.</b> Les clients et SDK existants fonctionnent sans modification."
+  },
+  "login.point.hardware": {
+   "en": "<b>Bring your own hardware.</b> The Node agent runs as a container and reports the GPU to the Pool.",
+   "de": "<b>Eigene Hardware einbringen.</b> Der Node-Agent läuft als Container und meldet die GPU an den Pool.",
+   "es": "<b>Aporta tu propio hardware.</b> El agente Node se ejecuta como contenedor y anuncia la GPU al Pool.",
+   "fr": "<b>Apportez votre matériel.</b> L'agent Node tourne en conteneur et annonce le GPU au Pool."
+  },
+  "login.point.models": {
+   "en": "<b>Models stay under control.</b> Whitelist per Node and per account, cloud models unlocked explicitly.",
+   "de": "<b>Modelle bleiben kontrollierbar.</b> Pro Node und pro Konto als Whitelist steuerbar, Cloud-Modelle explizit freizuschalten.",
+   "es": "<b>Los Model siguen controlables.</b> Lista blanca por Node y por cuenta, Model en la nube se habilitan explícitamente.",
+   "fr": "<b>Les Model restent contrôlables.</b> Liste blanche par Node et par compte, Model cloud débloqués explicitement."
+  },
+  "register.role.consumer": {
+   "en": "<b>Consumer.</b> Use the API, provide no hardware. For machines without a usable GPU.",
+   "de": "<b>Consumer.</b> API nutzen, keine Hardware bereitstellen. Für Rechner ohne nutzbare GPU.",
+   "es": "<b>Consumer.</b> Usar la API, sin aportar hardware. Para equipos sin GPU utilizable.",
+   "fr": "<b>Consumer.</b> Utiliser l'API, sans fournir de matériel. Pour les machines sans GPU utilisable."
+  },
+  "register.role.provider": {
+   "en": "<b>Provider.</b> Register Nodes and earn Credits, no own API calls.",
+   "de": "<b>Provider.</b> Nodes registrieren und Credits verdienen, keine eigenen API-Calls.",
+   "es": "<b>Provider.</b> Registrar Nodes y ganar Credits, sin llamadas propias a la API.",
+   "fr": "<b>Provider.</b> Enregistrer des Nodes et gagner des Credits, sans appels API propres."
+  },
+  "register.role.both": {
+   "en": "<b>Both.</b> Full access — contribute and use at the same time.",
+   "de": "<b>Beides.</b> Voller Zugriff — Einbringen und Nutzen gleichzeitig.",
+   "es": "<b>Ambos.</b> Acceso completo: aportar y usar a la vez.",
+   "fr": "<b>Les deux.</b> Accès complet — apporter et utiliser en même temps."
+  },
+  "register.models_limited": {
+   "en": "Limit the models",
+   "de": "Modelle einschränken",
+   "es": "Limitar los Model",
+   "fr": "Limiter les Model"
+  },
+  "register.models_optional": {
+   "en": "optional — empty means: all local models, no cloud",
+   "de": "optional — leer bedeutet: alle lokalen Modelle, keine Cloud",
+   "es": "opcional — vacío significa: todos los Model locales, sin nube",
+   "fr": "facultatif — vide signifie : tous les Model locaux, sans cloud"
+  },
+  "register.role_hint": {
+   "en": "Can be changed any time later in the <a href=\"profile.html\" class=\"link\">profile</a>.",
+   "de": "Später im <a href=\"profile.html\" class=\"link\">Profil</a> jederzeit änderbar.",
+   "es": "Se puede cambiar en cualquier momento en el <a href=\"profile.html\" class=\"link\">perfil</a>.",
+   "fr": "Modifiable à tout moment dans le <a href=\"profile.html\" class=\"link\">profil</a>."
+  },
+  "login.foot.openai": {
+   "en": "OpenAI-compatible API",
+   "de": "OpenAI-kompatible API",
+   "es": "API compatible con OpenAI",
+   "fr": "API compatible OpenAI"
+  },
   "login.tagline": {
    "en": "Contribute GPUs to the pool, use the whole pool through one OpenAI-compatible API — free and powered by your community.",
    "de": "Stelle GPUs für den Pool bereit und nutze den ganzen Pool über eine einzige OpenAI-kompatible API — kostenlos und von deiner Community getragen.",

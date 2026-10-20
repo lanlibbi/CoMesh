@@ -1536,3 +1536,70 @@ td.neg { color: var(--err); }
 }
 @media (prefers-reduced-motion: reduce) { .auth-mesh { opacity: .7; } }
 
+
+/* ---------------------------------------------- Anmeldeseite: Material und Abschluss */
+/* Die Karte soll im Licht stehen, nicht auf dem Papier liegen: leicht durchscheinend,
+   mit Lichtkante oben und einem warmen Schein darunter. */
+.auth-card {
+  backdrop-filter: blur(14px) saturate(1.08);
+  -webkit-backdrop-filter: blur(14px) saturate(1.08);
+  background:
+    linear-gradient(180deg, rgb(var(--tint-rgb) / 0.055), rgb(var(--tint-rgb) / 0) 42%),
+    color-mix(in srgb, var(--surface) 84%, transparent);
+  border-color: var(--line-strong);
+  box-shadow:
+    inset 0 1px 0 rgb(var(--tint-rgb) / 0.11),
+    0 30px 70px -34px rgb(0 0 0 / 0.62),
+    0 20px 64px -34px rgb(201 162 74 / 0.34);
+}
+
+/* Abschluss unten: eine schmale Zeile mit echter Information statt eines harten Endes. */
+.auth-foot {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 20px 16px 30px;
+  font-size: 0.78rem;
+  letter-spacing: 0.02em;
+  color: var(--text-mute);
+}
+.auth-foot .dot { opacity: 0.4; }
+.auth-foot #auth-foot-version {
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 0.74rem;
+  letter-spacing: 0.04em;
+  opacity: 0.85;
+}
+.auth-foot a.link { color: var(--text-dim); }
+.auth-foot a.link:hover { color: var(--text); }
+
+/* Die Anmeldefläche füllte das ganze Fenster und schob die Fußzeile unter die Falz.
+   Fußzeilenhöhe abziehen, damit beides zusammen genau ein Fenster ergibt. */
+.auth-wrap { min-height: calc(100vh - 82px); }
+@media (max-width: 780px) {
+  .auth-wrap { min-height: auto; padding-bottom: 24px; }
+}
+
+/* Zustandspunkt in der Fußzeile: blass, solange nichts antwortet; grün, wenn das
+   Portal erreichbar ist. Kein dekorativer Punkt, sondern eine Messung. */
+.auth-foot #auth-foot-version::before {
+  content: "";
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-right: 7px;
+  border-radius: 50%;
+  vertical-align: 1px;
+  background: var(--text-mute);
+  opacity: 0.45;
+  transition: background 200ms ease, opacity 200ms ease, box-shadow 200ms ease;
+}
+.auth-foot #auth-foot-version.is-online::before {
+  background: #6fd3a0;
+  opacity: 1;
+  box-shadow: 0 0 7px rgb(111 211 160 / 0.65);
+}

@@ -113,13 +113,26 @@
       var d = Math.sqrt(dx * dx + dy * dy);
       var naehe = Math.max(0, 1 - d / (w * 0.6));
       var mitPaket = pakete.some(function (pk) { return pk.kante === e; });
-      ctx.strokeStyle = mitPaket ? farben.aktiv : farben.linie;
+      // Leitungen bekommen einen Verlauf statt einer flachen Farbe: das Auge liest
+      // dann eine Ader mit Licht drin, keinen gezogenen Strich. Aktive Adern glühen.
+      if (mitPaket) {
+        var verlauf = ctx.createLinearGradient(a.x, a.y, b.x, b.y);
+        verlauf.addColorStop(0, farben.aktiv);
+        verlauf.addColorStop(0.5, farben.akzent);
+        verlauf.addColorStop(1, farben.aktiv);
+        ctx.strokeStyle = verlauf;
+        ctx.shadowBlur = 6 * stufe;
+        ctx.shadowColor = farben.akzent;
+      } else {
+        ctx.strokeStyle = farben.linie;
+      }
       ctx.lineWidth = (mitPaket ? 1.1 : 1) * stufe;
       ctx.globalAlpha = 0.14 + naehe * 0.34 + (mitPaket ? 0.16 : 0);
       ctx.beginPath();
       ctx.moveTo(a.x, a.y);
       ctx.quadraticCurveTo(a.x + dx * 0.5, a.y + dy * 0.5 - 5 * naehe * stufe, b.x, b.y);
       ctx.stroke();
+      ctx.shadowBlur = 0;
     }
 
     // Knoten: Hubs mit Ring, Blätter als Punkt
@@ -153,11 +166,14 @@
       var mt = 1 - pk.t;
       var px = mt * mt * pa.x + 2 * mt * pk.t * mx + pk.t * pk.t * pb.x;
       var py = mt * mt * pa.y + 2 * mt * pk.t * my + pk.t * pk.t * pb.y;
-      ctx.globalAlpha = 0.9;
+      ctx.globalAlpha = 0.95;
       ctx.fillStyle = farben.akzent;
+      ctx.shadowBlur = 9 * stufe;
+      ctx.shadowColor = farben.akzent;
       ctx.beginPath();
       ctx.arc(px, py, 1.9 * stufe, 0, Math.PI * 2);
       ctx.fill();
+      ctx.shadowBlur = 0;
     }
     ctx.globalAlpha = 1;
   }
