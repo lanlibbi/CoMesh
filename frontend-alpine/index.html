@@ -146,15 +146,19 @@
           <p>Für <code class="inline">/v1/chat/completions</code> und <code class="inline">/v1/models</code>.</p>
         </div>
         <div class="row">
-          <button class="btn-ghost btn-sm" @click="revealKey = !revealKey" x-text="revealKey ? 'Verbergen' : 'Anzeigen'"></button>
-          <button class="btn-ghost btn-sm" @click="copyKey($event)" data-i18n="kopieren">Kopieren</button>
-          <button class="btn-ghost btn-sm" @click="regenerate()" :disabled="regenerating">
-            <span x-show="!regenerating" data-i18n="neu-ausstellen">Neu ausstellen</span>
-            <span x-show="regenerating">…</span>
-          </button>
+          <button x-show="isApiKey" class="btn-ghost btn-sm" @click="revealKey = !revealKey"
+                  x-text="revealKey ? I18n.t('verbergen') : I18n.t('anzeigen')"></button>
+          <button x-show="isApiKey" class="btn-ghost btn-sm" @click="copyKey($event)" data-i18n="kopieren">Kopieren</button>
+          <button class="btn-primary btn-sm" @click="regenerate()" :disabled="regenerating"
+                  data-i18n="api_key_issue">API-Schlüssel ausstellen</button>
         </div>
       </div>
-      <pre class="code mono" x-text="revealKey ? (apiKey || '—') : maskKey(apiKey)"></pre>
+      <template x-if="isApiKey">
+        <pre class="code mono" x-text="revealKey ? apiKey : maskKey(apiKey)"></pre>
+      </template>
+      <template x-if="!isApiKey">
+        <p class="hint" data-i18n="api_key_session_only">Im Browser arbeitest du mit einer Sitzung, nicht mit einem API-Schlüssel. Für ein Programm, einen Hermes oder ein SDK stelle hier einen Schlüssel aus — er beginnt mit <code class="inline">gpu_</code> und wird genau einmal angezeigt.</p>
+      </template>
       <p class="hint">
         Header: <code class="inline" data-i18n="authorization-bearer-lt-api-key-gt">Authorization: Bearer &lt;api-key&gt;</code>
         <span class="t-sm text-dim" data-i18n="api_key_no_bearer">— in Konfigurationsdateien und SDKs
@@ -270,6 +274,11 @@
           }
         },
 
+        get isApiKey() {
+          // Nur ein echter Schluessel beginnt mit gpu_; die Sitzung heisst sess_.
+          return typeof this.apiKey === "string" && this.apiKey.startsWith("gpu_");
+        },
+
         maskKey(k) {
           if (!k) return "—";
           if (k.length < 16) return "•".repeat(k.length);
@@ -303,18 +312,19 @@
         },
 
         async regenerate() {
-          if (!confirm("Neuen API-Key ausstellen? Der bisherige wird sofort ungültig.")) return;
+          // Frueher war das ein erneuter Login — die Antwort enthielt die Sitzungsmarke
+          // (sess_...), und die stand dann als "API-Key" im Feld. Jetzt ein echter Schluessel.
+          if (!confirm(I18n.t("api_key_confirm"))) return;
           this.regenerating = true;
           try {
-            // POC: re-login issues a fresh key and deactivates the old one.
-            const pw = prompt("Passwort zur Bestätigung:");
+            const pw = prompt(I18n.t("password_confirm"));
             if (!pw) { this.regenerating = false; return; }
-            const r = await API("/auth/login", { method: "POST", body: { email: this.me.email, password: pw } });
-            Auth.save({ ...this.me, credits: r.credits }, r.api_key);
+            const r = await API("/v1/me/keys", { method: "POST", auth: true, body: { password: pw } });
             this.apiKey = r.api_key;
+            this.revealKey = true;
             this.newKey = r.api_key;
             this.showNewKey = true;
-            toast("Neuer API-Key ausgestellt — jetzt sichern.");
+            toast(I18n.t("api_key_issued_toast"));
           } catch (e) {
             toast("Fehlgeschlagen: " + e.message, "err");
           } finally {

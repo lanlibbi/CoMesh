@@ -537,6 +537,62 @@ async def list_models(_user: User = Depends(get_current_user)):
     }
 
 
+class IssueMyKeyRequest(BaseModel):
+    password: str
+
+
+@app.post("/v1/me/keys")
+def issue_my_key(
+    req: IssueMyKeyRequest,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Einen API-Schluessel fuer das eigene Konto ausstellen.
+
+    Der Schluessel wird genau einmal zurueckgegeben. Fruehere API-Schluessel des
+    Kontos werden dabei ungueltig; Sitzungsmarken (`sess_...`) bleiben unberuehrt,
+    sonst wuerde sich der Aufrufer mit diesem Aufruf selbst abmelden.
+    """
+    ok, _needs_upgrade = verify_password(req.password or "", user.password_hash)
+    if not ok:
+        raise HTTPException(status_code=401, detail="Password incorrect.")
+
+    for k in db.query(ApiKey).filter(ApiKey.user_id == user.id, ApiKey.is_active == True).all():  # noqa: E712
+        if (k.key_prefix or "").startswith("gpu_"):
+            k.is_active = False
+
+    raw, key_hash, key_prefix = generate_api_key()
+    db.add(ApiKey(
+        user_id=user.id,
+        key_hash=key_hash,
+        key_prefix=key_prefix,
+        label="self-service",
+        is_active=True,
+        created_at=__import__("datetime").datetime.utcnow(),
+    ))
+    db.commit()
+    log.info(f"API key issued for user {user.id} via self-service")
+    return {"api_key": raw, "key_prefix": key_prefix}
+
+
+@app.get("/v1/me/keys")
+def list_my_keys(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Nur Praefixe und Datum — der Schluessel selbst ist nicht rekonstruierbar."""
+    return {
+        "keys": [
+            {
+                "prefix": k.key_prefix,
+                "label": k.label,
+                "is_active": bool(k.is_active),
+                "created_at": k.created_at.isoformat() if k.created_at else None,
+            }
+            for k in db.query(ApiKey).filter(
+                ApiKey.user_id == user.id,
+                ApiKey.key_prefix.like("gpu_%"),
+            ).order_by(ApiKey.id.desc()).all()
+        ]
+    }
+
 @app.get("/v1/me")
 def me(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     """Current user info + credit balance (+ the credits feature flag)."""

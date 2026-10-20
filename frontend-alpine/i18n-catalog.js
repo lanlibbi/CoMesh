@@ -1313,6 +1313,36 @@ window.GP_I18N = {
    "es": "Estos son los Model que el Pool ofrece ahora. Solo quien aporta un Node puede liberarlos: rol provider o ambos.",
    "fr": "Voici les Model que le Pool propose actuellement. Seuls ceux qui apportent un Node peuvent les libérer — rôle provider ou les deux."
   },
+  "api_key_issue": {
+   "en": "Issue API key",
+   "de": "API-Schlüssel ausstellen",
+   "es": "Emitir API-Key",
+   "fr": "Émettre une API-Key"
+  },
+  "api_key_session_only": {
+   "en": "In the browser you work with a session, not an API key. For a program, a Hermes or an SDK issue a key here — it starts with <code class=\"inline\">gpu_</code> and is shown exactly once.",
+   "de": "Im Browser arbeitest du mit einer Sitzung, nicht mit einem API-Schlüssel. Für ein Programm, einen Hermes oder ein SDK stelle hier einen Schlüssel aus — er beginnt mit <code class=\"inline\">gpu_</code> und wird genau einmal angezeigt.",
+   "es": "En el navegador trabajas con una sesión, no con un API-Key. Para un programa, un Hermes o un SDK emite aquí una clave: empieza con <code class=\"inline\">gpu_</code> y se muestra una sola vez.",
+   "fr": "Dans le navigateur, vous travaillez avec une session, pas avec une API-Key. Pour un programme, un Hermes ou un SDK, émettez une clé ici — elle commence par <code class=\"inline\">gpu_</code> et n'est affichée qu'une seule fois."
+  },
+  "api_key_confirm": {
+   "en": "Issue a new API key? A previously issued key becomes invalid.",
+   "de": "Neuen API-Schlüssel ausstellen? Ein früher ausgestellter Schlüssel wird dabei ungültig.",
+   "es": "¿Emitir un nuevo API-Key? Una clave emitida antes deja de ser válida.",
+   "fr": "Émettre une nouvelle API-Key ? Une clé précédemment émise devient invalide."
+  },
+  "api_key_issued_toast": {
+   "en": "New API key issued — copy it now, it is shown only once.",
+   "de": "Neuer API-Schlüssel ausgestellt — jetzt kopieren, er wird nur einmal angezeigt.",
+   "es": "Nuevo API-Key emitido: cópialo ahora, se muestra solo una vez.",
+   "fr": "Nouvelle API-Key émise — copiez-la maintenant, elle n'est affichée qu'une fois."
+  },
+  "password_confirm": {
+   "en": "Password to confirm:",
+   "de": "Passwort zur Bestätigung:",
+   "es": "Contraseña para confirmar:",
+   "fr": "Mot de passe pour confirmer :"
+  },
   "gpu-bereitstellen": {
    "en": "Contribute a GPU",
    "de": "GPU bereitstellen",
