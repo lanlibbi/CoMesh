@@ -2,7 +2,16 @@
 
 Komplette Referenz aller HTTP-Endpoints des CoMesh-Portals.
 
-**Base-URL:** `http://portal-host:8765` — `portal-host` steht fuer den Namen, unter dem DU das Portal erreichst (DNS-/mDNS-Name, LAN-IP, Name im Mesh-VPN; ein Name ueberlebt einen DHCP-Lease-Wechsel).
+**Base-URL:** `https://<portal>/v1` — ueber einen oeffentlichen Namen **ohne Port** (TLS auf 443).
+Im eigenen Netz stattdessen `http://<host>:8765/v1`: dort ist die API der Port **8765**, die
+Oberflaeche hoert auf **8767**. `<portal>` ist der Name, unter dem DU das Portal erreichst
+(oeffentlicher Name, DNS-/mDNS-Name, LAN-IP, Name im Mesh-VPN; ein Name ueberlebt einen
+DHCP-Lease-Wechsel). Beide Wege sprechen dieselbe API.
+
+**Schluessel:** in der HTTP-Kopfzeile `Authorization: Bearer <api-key>` — das Wort `Bearer`
+gehoert dazu. In einer Konfigurationsdatei oder im SDK (`api_key="…"`, `api_key: …`) steht
+**nur der Schluessel**; die Bibliothek setzt `Bearer` selbst davor. Wer dort `Bearer …`
+eintraegt, schickt es doppelt und bekommt 401.
 **Content-Type:** `application/json` (außer bei File-Uploads)
 
 ---

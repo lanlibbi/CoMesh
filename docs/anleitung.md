@@ -14,7 +14,9 @@ combinable: **users** need an OpenAI-compatible client and a key (nothing to ins
 **providers** run the node agent as a container and decide which models their machine offers.
 
 Getting started: create an account → wait for administrator approval → copy the key from the
-profile (shown once) → call `<portal>:8765/v1` → watch usage under *My usage*. Usage is
+profile (shown once) → call `<portal>/v1` (no port behind https; locally 8765 instead of 8767) →
+watch usage under *My usage*. Send the key as `Authorization: Bearer <key>`; in a config file or
+SDK only the key itself, the library adds `Bearer`. Usage is
 measured in credits; contributing a GPU earns them. Errors: 401 key, 403 not approved,
 429 too fast, 502 no machine offering the model, 524 timeout (use `stream=True`).
 Your input runs on someone else's machine — no secrets, no personal data.
@@ -41,13 +43,15 @@ Zwei Rollen, kombinierbar:
 2. **Freigabe abwarten** — ein Administrator schaltet es frei. Erst dann sind Modelle erreichbar.
 3. **Schlüssel holen** im Profil. Er wird **einmal** angezeigt; ein neuer Schlüssel macht den alten
    ungültig.
-4. **Ersten Aufruf machen** gegen `<portal>:8765/v1`.
+4. **Ersten Aufruf machen** gegen `<portal>/v1`. Über einen öffentlichen Namen mit HTTPS **ohne
+   Port** (443 ist implizit); im eigenen Netz stattdessen `http://<host>:8765/v1` — dort ist 8765
+   die API und 8767 die Oberfläche.
 5. **Verbrauch ansehen** unter „Mein Verbrauch".
 
 ## Erster Aufruf
 
 ```bash
-curl -s http://PORTAL:8765/v1/chat/completions \
+curl -s https://PORTAL/v1/chat/completions \
   -H "Authorization: Bearer DEIN-SCHLUESSEL" \
   -H "Content-Type: application/json" \
   -d '{"model": "llama3.2", "messages": [{"role": "user", "content": "Sag kurz hallo"}]}'
@@ -56,7 +60,8 @@ curl -s http://PORTAL:8765/v1/chat/completions \
 ```python
 from openai import OpenAI
 
-client = OpenAI(base_url="http://PORTAL:8765/v1", api_key="DEIN-SCHLUESSEL")
+client = OpenAI(base_url="https://PORTAL/v1", api_key="DEIN-SCHLUESSEL")  # nur der Schluessel,
+#                                                                      kein "Bearer " davor
 antwort = client.chat.completions.create(
     model="llama3.2",
     messages=[{"role": "user", "content": "Sag kurz hallo"}],
@@ -71,6 +76,35 @@ bleiben (524). Mit Streaming kommen die Wörter, während sie entstehen.
 
 Welche Modelle gerade verfügbar sind: `GET /v1/models` mit demselben Schlüssel. Ein Modell kann
 zusätzlich pro Konto freigegeben werden müssen.
+
+## Schlüssel und Adresse
+
+**Adresse.** Dieselbe Adresse, unter der du das Portal öffnest, plus `/v1` — fertig.
+
+| Wie du das Portal erreichst | Adresse für Modelle |
+| --- | --- |
+| `https://comesh.lanlibbilab.me` (öffentlich) | `https://comesh.lanlibbilab.me/v1` — **kein Port** |
+| `http://100.126.79.111:8767` (im eigenen Netz) | `http://100.126.79.111:8765/v1` — Port **8765** |
+
+Ein Port gehört nur dann in die Adresse, wenn du ihn auch für das Portal brauchst. Hinter einem
+öffentlichen HTTPS-Namen ist es 443, und das schreibt niemand mit. Im eigenen Netz sind es zwei
+verschiedene Ports: **8767** für die Oberfläche, **8765** für die API.
+
+**Schlüssel.** In der HTTP-Kopfzeile gehört das Wort dazu:
+
+```
+Authorization: Bearer DEIN-SCHLUESSEL
+```
+
+In einer Konfigurationsdatei oder im SDK steht **nur der Schlüssel** — die Bibliothek setzt `Bearer`
+selbst davor:
+
+```yaml
+base_url: https://comesh.lanlibbilab.me/v1
+api_key:  DEIN-SCHLUESSEL          # ohne "Bearer"
+```
+
+Wer in einer Konfiguration `Bearer …` einträgt, schickt es doppelt und bekommt 401.
 
 ## Credits
 

@@ -157,6 +157,8 @@
       <pre class="code mono" x-text="revealKey ? (apiKey || '—') : maskKey(apiKey)"></pre>
       <p class="hint">
         Header: <code class="inline" data-i18n="authorization-bearer-lt-api-key-gt">Authorization: Bearer &lt;api-key&gt;</code>
+        <span class="t-sm text-dim" data-i18n="api_key_no_bearer">— in Konfigurationsdateien und SDKs
+          nur der Schlüssel, ohne &quot;Bearer&quot;.</span>
       </p>
     </div>
 
@@ -227,7 +229,7 @@
         loading: true,
         usage: null,
         recent: [],
-        exampleCurl: `curl http://localhost:8765/v1/chat/completions \\
+        exampleCurl: `curl ${location.origin}/v1/chat/completions \\
   -H "Authorization: Bearer $GPU_POOL_KEY" \\
   -H "Content-Type: application/json" \\
   -d '{"model":"qwen2.5-coder:7b","messages":[{"role":"user","content":"hi"}]}'`,

@@ -79,6 +79,12 @@ KEYS = {
         "es": 'API compatible con OpenAI',
         "fr": 'API compatible OpenAI',
     },
+    "api_key_no_bearer": {
+        'en': '— in config files and SDKs only the key, without "Bearer".',
+        'de': '— in Konfigurationsdateien und SDKs nur der Schlüssel, ohne „Bearer".',
+        'es': '— en archivos de configuración y SDKs solo la clave, sin "Bearer".',
+        'fr': '— dans les fichiers de configuration et SDK, seulement la clé, sans « Bearer ».',
+    },
     "login.tagline": {"en": "Contribute GPUs to the pool, use the whole pool through one OpenAI-compatible API — free and powered by your community.", "de": "Stelle GPUs für den Pool bereit und nutze den ganzen Pool über eine einzige OpenAI-kompatible API — kostenlos und von deiner Community getragen.", "es": "Aporta GPUs al pool y usa todo el pool a través de una única API compatible con OpenAI: gratis y sostenido por tu comunidad.", "fr": "Apportez des GPU au pool et utilisez tout le pool via une seule API compatible OpenAI — gratuit et porté par votre communauté."},
     # =========================================================== login.html
 
