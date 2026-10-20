@@ -226,12 +226,21 @@ bash scripts/smoke_admin.sh http://localhost:8765 "$ADMIN_API_KEY"   # live HTTP
 
 ---
 
+## Anleitung für Einsteiger
+
+Wer CoMesh nicht kennt: die Seite **`/hilfe.html`** im Portal erklärt in einfacher Sprache,
+was das Werkzeug ist, wofür es gebaut wurde, wie der erste Aufruf aussieht, was Credits sind
+und was die Fehlercodes bedeuten. Sie funktioniert ohne Anmeldung und ist aus dem Menü
+verlinkt („Anleitung"). Quelle: `frontend-alpine/hilfe.html`, Langfassung für die
+Projektarbeit in `docs/anleitung.md`.
+
 ## Documentation
 
 - [ARCHITECTURE.md](ARCHITECTURE.md) — ASCII diagram and data flows
 - [docs/architecture.md](docs/architecture.md) — deep-dive architecture
 - [docs/portal.md](docs/portal.md) — portal setup, config, API
 - [docs/node-agent.md](docs/node-agent.md) — node-agent setup and deployment
+- [docs/anleitung.md](docs/anleitung.md) — **user guide** (German): what CoMesh is, first request, credits, error codes
 - [docs/api.md](docs/api.md) — full API reference
 - [docs/network.md](docs/network.md) — addressing, DHCP, mDNS, optional mesh VPN
 - [docs/windows.md](docs/windows.md) — running a **provider** on Windows (LM Studio or

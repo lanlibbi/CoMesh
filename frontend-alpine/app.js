@@ -157,6 +157,7 @@ const NAV_ITEMS = [
   { key: "pool", href: "pool.html", labelKey: "nav.pool" },
   { key: "nodes", href: "nodes.html", labelKey: "nav.nodes", providerOnly: true },
   { key: "agent", href: "agent.html", labelKey: "nav.agent" },
+  { key: "hilfe", href: "hilfe.html", labelKey: "nav.help", label: "Anleitung" },
   { key: "profile", href: "profile.html", labelKey: "nav.profile" },
 ];
 

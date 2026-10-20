@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Anleitung · CoMesh</title>
+<meta name="color-scheme" content="dark light" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<script>
+/* Theme vor dem Stylesheet setzen, damit der erste Aufbau schon stimmt. */
+(function () {
+  try {
+    var stored = localStorage.getItem("gp_theme");
+    var theme = (stored === "light" || stored === "dark") ? stored
+      : (window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
+    document.documentElement.setAttribute("data-theme", theme);
+  } catch (e) {
+    document.documentElement.setAttribute("data-theme", "dark");
+  }
+})();
+</script>
+<link rel="stylesheet" href="style.css" />
+<style>
+  /* Nur für diese Seite: Codeblöcke und eine schlichte Tabelle. */
+  .hilfe pre {
+    margin: 10px 0 0; padding: 14px 16px; overflow-x: auto;
+    background: var(--bg-2, rgba(255,255,255,.04));
+    border: 1px solid var(--line, rgba(255,255,255,.1)); border-radius: 10px;
+    font-family: "JetBrains Mono", ui-monospace, monospace; font-size: .82rem; line-height: 1.5;
+  }
+  .hilfe .schritte { counter-reset: s; list-style: none; padding: 0; margin: 0; display: grid; gap: 12px; }
+  .hilfe .schritte li { counter-increment: s; position: relative; padding-left: 46px; }
+  .hilfe .schritte li::before {
+    content: counter(s, decimal-leading-zero); position: absolute; left: 0; top: 1px;
+    font-family: "JetBrains Mono", monospace; font-size: .78rem; opacity: .6;
+    border: 1px solid var(--line, rgba(255,255,255,.15)); border-radius: 8px;
+    padding: 2px 7px;
+  }
+  .hilfe .zwei { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+  .hilfe .code-liste { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+  .hilfe .code-liste li { display: grid; grid-template-columns: 92px 1fr; gap: 12px; align-items: baseline; }
+  .hilfe .code-liste .nr { font-family: "JetBrains Mono", monospace; font-size: .8rem; opacity: .75; }
+  .hilfe h2 { margin-top: 34px; }
+  .hilfe .fussnote { margin-top: 40px; opacity: .7; font-size: .82rem; }
+</style>
+</head>
+<body class="hilfe">
+<main class="shell">
+
+  <div class="row" style="justify-content:space-between;align-items:center;margin-bottom:28px;flex-wrap:wrap;gap:12px">
+    <a href="index.html" class="brand">
+      <span class="brand-mark" aria-hidden="true">
+        <svg class="brand-glyph" width="26" height="26" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 2.7 20.1 7.35v9.3L12 21.3 3.9 16.65v-9.3z"/>
+        <path d="M12 7.6 16.2 15.1H7.8z" stroke-opacity="0.5"/>
+        <circle cx="12" cy="7.6" r="1.55" fill="currentColor" stroke="none"/>
+        <circle cx="16.2" cy="15.1" r="1.55" fill="currentColor" stroke="none"/>
+        <circle cx="7.8" cy="15.1" r="1.55" fill="currentColor" stroke="none"/>
+        <circle cx="12" cy="12.1" r="0.9" fill="currentColor" stroke="none" fill-opacity="0.55"/>
+      </svg>
+      </span>
+      <span class="brand-text">
+        <strong>CoMesh</strong>
+        <span>Your compute, meshed.</span>
+      </span>
+    </a>
+    <div class="row" style="gap:10px">
+      <a class="btn-ghost btn-sm" href="login.html">Anmelden</a>
+      <a class="btn-primary btn-sm" href="register.html">Konto anlegen</a>
+    </div>
+  </div>
+
+  <div class="page-head">
+    <div class="eyebrow">Anleitung</div>
+    <h1>Was ist CoMesh?</h1>
+    <p class="lede">
+      CoMesh ist ein gemeinschaftlicher Zugang zu Rechenleistung für KI-Modelle. Wer einen Rechner
+      mit freier Grafikkarte hat, stellt sie dem Pool zur Verfügung. Wer Modelle nutzen will, holt
+      sie sich über eine einzige Schnittstelle, die genauso aussieht wie die von OpenAI — ohne
+      eigene Hardware und ohne Abo.
+    </p>
+  </div>
+
+  <div class="notice mb-4">
+    <span class="notice-icon" aria-hidden="true">i</span>
+    <span>Diese Seite erklärt das Werkzeug für Einsteiger. Sie funktioniert ohne Anmeldung.
+      Zum Mitmachen brauchst du ein Konto — die Freigabe macht ein Administrator.</span>
+  </div>
+
+  <h2>Für wen ist das gedacht?</h2>
+  <div class="zwei">
+    <div class="card">
+      <div class="eyebrow">Wenn du Modelle nutzen willst</div>
+      <p class="t-sm text-dim mt-2">
+        Du willst einen Chat, eine Übersetzung oder eine Bildbeschreibung mit einem Modell, hast
+        aber keine passende Grafikkarte. Du brauchst hier nichts zu installieren: ein
+        OpenAI-kompatibler Client und ein Schlüssel genügen. Das kann die Weboberfläche sein, ein
+        Programm wie LM Studio, oder ein eigenes Skript.
+      </p>
+    </div>
+    <div class="card">
+      <div class="eyebrow">Wenn du eine GPU beisteuern willst</div>
+      <p class="t-sm text-dim mt-2">
+        Du hast einen Rechner mit Grafikkarte, die meistens leer steht. Ein kleiner Agent läuft dort
+        als Container, meldet die Karte an den Pool und nimmt Aufträge an. Die Modelle, die dein
+        Rechner anbietet, legst du selbst fest. Du kannst beides gleichzeitig sein: Nutzer und
+        Anbieter.
+      </p>
+    </div>
+  </div>
+
+  <h2>In fünf Schritten loslegen</h2>
+  <ol class="schritte">
+    <li>
+      <b>Konto anlegen.</b> Auf <a class="link" href="register.html">Registrieren</a> mit E-Mail und
+      Passwort. Danach ist das Konto <i>angemeldet</i>, aber noch nicht freigegeben.
+    </li>
+    <li>
+      <b>Freigabe abwarten.</b> Ein Administrator prüft das Konto und schaltet es frei. Erst dann
+      kannst du Modelle aufrufen. Das ist Absicht: der Pool gehört der Gemeinschaft, nicht dem
+      offenen Netz.
+    </li>
+    <li>
+      <b>Schlüssel holen.</b> Im Profil steht dein API-Schlüssel. Er wird beim Anlegen <b>einmal</b>
+      angezeigt — kopiere ihn dort heraus. Wer ihn verliert, lässt sich im Profil einen neuen
+      ausstellen; der alte wird damit ungültig.
+    </li>
+    <li>
+      <b>Ersten Aufruf machen.</b> Die Schnittstelle antwortet unter <code class="inline">&lt;portal-adresse&gt;:8765/v1</code>
+      und spricht dieselbe Sprache wie OpenAI. Beispiele stehen direkt darunter.
+    </li>
+    <li>
+      <b>Verbrauch im Blick behalten.</b> Unter <a class="link" href="usage.html">Mein Verbrauch</a>
+      siehst du, welche Modelle du genutzt hast und wie viele Token durchgelaufen sind.
+    </li>
+  </ol>
+
+  <h2>Dein erster Aufruf</h2>
+  <p class="t-sm text-dim">
+    Ersetze <code class="inline">DEIN-SCHLUESSEL</code> durch den Schlüssel aus deinem Profil und
+    <code class="inline">PORTAL</code> durch die Adresse des Portals (Port 8765).
+  </p>
+
+  <div class="card mt-3">
+    <div class="eyebrow">Im Terminal</div>
+    <pre>curl -s http://PORTAL:8765/v1/chat/completions \
+  -H "Authorization: Bearer DEIN-SCHLUESSEL" \
+  -H "Content-Type: application/json" \
+  -d '{"model": "llama3.2", "messages": [{"role": "user", "content": "Sag kurz hallo"}]}'</pre>
+
+    <div class="eyebrow mt-5">In Python, mit dem OpenAI-SDK</div>
+    <pre>from openai import OpenAI
+
+client = OpenAI(base_url="http://PORTAL:8765/v1", api_key="DEIN-SCHLUESSEL")
+
+antwort = client.chat.completions.create(
+    model="llama3.2",
+    messages=[{"role": "user", "content": "Sag kurz hallo"}],
+    stream=True,
+)
+for stueck in antwort:
+    print(stueck.choices[0].delta.content or "", end="", flush=True)</pre>
+
+    <p class="hint mt-3">
+      <b>Streaming einschalten.</b> Ohne <code class="inline">stream=True</code> kann eine lange
+      Antwort an Zwischenschichten hängen bleiben. Mit Streaming kommen die Wörter, während sie
+      entstehen.
+    </p>
+  </div>
+
+  <h2>Welche Modelle gibt es?</h2>
+  <p class="t-sm text-dim">
+    Nicht jedes Modell auf jedem Rechner. Was gerade verfügbar ist, zeigt dir das Portal:
+  </p>
+  <div class="card mt-3">
+    <pre>curl -s http://PORTAL:8765/v1/models \
+  -H "Authorization: Bearer DEIN-SCHLUESSEL"</pre>
+    <p class="hint mt-3">
+      Ein Modell kann zusätzlich pro Konto freigeschaltet sein. Fehlt eines, obwohl es in der Liste
+      steht, frag beim Administrator nach der Freigabe.
+    </p>
+  </div>
+
+  <h2>Was kostet das?</h2>
+  <p class="t-sm text-dim">
+    Kein Geld. Der Verbrauch wird in <b>Credits</b> gemessen, die jedem Konto zugeteilt werden. Wer
+    eine GPU beisteuert, bekommt dafür Credits gutgeschrieben — so trägt sich der Pool selbst.
+    Deinen Stand und deine Nutzung findest du unter <a class="link" href="usage.html">Mein Verbrauch</a>.
+    Sind die Credits aufgebraucht, antwortet der Dienst mit einer Fehlermeldung statt still
+    weiterzurechnen.
+  </p>
+
+  <h2>Wenn etwas nicht geht</h2>
+  <div class="card">
+    <ul class="code-liste">
+      <li><span class="nr">401</span><span><b>Schlüssel fehlt oder ist ungültig.</b> Prüfe, ob der
+        Schlüssel vollständig kopiert ist und ins Feld <code class="inline">Authorization</code> gehört.
+        Ein neu ausgestellter Schlüssel macht den alten ungültig.</span></li>
+      <li><span class="nr">403</span><span><b>Das Modell ist für dich nicht freigegeben</b> oder dein
+        Konto ist noch nicht durch einen Administrator freigeschaltet.</span></li>
+      <li><span class="nr">429</span><span><b>Zu schnell hintereinander.</b> Kurz warten und erneut
+        versuchen; die Grenze gilt je Adresse.</span></li>
+      <li><span class="nr">502</span><span><b>Kein Rechner hat das Modell gerade verfügbar.</b> Der
+        Pool besteht aus privaten Rechnern — die sind nicht immer an. Später noch einmal
+        versuchen.</span></li>
+      <li><span class="nr">524</span><span><b>Zeitüberschreitung.</b> Fast immer, weil ohne Streaming
+        auf eine lange Antwort gewartet wurde. Siehe oben: <code class="inline">stream=True</code>.</span></li>
+    </ul>
+  </div>
+
+  <h2>Gut zu wissen</h2>
+  <div class="card">
+    <ul class="stack tight">
+      <li><b>Deine Eingaben laufen über einen fremden Rechner.</b> Der Pool besteht aus Rechnern
+        anderer Teilnehmer. Wer die GPU beisteuert, kann technisch sehen, was durchläuft. Also keine
+        Passwörter, keine Personalakten, keine vertraulichen Verträge durchschicken.</li>
+      <li><b>Es gibt keine Verfügbarkeitsgarantie.</b> Fällt der Rechner aus, der dein Modell
+        anbietet, bekommst du einen Fehler — nicht später eine Antwort.</li>
+      <li><b>Modelle bleiben kontrollierbar.</b> Sowohl pro Rechner als auch pro Konto lässt sich
+        festlegen, welche Modelle erlaubt sind.</li>
+      <li><b>Kein Abo, keine Kreditkarte.</b> Es gibt nichts zu kündigen. Ein Konto lässt sich
+        deaktivieren, der Schlüssel jederzeit erneuern.</li>
+    </ul>
+  </div>
+
+  <p class="fussnote">
+    Diese Anleitung beschreibt den Stand vom 19.10.2026. Wenn etwas anders aussieht als hier
+    beschrieben, gilt die Oberfläche — und ein Hinweis an den Administrator hilft mehr als ein
+    Handbuch, das veraltet.
+  </p>
+
+</main>
+<script src="brand-mesh.js"></script>
+</body>
+</html>
