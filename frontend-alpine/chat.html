@@ -55,6 +55,7 @@
                       x-text="m.name + (m.size ? ' — ' + (m.size / 1e9).toFixed(1) + ' GB' : '')"></option>
             </template>
           </select>
+          <p class="hint" data-i18n="chat.models_hint">Angezeigt werden nur Modelle, die für dein Konto freigegeben sind — ohne Einschränkung alle lokalen. Cloud-Modelle schaltest du im Profil zu.</p>
           <button class="btn-ghost btn-sm" @click="loadModels()" title="Modellliste neu laden" data-i18n-title="modellliste-neu-laden" data-i18n="aktualisieren">Aktualisieren</button>
         </div>
       </div>

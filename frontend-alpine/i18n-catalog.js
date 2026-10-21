@@ -1367,6 +1367,12 @@ window.GP_I18N = {
    "es": "Soy consciente de que así uso Model de pago y puede que necesite Credits adicionales.",
    "fr": "Je suis conscient que cela me permet d'utiliser des Model payants et peut nécessiter des Credits supplémentaires."
   },
+  "chat.models_hint": {
+   "en": "Only models released for your account are listed — without a restriction, all local ones. Cloud models are enabled in the profile.",
+   "de": "Angezeigt werden nur Modelle, die für dein Konto freigegeben sind — ohne Einschränkung alle lokalen. Cloud-Modelle schaltest du im Profil zu.",
+   "es": "Solo se muestran los Model liberados para tu cuenta; sin restricción, todos los locales. Los Model en la nube se habilitan en el perfil.",
+   "fr": "Seuls les Model libérés pour votre compte sont affichés — sans restriction, tous les locaux. Les Model cloud s'autorisent dans le profil."
+  },
   "gpu-bereitstellen": {
    "en": "Contribute a GPU",
    "de": "GPU bereitstellen",
