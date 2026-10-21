@@ -1,5 +1,40 @@
 # Changelog
 
+## 0.6.0 — 2026-10-21
+
+**Modelle, Freigaben und Schlüssel**
+- `GET /v1/models` liefert das **OpenAI-Format** (`object`/`data`/`created`/`owned_by`) und
+  filtert nach der Freigabe des Kontos. Vorher kam Ollamas Rohformat zurück — externe Clients
+  sahen null Modelle —, und die Auswahl enthielt Modelle, die beim Aufruf mit 403 scheiterten.
+  Die rohe Liste bleibt zusätzlich als `models[]` erhalten, weil die Chat-Seite sie liest.
+- **Neue Spalte `users.allow_cloud`**: Cloud-Modelle werden getrennt von der Freigabeliste
+  zugeschaltet. Damit überschreibt ein „Cloud erlauben" des Kontos keine gezielte Freigabe mehr.
+  Migration läuft idempotent beim Start.
+- `POST /v1/me/keys` stellt einen eigenen API-Schlüssel aus (Passwort bestätigt, einmal
+  sichtbar); frühere `gpu_`-Schlüssel des Kontos werden ungültig, Sitzungsmarken bleiben gültig.
+  `GET /v1/me/keys` listet Präfixe und Datum.
+- `PUT /v1/me/allowed-models` nimmt von einem **Consumer** nur noch das Cloud-Kennzeichen an;
+  Modelle auswählen bleibt Provider und „beides" vorbehalten.
+
+**Öffentlicher Zugang**
+- Die Oberfläche reicht `/v1/` an die API durch (`proxy_buffering off` für Streaming). Damit
+  funktioniert ein OpenAI-kompatibler Client unter derselben Adresse wie das Portal, ohne Port.
+
+**Oberfläche**
+- Einsteiger-Anleitung `/hilfe.html` in allen vier Sprachen, Knopf im Kopf statt im Menü.
+- Anmeldeseite: Mesh-Szene als Hintergrund, Glaskarte, Fußzeile mit Zustandsanzeige der API.
+- Profil: Consumer sehen die Liste der verfügbaren Modelle und dürfen Cloud-Modelle selbst
+  erlauben (mit Bestätigung); die Modellauswahl bleibt bei Provider/both.
+- Dashboard zeigt einen API-Schlüssel nur noch, wenn es wirklich einer ist (`gpu_…`), und nennt
+  das Konto, zu dem er gehört.
+
+**Behoben**
+- Die Modellliste zeigte die Browser-Sitzung (`sess_…`) als API-Schlüssel an, „Neu ausstellen"
+  machte in Wahrheit einen neuen Login.
+- Ein Konto mit leerer Freigabeliste (`[]` = nichts erlaubt) blieb stumm ohne Hinweis; die
+  Oberfläche sagt es jetzt.
+- `brand-mesh` ließ den Zeichenpuffer auf 300×150 stehen, wenn die Fläche längst größer war.
+
 Alle nennenswerten Änderungen. Versionierung ab 18.10.2026 einheitlich für Portal
 und Node-Agent; vorher liefen die Komponenten auseinander (Portal 0.3.0, Agent 0.1.0,
 einziger Git-Tag `v0.1.0`).

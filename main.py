@@ -113,7 +113,7 @@ app = FastAPI(
         "load-balancing, usage accounting, credits, and a role-gated admin "
         "console with an audit log."
     ),
-    version="0.5.0",
+    version="0.6.0",
     lifespan=lifespan,
 )
 
@@ -400,8 +400,18 @@ def _ensure_node_tables():
 # ----------------------------------------------------------------------------
 # Endpoints
 # ----------------------------------------------------------------------------
-NODE_AGENT_VERSION = "0.5.0"
-VERSION = "0.5.0"
+def _lies_version() -> str:
+    """Version aus der VERSION-Datei — eine Quelle statt zwei Konstanten."""
+    try:
+        from pathlib import Path as _Path
+        return (_Path(__file__).with_name("VERSION")).read_text(encoding="utf-8").strip()
+    except Exception:  # noqa: BLE001
+        return "0.0.0"
+
+
+VERSION = _lies_version()
+# Portal und Node-Agent laufen seit 0.5.0 auf derselben Version.
+NODE_AGENT_VERSION = VERSION
 
 
 @app.get("/version")
@@ -669,18 +679,6 @@ def update_my_role(
         allow_cloud=user.allow_cloud,
         warnings=warnings,
     )
-
-
-def _alle_modellnamen() -> List[str]:
-    """Namen aller Modelle, die die lokale Ollama-Instanz kennt."""
-    try:
-        with httpx.Client(timeout=10.0) as client:
-            r = client.get(f"{OLLAMA_URL}/api/tags")
-            r.raise_for_status()
-            return [m.get("name") for m in (r.json().get("models") or []) if m.get("name")]
-    except Exception as e:  # noqa: BLE001
-        log.warning(f"model list unavailable: {e}")
-        return []
 
 
 @app.put("/v1/me/allowed-models", response_model=UserSettingsResponse)

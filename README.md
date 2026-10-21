@@ -234,6 +234,16 @@ und was die Fehlercodes bedeuten. Sie funktioniert ohne Anmeldung und ist aus de
 verlinkt („Anleitung"). Sie lässt sich zwischen **Deutsch und Englisch** umschalten. Quelle: `frontend-alpine/hilfe.html`, Langfassung für die
 Projektarbeit in `docs/anleitung.md`.
 
+## Eigene API-Schlüssel und Modellfreigabe
+
+Ein Client braucht einen Schlüssel, der mit `gpu_` beginnt. Ausgestellt wird er im Portal
+(Profil → **API-Schlüssel ausstellen**, Passwort bestätigt, einmal sichtbar) oder per
+`POST /v1/me/keys`. Die Browser-Sitzung (`sess_…`) ist **kein** API-Schlüssel.
+
+`GET /v1/models` liefert nur die Modelle, die für das Konto freigegeben sind. Cloud-Modelle sind
+kostenpflichtig und werden über `users.allow_cloud` getrennt zugeschaltet — ohne die Freigabeliste
+anzutasten. Details: [docs/api.md](docs/api.md).
+
 ## Documentation
 
 - [ARCHITECTURE.md](ARCHITECTURE.md) — ASCII diagram and data flows
@@ -360,3 +370,13 @@ LM Studio allein macht noch keinen Node. Details, inklusive der Streaming-Grenze
 ## Lizenz
 
 POC, interne Nutzung. TBD.
+
+## Own API keys and model permissions
+
+A client needs a key starting with `gpu_`. Issue one in the portal (profile → **Issue API key**,
+password confirmed, shown once) or via `POST /v1/me/keys`. The browser session (`sess_…`) is **not**
+an API key.
+
+`GET /v1/models` returns only the models released for the account. Cloud models cost money and are
+enabled separately via `users.allow_cloud`, leaving the release list untouched. Details:
+[docs/api.md](docs/api.md).

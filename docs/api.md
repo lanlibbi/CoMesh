@@ -279,6 +279,33 @@ schaltbar (`PUT /admin/settings` -> `credits_enabled`). Die früher hier dokumen
 Endpunkte `GET /earnings/` und `GET /earnings/timeline` gibt es im Code nicht (mehr);
 tatsächlich vorhanden ist nur `GET /pool/earnings/mine` (Node-Sicht des Owners).
 
+
+## Eigene API-Schlüssel
+
+```
+POST /v1/me/keys      {"password": "…"}   -> {"api_key": "gpu_…", "key_prefix": "gpu_…"}
+GET  /v1/me/keys                          -> {"keys": [{prefix,label,is_active,created_at}]}
+```
+
+Der Schlüssel wird **genau einmal** zurückgegeben. Frühere `gpu_`-Schlüssel desselben Kontos werden
+dabei ungültig; Sitzungsmarken (`sess_…`) bleiben gültig, sonst würde der Aufrufer sich selbst
+abmelden. Achtung: die Sitzungsmarke ist **kein** API-Schlüssel — sie gilt nur für die Oberfläche und
+stirbt beim Abmelden.
+
+## Welche Modelle ein Konto nutzen darf
+
+`GET /v1/models` gibt nur zurück, was für das Konto freigegeben ist (`User.can_use_model`):
+
+| `users.allowed_models` | `users.allow_cloud` | erlaubt |
+| --- | --- | --- |
+| `NULL` | `false` | alle lokalen Modelle |
+| `NULL` | `true` | alle lokalen **und** alle Cloud-Modelle |
+| Liste | `false` | genau diese Modelle (Cloud nur, wenn in der Liste) |
+| Liste | `true` | die Liste **plus** alle Cloud-Modelle |
+| `[]` | beliebig | nichts |
+
+`GET /v1/available-models` bleibt ungefiltert — das ist der Katalog fürs Profil.
+
 ## Admin
 
 Alle `/admin`-Endpoints sind **rollen-gated**: sie verlangen einen gültigen API-Key

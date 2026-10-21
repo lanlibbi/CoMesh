@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Admin · Geräte · CoMesh</title>
+<meta name="color-scheme" content="dark light" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<script>
+/* Theme vor dem Stylesheet setzen, damit der erste Aufbau stimmt. */
+(function () {
+  try {
+    var stored = localStorage.getItem("gp_theme");
+    var theme = (stored === "light" || stored === "dark") ? stored
+      : (window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
+    document.documentElement.setAttribute("data-theme", theme);
+  } catch (e) {
+    document.documentElement.setAttribute("data-theme", "dark");
+  }
+})();
+</script>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body x-data="adminNodesPage()" x-init="init()">
+  <div x-html="navHTML('admin-nodes')"></div>
+
+  <main class="shell">
+    <div class="page-head">
+      <div class="eyebrow">Admin</div>
+      <h1>Geräte im Pool</h1>
+      <p class="lede">
+        Alle Rechner, auch die abgeschalteten — die Admin-Sicht auf
+        <code class="inline">GET /admin/nodes</code>. Ob ein Gerät lebt, sagt nicht die Spalte
+        <i>Status</i>, sondern der letzte Herzschlag.
+      </p>
+    </div>
+
+    <div class="row wrap mb-3" style="gap:8px">
+      <span class="chip">Alle: <b x-text="summary ? summary.total : '—'"></b></span>
+      <span class="chip">Online: <b x-text="summary ? summary.online : '—'"></b></span>
+      <span class="chip">Offline: <b x-text="summary ? summary.offline : '—'"></b></span>
+      <span class="chip">Pausiert: <b x-text="summary ? (summary.disabled || 0) : '—'"></b></span>
+    </div>
+
+    <div class="card mb-4">
+      <div class="row wrap" style="gap:10px;align-items:flex-end">
+        <div class="field grow">
+          <label class="label" for="q">Suche</label>
+          <input class="input" id="q" x-model="q" @keydown.enter="load()" placeholder="Name, GPU oder Adresse" />
+        </div>
+        <div class="field">
+          <label class="label" for="st">Status</label>
+          <select class="input" id="st" x-model="status" @change="load()">
+            <template x-for="s in statuses" :key="s.key">
+              <option :value="s.key" x-text="s.label" :selected="s.key === status"></option>
+            </template>
+          </select>
+        </div>
+        <button class="btn-ghost btn-sm" @click="load()" :disabled="loading">Aktualisieren</button>
+      </div>
+      <p class="t-sm text-err mt-2" x-show="error" x-text="error"></p>
+      <p class="t-sm text-ok mt-2" x-show="actionOk" x-text="actionOk"></p>
+      <p class="t-sm text-err mt-2" x-show="actionError" x-text="actionError"></p>
+    </div>
+
+    <div class="card">
+      <div class="panel-head">
+        <div>
+          <div class="eyebrow">Bestand</div>
+          <h3>Rechner</h3>
+        </div>
+        <span class="t-xs text-mute" x-show="loading">Lade…</span>
+      </div>
+
+      <div style="overflow-x:auto">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Gerät</th>
+              <th>Besitzer</th>
+              <th>Zustand</th>
+              <th>VRAM</th>
+              <th>Modelle</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <template x-for="n in items" :key="n.id">
+              <tr>
+                <td>
+                  <div class="semibold" x-text="n.name"></div>
+                  <div class="t-xs text-mute mono" x-text="n.node_url || (n.gpu_type + ' · Port ' + n.port)"></div>
+                </td>
+                <td class="t-sm" x-text="n.owner_email || ('Konto ' + n.owner_id)"></td>
+                <td>
+                  <span :class="zustandsKlasse(n)" x-text="n.effective_status || n.status"></span>
+                  <div class="t-xs text-mute" x-show="!n.is_enabled">vom Besitzer pausiert</div>
+                </td>
+                <td class="num" x-text="(n.vram_gb || 0) + ' GB'"></td>
+                <td class="t-xs" x-text="modellKurz(n)"></td>
+                <td>
+                  <div class="row wrap" style="gap:6px">
+                    <button class="btn-ghost btn-sm" @click="details(n)" :disabled="busyId === n.id">Details</button>
+                    <button class="btn-ghost btn-sm" @click="umschalten(n)" :disabled="busyId === n.id"
+                            x-text="n.is_enabled ? 'Pausieren' : 'Aktivieren'"></button>
+                  </div>
+                </td>
+              </tr>
+            </template>
+         </tbody>
+        </table>
+        <p class="t-sm text-mute mt-3" x-show="!loading && items.length === 0">
+          Kein Gerät gefunden. Der Filter steht auf <b x-text="status"></b>.
+        </p>
+      </div>
+    </div>
+
+    <!-- Detail eines Geräts -->
+    <section class="card mt-3" x-show="detail" x-cloak>
+      <div class="panel-head">
+        <div>
+          <div class="eyebrow">Gerät</div>
+          <h3 x-text="detail ? detail.name : ''"></h3>
+          <p class="t-sm text-dim" x-text="detail ? (detail.description || 'ohne Beschreibung') : ''"></p>
+        </div>
+        <button class="btn-ghost btn-sm" @click="detail = null">Schließen</button>
+      </div>
+      <div class="g3" x-show="detail">
+        <div>
+          <div class="t-xs text-mute">Adresse, unter der das Portal den Agenten erreicht</div>
+          <div class="mono t-sm" x-text="detail ? (detail.node_url || '—') : ''"></div>
+        </div>
+        <div>
+          <div class="t-xs text-mute">Herzschläge (24 h)</div>
+          <div class="num" x-text="detail ? detail.heartbeats_24h : '—'"></div>
+        </div>
+        <div>
+          <div class="t-xs text-mute">Aufträge (gesamt / fehlgeschlagen)</div>
+          <div class="num" x-text="detail ? (detail.nodes_jobs_total + ' / ' + detail.nodes_jobs_failed) : '—'"></div>
+        </div>
+      </div>
+      <p class="t-sm text-dim mt-3" x-show="detail && detail.last_heartbeat">
+        Letzter Herzschlag: <b x-text="detail ? herzschlagText(detail) : ''"></b>
+      </p>
+    </section>
+  </main>
+
+      <script defer src="https://unpkg.com/alpinejs@3.5.1/dist/cdn.min.js"></script>
+<script src="config.js"></script>
+<script src="i18n-catalog.js"></script>
+<script src="i18n.js"></script>
+<script src="app.js"></script>
+  <script src="admin-nodes.js"></script>
+<script src="brand-mesh.js"></script>
+</body>
+</html>

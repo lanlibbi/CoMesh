@@ -35,6 +35,14 @@ document.addEventListener("alpine:init", () => {
     actionError: "",
     actionOk: "",
     neuerSchluessel: "",
+    // Modellfreigabe je Konto
+    modellKonto: null,
+    modellListe: [],
+    modellAuswahl: [],
+    modellAlle: true,
+    modellCloud: false,
+    modellBusy: false,
+    modellHinweis: "",
     denied: false,
     busyId: null,
     formOffen: false,
@@ -176,6 +184,73 @@ document.addEventListener("alpine:init", () => {
     },
 
     /** Credits zuschieben (negativ = abziehen). */
+    /** Freigabe eines Kontos öffnen und den Modellkatalog nachladen. */
+    async modelle(item) {
+      this.modellKonto = item;
+      this.modellHinweis = "";
+      this.modellAuswahl = Array.isArray(item.allowed_models) ? [...item.allowed_models] : [];
+      this.modellAlle = !Array.isArray(item.allowed_models);
+      this.modellCloud = !!item.allow_cloud;
+      if (this.modellListe.length === 0) {
+        try {
+          const r = await api("/v1/available-models", { auth: true });
+          this.modellListe = r.models || [];
+        } catch (e) { this._err(e, "Modellliste konnte nicht geladen werden"); }
+      }
+    },
+
+    modellUmschalten(name) {
+      const i = this.modellAuswahl.indexOf(name);
+      if (i === -1) this.modellAuswahl.push(name); else this.modellAuswahl.splice(i, 1);
+    },
+
+    modellStandard() {
+      this.modellAuswahl = [];
+      this.modellAlle = true;
+      this.modellCloud = false;
+      this.modellHinweis = "";
+    },
+
+    async modellSpeichern() {
+      const konto = this.modellKonto;
+      if (!konto) return;
+      if (!this.modellAlle && this.modellAuswahl.length === 0 && !this.modellCloud) {
+        this.modellHinweis = "Ohne Auswahl und ohne Cloud darf das Konto nichts nutzen. "
+          + "Für \"alle lokalen\" den Haken oben setzen.";
+        return;
+      }
+      this.modellBusy = true;
+      this.modellHinweis = "";
+      try {
+        const r = await api(`/admin/users/${konto.id}`, {
+          method: "PATCH", auth: true,
+          body: {
+            allowed_models: this.modellAlle ? null : [...this.modellAuswahl],
+            allow_cloud: this.modellCloud,
+          },
+        });
+        konto.allowed_models = r.allowed_models;
+        konto.allow_cloud = r.allow_cloud;
+        this._ok(`${konto.email}: Freigabe gespeichert.`);
+        this.modellKonto = null;
+      } catch (e) {
+        this._err(e, "Freigabe konnte nicht gespeichert werden");
+      } finally {
+        this.modellBusy = false;
+      }
+    },
+
+    /** Kurzfassung für die Zeile: was darf dieses Konto? */
+    freigabeKurz(item) {
+      const liste = item.allowed_models;
+      const teile = [];
+      if (liste === null || liste === undefined) teile.push("alle lokalen");
+      else if (liste.length === 0) teile.push("nichts");
+      else teile.push(`${liste.length} Modell${liste.length === 1 ? "" : "e"}`);
+      if (item.allow_cloud) teile.push("Cloud");
+      return teile.join(" + ");
+    },
+
     async credits(item) {
       const eingabe = prompt(`Credits für ${item.email} (negativ = abziehen):`, "10");
       if (eingabe == null || eingabe.trim() === "") return;

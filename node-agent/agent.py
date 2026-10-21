@@ -413,7 +413,7 @@ def get_gpu_info() -> dict:
 # ----------------------------------------------------------------------------
 # FastAPI app
 # ----------------------------------------------------------------------------
-app = FastAPI(title="CoMesh Node-Agent", version="0.5.0")
+app = FastAPI(title="CoMesh Node-Agent", version="0.6.0")
 app.add_middleware(
     CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"],
 )

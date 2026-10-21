@@ -11,11 +11,13 @@ version: "3.9"
 #           `docker compose -f ~/projects/opencode-poc/docker-compose.yml up -d`
 #           (the previous images are kept, tagged gpu-pool-*:rollback-*).
 
+name: comesh
+
 services:
   api:
     build: .
     image: gpu-pool-live-api:lana58
-    container_name: gpu-pool-api
+    container_name: comesh-api
     restart: unless-stopped
     ports:
       - "8765:8000"
@@ -41,7 +43,7 @@ services:
   frontend:
     build: ./frontend-alpine
     image: gpu-pool-live-frontend:lana58
-    container_name: gpu-pool-frontend
+    container_name: comesh-frontend
     restart: unless-stopped
     ports:
       - "8767:80"
@@ -62,7 +64,7 @@ services:
     profiles: ["node"]
     build: ./node-agent
     image: gpu-pool-node-agent:local
-    container_name: gpu-pool-agent
+    container_name: comesh-agent
     restart: unless-stopped
     depends_on:
       - api
@@ -91,5 +93,5 @@ services:
 
 volumes:
   sqlite_data:
-    name: opencode-poc_sqlite_data
+    name: comesh_sqlite_data
     external: true

@@ -158,6 +158,7 @@
                     <span x-text="r.email"></span>
                     <span x-show="!r.is_active" class="pill pill-paused" style="margin-left:6px">inaktiv</span>
                   </div>
+                  <div class="t-xs text-dim" x-text="freigabeKurz(r)"></div>
                 </td>
                 <td>
                   <select class="input" style="max-width:190px" :value="r.role" :disabled="busyId === r.id"
@@ -175,6 +176,7 @@
                     <button class="btn-ghost btn-sm" x-show="r.status === 'pending'" :disabled="busyId === r.id" @click="approve(r.id)">Freigeben</button>
                     <button class="btn-ghost btn-sm" x-show="r.status === 'pending'" :disabled="busyId === r.id" @click="reject(r.id)">Ablehnen</button>
                     <button class="btn-ghost btn-sm" :disabled="busyId === r.id" @click="setPasswort(r)">Passwort</button>
+                    <button class="btn-ghost btn-sm" :disabled="busyId === r.id" @click="modelle(r)">Modelle</button>
                     <button class="btn-ghost btn-sm" :disabled="busyId === r.id" @click="credits(r)">Credits</button>
                     <button class="btn-ghost btn-sm" :disabled="busyId === r.id" @click="schluessel(r)">Schlüssel</button>
                     <button class="btn-ghost btn-sm" :disabled="busyId === r.id" @click="toggleActive(r)"
@@ -198,7 +200,63 @@
         Ein neuer Schlüssel macht den bisherigen sofort ungültig.
       </p>
     </div>
-  </main>
+  
+      <!-- Modellfreigabe des gewählten Kontos -->
+      <section class="card mt-3" x-show="modellKonto" x-cloak>
+        <div class="panel-head">
+          <div>
+            <div class="eyebrow">Freigabe</div>
+            <h3 x-text="modellKonto ? modellKonto.email : ''"></h3>
+            <p class="t-sm text-dim">
+              Diese Modelle darf das Konto <b>nutzen</b>. Was ein Node <b>anbietet</b>, stellt der
+              Betreiber in seiner Geräteliste ein. Cloud-Modelle sind kostenpflichtig.
+            </p>
+          </div>
+          <button class="btn-ghost btn-sm" @click="modellKonto = null">Schließen</button>
+        </div>
+
+        <label class="check">
+          <input type="checkbox" x-model="modellAlle" />
+          <span class="check-body">
+            <span class="check-title">Keine Einschränkung — alle lokalen Modelle</span>
+            <span class="check-sub">Ohne Cloud. Das ist der Standard.</span>
+          </span>
+        </label>
+
+        <div class="option-list" style="max-height:280px" x-show="!modellAlle">
+          <template x-for="m in modellListe" :key="m.name">
+            <label class="check">
+              <input type="checkbox" :checked="modellAuswahl.includes(m.name)" @change="modellUmschalten(m.name)" />
+              <span class="check-body row" style="gap:8px">
+                <span class="grow mono t-sm" x-text="m.name"></span>
+                <span x-show="m.is_cloud" class="pill pill-busy pill-flat">cloud</span>
+                <span class="t-xs text-mute num" x-text="(m.size_gb || 0) + ' GB'"></span>
+              </span>
+            </label>
+          </template>
+          <div class="t-xs text-mute" style="padding:8px 10px" x-show="modellListe.length === 0">
+            Modelle werden geladen…
+          </div>
+        </div>
+
+        <label class="check mt-2">
+          <input type="checkbox" x-model="modellCloud" />
+          <span class="check-body">
+            <span class="check-title">Cloud-Modelle erlauben</span>
+            <span class="check-sub">Kostenpflichtig — das Konto braucht dafür gegebenenfalls Credits.</span>
+          </span>
+        </label>
+
+        <div class="row wrap mt-3" style="gap:10px">
+          <button class="btn-primary btn-sm" @click="modellSpeichern()" :disabled="modellBusy">
+            <span x-show="!modellBusy">Freigabe speichern</span>
+            <span x-show="modellBusy">Speichere…</span>
+          </button>
+          <button class="btn-ghost btn-sm" @click="modellStandard()">Auf Standard</button>
+        </div>
+        <div class="t-sm text-err mt-2" x-show="modellHinweis" x-text="modellHinweis"></div>
+      </section>
+</main>
 
 <script defer src="https://unpkg.com/alpinejs@3.5.1/dist/cdn.min.js"></script>
 <script src="config.js"></script>
