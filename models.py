@@ -105,9 +105,16 @@ class User(Base):
             return True
         is_cloud = _is_cloud_model_name(model)
         allowed = self.get_allowed_models()
+        rolle = (self.role or "").lower()
+
         if allowed is None:
-            # Default: alle lokalen; Cloud nur, wenn ausdrücklich zugeschaltet.
+            # Ohne Liste gilt:
+            #   Consumer           -> nichts freigegeben (er bekommt Modelle zugeteilt),
+            #   Provider/both/admin -> alle lokalen, Cloud nur wenn zugeschaltet.
+            if rolle == "consumer":
+                return is_cloud and bool(self.allow_cloud)
             return (not is_cloud) or bool(self.allow_cloud)
+
         if model in allowed:
             return True
         return is_cloud and bool(self.allow_cloud)

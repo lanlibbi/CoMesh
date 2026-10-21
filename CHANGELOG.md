@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.6.1 — 2026-10-21
+
+**Consumer sehen nur noch ausdrücklich freigegebene Modelle**
+- `allowed_models = NULL` heißt für ein **Consumer**-Konto jetzt „nichts freigegeben" statt „alle
+  lokalen Modelle". Ein Consumer sah bisher acht lokale Modelle, ohne dass jemand sie freigegeben
+  hätte — im Chat und in jedem Client. Für **provider/both/admin** bleibt `NULL` = „alle lokalen".
+- Der Administrator gibt einem Consumer die lokalen Modelle mit einem Klick frei: Admin-Oberfläche →
+  Freigaben → **Modelle** → „Alle lokalen freigeben" (schreibt die Liste ausdrücklich ins Konto).
+- Das Profil zeigt Consumer-Konten den Hinweis „Dir sind derzeit keine Modelle freigegeben" auch
+  dann, wenn gar keine Liste hinterlegt ist.
+- `docs/api.md` beschreibt die Regel jetzt als Tabelle nach Rolle.
+
 ## 0.6.0 — 2026-10-21
 
 **Modelle, Freigaben und Schlüssel**

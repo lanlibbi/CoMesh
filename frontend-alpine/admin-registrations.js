@@ -204,6 +204,17 @@ document.addEventListener("alpine:init", () => {
       if (i === -1) this.modellAuswahl.push(name); else this.modellAuswahl.splice(i, 1);
     },
 
+    /** Alle lokalen Modelle freigeben — als ausdrückliche Liste, weil bei einem Consumer
+        "keine Liste" inzwischen "nichts" bedeutet. */
+    modellAlleLokalen() {
+      const lokale = this.modellListe.filter((m) => !m.is_cloud).map((m) => m.name);
+      this.modellAuswahl = lokale;
+      this.modellAlle = false;
+      this.modellHinweis = lokale.length
+        ? `${lokale.length} lokale Modelle ausgewählt — jetzt speichern.`
+        : "Keine lokalen Modelle gefunden.";
+    },
+
     modellStandard() {
       this.modellAuswahl = [];
       this.modellAlle = true;

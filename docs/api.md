@@ -296,13 +296,21 @@ stirbt beim Abmelden.
 
 `GET /v1/models` gibt nur zurück, was für das Konto freigegeben ist (`User.can_use_model`):
 
-| `users.allowed_models` | `users.allow_cloud` | erlaubt |
-| --- | --- | --- |
-| `NULL` | `false` | alle lokalen Modelle |
-| `NULL` | `true` | alle lokalen **und** alle Cloud-Modelle |
-| Liste | `false` | genau diese Modelle (Cloud nur, wenn in der Liste) |
-| Liste | `true` | die Liste **plus** alle Cloud-Modelle |
-| `[]` | beliebig | nichts |
+`NULL` bedeutet je nach Rolle etwas anderes — ein Consumer bekommt Modelle zugeteilt, ein
+Provider trägt selbst bei:
+
+| Rolle | `allowed_models` | `allow_cloud` | erlaubt |
+| --- | --- | --- | --- |
+| consumer | `NULL` oder `[]` | `false` | **nichts** |
+| consumer | `NULL` oder `[]` | `true` | alle Cloud-Modelle |
+| consumer | Liste | `false` | genau diese Modelle |
+| consumer | Liste | `true` | die Liste **plus** alle Cloud-Modelle |
+| provider / both / admin | `NULL` | `false` | alle lokalen Modelle |
+| provider / both / admin | `NULL` | `true` | alle lokalen **und** alle Cloud-Modelle |
+| provider / both / admin | Liste | beliebig | die Liste, plus Cloud bei `true` |
+
+Wer einem Consumer „alle lokalen" geben will, schreibt sie als Liste ins Konto (Admin-Oberfläche →
+Freigaben → **Modelle** → „Alle lokalen freigeben").
 
 `GET /v1/available-models` bleibt ungefiltert — das ist der Katalog fürs Profil.
 

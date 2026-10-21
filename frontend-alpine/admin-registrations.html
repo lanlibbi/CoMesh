@@ -218,8 +218,9 @@
         <label class="check">
           <input type="checkbox" x-model="modellAlle" />
           <span class="check-body">
-            <span class="check-title">Keine Einschränkung — alle lokalen Modelle</span>
-            <span class="check-sub">Ohne Cloud. Das ist der Standard.</span>
+            <span class="check-title">Keine Liste hinterlegen</span>
+            <span class="check-sub">Für Provider und „beides" heißt das: alle lokalen Modelle. Bei einem
+              Consumer heißt es: <b>nichts</b> freigegeben — nimm dort „Alle lokalen freigeben".</span>
           </span>
         </label>
 
@@ -252,6 +253,7 @@
             <span x-show="!modellBusy">Freigabe speichern</span>
             <span x-show="modellBusy">Speichere…</span>
           </button>
+          <button class="btn-ghost btn-sm" @click="modellAlleLokalen()">Alle lokalen freigeben</button>
           <button class="btn-ghost btn-sm" @click="modellStandard()">Auf Standard</button>
         </div>
         <div class="t-sm text-err mt-2" x-show="modellHinweis" x-text="modellHinweis"></div>

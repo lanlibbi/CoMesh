@@ -166,7 +166,7 @@
           </template>
           <li x-show="availableModels.length === 0" class="t-xs text-mute" style="padding:8px 10px"
               data-i18n="modelle-werden-geladen">Modelle werden geladen…</li>
-          <li x-show="allowedRaw !== null && allowedRaw.length === 0" class="t-sm text-err"
+          <li x-show="allowedRaw === null || allowedRaw.length === 0" class="t-sm text-err"
               style="padding:10px" data-i18n="profile.models_none">Dir sind derzeit keine Modelle
             freigegeben — deshalb lehnt der Dienst jeden Aufruf ab. Ein Administrator kann das ändern.</li>
         </ul>
