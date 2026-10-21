@@ -80,7 +80,7 @@ pip install fastapi==0.115.0 "uvicorn[standard]==0.30.6" httpx==0.27.2 psutil==5
 
 # 3. Agentencode holen (aus dem Repo)
 #    agent.py und netinfo.py in dieses Verzeichnis kopieren
-#    oder: git clone https://github.com/lanlibbi/GPU-Pool und nach node-agent/ wechseln
+#    oder: git clone https://github.com/lanlibbi/CoMesh und nach node-agent/ wechseln
 
 # 4. Konfiguration
 notepad agent.env       # Inhalt siehe unten
