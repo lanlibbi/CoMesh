@@ -21,17 +21,12 @@ which routes them to the most suitable **Node-Agent** in the pool.
 
 ---
 
-## Screenshots
-
 Admin console and portal, real captures (1440×900, dark and light theme):
 
 | | |
 |---|---|
-| ![Dashboard](docs/screenshots/dashboard.webp) | ![Admin · Accounts](docs/screenshots/freigaben.webp) |
 | **Dashboard** — pool status, credits, own usage | **Admin · Accounts** — approve, roles, passwords, credits, keys |
-| ![Admin · Audit log](docs/screenshots/protokoll.webp) | ![Login](docs/screenshots/login.webp) |
 | **Admin · Audit log** — who changed what, when | **Sign in** — brand, theme and language switch |
-| ![Dashboard, light theme](docs/screenshots/dashboard-hell.webp) | |
 | **Light theme** — same UI, brass accents follow the theme | |
 
 The header animation is a small canvas (`frontend-alpine/brand-mesh.js`): a miniature of
