@@ -1,4 +1,6 @@
-# CoMesh
+<p align="center">
+  <img src="docs/brand/comesh-banner.svg" alt="CoMesh — your compute, meshed" width="100%">
+</p>
 
 > **Your compute, meshed.**
 >

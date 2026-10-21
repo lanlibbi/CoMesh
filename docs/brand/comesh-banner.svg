@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="520" viewBox="0 0 1600 520" role="img" aria-label="CoMesh — your compute, meshed">
+  <defs>
+    <linearGradient id="flaeche" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0a0c0e"/>
+      <stop offset="0.55" stop-color="#101419"/>
+      <stop offset="1" stop-color="#0a0c0e"/>
+    </linearGradient>
+    <radialGradient id="schein" cx="0.5" cy="0.44" r="0.62">
+      <stop offset="0" stop-color="#0a0c0e" stop-opacity="0.86"/>
+      <stop offset="0.5" stop-color="#0a0c0e" stop-opacity="0.5"/>
+      <stop offset="1" stop-color="#0a0c0e" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="warm" cx="0.5" cy="0.34" r="0.5">
+      <stop offset="0" stop-color="#c9a24a" stop-opacity="0.16"/>
+      <stop offset="1" stop-color="#c9a24a" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="1600" height="520" fill="url(#flaeche)"/>
+  <g>
+    <line x1="149.0" y1="147.0" x2="483.0" y2="162.0" stroke="#e8ebee" stroke-opacity="0.130" stroke-width="1.0"/>
+    <line x1="483.0" y1="162.0" x2="794.0" y2="158.0" stroke="#e8ebee" stroke-opacity="0.130" stroke-width="1.0"/>
+    <line x1="794.0" y1="158.0" x2="1128.0" y2="154.0" stroke="#e8ebee" stroke-opacity="0.130" stroke-width="1.0"/>
+    <line x1="1128.0" y1="154.0" x2="1439.0" y2="150.0" stroke="#e8ebee" stroke-opacity="0.130" stroke-width="1.0"/>
+    <line x1="310.0" y1="373.0" x2="644.0" y2="369.0" stroke="#e8ebee" stroke-opacity="0.130" stroke-width="1.0"/>
+    <line x1="644.0" y1="369.0" x2="955.0" y2="365.0" stroke="#e8ebee" stroke-opacity="0.130" stroke-width="1.0"/>
+    <line x1="955.0" y1="365.0" x2="1289.0" y2="361.0" stroke="#e8ebee" stroke-opacity="0.130" stroke-width="1.0"/>
+    <line x1="1289.0" y1="361.0" x2="1600.0" y2="357.0" stroke="#e8ebee" stroke-opacity="0.130" stroke-width="1.0"/>
+    <line x1="149.0" y1="147.0" x2="310.0" y2="373.0" stroke="#e8ebee" stroke-opacity="0.220" stroke-width="1.25"/>
+    <line x1="483.0" y1="162.0" x2="644.0" y2="369.0" stroke="#e8ebee" stroke-opacity="0.220" stroke-width="1.25"/>
+    <line x1="794.0" y1="158.0" x2="955.0" y2="365.0" stroke="#e8ebee" stroke-opacity="0.220" stroke-width="1.25"/>
+    <line x1="1128.0" y1="154.0" x2="1289.0" y2="361.0" stroke="#e8ebee" stroke-opacity="0.220" stroke-width="1.25"/>
+    <line x1="483.0" y1="162.0" x2="955.0" y2="365.0" stroke="#e8ebee" stroke-opacity="0.220" stroke-width="1.25"/>
+    <line x1="1128.0" y1="154.0" x2="644.0" y2="369.0" stroke="#e8ebee" stroke-opacity="0.130" stroke-width="1.0"/>
+    <circle cx="149.0" cy="147.0" r="4.2" fill="#8d97a2" fill-opacity="0.85"/>
+    <circle cx="149.0" cy="147.0" r="9.7" fill="none" stroke="#e2c885" stroke-opacity="0.28" stroke-width="1"/>
+    <circle cx="483.0" cy="162.0" r="2.6" fill="#8d97a2" fill-opacity="0.85"/>
+    <circle cx="794.0" cy="158.0" r="2.6" fill="#8d97a2" fill-opacity="0.85"/>
+    <circle cx="1128.0" cy="154.0" r="2.6" fill="#8d97a2" fill-opacity="0.85"/>
+    <circle cx="1439.0" cy="150.0" r="4.2" fill="#8d97a2" fill-opacity="0.85"/>
+    <circle cx="1439.0" cy="150.0" r="9.7" fill="none" stroke="#e2c885" stroke-opacity="0.28" stroke-width="1"/>
+    <circle cx="310.0" cy="373.0" r="2.6" fill="#8d97a2" fill-opacity="0.85"/>
+    <circle cx="644.0" cy="369.0" r="2.6" fill="#8d97a2" fill-opacity="0.85"/>
+    <circle cx="955.0" cy="365.0" r="2.6" fill="#8d97a2" fill-opacity="0.85"/>
+    <circle cx="1289.0" cy="361.0" r="4.2" fill="#8d97a2" fill-opacity="0.85"/>
+    <circle cx="1289.0" cy="361.0" r="9.7" fill="none" stroke="#e2c885" stroke-opacity="0.28" stroke-width="1"/>
+    <circle cx="1600.0" cy="357.0" r="2.6" fill="#8d97a2" fill-opacity="0.85"/>
+    <circle cx="1246.2" cy="152.5" r="6" fill="#e2c885" fill-opacity="0.22"/>
+    <circle cx="1246.2" cy="152.5" r="2.4" fill="#f0dcab" fill-opacity="0.90"/>
+    <circle cx="1481.8" cy="358.5" r="6" fill="#e2c885" fill-opacity="0.22"/>
+    <circle cx="1481.8" cy="358.5" r="2.4" fill="#f0dcab" fill-opacity="0.90"/>
+    <circle cx="1198.8" cy="245.1" r="6" fill="#e2c885" fill-opacity="0.22"/>
+    <circle cx="1198.8" cy="245.1" r="2.4" fill="#f0dcab" fill-opacity="0.90"/>
+    <circle cx="706.9" cy="159.1" r="6" fill="#e2c885" fill-opacity="0.22"/>
+    <circle cx="706.9" cy="159.1" r="2.4" fill="#f0dcab" fill-opacity="0.90"/>
+  </g>
+  <rect width="1600" height="520" fill="url(#schein)"/>
+  <rect width="1600" height="520" fill="url(#warm)"/>
+
+  <g transform="translate(758.0,104.0) scale(3.5000)" fill="none" stroke="#e2c885" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.7 20.1 7.35v9.3L12 21.3 3.9 16.65v-9.3z"/><path d="M12 7.6 16.2 15.1H7.8z" stroke-opacity="0.5"/><circle cx="12" cy="7.6" r="1.55" fill="#e2c885" stroke="none"/><circle cx="16.2" cy="15.1" r="1.55" fill="#e2c885" stroke="none"/><circle cx="7.8" cy="15.1" r="1.55" fill="#e2c885" stroke="none"/><circle cx="12" cy="12.1" r="0.9" fill="#e2c885" stroke="none" fill-opacity="0.55"/></g>
+
+  <text x="800.0" y="272.6" text-anchor="middle" fill="#e8ebee"
+        font-family="'Segoe UI','Helvetica Neue',Helvetica,Arial,sans-serif"
+        font-size="92" font-weight="600" letter-spacing="1.84">CoMesh</text>
+
+  <text x="800.0" y="311.6" text-anchor="middle" fill="#a4acb6"
+        font-family="'Segoe UI','Helvetica Neue',Helvetica,Arial,sans-serif"
+        font-size="26" letter-spacing="1.56">YOUR COMPUTE, MESHED</text>
+
+  <rect x="0.5" y="0.5" width="1599" height="519" fill="none" stroke="#e8ebee" stroke-opacity="0.06"/>
+</svg>
