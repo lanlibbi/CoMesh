@@ -88,6 +88,23 @@ def _user_allows_model(user: User, model: str) -> bool:
     return user.can_use_model(model)
 
 
+def angebotene_cloud_modelle(db: Session) -> set:
+    """Cloud-Modelle, die mindestens ein aktiver Node anbietet.
+
+    Ein Node mit `allowed_models = None` bietet alle **lokalen** Modelle an und keine Cloud —
+    Cloud muss der Betreiber ausdrücklich in die Liste schreiben. Damit entscheidet der
+    Provider, welche Cloud-Modelle überhaupt zur Verfügung stehen.
+    """
+    from models import _is_cloud_model_name
+
+    namen: set = set()
+    for node in db.query(GpuNode).filter(GpuNode.is_enabled == True).all():  # noqa: E712
+        for modell in (node.get_allowed_models() or []):
+            if _is_cloud_model_name(modell):
+                namen.add(modell)
+    return namen
+
+
 def find_best_node(
     db: Session,
     model: str,
@@ -416,6 +433,21 @@ async def route_request(
     # If the user has not opted in to the requested model (e.g. cloud models
     # are off by default), fail fast with a clear 403 message rather than
     # trying every node and returning a generic 502/503.
+    # Cloud-Modelle brauchen zusätzlich eine Freigabe auf der Anbieterseite: irgendein
+    # aktiver Node muss das Modell in seiner Liste führen.
+    from models import _is_cloud_model_name
+    if _is_cloud_model_name(model) and model not in angebotene_cloud_modelle(db):
+        return {
+            "ok": False,
+            "source": "denied",
+            "node_id": None,
+            "response": None,
+            "error": (
+                f"Cloud model '{model}' is not offered by any node. "
+                "A provider must release it for their node (Geräte → Modelle)."
+            ),
+        }
+
     if not _user_allows_model(user, model):
         from models import _is_cloud_model_name
         if _is_cloud_model_name(model):

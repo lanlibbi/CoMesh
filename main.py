@@ -514,7 +514,8 @@ async def net_echo(request: Request):
 
 
 @app.get("/v1/models")
-async def list_models(user: User = Depends(get_current_user)):
+async def list_models(user: User = Depends(get_current_user),
+                      db: Session = Depends(get_db)):
     """Modelle, die **dieses Konto** nutzen darf — in der OpenAI-Form.
 
     OpenAI-Clients lesen `data[].id`, die Chat-Seite liest `models[].name`, deshalb
@@ -539,6 +540,19 @@ async def list_models(user: User = Depends(get_current_user)):
         m for m in (roh.get("models") or [])
         if user.can_use_model(m.get("name") or m.get("model") or "")
     ]
+
+    # Cloud-Modelle zusätzlich auf das begrenzen, was ein Provider an seinem Node
+    # freigegeben hat. Ohne diese Bedingung schaltet "Cloud erlauben" den ganzen Katalog
+    # frei, auch Modelle, die niemand anbietet.
+    from models import _is_cloud_model_name
+    from pool import angebotene_cloud_modelle
+    if any(_is_cloud_model_name(m.get("name") or "") for m in modelle):
+        verfuegbar = angebotene_cloud_modelle(db)
+        modelle = [
+            m for m in modelle
+            if not _is_cloud_model_name(m.get("name") or "")
+            or (m.get("name") or "") in verfuegbar
+        ]
 
     def _erstellt(eintrag: dict) -> int:
         # Ollama liefert modified_at als ISO-Zeit; OpenAI-Clients erwarten eine Zahl.

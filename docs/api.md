@@ -312,6 +312,11 @@ Provider trägt selbst bei:
 Wer einem Consumer „alle lokalen" geben will, schreibt sie als Liste ins Konto (Admin-Oberfläche →
 Freigaben → **Modelle** → „Alle lokalen freigeben").
 
+**Cloud-Modelle brauchen zwei Freigaben.** Das Konto muss sie erlauben (`allow_cloud` oder Liste)
+**und** ein aktiver Node muss sie anbieten — `gpu_nodes.allowed_models` muss den Namen ausdrücklich
+enthalten. `None` beim Node heißt „alle lokalen, keine Cloud". Was kein Provider anbietet, erscheint
+auch bei erlaubtem Cloud-Häkchen nicht in `/v1/models`.
+
 `GET /v1/available-models` bleibt ungefiltert — das ist der Katalog fürs Profil.
 
 ## Admin

@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.6.2 — 2026-10-21
+
+**Cloud-Modelle nur mit Provider-Freigabe**
+- `allow_cloud` am Konto schaltete bisher **alle** Cloud-Modelle des Katalogs frei — auch solche, die
+  kein Provider angeboten hatte. Jetzt gilt: nutzbar ist ein Cloud-Modell nur, wenn das Konto es
+  erlaubt **und** ein aktiver Node es in `gpu_nodes.allowed_models` führt. `None` beim Node bedeutet
+  weiterhin „alle lokalen, keine Cloud".
+- `GET /v1/models` filtert entsprechend; was niemand anbietet, taucht auch bei gesetztem Cloud-Häkchen
+  nicht auf.
+- `docs/api.md` beschreibt die doppelte Freigabe.
+
 ## 0.6.1 — 2026-10-21
 
 **Consumer sehen nur noch ausdrücklich freigegebene Modelle**
