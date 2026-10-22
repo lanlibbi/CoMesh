@@ -236,7 +236,7 @@ function registerForm() {
         };
         const r = await API("/auth/register", { method: "POST", body });
         if ((r.registration_status || r.status) === "pending") {
-          toast("Registrierung eingereicht — wartet auf Freigabe durch einen Administrator.");
+          toast(I18n.t("register.pending"));
           this.loading = false;
           setTimeout(() => { window.location.href = "login.html"; }, 1200);
           return;

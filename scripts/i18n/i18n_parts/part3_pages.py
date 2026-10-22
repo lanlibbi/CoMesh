@@ -254,4 +254,10 @@ KEYS = {
         'es': 'Solo se muestran los Model liberados para tu cuenta; sin restricción, todos los locales. Los Model en la nube se habilitan en el perfil.',
         'fr': "Seuls les Model libérés pour votre compte sont affichés — sans restriction, tous les locaux. Les Model cloud s'autorisent dans le profil.",
     },
+    "register.pending": {
+        'de': 'Registrierung eingereicht — ein Administrator gibt das Konto frei.',
+        'en': 'Registration submitted — an administrator will release the account.',
+        'es': 'Registro enviado — un administrador liberará la cuenta.',
+        'fr': 'Inscription envoyée — un administrateur libérera le compte.',
+    },
 }

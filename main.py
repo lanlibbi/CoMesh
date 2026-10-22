@@ -1218,6 +1218,9 @@ def _auth_response(db, user, raw_token, key_prefix, credits,
         key_prefix=key_prefix,
         credits=credits,
         credits_enabled=credits_enabled(db),
+        # Ohne diesen Wert meldet die Antwort "approved" (pydantic-Vorgabe), auch wenn das
+        # Konto in der Datenbank in der Warteschlange steht.
+        registration_status=getattr(user, "registration_status", "approved") or "approved",
         token_type=token_type,
         expires_at=expires_at.isoformat() if expires_at else None,
         expires_in=(int((expires_at - __import__("datetime").datetime.utcnow()).total_seconds()) if expires_at else None),
@@ -1247,11 +1250,14 @@ def auth_register(req: RegisterRequest, request: Request, db: Session = Depends(
     elif req.allow_cloud:
         allowed_models_value = []
 
+    # Ein neues Konto ist NICHT automatisch nutzbar: es wartet auf die Freigabe durch
+    # einen Administrator, hat keinen Schlüssel und noch kein Guthaben. Vorher stand hier
+    # "approved" — die Registrierung war damit eine Selbstbedienung ohne Freigabe.
     user = User(
         email=email,
         name=req.name,
-        is_active=True,
-        registration_status="approved",
+        is_active=False,
+        registration_status="pending",
         password_hash=hash_password(req.password),
         role=role,
         signup_credits=req.initial_credits,
@@ -1260,22 +1266,15 @@ def auth_register(req: RegisterRequest, request: Request, db: Session = Depends(
     db.flush()
     if allowed_models_value is not None:
         user.set_allowed_models(allowed_models_value)
-    from datetime import datetime as _dt, timedelta as _td
-    db.add(CreditTransaction(
-        user_id=user.id,
-        amount=req.initial_credits,
-        balance_after=req.initial_credits,
-        reason="signup credit",
-    ))
-    raw_key, key_hash, key_prefix = issue_token(
-        db, user, token_type="api_key", ttl_days=API_KEY_TTL_DAYS, label="default"
-    )
+    # Kein Guthaben und kein Schlüssel vor der Freigabe: das Startguthaben bucht der
+    # Approve-Pfad ("signup credit (approved)"), sonst steht es doppelt im Konto.
+    raw_key, key_prefix = "", ""
     db.commit()
     db.refresh(user)
+    log.info(f"registration pending: user {user.id} ({user.email})")
 
-    expires = (_dt.utcnow() + _td(days=API_KEY_TTL_DAYS)) if API_KEY_TTL_DAYS > 0 else None
-    return _auth_response(db, user, raw_key, key_prefix, req.initial_credits,
-                          token_type="api_key", expires_at=expires)
+    return _auth_response(db, user, raw_key, key_prefix, 0.0,
+                          token_type="api_key", expires_at=None)
 
 
 @app.post("/auth/login", response_model=AuthResponse)

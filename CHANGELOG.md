@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.6.3 — 2026-10-22
+
+**Registrierung wartet wieder auf Freigabe**
+- Der Register-Endpunkt setzte `registration_status = "approved"` und `is_active = True` fest und
+  stellte sofort einen API-Schlüssel aus. Ein neues Konto war damit ohne Zutun eines Administrators
+  benutzbar — die Freigabe, die es in der Oberfläche längst gibt, wurde vom Server übersprungen.
+- Neue Konten entstehen jetzt als `pending`, inaktiv und **ohne** Schlüssel. Startguthaben bucht der
+  Freigabe-Pfad (nicht mehr doppelt: einmal bei der Registrierung, einmal bei der Freigabe).
+- `resolve_token` weist nicht freigegebene Konten mit **403** ab. Vorher prüfte nur der Login den
+  Status — ein Konto mit ausgestelltem Schlüssel kam über die API weiter durch.
+- Der Hinweis „Registrierung eingereicht" ist ein Übersetzungsschlüssel in vier Sprachen.
+
 ## 0.6.2 — 2026-10-21
 
 **Cloud-Modelle nur mit Provider-Freigabe**

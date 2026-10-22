@@ -16,6 +16,27 @@ eintraegt, schickt es doppelt und bekommt 401.
 
 ---
 
+## Registrierung und Freigabe
+
+`POST /auth/register` legt ein Konto **in der Warteschlange** an:
+
+| Feld | Wert direkt nach der Registrierung |
+| --- | --- |
+| `registration_status` | `pending` |
+| `is_active` | `false` |
+| `api_key` in der Antwort | `""` — es wird keiner ausgestellt |
+| `credits` | `0` — Startguthaben bucht erst die Freigabe |
+
+Ein Administrator gibt das Konto unter **Admin → Freigaben** frei (`POST
+/admin/registrations/{id}/approve`); dabei wird `registration_status` auf `approved` gesetzt,
+`is_active` aktiviert, das Startguthaben gebucht und ein Schlüssel im Profil ausstellbar.
+`reject` setzt `rejected`; ein so markiertes Konto kommt nicht durch den Login.
+
+**Der Status wird an zwei Stellen geprüft**, nicht nur beim Login: `resolve_token` weist ein
+nicht freigegebenes Konto mit **403 `Registration pending manual approval.`** ab. Wer nur den
+Login prüft, lässt Konten mit bereits ausgestelltem Schlüssel über die API weiterarbeiten.
+
+
 ## Health
 
 ### `GET /health`

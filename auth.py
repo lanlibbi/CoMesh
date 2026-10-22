@@ -307,6 +307,13 @@ def resolve_token(db: Session, raw_token: str, *, touch: bool = True) -> Tuple[A
             headers={"WWW-Authenticate": "Bearer"},
         )
     user = db.query(User).filter(User.id == api_key.user_id).first()
+    if user and getattr(user, "registration_status", "approved") != "approved":
+        # Ein Konto in der Warteschlange darf auch mit einem ausgestellten Schlüssel nicht
+        # arbeiten — sonst umgeht die Registrierung die Freigabe auf dem API-Weg.
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Registration pending manual approval.",
+        )
     if not user or not user.is_active:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
