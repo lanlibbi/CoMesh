@@ -8,6 +8,17 @@ Die Langfassung hier ist deutsch — bei Abweichungen gilt die Seite.
 
 ## English summary
 
+The portal at the same address (without `/v1`) is the quickest way to try the pool: pick a model in
+**Chat** and send — Enter sends, Shift+Enter breaks the line, and a checkbox switches to Ctrl+Enter.
+**+ New** keeps several conversations side by side, each with its own history and model; a streaming
+answer stays in the conversation it belongs to even if you switch tabs. Transcripts live in the
+browser (`localStorage`) only.
+
+Administrators additionally get **Accounts** (approve registrations, roles, passwords, credits, keys,
+per-account model releases, optional e-mail notice via SMTP) and **Usage (all)** with sortable columns.
+**Devices** lists every contributed machine; agent addresses are masked by default, an owner may choose
+to appear as "anonym", and a "part-time" tag marks machines that do not run around the clock.
+
 CoMesh is a shared way to reach computing power for AI models: members contribute machines
 with free GPUs, everyone else uses them through one OpenAI-compatible endpoint. Two roles,
 combinable: **users** need an OpenAI-compatible client and a key (nothing to install),
@@ -105,6 +116,30 @@ api_key:  DEIN-SCHLUESSEL          # ohne "Bearer"
 ```
 
 Wer in einer Konfiguration `Bearer …` einträgt, schickt es doppelt und bekommt 401.
+
+## Im Portal arbeiten
+
+Die Oberfläche unter derselben Adresse (ohne `/v1`) ist der bequemste Weg, den Pool zu testen.
+
+**Chat.** Oben das Modell wählen — angeboten wird nur, wofür dein Konto freigegeben ist. Standardmäßig
+sendet **Enter**, und Shift+Enter macht eine neue Zeile; wer lieber mit Zeilenumbrüchen arbeitet,
+schaltet das Kästchen unter dem Eingabefeld auf „Strg+Enter sendet". Über **+ Neu** laufen mehrere
+Unterhaltungen nebeneinander: jede mit eigenem Verlauf, jede mit eigenem Modell, und ein laufender
+Antwortstrom bleibt in der Unterhaltung, in der gefragt wurde, auch wenn du zwischendurch den Reiter
+wechselst. Die Verläufe liegen im Browser (`localStorage`) und überleben ein Neuladen — ein anderer
+Browser sieht sie nicht.
+
+**Konten** (nur Administration). Ausstehende Anmeldungen freigeben oder ablehnen, Rollen setzen,
+Passwörter neu setzen, Credits buchen, Schlüssel ausstellen, Modelle je Konto freigeben. Ist SMTP
+eingerichtet, kommt bei jeder neuen Anmeldung eine Nachricht an die hinterlegte Adresse.
+
+**Verbrauch (alle)** (nur Administration). Token und Credits je Konto, sortierbar über die
+Spaltenköpfe; ein Klick sortiert, ein zweiter dreht die Richtung.
+
+**Geräte.** Zeigt alle beigetragenen Maschinen. Agentenadressen sind standardmäßig maskiert, ein Knopf
+im Kopf blendet sie ein. Hat ein Besitzer sein Konto anonymisieren lassen, steht dort „anonym" — die
+Adresse wird dann gar nicht erst ausgeliefert. Ein Etikett „zeitweise" heißt: die Maschine läuft nicht
+im Dauerbetrieb und ist nicht immer erreichbar.
 
 ## Credits
 
