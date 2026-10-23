@@ -1,5 +1,29 @@
 # Changelog
 
+## 0.6.7 — 2026-10-23
+
+**Agenten-Konto und Berichte**
+
+- **`docs/agent-api.md`**: wie ein Agent Zugang bekommt (eigenes Konto mit Rolle `admin`, Schlüssel im
+  Profil), was es tun kann — Freigaben, Konten, Modelle, Guthaben, Geräte, Berichte, Protokoll — und
+  was ausdrücklich **nicht** (kein Zugriff auf den Quellbaum, keine Schema-Änderung, Protokoll nur
+  lesbar, ein Administrator kann sich nicht selbst aussperren). Dazu die Fehlerbilder 401/403/409/422.
+- **`GET /admin/usage/export.csv?window=…`** — Verbrauch aller Konten als CSV, Semikolon als Trenner
+  und Komma als Dezimalzeichen, mit BOM damit Excel Umlaute richtig liest.
+- **`GET /admin/audit/export.csv?limit=…`** — Protokoll als CSV, für Berichte „wer hat was freigegeben".
+- **`scripts/agent-report.sh <portal> <schlüsseldatei> [fenster]`** — holt beide CSVs und zeigt vorher
+  das angemeldete Konto und die ausstehenden Freigaben. Der Schlüssel wird nur aus einer Datei
+  gelesen, nie als Argument.
+- **Chat: mehrere Unterhaltungen parallel** (aus 0.6.6 nachgezogen, siehe Commit `ed6093e`).
+
+**Gemessen:** `usage/export.csv?window=7d` liefert 3 Datenzeilen mit den Spalten
+Konto;Name;Rolle;Status;Token;Anfragen;Modelle;Credits;Quota;Zuletzt, `audit/export.csv?limit=200`
+27 Zeilen; beide antworten ohne Schlüssel mit 401.
+
+**Fehler beim Bauen gefunden:** der erste Anlauf des Verbrauch-Exports endete in einem 500er —
+`build_admin_usage` gibt ein pydantic-Objekt zurück, kein `dict`, `.get("users")` scheiterte an
+`AttributeError`. Behoben, bevor jemand den Endpunkt benutzt hat.
+
 ## 0.6.6 — 2026-10-23
 
 **E-Mail-Benachrichtigung bei ausstehender Freigabe, SMTP in der Datenbank**

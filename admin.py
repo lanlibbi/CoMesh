@@ -1460,6 +1460,78 @@ def admin_enable_node(
 # ----------------------------------------------------------------------------
 # Usage analytics (platform-wide)
 # ----------------------------------------------------------------------------
+def _csv(text: str, dateiname: str):
+    """CSV als Download: Semikolon als Trenner, UTF-8 mit BOM für Tabellenprogramme."""
+    from fastapi import Response
+
+    return Response(
+        content=("\ufeff" + text).encode("utf-8"),
+        media_type="text/csv; charset=utf-8",
+        headers={"Content-Disposition": f'attachment; filename="{dateiname}"'},
+    )
+
+
+def _csv_feld(wert) -> str:
+    """Ein CSV-Feld: Semikolon und Anführungszeichen maskieren, Zahlen mit Komma."""
+    if wert is None:
+        return ""
+    if isinstance(wert, float):
+        text = f"{wert:.6f}".rstrip("0").rstrip(".").replace(".", ",")
+    else:
+        text = str(wert)
+    if any(z in text for z in (";", '"', "\n", "\r")):
+        return '"' + text.replace('"', '""') + '"'
+    return text
+
+
+@router.get("/usage/export.csv")
+def admin_usage_csv(
+    window: str = Query("7d", description="24h | 7d | 30d | all"),
+    include_inactive: bool = Query(True, description="False = nur aktive Konten"),
+    admin: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    """Verbrauch aller Konten als CSV — Grundlage für Berichte."""
+    # build_admin_usage gibt ein pydantic-Objekt zurueck (AdminUsageOut), kein dict --
+    # der Zugriff ueber .get() endete in einem 500er.
+    daten = build_admin_usage(db, window=window, limit=10_000, include_inactive=include_inactive)
+    spalten = ["Konto", "Name", "Rolle", "Status", "Token", "Anfragen",
+               "Modelle", "Credits", "Quota", "Zuletzt"]
+    zeilen = [";".join(spalten)]
+    for u in daten.users:
+        zeilen.append(";".join(_csv_feld(x) for x in (
+            u.email, u.name, u.role,
+            "aktiv" if u.is_active else "inaktiv",
+            u.total_tokens, u.requests, u.models_used,
+            u.credits, u.quota_mode, u.last_used,
+        )))
+    log.info(f"admin usage csv: window={window}, {len(zeilen) - 1} Zeilen")
+    return _csv("\r\n".join(zeilen) + "\r\n", f"comesh-verbrauch-{window}.csv")
+
+
+@router.get("/audit/export.csv")
+def admin_audit_csv(
+    limit: int = Query(1000, ge=1, le=10_000),
+    admin: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    """Protokoll als CSV — für Berichte über Freigaben und Änderungen."""
+    eintraege = (
+        db.query(AdminAuditLog)
+        .order_by(AdminAuditLog.created_at.desc())
+        .limit(limit)
+        .all()
+    )
+    zeilen = [";".join(["Zeit", "Aktion", "Zielart", "Ziel-ID", "Admin-ID", "Nutzdaten"])]
+    for e in eintraege:
+        zeilen.append(";".join(_csv_feld(x) for x in (
+            e.created_at.isoformat(sep=" ", timespec="seconds") if e.created_at else "",
+            e.action, e.target_type, e.target_id, e.admin_user_id, e.payload,
+        )))
+    log.info(f"admin audit csv: {len(zeilen) - 1} Zeilen")
+    return _csv("\r\n".join(zeilen) + "\r\n", "comesh-protokoll.csv")
+
+
 @router.get("/usage", response_model=AdminUsageOut)
 def admin_usage(
     window: str = Query("7d", description="24h | 7d | 30d | all"),

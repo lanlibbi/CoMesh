@@ -247,6 +247,7 @@ anzutasten. Details: [docs/api.md](docs/api.md).
 - [docs/architecture.md](docs/architecture.md) — deep-dive architecture
 - [docs/portal.md](docs/portal.md) — portal setup, config, API
 - [docs/node-agent.md](docs/node-agent.md) — node-agent setup and deployment
+- [docs/agent-api.md](docs/agent-api.md) — **agent account**: full-access account for automation (approvals, reports, usage); what it can and cannot do
 - [docs/anleitung.md](docs/anleitung.md) — **user guide**: what CoMesh is, first request, credits, error codes (German long form; the in-portal page `/hilfe.html` switches between German and English)
 - [docs/api.md](docs/api.md) — full API reference
 - [docs/network.md](docs/network.md) — addressing, DHCP, mDNS, optional mesh VPN
