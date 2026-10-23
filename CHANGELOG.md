@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.6.8 — 2026-10-23
+
+**Richtige Pfade für Agenten — und die Falle dabei**
+
+- Die Dokumentation und `scripts/agent-report.sh` sprachen von `/v1/admin/…`. Das ist falsch: die
+  Administration liegt unter **`/api/admin/…`**, die Mandanten-API unter **`/api/v1/…`**.
+- **`/admin/…` ohne `/api`** liefert die HTML-Oberfläche mit **Status 200** — kein Fehler, kein JSON.
+  Ein Agent, der nur den Statuscode prüft, hält das für Erfolg und bekommt still keine Daten. Beide
+  Stellen warnen jetzt davor; das Skript bricht bei `--fail-with-body` laut ab, statt leere Dateien
+  zu erzeugen.
+- Nachgewiesen über den öffentlichen Namen: `/admin/whoami` → HTML, `/api/admin/whoami` → JSON,
+  `/v1/admin/whoami` → 404. `usage/export.csv` über `/api/admin/` liefert 412 Bytes, das Protokoll
+  4249 Bytes.
+
 ## 0.6.7 — 2026-10-23
 
 **Agenten-Konto und Berichte**

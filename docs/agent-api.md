@@ -9,7 +9,7 @@ auch nicht.
 ## Konto anlegen
 
 1. Als Administrator anmelden, **Konten** öffnen, **Konto anlegen**.
-2. Rolle `admin` wählen — nur damit sind die `/admin`-Endpunkte erreichbar.
+2. Rolle `admin` wählen — nur damit sind die `/api/admin`-Endpunkte erreichbar.
 3. Im Profil des neuen Kontos einen API-Schlüssel ausstellen. Der Wert wird **einmal**
    angezeigt; danach lässt sich nur noch das Präfix abfragen.
 4. Den Schlüssel dort ablegen, wo der Agent ihn liest — Datei mit `chmod 600`, nie im
@@ -20,33 +20,38 @@ API-Schlüssel und antwortet mit `401 API key is revoked or inactive.`
 
 ## Aufrufe
 
-Basis ist immer `https://<portal>/v1`; die Administration liegt unter `/admin`, also:
+Basis ist `https://<portal>`. Die Mandanten-API liegt unter `/api/v1`, die Administration unter
+`/api/admin`:
+
+> **Der häufigste Fehler: `/admin/…` ohne `/api`.** Dieser Pfad liefert die HTML-Oberfläche mit
+> Status **200** — kein Fehler, kein JSON, und ein Agent hält es für Erfolg. Immer `/api/admin/…`
+> benutzen und beim ersten Aufruf prüfen, dass die Antwort mit `{` beginnt.
 
 ```bash
 BASE=https://comesh.example.net
 KEY=$(cat ~/.config/comesh/agent.key)      # Datei mit chmod 600
 
 # Wer bin ich?
-curl -s "$BASE/v1/me" -H "Authorization: Bearer $KEY"
+curl -s "$BASE/api/v1/me" -H "Authorization: Bearer $KEY"
 
 # Wartende Anmeldungen ansehen
-curl -s "$BASE/v1/admin/registrations?status=pending" -H "Authorization: Bearer $KEY"
+curl -s "$BASE/api/admin/registrations?status=pending" -H "Authorization: Bearer $KEY"
 
 # Eine Anmeldung freigeben
-curl -s -X POST "$BASE/v1/admin/registrations/149/approve" \
+curl -s -X POST "$BASE/api/admin/registrations/149/approve" \
      -H "Authorization: Bearer $KEY"
 
 # Modelle eines Kontos setzen (Liste = genau diese, null = Standard, [] = nichts)
-curl -s -X PATCH "$BASE/v1/admin/users/102" -H "Authorization: Bearer $KEY" \
+curl -s -X PATCH "$BASE/api/admin/users/102" -H "Authorization: Bearer $KEY" \
      -H "Content-Type: application/json" \
      -d '{"allowed_models":["llama3.1:8b","qwen3-vl:8b"],"allow_cloud":false}'
 
 # Bericht: Verbrauch aller Konten als CSV
-curl -s "$BASE/v1/admin/usage/export.csv?window=30d" \
+curl -s "$BASE/api/admin/usage/export.csv?window=30d" \
      -H "Authorization: Bearer $KEY" -o verbrauch-30d.csv
 
 # Bericht: Protokoll (wer hat was freigegeben) als CSV
-curl -s "$BASE/v1/admin/audit/export.csv?limit=2000" \
+curl -s "$BASE/api/admin/audit/export.csv?limit=2000" \
      -H "Authorization: Bearer $KEY" -o protokoll.csv
 ```
 
@@ -58,16 +63,16 @@ richtig liest.
 
 | Aufgabe | Endpunkt |
 | --- | --- |
-| Wartende Anmeldungen auflisten | `GET /admin/registrations?status=pending` |
-| Freigeben / ablehnen | `POST /admin/registrations/{id}/approve` · `/reject` |
-| Konto anlegen | `POST /admin/users` |
-| Rolle, Name, Aktiv-Zustand, Modelle, Cloud ändern | `PATCH /admin/users/{id}` |
-| Guthaben buchen | `POST /admin/users/{id}/topup` |
-| Schlüssel ausstellen / widerrufen | `POST /admin/users/{id}/keys` · `/keys/{kid}/revoke` |
-| Geräte ansehen, pausieren | `GET /admin/nodes` · `POST /admin/users/{uid}/nodes/{nid}/enable` |
-| Verbrauch, Berichte | `GET /admin/usage` · `GET /admin/usage/export.csv` |
-| Protokoll | `GET /admin/audit` · `GET /admin/audit/export.csv` |
-| Mail-Einstellungen | `GET/PUT /admin/mail` · `POST /admin/mail/test` |
+| Wartende Anmeldungen auflisten | `GET /api/admin/registrations?status=pending` |
+| Freigeben / ablehnen | `POST /api/admin/registrations/{id}/approve` · `/reject` |
+| Konto anlegen | `POST /api/admin/users` |
+| Rolle, Name, Aktiv-Zustand, Modelle, Cloud ändern | `PATCH /api/admin/users/{id}` |
+| Guthaben buchen | `POST /api/admin/users/{id}/topup` |
+| Schlüssel ausstellen / widerrufen | `POST /api/admin/users/{id}/keys` · `/keys/{kid}/revoke` |
+| Geräte ansehen, pausieren | `GET /api/admin/nodes` · `POST /api/admin/users/{uid}/nodes/{nid}/enable` |
+| Verbrauch, Berichte | `GET /api/admin/usage` · `GET /api/admin/usage/export.csv` |
+| Protokoll | `GET /api/admin/audit` · `GET /api/admin/audit/export.csv` |
+| Mail-Einstellungen | `GET/PUT /api/admin/mail` · `POST /api/admin/mail/test` |
 
 Jeder schreibende Aufruf landet im Protokoll (`admin_audit_log`) mit Admin-Kennung,
 Aktion, Ziel und Nutzdaten — ohne Geheimnisse.
