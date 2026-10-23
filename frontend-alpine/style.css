@@ -1652,3 +1652,19 @@ td.neg { color: var(--err); }
   .auth-controls > * + *::before { display: none; }
 }
 
+
+/* hover-rueckmeldung — Karten und Zeilen zeigen, dass sie gemeint sind */
+.card {
+  transition: border-color .16s ease, background-color .16s ease, transform .16s ease;
+}
+.card:hover {
+  border-color: var(--brass-line);
+  background-color: color-mix(in srgb, var(--surface) 88%, var(--brass) 12%);
+}
+.card.link:hover { transform: translateY(-1px); }
+tbody tr { transition: background-color .12s ease; }
+tbody tr:hover { background-color: color-mix(in srgb, var(--surface-2) 82%, var(--brass) 18%); }
+@media (prefers-reduced-motion: reduce) {
+  .card, tbody tr { transition: none; }
+  .card.link:hover { transform: none; }
+}

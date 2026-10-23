@@ -96,14 +96,21 @@
 
     <form @submit.prevent="send()" class="composer mt-3">
       <textarea class="input grow" rows="2" x-model="input"
-                @keydown.enter.exact.prevent="send()"
-                placeholder="Nachricht schreiben — Enter sendet, Shift+Enter macht eine neue Zeile"
+                @keydown.enter="beiEnter($event)"
+                :placeholder="enterSend
+                  ? 'Nachricht schreiben — Enter sendet, Shift+Enter macht eine neue Zeile'
+                  : 'Nachricht schreiben — Strg+Enter sendet, Enter macht eine neue Zeile'"
                 :disabled="loading"></textarea>
       <button type="submit" class="btn-primary" :disabled="loading || !input.trim() || !model">
         <span x-show="!loading" data-i18n="senden">Senden</span>
         <span x-show="loading">…</span>
       </button>
     </form>
+
+    <label class="check t-xs text-mute mt-2" style="cursor:pointer">
+      <input type="checkbox" x-model="enterSend" @change="enterSendMerken()">
+      <span>Enter sendet (aus: Strg+Enter sendet, Enter macht eine neue Zeile)</span>
+    </label>
 
     <div class="row between mt-2">
       <span class="t-xs text-mute mono" x-show="lastUsage">
@@ -127,6 +134,7 @@
         me: Auth.currentUser(),
         models: [],
         model: "",
+    enterSend: (localStorage.getItem("comesh_enter_send") ?? "1") === "1",
         messages: [],
         input: "",
         loading: false,
@@ -166,6 +174,18 @@
           } catch (e) {
             toast("Modelle konnten nicht geladen werden: " + e.message, "err");
           }
+        },
+
+        /** Enter sendet nur, wenn es eingeschaltet ist; sonst neue Zeile. */
+        beiEnter(e) {
+          if (e.isComposing) return;              // IME-Eingabe nicht abschneiden
+          if (e.key !== "Enter") return;
+          if (e.ctrlKey || e.metaKey) { e.preventDefault(); this.send(); return; }
+          if (this.enterSend && !e.shiftKey) { e.preventDefault(); this.send(); }
+        },
+
+        enterSendMerken() {
+          try { localStorage.setItem("comesh_enter_send", this.enterSend ? "1" : "0"); } catch (e) {}
         },
 
         async send() {

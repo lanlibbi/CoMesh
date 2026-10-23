@@ -32,7 +32,9 @@ document.addEventListener("alpine:init", () => {
         this.allowedRaw = me.allowed_models === null || me.allowed_models === undefined
           ? null
           : [...me.allowed_models];
-        this.allowCloud = (this.selectedModels || []).some(m => this.isCloud(m));
+        // Nicht aus der Modellliste ableiten: die ist an dieser Stelle noch leer
+        // (availableModels kommt erst danach), dadurch sprang der Haken immer zurück.
+        this.allowCloud = me.allow_cloud === undefined ? false : !!me.allow_cloud;
         // Keep the cached user object in sync
         Auth.save({ ...(Auth.currentUser() || {}), role: this.role, allowed_models: me.allowed_models }, LS.get("api_key"));
       } catch (e) {

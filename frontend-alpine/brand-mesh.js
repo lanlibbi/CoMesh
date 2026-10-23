@@ -23,6 +23,9 @@
   var knoten = [];
   var kanten = [];
   var pakete = [];
+  // Zeigerposition in Canvas-Koordinaten; null = keine Maus über dem Mesh.
+  var zeiger = null;
+  var HOVER_RADIUS = 46;
 
   function cssVar(name, fallback) {
     var v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
@@ -138,18 +141,37 @@
     // Knoten: Hubs mit Ring, Blätter als Punkt
     for (var n = 0; n < knoten.length; n++) {
       var kn = knoten[n];
-      ctx.globalAlpha = 0.62;
-      ctx.fillStyle = farben.knoten;
+      // Abstand zum Zeiger: nahe Knoten wachsen und färben sich messingfarben.
+      var nah = false, naehe = 0;
+      if (zeiger) {
+        var dx = kn.x - zeiger.x, dy = kn.y - zeiger.y;
+        var d = Math.sqrt(dx * dx + dy * dy);
+        if (d < HOVER_RADIUS) {
+          nah = true;
+          naehe = 1 - d / HOVER_RADIUS;          // 0 am Rand, 1 direkt am Knoten
+        }
+      }
+      ctx.globalAlpha = nah ? 0.95 : 0.62;
+      ctx.fillStyle = nah ? farben.akzent : farben.knoten;
+      var r = kn.r * stufe * (1 + (nah ? 0.9 * naehe : 0));
       ctx.beginPath();
-      ctx.arc(kn.x, kn.y, kn.r * stufe, 0, Math.PI * 2);
+      ctx.arc(kn.x, kn.y, r, 0, Math.PI * 2);
       ctx.fill();
-      if (kn.hub) {
-        ctx.globalAlpha = 0.85;
+      if (kn.hub || nah) {
+        ctx.globalAlpha = nah ? 0.55 + 0.45 * naehe : 0.85;
         ctx.strokeStyle = farben.akzent;
-        ctx.lineWidth = 0.9 * stufe;
+        ctx.lineWidth = (0.9 + (nah ? 0.7 * naehe : 0)) * stufe;
         ctx.beginPath();
-        ctx.arc(kn.x, kn.y, kn.r * stufe + 2.6 * stufe, 0, Math.PI * 2);
+        ctx.arc(kn.x, kn.y, r + (2.6 + (nah ? 2.4 * naehe : 0)) * stufe, 0, Math.PI * 2);
         ctx.stroke();
+      }
+      if (nah) {
+        // weicher Schein um den Knoten, damit die Rückmeldung auch klein sichtbar ist
+        ctx.globalAlpha = 0.18 * naehe;
+        ctx.fillStyle = farben.akzent;
+        ctx.beginPath();
+        ctx.arc(kn.x, kn.y, r + 7 * stufe, 0, Math.PI * 2);
+        ctx.fill();
       }
     }
 
@@ -198,6 +220,20 @@
     cv.dataset.bereit = "1";
     farbenLesen();
     knotenBauen(cv.clientWidth || 232, cv.clientHeight || 48);
+    // Zeiger verfolgen. Nur einmal je Canvas anhängen, sonst sammeln sich Listener.
+    if (!cv.dataset.zeigerAktiv) {
+      cv.dataset.zeigerAktiv = "1";
+      var zeigerSetzen = function (ev) {
+        var r = cv.getBoundingClientRect();
+        zeiger = { x: ev.clientX - r.left, y: ev.clientY - r.top };
+        if (!laufend()) neuZeichnen();
+      };
+      cv.addEventListener("pointermove", zeigerSetzen, { passive: true });
+      cv.addEventListener("pointerleave", function () {
+        zeiger = null;
+        if (!laufend()) neuZeichnen();
+      });
+    }
     // Erst ein Standbild: das setzt den Zeichenpuffer auf die richtige Größe und
     // füllt die Fläche auch dann, wenn die Schleife nicht anläuft (versteckter Tab).
     zeichnen(0, true);
@@ -208,6 +244,15 @@
     letzteZeit = 0;
     raf = requestAnimationFrame(schleife);
     return true;
+  }
+
+  function laufend() {
+    return laeuft;
+  }
+
+  /** Einmal neu zeichnen, wenn keine Animationsschleife läuft (Standbild). */
+  function neuZeichnen() {
+    zeichnen(0, !laufend());
   }
 
   function themenWechselBeobachten() {
