@@ -92,7 +92,7 @@ document.addEventListener("alpine:init", () => {
       }
     },
 
-    get users() { return (this.data && this.data.users) || []; }
+    get users() { return (this.data && this.data.users) || []; },
 
     /** Sortierung der Kontenliste: Spalte und Richtung. */
     sortKey: "total_tokens",

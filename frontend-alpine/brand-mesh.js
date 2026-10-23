@@ -220,16 +220,22 @@
     cv.dataset.bereit = "1";
     farbenLesen();
     knotenBauen(cv.clientWidth || 232, cv.clientHeight || 48);
-    // Zeiger verfolgen. Nur einmal je Canvas anhängen, sonst sammeln sich Listener.
-    if (!cv.dataset.zeigerAktiv) {
-      cv.dataset.zeigerAktiv = "1";
-      var zeigerSetzen = function (ev) {
-        var r = cv.getBoundingClientRect();
-        zeiger = { x: ev.clientX - r.left, y: ev.clientY - r.top };
-        if (!laufend()) neuZeichnen();
-      };
-      cv.addEventListener("pointermove", zeigerSetzen, { passive: true });
-      cv.addEventListener("pointerleave", function () {
+    // Zeiger verfolgen: am Dokument, nicht am Canvas. Der Canvas liegt hinter dem
+    // Seiteninhalt (auf Anmeldeseiten hinter der Karte), dort kommt kein pointermove an.
+    if (!window.__comeshZeigerAktiv) {
+      window.__comeshZeigerAktiv = true;
+      document.addEventListener("pointermove", function (ev) {
+        var c = document.getElementById("brand-mesh");
+        if (!c) return;
+        var r = c.getBoundingClientRect();
+        var x = ev.clientX - r.left, y = ev.clientY - r.top;
+        var drin = x >= 0 && y >= 0 && x <= r.width && y <= r.height;
+        var vorher = zeiger !== null;
+        zeiger = drin ? { x: x, y: y } : null;
+        // Nur neu zeichnen, wenn sich am Zustand etwas geändert hat (Standbild-Fall).
+        if (!laufend() && vorher !== (zeiger !== null)) neuZeichnen();
+      }, { passive: true });
+      document.addEventListener("pointerleave", function () {
         zeiger = null;
         if (!laufend()) neuZeichnen();
       });

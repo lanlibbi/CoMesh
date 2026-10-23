@@ -1658,12 +1658,12 @@ td.neg { color: var(--err); }
   transition: border-color .16s ease, background-color .16s ease, transform .16s ease;
 }
 .card:hover {
-  border-color: var(--brass-line);
-  background-color: color-mix(in srgb, var(--surface) 88%, var(--brass) 12%);
+  border-color: var(--line-strong);
+  box-shadow: 0 1px 0 rgb(255 255 255 / 0.02) inset, 0 6px 18px -12px rgb(0 0 0 / 0.55);
 }
 .card.link:hover { transform: translateY(-1px); }
 tbody tr { transition: background-color .12s ease; }
-tbody tr:hover { background-color: color-mix(in srgb, var(--surface-2) 82%, var(--brass) 18%); }
+tbody tr:hover { background-color: color-mix(in srgb, var(--surface-2) 94%, var(--brass) 6%); }
 @media (prefers-reduced-motion: reduce) {
   .card, tbody tr { transition: none; }
   .card.link:hover { transform: none; }
