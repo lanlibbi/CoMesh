@@ -24,6 +24,16 @@ document.addEventListener("alpine:init", () => {
       { key: "provider", label: "provider" },
       { key: "admin", label: "admin — darf verwalten" },
     ],
+    // SMTP-Einstellungen (in der Datenbank, nicht in der .env)
+    mailOffen: false,
+    mailBusy: false,
+    mailMeldung: "",
+    mail: {
+      enabled: false, host: "", port: 587, security: "starttls", username: "",
+      password: "", password_set: false, sender: "", sender_name: "CoMesh",
+      notify_to: "", notify_pending: true,
+    },
+
     limit: 25,
     offset: 0,
     total: 0,
@@ -48,7 +58,52 @@ document.addEventListener("alpine:init", () => {
     formOffen: false,
     form: { email: "", name: "", password: "", role: "both", initial_credits: 100 },
 
+    async ladeMail() {
+      try {
+        const r = await api("/admin/mail", { auth: true });
+        this.mail = { ...this.mail, ...r, password: "" };
+      } catch (e) {
+        this.mailMeldung = "Einstellungen nicht lesbar: " + e.message;
+      }
+    },
+
+    async speichereMail() {
+      this.mailBusy = true;
+      this.mailMeldung = "";
+      try {
+        const body = {
+          enabled: !!this.mail.enabled, host: this.mail.host, port: Number(this.mail.port) || 587,
+          security: this.mail.security, username: this.mail.username,
+          sender: this.mail.sender, sender_name: this.mail.sender_name,
+          notify_to: this.mail.notify_to, notify_pending: !!this.mail.notify_pending,
+        };
+        if (this.mail.password) body.password = this.mail.password;   // leer = gespeichertes behalten
+        const r = await api("/admin/mail", { method: "PUT", auth: true, body });
+        this.mail = { ...this.mail, ...r, password: "" };
+        this.mailMeldung = "Gespeichert.";
+      } catch (e) {
+        this.mailMeldung = e.message;
+      } finally {
+        this.mailBusy = false;
+      }
+    },
+
+    async testMail() {
+      this.mailBusy = true;
+      this.mailMeldung = "sende …";
+      try {
+        const r = await api("/admin/mail/test", { method: "POST", auth: true });
+        this.mailMeldung = (r.ok ? "Testmail: " : "Fehler: ") + (r.detail || "") +
+          (r.to ? " → " + r.to : "");
+      } catch (e) {
+        this.mailMeldung = "Fehler: " + e.message;
+      } finally {
+        this.mailBusy = false;
+      }
+    },
+
     async init() {
+      this.ladeMail();
       if (!Auth.requireLogin()) return;
       await this.reload();
     },

@@ -258,6 +258,82 @@
         </div>
         <div class="t-sm text-err mt-2" x-show="modellHinweis" x-text="modellHinweis"></div>
       </section>
+    <!-- E-Mail-Benachrichtigung: SMTP in der Datenbank, damit sie ohne Serverzugriff pflegbar ist -->
+    <section class="card mt-3" x-show="!denied" x-cloak>
+      <div class="row between">
+        <h2 style="margin:0">E-Mail bei ausstehender Freigabe</h2>
+        <button type="button" class="btn-ghost btn-sm" @click="mailOffen = !mailOffen"
+                x-text="mailOffen ? 'schließen' : 'einrichten'"></button>
+      </div>
+      <p class="hint mt-2">
+        Sobald sich jemand anmeldet, geht eine Nachricht an die hier eingetragene Adresse.
+        Die Einstellungen liegen in der Datenbank, du brauchst also keinen Zugriff auf den Server.
+      </p>
+
+      <div x-show="mailOffen" x-cloak class="mt-3">
+        <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px">
+          <label class="field">
+            <span class="label">SMTP-Server</span>
+            <input class="input" x-model="mail.host" placeholder="smtp.beispiel.de" />
+          </label>
+          <label class="field">
+            <span class="label">Port</span>
+            <input class="input" type="number" x-model.number="mail.port" placeholder="587" />
+          </label>
+          <label class="field">
+            <span class="label">Sicherheit</span>
+            <select class="input" x-model="mail.security">
+              <option value="starttls">STARTTLS (meist 587)</option>
+              <option value="ssl">SSL/TLS (meist 465)</option>
+              <option value="none">ohne (nur lokaler Relay)</option>
+            </select>
+          </label>
+          <label class="field">
+            <span class="label">Benutzer</span>
+            <input class="input" x-model="mail.username" autocomplete="off" />
+          </label>
+          <label class="field">
+            <span class="label">Kennwort</span>
+            <input class="input" type="password" x-model="mail.password" autocomplete="new-password"
+                   :placeholder="mail.password_set ? 'gesetzt — leer lassen zum Behalten' : 'nicht gesetzt'" />
+          </label>
+          <label class="field">
+            <span class="label">Absenderadresse</span>
+            <input class="input" x-model="mail.sender" placeholder="portal@beispiel.de" />
+          </label>
+          <label class="field">
+            <span class="label">Absendername</span>
+            <input class="input" x-model="mail.sender_name" placeholder="CoMesh" />
+          </label>
+          <label class="field">
+            <span class="label">Benachrichtigung an</span>
+            <input class="input" x-model="mail.notify_to" placeholder="admin@beispiel.de" />
+          </label>
+        </div>
+
+        <div class="row wrap mt-3" style="gap:16px;align-items:center">
+          <label class="check">
+            <input type="checkbox" x-model="mail.enabled" />
+            <span>Benachrichtigung aktiv</span>
+          </label>
+          <label class="check">
+            <input type="checkbox" x-model="mail.notify_pending" />
+            <span>bei ausstehender Freigabe mailen</span>
+          </label>
+        </div>
+
+        <div class="row wrap mt-3" style="gap:8px">
+          <button type="button" class="btn-primary btn-sm" @click="speichereMail()" :disabled="mailBusy">Speichern</button>
+          <button type="button" class="btn-ghost btn-sm" @click="testMail()" :disabled="mailBusy">Testmail senden</button>
+          <span class="t-xs text-mute" x-show="mailMeldung" x-text="mailMeldung"></span>
+        </div>
+        <p class="hint mt-2">
+          Die Testmail geht an „Benachrichtigung an". Ein Fehler beim Versand steht daneben im Klartext —
+          typisch sind ein falscher Port oder ein Anbieter, der App-Kennwörter verlangt.
+        </p>
+      </div>
+    </section>
+
 </main>
 
 <script defer src="https://unpkg.com/alpinejs@3.5.1/dist/cdn.min.js"></script>

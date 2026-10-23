@@ -16,7 +16,7 @@ name: comesh
 services:
   api:
     build: .
-    image: comesh-api:0.6.4
+    image: comesh-api:0.6.6
     container_name: comesh-api
     restart: unless-stopped
     ports:
@@ -42,7 +42,7 @@ services:
 
   frontend:
     build: ./frontend-alpine
-    image: comesh-frontend:0.6.4
+    image: comesh-frontend:0.6.6
     container_name: comesh-frontend
     restart: unless-stopped
     ports:
@@ -63,7 +63,7 @@ services:
   node-agent:
     profiles: ["node"]
     build: ./node-agent
-    image: comesh-agent:0.6.4
+    image: comesh-agent:0.6.6
     container_name: comesh-agent
     restart: unless-stopped
     depends_on:

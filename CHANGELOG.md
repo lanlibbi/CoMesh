@@ -1,5 +1,25 @@
 # Changelog
 
+## 0.6.6 — 2026-10-23
+
+**E-Mail-Benachrichtigung bei ausstehender Freigabe, SMTP in der Datenbank**
+
+- Neue Seite auf **Konten**: SMTP-Server, Port, Sicherheitsstufe (STARTTLS/SSL/ohne), Benutzer,
+  Kennwort, Absender und Empfänger — aufklappbar, damit die Freigabeliste nicht darunter leidet.
+  Dazu **Testmail senden** mit Klartext-Fehler, wenn der Server nicht antwortet.
+- Die Einstellungen liegen als Schlüssel/Werte in `system_settings` (dieselbe Tabelle wie
+  `credits_enabled`), nicht in der `.env` — pflegbar ohne Serverzugriff. Das Kennwort wird
+  gespeichert, aber **nie** über die API zurückgegeben; gelesen wird nur `password_set`. Ein leeres
+  Feld beim Speichern lässt das hinterlegte Kennwort stehen.
+- Meldet sich jemand an, geht eine Nachricht an die eingetragene Adresse — in einem eigenen Thread.
+  Eine Anmeldung wartet nie auf einen fremden Mailserver und scheitert nie an ihm.
+- `mailer.py` nutzt `smtplib` aus der Standardbibliothek; keine neue Abhängigkeit, kein extra Container.
+
+**Gemessen:** Lesen liefert Vorgaben ohne Kennwort; Schreiben setzt Server und Empfänger, `password_set`
+wird `true`, das Kennwort kommt nicht zurück; die Testmail gegen einen unerreichbaren Server antwortet
+HTTP 200 mit `ok: false` und `gaierror: Name or service not known`; eine Registrierung bei aktiver
+Benachrichtigung landet weiter als `pending` und scheitert nicht.
+
 ## 0.6.5 — 2026-10-23
 
 **Anpassungsliste aus dem Betrieb, Teil eins**

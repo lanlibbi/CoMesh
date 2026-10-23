@@ -1206,6 +1206,79 @@ def admin_revoke_user_key(
 # ----------------------------------------------------------------------------
 # Nodes (all owners, including offline/disabled)
 # ----------------------------------------------------------------------------
+class MailSettingsIn(BaseModel):
+    """Teil-Update der SMTP-Einstellungen. Ein leeres `password` lässt das gespeicherte stehen."""
+    enabled: Optional[bool] = None
+    host: Optional[str] = None
+    port: Optional[int] = Field(None, ge=1, le=65535)
+    security: Optional[str] = Field(None, pattern="^(starttls|ssl|none)$")
+    username: Optional[str] = None
+    password: Optional[str] = None
+    sender: Optional[str] = None
+    sender_name: Optional[str] = None
+    notify_to: Optional[str] = None
+    notify_pending: Optional[bool] = None
+
+
+@router.get("/mail")
+def admin_mail_settings(
+    admin: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    """SMTP-Einstellungen lesen. Das Kennwort wird nie zurückgegeben, nur `password_set`."""
+    import mailer
+    return mailer.lade(db)
+
+
+@router.put("/mail")
+def admin_mail_update(
+    req: MailSettingsIn,
+    admin: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    import mailer
+    daten = {k: v for k, v in req.model_dump().items() if v is not None}
+    neu = mailer.speichere(db, daten)
+    # Nur die Feldnamen protokollieren — das Kennwort gehört nicht ins Protokoll.
+    db.add(AdminAuditLog(
+        admin_user_id=getattr(admin, "id", 0),
+        action="mail.settings.update",
+        target_type="settings",
+        target_id=None,
+        idempotency_key=None,
+        payload=json.dumps({"felder": sorted(daten)}, default=str),
+    ))
+    db.commit()
+    return neu
+
+
+@router.post("/mail/test")
+def admin_mail_test(
+    an: Optional[str] = None,
+    admin: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    """Testmail verschicken — an die eingetragene Adresse oder an eine angegebene."""
+    import mailer
+    werte = mailer._lies(db)
+    ziel = an or werte["notify_to"]
+    ok, meldung = mailer.sende(
+        db, ziel,
+        "CoMesh: Testnachricht",
+        "Wenn du das liest, sind die SMTP-Einstellungen des Portals in Ordnung.\n",
+    )
+    db.add(AdminAuditLog(
+        admin_user_id=getattr(admin, "id", 0),
+        action="mail.test",
+        target_type="settings",
+        target_id=None,
+        idempotency_key=None,
+        payload=json.dumps({"ok": ok, "empfaenger": ziel}, default=str),
+    ))
+    db.commit()
+    return {"ok": ok, "detail": meldung, "to": ziel}
+
+
 @router.get("/nodes", response_model=NodeListResponse)
 def admin_list_nodes(
     q: Optional[str] = Query(None, description="Substring match on node name, gpu_type or node address"),

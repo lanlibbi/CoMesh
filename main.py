@@ -1294,6 +1294,13 @@ def auth_register(req: RegisterRequest, request: Request, db: Session = Depends(
     db.commit()
     db.refresh(user)
     log.info(f"registration pending: user {user.id} ({user.email})")
+    # Administratoren informieren — im Hintergrund, damit die Registrierung nicht auf einen
+    # fremden Mailserver wartet. Fehler dabei bleiben folgenlos.
+    try:
+        import mailer
+        mailer.benachrichtige_freigabe(db, user)
+    except Exception as e:                                     # noqa: BLE001
+        log.warning(f"registration notification skipped: {e}")
 
     return _auth_response(db, user, raw_key, key_prefix, 0.0,
                           token_type="api_key", expires_at=None)

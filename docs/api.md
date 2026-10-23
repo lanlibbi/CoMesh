@@ -16,6 +16,23 @@ eintraegt, schickt es doppelt und bekommt 401.
 
 ---
 
+## Mail: Benachrichtigung bei ausstehender Freigabe
+
+Die SMTP-Einstellungen liegen in `system_settings` (Schlüssel `mail.*`) und sind über die
+Administration pflegbar — kein Serverzugriff nötig.
+
+| Endpunkt | Zweck |
+| --- | --- |
+| `GET /admin/mail` | Einstellungen lesen; das Kennwort wird **nie** zurückgegeben, nur `password_set` |
+| `PUT /admin/mail` | Teil-Update; ein leeres `password` lässt das gespeicherte stehen |
+| `POST /admin/mail/test` | Testnachricht an `notify_to` (oder `?an=…`), Antwort mit `ok` und Klartext-Fehler |
+
+Meldet sich ein Konto an (`POST /auth/register`), geht eine Nachricht an `mail.notify_to`, sofern
+`mail.enabled` und `mail.notify_pending` gesetzt sind. Der Versand läuft in einem eigenen Thread: die
+Anmeldung wartet nicht auf den Mailserver und scheitert nicht an ihm. Ein Fehler beim Versand steht im
+Dienstprotokoll, nicht in der Antwort an den Anmeldenden.
+
+
 ## Geräte: Besitzer und Betriebsart
 
 Zwei Angaben macht der **Besitzer** an seinem Gerät, nicht die Administration:
