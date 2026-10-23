@@ -225,11 +225,11 @@ bash scripts/smoke_admin.sh http://localhost:8765 "$ADMIN_API_KEY"   # live HTTP
 
 ## Anleitung für Einsteiger
 
-Wer CoMesh nicht kennt: die Seite **`/hilfe.html`** im Portal erklärt in einfacher Sprache,
+Wer CoMesh nicht kennt: die Seite **`/guide.html`** im Portal erklärt in einfacher Sprache,
 was das Werkzeug ist, wofür es gebaut wurde, wie der erste Aufruf aussieht, was Credits sind
 und was die Fehlercodes bedeuten. Sie funktioniert ohne Anmeldung und ist aus dem Menü
-verlinkt („Anleitung"). Sie lässt sich zwischen **Deutsch und Englisch** umschalten. Quelle: `frontend-alpine/hilfe.html`, Langfassung für die
-Projektarbeit in `docs/anleitung.md`.
+verlinkt („Anleitung"). Sie lässt sich zwischen **Deutsch und Englisch** umschalten. Quelle: `frontend-alpine/guide.html`, Langfassung für die
+Projektarbeit in `docs/guide.md`.
 
 ## Eigene API-Schlüssel und Modellfreigabe
 
@@ -248,7 +248,7 @@ anzutasten. Details: [docs/api.md](docs/api.md).
 - [docs/portal.md](docs/portal.md) — portal setup, config, API
 - [docs/node-agent.md](docs/node-agent.md) — node-agent setup and deployment
 - [docs/agent-api.md](docs/agent-api.md) — **agent account**: full-access account for automation (approvals, reports, usage); what it can and cannot do
-- [docs/anleitung.md](docs/anleitung.md) — **user guide**: what CoMesh is, first request, credits, error codes (German long form; the in-portal page `/hilfe.html` switches between German and English)
+- [docs/guide.md](docs/guide.md) — **user guide**: what CoMesh is, first request, credits, error codes (German long form; the in-portal page `/guide.html` switches between German and English)
 - [docs/api.md](docs/api.md) — full API reference
 - [docs/network.md](docs/network.md) — addressing, DHCP, mDNS, optional mesh VPN
 - [docs/windows.md](docs/windows.md) — running a **provider** on Windows (LM Studio or

@@ -201,7 +201,7 @@ const ICON = {
 function helpLinkHTML() {
   const label = I18n.t("help.link");
   return `
-    <a class="chrome-btn help-link" href="hilfe.html" title="${label}" aria-label="${label}">
+    <a class="chrome-btn help-link" href="guide.html" title="${label}" aria-label="${label}">
       <span class="help-face" aria-hidden="true">${ICON.help}</span>
     </a>`;
 }

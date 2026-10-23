@@ -1,6 +1,6 @@
 # CoMesh — Anleitung für Einsteiger
 
-**Sprachen:** die Seite im Portal (`/hilfe.html`) schaltet zwischen **Deutsch und Englisch**
+**Sprachen:** die Seite im Portal (`/guide.html`) schaltet zwischen **Deutsch und Englisch**
 um; die Wahl liegt in `localStorage.gp_lang` und gilt damit auch für die übrigen Seiten.
 Die Langfassung hier ist deutsch — bei Abweichungen gilt die Seite.
 
@@ -33,7 +33,7 @@ measured in credits; contributing a GPU earns them. Errors: 401 key, 403 not app
 Your input runs on someone else's machine — no secrets, no personal data.
 
 Diese Seite erklärt CoMesh für Menschen, die es nicht kennen. Die kurze Fassung liegt als
-`frontend-alpine/hilfe.html` im Portal und ist dort ohne Anmeldung erreichbar (Menü „Anleitung").
+`frontend-alpine/guide.html` im Portal und ist dort ohne Anmeldung erreichbar (Menü „Anleitung").
 
 ## Was CoMesh ist
 
