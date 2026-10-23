@@ -16,6 +16,28 @@ eintraegt, schickt es doppelt und bekommt 401.
 
 ---
 
+## Geräte: Besitzer und Betriebsart
+
+Zwei Angaben macht der **Besitzer** an seinem Gerät, nicht die Administration:
+
+| Feld | Werte | Wirkung |
+| --- | --- | --- |
+| `gpu_nodes.hide_owner` | `true` / `false` | In `GET /admin/nodes` bleibt `owner_email` leer, `owner_hidden` sagt warum |
+| `gpu_nodes.availability` | `always` / `partial` | `always` = Dauerbetrieb, `partial` = nur zeitweise erreichbar |
+
+Beide setzt der Besitzer über `PUT /nodes/{id}` (nur eigene Geräte):
+
+```bash
+curl -X PUT https://<portal>/v1/../nodes/1 \
+  -H "Authorization: Bearer gpu_..." -H "Content-Type: application/json" \
+  -d '{"availability":"partial","hide_owner":true}'
+```
+
+`availability` erscheint auch in `GET /nodes/list` (öffentlicher Katalog), damit Nutzer sehen, ob eine
+Maschine verlässlich läuft. `hide_owner` bleibt dort bewusst draußen — es ist eine Angabe für die
+Administration, nicht für den Katalog.
+
+
 ## Registrierung und Freigabe
 
 `POST /auth/register` legt ein Konto **in der Warteschlange** an:

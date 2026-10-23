@@ -83,6 +83,13 @@ class UpdateNodeRequest(BaseModel):
     backend: Optional[str] = Field(None, pattern="^(ollama|openai)$")
     description: Optional[str] = None
     allowed_models: Optional[List[str]] = None  # NULL clears the whitelist
+    hide_owner: Optional[bool] = Field(
+        None, description="Besitzer im Adminbereich anonymisieren"
+    )
+    availability: Optional[str] = Field(
+        None, pattern="^(always|partial)$",
+        description="always = Dauerbetrieb, partial = nur zeitweise verfügbar",
+    )
 
 
 class HeartbeatRequest(BaseModel):
@@ -123,6 +130,8 @@ class NodeOut(BaseModel):
     is_enabled: bool
     description: Optional[str]
     allowed_models: Optional[List[str]] = None
+    hide_owner: bool = False
+    availability: str = "always"
     created_at: str
 
     class Config:
@@ -142,6 +151,7 @@ class NodePublicOut(BaseModel):
     vram_used_gb: float
     description: Optional[str]
     allowed_models: Optional[List[str]] = None
+    availability: str = "always"
     created_at: str
 
 
@@ -176,7 +186,10 @@ def node_out_fields(node: GpuNode) -> dict:
         "is_enabled": bool(node.is_enabled),
         "description": node.description,
         "allowed_models": node.get_allowed_models(),
-        "created_at": node.created_at.isoformat(),
+    # getattr: alte Zeilen aus der Zeit vor der Migration haben die Spalten noch nicht.
+    "hide_owner": bool(getattr(node, "hide_owner", False)),
+    "availability": getattr(node, "availability", None) or "always",
+    "created_at": node.created_at.isoformat(),
     }
 
 
@@ -335,6 +348,10 @@ def update_node(
         node.description = req.description
     if req.allowed_models is not None:
         node.set_allowed_models(req.allowed_models)
+    if req.hide_owner is not None:
+        node.hide_owner = bool(req.hide_owner)
+    if req.availability is not None:
+        node.availability = req.availability
     db.commit()
     db.refresh(node)
     log.info(f"User {user.email} updated node {node.id}: addr={node.node_url or 'auto'}, models={node.get_allowed_models()}")
@@ -394,6 +411,9 @@ def list_nodes(
             vram_used_gb=n.vram_used_gb if online else 0.0,
             description=n.description,
             allowed_models=n.get_allowed_models(),
+            # Betriebsart gehört in den öffentlichen Katalog: sie sagt, ob die Maschine
+            # im Dauerbetrieb läuft oder nur zeitweise erreichbar ist.
+            availability=getattr(n, "availability", None) or "always",
             created_at=n.created_at.isoformat(),
         ))
     return out

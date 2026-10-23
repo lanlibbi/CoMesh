@@ -1,5 +1,28 @@
 # Changelog
 
+## 0.6.5 — 2026-10-23
+
+**Anpassungsliste aus dem Betrieb, Teil eins**
+
+- **Profil: der Haken „Cloud-Modelle erlauben" blieb nicht gesetzt.** `loadMe()` leitete ihn aus der
+  Modellliste ab — und zwar bevor `availableModels` geladen war. `isCloud()` fand deshalb nie etwas,
+  der Haken sprang immer auf false. Jetzt zählt `allow_cloud` aus der Antwort des Servers.
+- **Menüpunkt „Freigaben" heißt „Konten"** (die Seite selbst hieß schon „Konten und Freigaben").
+- **Chat: Enter senden ist wählbar.** Ein Kästchen unter dem Eingabefeld schaltet zwischen „Enter
+  sendet" und „Strg+Enter sendet, Enter bricht um"; die Wahl bleibt in `localStorage`.
+- **Verbrauch (alle): die Kontenliste ist sortierbar** — Klick auf die Spaltenüberschrift, zweiter
+  Klick dreht die Richtung. Sortiert wird im Browser, die API bleibt unverändert.
+- **Geräte: Agentenadressen sind maskiert** (`http://••••••••:11435`), ein Knopf im Kopf blendet sie ein.
+- **Geräte: Besitzer anonymisierbar, Betriebsart wählbar.** Zwei neue Spalten an `gpu_nodes`
+  (Migration `_ensure_node_privacy_columns`): `hide_owner` blendet den Besitzer im Adminbereich aus
+  (serverseitig, `owner_email` kommt dann gar nicht erst mit), `availability` unterscheidet
+  `always` (Dauerbetrieb) und `partial` (nur zeitweise). Der Provider setzt beides direkt an seinem
+  Gerät; die Betriebsart steht zusätzlich im öffentlichen Knotenkatalog.
+- **Hover-Rückmeldung** in Karten, Tabellenzeilen und im Mesh — dezent: feine Kante statt greller
+  Fläche, und im Canvas wachsen Knoten in Zeigernähe mit Ring und Schein.
+- **Bildnamen auf `comesh-*`** umgestellt (`comesh-api`, `comesh-frontend`, `comesh-agent`); im Agenten
+  standen die Container noch als „gpu pool".
+
 ## 0.6.3 — 2026-10-22
 
 **Registrierung wartet wieder auf Freigabe**

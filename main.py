@@ -99,6 +99,7 @@ async def lifespan(app: FastAPI):
     _ensure_node_allowed_models()
     _ensure_node_ws_columns()
     _ensure_node_address_columns()
+    _ensure_node_privacy_columns()
     await seed_test_user_if_empty()
     await seed_admin_if_configured()
     log.info(f"GPU-Pool POC started. Ollama URL: {OLLAMA_URL}, default model: {DEFAULT_MODEL}")
@@ -379,6 +380,27 @@ def _ensure_node_address_columns():
                 "ALTER TABLE gpu_nodes ADD COLUMN node_url_auto BOOLEAN DEFAULT 0 NOT NULL"
             )
             log.info("Added gpu_nodes.node_url_auto column")
+
+
+def _ensure_node_privacy_columns():
+    """Add gpu_nodes.hide_owner / availability if missing (idempotent).
+
+    Both are answers a provider gives about their own machine, not facts the portal
+    can derive: whether the owner may be named in the admin list, and whether the
+    GPU runs around the clock or only now and then.
+    """
+    with engine.begin() as conn:
+        cols = [row[1] for row in conn.exec_driver_sql("PRAGMA table_info(gpu_nodes)").fetchall()]
+        if "hide_owner" not in cols:
+            conn.exec_driver_sql(
+                "ALTER TABLE gpu_nodes ADD COLUMN hide_owner BOOLEAN DEFAULT 0 NOT NULL"
+            )
+            log.info("Added gpu_nodes.hide_owner column")
+        if "availability" not in cols:
+            conn.exec_driver_sql(
+                "ALTER TABLE gpu_nodes ADD COLUMN availability VARCHAR DEFAULT 'always' NOT NULL"
+            )
+            log.info("Added gpu_nodes.availability column")
 
 
 def _ensure_payments_table():

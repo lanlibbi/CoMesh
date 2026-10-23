@@ -375,6 +375,10 @@ class AdminNodeOut(BaseModel):
     current_utilization: float = 0.0
     vram_used_gb: float = 0.0
     allowed_models: Optional[List[str]] = None
+    # Der Besitzer kann sich im Adminbereich anonymisieren lassen; dann bleibt
+    # owner_email leer und owner_hidden sagt, warum.
+    owner_hidden: bool = False
+    availability: str = "always"
     connection_state: str = "disconnected"
     last_ws_seen: Optional[float] = None
     has_agent_key: bool = False
@@ -475,7 +479,9 @@ def _node_out(db: Session, node: GpuNode, now: Optional[datetime] = None,
     return AdminNodeOut(
         id=node.id,
         owner_id=node.owner_id,
-        owner_email=owner_email,
+        owner_email=None if getattr(node, "hide_owner", False) else owner_email,
+        owner_hidden=bool(getattr(node, "hide_owner", False)),
+        availability=getattr(node, "availability", None) or "always",
         name=node.name,
         gpu_type=node.gpu_type,
         vram_gb=node.vram_gb,

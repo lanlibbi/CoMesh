@@ -97,9 +97,12 @@
                                        x-text="(n.node_url && !zeigeAdressen) ? maskiere(n.node_url)
                                                : (n.node_url || (n.gpu_type + ' · Port ' + n.port))"></div>
                 </td>
-                <td class="t-sm" x-text="n.owner_email || ('Konto ' + n.owner_id)"></td>
+                <td class="t-sm" x-text="n.owner_hidden ? 'anonym' : (n.owner_email || ('Konto ' + n.owner_id))"
+                    :title="n.owner_hidden ? 'Der Besitzer hat sich im Profil anonymisieren lassen' : ''"></td>
                 <td>
                   <span :class="zustandsKlasse(n)" x-text="n.effective_status || n.status"></span>
+                  <span class="pill pill-flat t-xs" x-show="n.availability === 'partial'"
+                        title="Läuft nur zeitweise, nicht im Dauerbetrieb">zeitweise</span>
                   <div class="t-xs text-mute" x-show="!n.is_enabled">vom Besitzer pausiert</div>
                 </td>
                 <td class="num" x-text="(n.vram_gb || 0) + ' GB'"></td>

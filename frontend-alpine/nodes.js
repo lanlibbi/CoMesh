@@ -224,6 +224,30 @@ document.addEventListener("alpine:init", () => {
       if (i >= 0) this.editAllowed.splice(i, 1);
       else this.editAllowed.push(name);
     },
+    /** Betriebsart umschalten (always | partial). */
+    async betriebSetzen(n, wert) {
+      try {
+        await api(`/nodes/${n.id}`, { method: "PUT", auth: true, body: { availability: wert } });
+        n.availability = wert;
+        toast(wert === "always" ? "Dauerbetrieb gespeichert" : "Zeitweise Verfügbarkeit gespeichert", "ok");
+      } catch (e) {
+        toast(e.message, "err");
+        await this.load();
+      }
+    },
+
+    /** Besitzer im Adminbereich anonymisieren oder wieder nennen. */
+    async besitzerVerbergen(n, wert) {
+      try {
+        await api(`/nodes/${n.id}`, { method: "PUT", auth: true, body: { hide_owner: !!wert } });
+        n.hide_owner = !!wert;
+        toast(wert ? "Besitzer erscheint im Adminbereich als anonym" : "Besitzer wird wieder genannt", "ok");
+      } catch (e) {
+        toast(e.message, "err");
+        await this.load();
+      }
+    },
+
     async saveEdit(n) {
       try {
         await api(`/nodes/${n.id}`, {

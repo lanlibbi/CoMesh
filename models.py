@@ -264,6 +264,10 @@ class GpuNode(Base):
     is_enabled = Column(Boolean, default=True, nullable=False)        # owner can pause
     description = Column(Text, nullable=True)
     allowed_models = Column(Text, nullable=True)                  # JSON whitelist; NULL = "all local, no cloud"
+    # Datenschutz am Gerät: Besitzer im Adminbereich als "anonym" zeigen.
+    hide_owner = Column(Boolean, default=False, nullable=False)
+    # Betriebsart: "always" = Dauerbetrieb, "partial" = nur zeitweise verfügbar.
+    availability = Column(String, default="always", nullable=False)
     # --- Phase 1: WebSocket connectivity tracking ------------------------
     connection_state = Column(String, default="disconnected", nullable=False)  # disconnected | connecting | connected
     last_ws_seen = Column(Float, nullable=True)                    # Unix timestamp; updated on every WS ping
