@@ -92,7 +92,50 @@ document.addEventListener("alpine:init", () => {
       }
     },
 
-    get users() { return (this.data && this.data.users) || []; },
+    get users() { return (this.data && this.data.users) || []; }
+
+    /** Sortierung der Kontenliste: Spalte und Richtung. */
+    sortKey: "total_tokens",
+    sortDir: "desc",
+
+    sortiere(spalte) {
+      if (this.sortKey === spalte) {
+        this.sortDir = this.sortDir === "asc" ? "desc" : "asc";
+      } else {
+        this.sortKey = spalte;
+        // Zahlen und Zeiten absteigend ist die interessantere Voreinstellung.
+        this.sortDir = spalte === "name" || spalte === "role" ? "asc" : "desc";
+      }
+    },
+
+    /** Pfeil an der aktiven Spalte. */
+    pfeil(spalte) {
+      if (this.sortKey !== spalte) return "";
+      return this.sortDir === "asc" ? " \u2191" : " \u2193";
+    },
+
+    get sortedUsers() {
+      const schluessel = this.sortKey;
+      const richtung = this.sortDir === "asc" ? 1 : -1;
+      const wert = (u) => {
+        const v = u[schluessel];
+        if (v === null || v === undefined) return null;      // immer ans Ende
+        if (typeof v === "number") return v;
+        if (schluessel === "last_used") {
+          const t = Date.parse(v);
+          return Number.isNaN(t) ? null : t;
+        }
+        return String(v).toLowerCase();
+      };
+      return [...this.users].sort((a, b) => {
+        const x = wert(a), y = wert(b);
+        if (x === null && y === null) return 0;
+        if (x === null) return 1;
+        if (y === null) return -1;
+        if (typeof x === "number" && typeof y === "number") return (x - y) * richtung;
+        return String(x).localeCompare(String(y), "de") * richtung;
+      });
+    },
     get totals() { return (this.data && this.data.totals) || {}; },
 
     /** Heaviest user's token count — the bar scale for the user rows. */

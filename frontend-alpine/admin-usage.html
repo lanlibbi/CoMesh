@@ -162,18 +162,18 @@
           <table class="tbl">
             <thead>
               <tr>
-                <th data-i18n="nutzer">Nutzer</th>
-                <th data-i18n="rolle">Rolle</th>
-                <th style="min-width:180px">Token</th>
-                <th>Requests</th>
-                <th>Modelle</th>
-                <th>Credits</th>
-                <th data-i18n="admin.quota">Quota</th>
-                <th data-i18n="zuletzt">Zuletzt</th>
+                <th class="sortierbar" @click="sortiere('name')" title="nach Konto sortieren"><span data-i18n="nutzer">Nutzer</span><span class="pfeil" x-text="pfeil('name')"></span></th>
+                <th class="sortierbar" @click="sortiere('role')" title="nach Rolle sortieren"><span data-i18n="rolle">Rolle</span><span class="pfeil" x-text="pfeil('role')"></span></th>
+                <th class="sortierbar" style="min-width:180px" @click="sortiere('total_tokens')" title="nach Token sortieren">Token<span class="pfeil" x-text="pfeil('total_tokens')"></span></th>
+                <th class="sortierbar" @click="sortiere('requests')" title="nach Requests sortieren">Requests<span class="pfeil" x-text="pfeil('requests')"></span></th>
+                <th class="sortierbar" @click="sortiere('models_used')" title="nach Modellzahl sortieren">Modelle<span class="pfeil" x-text="pfeil('models_used')"></span></th>
+                <th class="sortierbar" @click="sortiere('credits')" title="nach Credits sortieren">Credits<span class="pfeil" x-text="pfeil('credits')"></span></th>
+                <th class="sortierbar" @click="sortiere('quota_mode')" title="nach Quota sortieren"><span data-i18n="admin.quota">Quota</span><span class="pfeil" x-text="pfeil('quota_mode')"></span></th>
+                <th class="sortierbar" @click="sortiere('last_used')" title="nach letzter Nutzung sortieren"><span data-i18n="zuletzt">Zuletzt</span><span class="pfeil" x-text="pfeil('last_used')"></span></th>
               </tr>
             </thead>
             <tbody>
-              <template x-for="u in users" :key="u.user_id">
+              <template x-for="u in sortedUsers" :key="u.user_id">
                 <tr>
                   <td>
                     <div class="semibold" x-text="u.name || u.email"></div>

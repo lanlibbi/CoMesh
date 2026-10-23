@@ -11,6 +11,26 @@
 // Zustand in der Tabelle.
 document.addEventListener("alpine:init", () => {
   Alpine.data("adminNodesPage", () => ({
+
+    /** Netzadressen stehen standardmäßig maskiert in der Liste. */
+    zeigeAdressen: false,
+
+    /**
+     * Host einer Agenten-Adresse unkenntlich machen; Schema und Port bleiben lesbar,
+     * weil sie zur Diagnose reichen und nichts über den Rechner verraten.
+     */
+    maskiere(url) {
+      if (!url) return "";
+      const roh = String(url);
+      try {
+        const u = new URL(roh.includes("://") ? roh : "http://" + roh);
+        return u.protocol + "//" + "\u2022".repeat(8) + (u.port ? ":" + u.port : "");
+      } catch (e) {
+        return roh.replace(/^([a-z]+:\/\/)?[^/:]+/i, function (m) {
+          return (m.indexOf("//") >= 0 ? m.slice(0, m.indexOf("//") + 2) : "") + "\u2022".repeat(8);
+        });
+      }
+    },
     q: "",
     status: "all",
     statuses: [

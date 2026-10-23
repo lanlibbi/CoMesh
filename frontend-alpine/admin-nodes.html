@@ -42,6 +42,8 @@
       <span class="chip">Online: <b x-text="summary ? summary.online : '—'"></b></span>
       <span class="chip">Offline: <b x-text="summary ? summary.offline : '—'"></b></span>
       <span class="chip">Pausiert: <b x-text="summary ? (summary.disabled || 0) : '—'"></b></span>
+            <button type="button" class="btn-ghost btn-sm" @click="zeigeAdressen = !zeigeAdressen"
+                    x-text="zeigeAdressen ? 'Adressen verbergen' : 'Adressen anzeigen'"></button>
     </div>
 
     <div class="card mb-4">
@@ -91,7 +93,9 @@
               <tr>
                 <td>
                   <div class="semibold" x-text="n.name"></div>
-                  <div class="t-xs text-mute mono" x-text="n.node_url || (n.gpu_type + ' · Port ' + n.port)"></div>
+                  <div class="t-xs text-mute mono"
+                                       x-text="(n.node_url && !zeigeAdressen) ? maskiere(n.node_url)
+                                               : (n.node_url || (n.gpu_type + ' · Port ' + n.port))"></div>
                 </td>
                 <td class="t-sm" x-text="n.owner_email || ('Konto ' + n.owner_id)"></td>
                 <td>

@@ -1668,3 +1668,8 @@ tbody tr:hover { background-color: color-mix(in srgb, var(--surface-2) 82%, var(
   .card, tbody tr { transition: none; }
   .card.link:hover { transform: none; }
 }
+
+/* sortierbare spalten */
+th.sortierbar { cursor: pointer; user-select: none; white-space: nowrap; }
+th.sortierbar:hover { color: var(--text); }
+th.sortierbar .pfeil { color: var(--brass-soft); font-size: .9em; }
