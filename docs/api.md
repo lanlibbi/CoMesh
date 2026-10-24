@@ -16,6 +16,45 @@ eintraegt, schickt es doppelt und bekommt 401.
 
 ---
 
+## Werkzeugaufrufe (Tool Calls)
+
+`POST /v1/chat/completions` nimmt `tools` und `tool_choice` im OpenAI-Schema an und gibt
+`tool_calls` in der Antwort zurück — Voraussetzung für Agenten (OpenCode, eigene Clients).
+
+```bash
+curl -s https://<portal>/api/v1/chat/completions \
+  -H "Authorization: Bearer gpu_..." -H "Content-Type: application/json" -d '{
+    "model": "qwen3.8:latest",
+    "messages": [{"role": "user", "content": "Create hello.py with add(a, b)"}],
+    "tools": [{"type": "function", "function": {
+      "name": "write_file", "description": "Write text to a file",
+      "parameters": {"type": "object",
+        "properties": {"path": {"type": "string"}, "content": {"type": "string"}},
+        "required": ["path", "content"]}}}],
+    "tool_choice": "auto"
+  }'
+```
+
+Antwort:
+
+```json
+{"choices": [{"message": {"role": "assistant", "content": "",
+  "tool_calls": [{"id": "…", "type": "function",
+    "function": {"name": "write_file", "arguments": "{\"path\":\"hello.py\",…}"}}]},
+  "finish_reason": "tool_calls"}], "usage": {…}}
+```
+
+Der Client führt das Werkzeug aus und schickt das Ergebnis als Nachricht mit `role: "tool"` und
+`tool_call_id` zurück. Eine Assistenten-Nachricht mit Werkzeugaufrufen darf `content` weglassen.
+
+**Welche Modelle können das?** Nicht jedes. Gemessen am 24.10.2026: `qwen3.8:latest` (27,3B) liefert
+saubere Aufrufe, `qwen2.5-coder:7b` und `llama3.1:8b` antworten mit Prosa statt Aufrufen — die
+`finish_reason` bleibt dort `stop`. Vor dem Anbinden eines Agenten also einmal mit `tools` prüfen.
+
+**Streaming:** `tool_calls` in Teilstücken werden noch nicht übertragen; für Agenten den Aufruf ohne
+`stream` verwenden.
+
+
 ## Mail: Benachrichtigung bei ausstehender Freigabe
 
 Die SMTP-Einstellungen liegen in `system_settings` (Schlüssel `mail.*`) und sind über die

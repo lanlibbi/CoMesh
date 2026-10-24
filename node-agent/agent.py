@@ -151,7 +151,7 @@ def backend_chat_url() -> str:
     return f"{INFERENCE_URL}/v1/chat/completions" if BACKEND == "openai" else f"{INFERENCE_URL}/api/chat"
 
 
-async def _infer(payload: dict, timeout: float = 180.0) -> dict:
+async def _infer(payload: dict, timeout: float = 300.0) -> dict:
     """Run one inference against the configured backend and return an OpenAI-shaped response.
 
     Accepts an OpenAI-shaped /v1/chat/completions body (``model``, ``messages``,
@@ -174,6 +174,11 @@ async def _infer(payload: dict, timeout: float = 180.0) -> dict:
             oa_payload["temperature"] = payload["temperature"]
         if payload.get("max_tokens") is not None:
             oa_payload["max_tokens"] = payload["max_tokens"]
+        # Werkzeuge unverändert weiterreichen (OpenAI-Backends verstehen das direkt).
+        if payload.get("tools"):
+            oa_payload["tools"] = payload["tools"]
+            if payload.get("tool_choice") is not None:
+                oa_payload["tool_choice"] = payload["tool_choice"]
         async with httpx.AsyncClient(timeout=timeout) as client:
             r = await client.post(backend_chat_url(), json=oa_payload)
             r.raise_for_status()
@@ -189,6 +194,11 @@ async def _infer(payload: dict, timeout: float = 180.0) -> dict:
         ollama_payload["options"]["temperature"] = payload["temperature"]
     if payload.get("max_tokens") is not None:
         ollama_payload["options"]["num_predict"] = payload["max_tokens"]
+    # Ollama nimmt `tools` im OpenAI-Schema direkt an.
+    if payload.get("tools"):
+        ollama_payload["tools"] = payload["tools"]
+        if payload.get("tool_choice") is not None:
+            ollama_payload["tool_choice"] = payload["tool_choice"]
     async with httpx.AsyncClient(timeout=timeout) as client:
         r = await client.post(backend_chat_url(), json=ollama_payload)
         r.raise_for_status()
@@ -202,8 +212,13 @@ async def _infer(payload: dict, timeout: float = 180.0) -> dict:
         "model": payload.get("model", ""),
         "choices": [{
             "index": 0,
-            "message": {"role": msg.get("role", "assistant"), "content": msg.get("content", "")},
-            "finish_reason": "stop",
+            "message": {
+                "role": msg.get("role", "assistant"),
+                "content": msg.get("content", ""),
+                "tool_calls": msg.get("tool_calls"),
+            },
+            "finish_reason": "tool_calls" if msg.get("tool_calls")
+            else (data.get("done_reason") or "stop"),
         }],
         "usage": {
             "prompt_tokens": usage.get("prompt_tokens") or data.get("prompt_eval_count") or 0,

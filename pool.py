@@ -176,7 +176,7 @@ def _estimate_model_vram_gb(model: str) -> float:
     return 4.0  # safe default
 
 
-async def _forward_to_node(node: GpuNode, ollama_payload: dict, timeout: float = 120.0) -> dict:
+async def _forward_to_node(node: GpuNode, ollama_payload: dict, timeout: float = 300.0) -> dict:
     """
     Forward an OpenAI-shaped request to a community node's node-agent.
 
@@ -214,6 +214,11 @@ async def _forward_to_node(node: GpuNode, ollama_payload: dict, timeout: float =
         "max_tokens": (ollama_payload.get("options") or {}).get("num_predict"),
         "stream": False,
     }
+    # Werkzeuge mitgeben — sonst kann der Node nichts aufrufen.
+    if ollama_payload.get("tools"):
+        openai_payload["tools"] = ollama_payload["tools"]
+        if ollama_payload.get("tool_choice") is not None:
+            openai_payload["tool_choice"] = ollama_payload["tool_choice"]
     async with httpx.AsyncClient(timeout=timeout) as client:
         r = await client.post(url, json=openai_payload)
         r.raise_for_status()
@@ -224,7 +229,11 @@ async def _forward_to_node(node: GpuNode, ollama_payload: dict, timeout: float =
     usage = data.get("usage") or {}
     return {
         "model": data.get("model", ollama_payload.get("model", "")),
-        "message": {"role": msg.get("role", "assistant"), "content": msg.get("content", "")},
+        "message": {
+            "role": msg.get("role", "assistant"),
+            "content": msg.get("content", ""),
+            "tool_calls": msg.get("tool_calls"),
+        },
         "prompt_eval_count": usage.get("prompt_tokens", 0),
         "eval_count": usage.get("completion_tokens", 0),
     }
@@ -324,7 +333,11 @@ async def _forward_to_node_ws(node: GpuNode, ollama_payload: dict, timeout: floa
     usage = data.get("usage") or {}
     return {
         "model": data.get("model", ollama_payload.get("model", "")),
-        "message": {"role": msg.get("role", "assistant"), "content": msg.get("content", "")},
+        "message": {
+            "role": msg.get("role", "assistant"),
+            "content": msg.get("content", ""),
+            "tool_calls": msg.get("tool_calls"),
+        },
         "prompt_eval_count": usage.get("prompt_tokens", 0),
         "eval_count": usage.get("completion_tokens", 0),
     }
@@ -391,8 +404,16 @@ def _ollama_to_openai_shape(ollama_resp: dict, model: str) -> dict:
         "choices": [
             {
                 "index": 0,
-                "message": {"role": msg.get("role", "assistant"), "content": msg.get("content", "")},
-                "finish_reason": "stop",
+                "message": {
+                    "role": msg.get("role", "assistant"),
+                    "content": msg.get("content", ""),
+                    # Werkzeugaufrufe durchreichen; ohne sie kann kein Agent arbeiten.
+                    "tool_calls": msg.get("tool_calls"),
+                },
+                # Ein Aufruf gewinnt: Ollama meldet "stop", auch wenn Werkzeuge gefordert
+                # sind — Clients entscheiden aber an finish_reason == "tool_calls".
+                "finish_reason": "tool_calls" if msg.get("tool_calls")
+                else (ollama_resp.get("done_reason") or "stop"),
             }
         ],
         "usage": {
@@ -494,7 +515,7 @@ async def route_request(
                 "response": _ollama_to_openai_shape(local_resp, model),
                 "error": None,
             }
-        async with httpx.AsyncClient(timeout=120.0) as client:
+        async with httpx.AsyncClient(timeout=300.0) as client:
             r = await client.post(f"{OLLAMA_URL}/api/chat", json=ollama_payload)
             r.raise_for_status()
             local_resp = r.json()

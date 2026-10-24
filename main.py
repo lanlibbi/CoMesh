@@ -23,7 +23,7 @@ import os
 import secrets
 import time
 from contextlib import asynccontextmanager
-from typing import List, Optional
+from typing import List, Optional, Any
 
 import httpx
 from fastapi import Depends, FastAPI, HTTPException, Header, Request, status
@@ -144,7 +144,13 @@ app.include_router(usage_stats_router)  # /v1/me/usage — lost in the same merg
 # ----------------------------------------------------------------------------
 class ChatMessage(BaseModel):
     role: str
-    content: str
+    # Inhalt kann fehlen: eine Assistenten-Nachricht, die nur Werkzeuge aufruft, hat keinen.
+    content: Optional[str] = None
+    # Werkzeugaufrufe des Assistenten (OpenAI-Format) — der Kern jeder Agenten-Schleife.
+    tool_calls: Optional[List[dict]] = None
+    # Bei role="tool": welcher Aufruf beantwortet wird.
+    tool_call_id: Optional[str] = None
+    name: Optional[str] = None
 
 
 class ChatCompletionRequest(BaseModel):
@@ -153,6 +159,9 @@ class ChatCompletionRequest(BaseModel):
     temperature: Optional[float] = 1.0
     max_tokens: Optional[int] = None
     stream: Optional[bool] = False
+    # Werkzeuge, die das Modell aufrufen darf (OpenAI-Schema, unverändert weitergegeben).
+    tools: Optional[List[dict]] = None
+    tool_choice: Optional[Any] = None
 
 
 class ChatCompletionChoice(BaseModel):
@@ -990,6 +999,41 @@ async def _stream_chat_completion(db, user, model, ollama_payload, balance, bill
     )
 
 
+def _bau_ollama_payload(model: str, body: "ChatCompletionRequest") -> dict:
+    """Anfrage in die Form bringen, die Ollamas /api/chat erwartet.
+
+    Werkzeuge gehen unverändert mit: Ollama akzeptiert `tools` im OpenAI-Schema. Fehlende
+    Felder werden weggelassen statt auf None gesetzt — Ollama mag weder `content: null` in
+    einer Werkzeug-Antwort noch ein `tool_choice: null`.
+    """
+    nachrichten = []
+    for m in body.messages:
+        eintrag: dict = {"role": m.role}
+        if m.content is not None:
+            eintrag["content"] = m.content
+        if m.tool_calls:
+            eintrag["tool_calls"] = m.tool_calls
+        if m.tool_call_id:
+            eintrag["tool_call_id"] = m.tool_call_id
+        if m.name:
+            eintrag["name"] = m.name
+        nachrichten.append(eintrag)
+
+    payload: dict = {
+        "model": model,
+        "messages": nachrichten,
+        "stream": False,
+        "options": {"temperature": body.temperature},
+    }
+    if body.max_tokens is not None:
+        payload["options"]["num_predict"] = body.max_tokens
+    if body.tools:
+        payload["tools"] = body.tools
+        if body.tool_choice is not None:
+            payload["tool_choice"] = body.tool_choice
+    return payload
+
+
 @app.post("/v1/chat/completions")
 async def chat_completions(
     request: Request,
@@ -1026,14 +1070,7 @@ async def chat_completions(
             detail=f"Insufficient credits. Current balance: {balance:.4f}",
         )
 
-    ollama_payload = {
-        "model": model,
-        "messages": [m.model_dump() for m in body.messages],
-        "stream": False,
-        "options": {"temperature": body.temperature},
-    }
-    if body.max_tokens is not None:
-        ollama_payload["options"]["num_predict"] = body.max_tokens
+    ollama_payload = _bau_ollama_payload(model, body)
 
     t0 = time.time()
 
@@ -1059,7 +1096,11 @@ async def chat_completions(
         raise HTTPException(status_code=502, detail=f"Routing failed: {routed.get('error')}")
 
     ollama_resp = routed["response"]  # already in OpenAI shape from pool.py
-    msg_content = (ollama_resp.get("choices", [{}])[0].get("message", {}) or {}).get("content", "")
+    _erste = (ollama_resp.get("choices") or [{}])[0]
+    _nachricht = _erste.get("message") or {}
+    msg_content = _nachricht.get("content") or ""
+    msg_tool_calls = _nachricht.get("tool_calls") or None
+    finish_reason = _erste.get("finish_reason") or ("tool_calls" if msg_tool_calls else "stop")
     usage = ollama_resp.get("usage", {}) or {}
     prompt_tokens = int(usage.get("prompt_tokens", 0) or 0)
     completion_tokens = int(usage.get("completion_tokens", 0) or 0)
@@ -1124,7 +1165,10 @@ async def chat_completions(
     return ChatCompletionResponse(
         created=int(time.time()),
         model=model,
-        choices=[ChatCompletionChoice(message=ChatMessage(role="assistant", content=msg_content))],
+        choices=[ChatCompletionChoice(
+            message=ChatMessage(role="assistant", content=msg_content, tool_calls=msg_tool_calls),
+            finish_reason=finish_reason,
+        )],
         usage=UsageInfo(
             prompt_tokens=prompt_tokens,
             completion_tokens=completion_tokens,

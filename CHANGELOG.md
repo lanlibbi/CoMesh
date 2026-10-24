@@ -1,5 +1,40 @@
 # Changelog
 
+## 0.6.9 — 2026-10-24
+
+**Werkzeugaufrufe: `tools` rein, `tool_calls` raus**
+
+Ein Agent konnte über CoMesh bisher nicht arbeiten — nicht wegen des Modells, sondern weil
+`tools` und `tool_choice` im Code **nirgends** vorkamen. Der Endpunkt nahm sie entgegen, verwarf sie
+stillschweigend, und `tool_calls` aus der Antwort ebenso. `qwen3.8:latest` (27,3B) liefert direkt gegen
+Ollama saubere Aufrufe; über den Pool antwortete dasselbe Modell „I don't have that tool".
+
+Geändert an vier Stellen, jede mit eigener Verantwortung:
+
+- **`main.py`** — `ChatMessage` trägt `tool_calls`, `tool_call_id` und `name`; `content` darf fehlen
+  (eine Assistenten-Nachricht, die nur aufruft, hat keinen Text). `ChatCompletionRequest` nimmt
+  `tools` und `tool_choice` an, `_bau_ollama_payload()` gibt beides weiter und lässt `content: null`
+  weg. Die Antwort führt `tool_calls` mit.
+- **`pool.py`** — `_ollama_to_openai_shape()` reicht `tool_calls` durch, `_forward_to_node()` schickt
+  die Werkzeuge an den Node und nimmt die Aufrufe zurück.
+- **`node-agent/agent.py`** — beide Backends (`ollama`, `openai`) geben Werkzeuge weiter und
+  Werkzeugaufrufe zurück.
+- **`finish_reason`**: liegt ein Aufruf vor, meldet die Antwort `tool_calls`, nicht `stop`. Ollama
+  sagt `done_reason: "stop"`, weil aus seiner Sicht die Antwort fertig ist — Clients entscheiden aber
+  an `finish_reason == "tool_calls"`. Der Test hat genau das aufgedeckt: erst war der Code zu
+  nachgiebig, angepasst wurde der Code, nicht der Test.
+- **Zeitlimits** gegen den 502 beim Kaltstart: Pool 120 → 300 s, Agent 180 → 300 s, nginx 180 → 600 s.
+  Ein 27B-Modell braucht beim ersten Aufruf Minuten, bis es geladen ist.
+
+**Gemessen über den öffentlichen Weg** (`/api/v1/chat/completions`):
+
+| Fall | Ergebnis |
+| --- | --- |
+| `llama3.1:8b`, ohne Werkzeuge | `finish_reason: stop`, Text „Ok." — keine Regression |
+| `qwen3.8:latest`, mit `tools` | **`finish_reason: tool_calls`**, ein Aufruf `write_file`, Argumente `{"path":"hello.py","content":"def add(a, b):…"}`, 375 Token in 28 s |
+
+Tests: 72 grün (6 neue in `tests/test_tool_calls.py`).
+
 ## 0.6.8 — 2026-10-23
 
 **Richtige Pfade für Agenten — und die Falle dabei**
