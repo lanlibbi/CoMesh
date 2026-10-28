@@ -1,0 +1,821 @@
+{
+ "type": "excalidraw",
+ "version": 2,
+ "source": "hermes-agent",
+ "elements": [
+  {
+   "type": "rectangle",
+   "id": "hintergrund",
+   "x": -4000,
+   "y": -3000,
+   "width": 10000,
+   "height": 7500,
+   "backgroundColor": "#101419",
+   "fillStyle": "solid",
+   "strokeColor": "transparent",
+   "strokeWidth": 0
+  },
+  {
+   "type": "text",
+   "id": "txt001",
+   "x": 70,
+   "y": 26,
+   "width": 315.0,
+   "height": 37.5,
+   "text": "CoMesh — how it works",
+   "fontSize": 30,
+   "fontFamily": 1,
+   "strokeColor": "#f2f5f8",
+   "originalText": "CoMesh — how it works",
+   "autoResize": true
+  },
+  {
+   "type": "text",
+   "id": "txt002",
+   "x": 70,
+   "y": 76,
+   "width": 675.0,
+   "height": 22.5,
+   "text": "A compute mesh: machines share their GPU, others use the models through it.",
+   "fontSize": 18,
+   "fontFamily": 1,
+   "strokeColor": "#8d97a2",
+   "originalText": "A compute mesh: machines share their GPU, others use the models through it.",
+   "autoResize": true
+  },
+  {
+   "type": "text",
+   "id": "txt003",
+   "x": 100,
+   "y": 118,
+   "width": 55.0,
+   "height": 27.5,
+   "text": "Users",
+   "fontSize": 22,
+   "fontFamily": 1,
+   "strokeColor": "#e8ebee",
+   "originalText": "Users",
+   "autoResize": true
+  },
+  {
+   "type": "text",
+   "id": "txt004",
+   "x": 610,
+   "y": 118,
+   "width": 66.0,
+   "height": 27.5,
+   "text": "CoMesh",
+   "fontSize": 22,
+   "fontFamily": 1,
+   "strokeColor": "#f0dcab",
+   "originalText": "CoMesh",
+   "autoResize": true
+  },
+  {
+   "type": "text",
+   "id": "txt005",
+   "x": 1050,
+   "y": 118,
+   "width": 99.0,
+   "height": 27.5,
+   "text": "Providers",
+   "fontSize": 22,
+   "fontFamily": 1,
+   "strokeColor": "#e8ebee",
+   "originalText": "Providers",
+   "autoResize": true
+  },
+  {
+   "type": "rectangle",
+   "id": "zone006",
+   "x": 70,
+   "y": 152,
+   "width": 400,
+   "height": 520,
+   "roundness": {
+    "type": 3
+   },
+   "backgroundColor": "#1b232c",
+   "fillStyle": "solid",
+   "strokeColor": "#868e96",
+   "strokeWidth": 1,
+   "opacity": 32
+  },
+  {
+   "type": "rectangle",
+   "id": "zone007",
+   "x": 560,
+   "y": 152,
+   "width": 380,
+   "height": 620,
+   "roundness": {
+    "type": 3
+   },
+   "backgroundColor": "#2a2519",
+   "fillStyle": "solid",
+   "strokeColor": "#868e96",
+   "strokeWidth": 1,
+   "opacity": 32
+  },
+  {
+   "type": "rectangle",
+   "id": "zone008",
+   "x": 1030,
+   "y": 152,
+   "width": 470,
+   "height": 520,
+   "roundness": {
+    "type": 3
+   },
+   "backgroundColor": "#1a2620",
+   "fillStyle": "solid",
+   "strokeColor": "#868e96",
+   "strokeWidth": 1,
+   "opacity": 32
+  },
+  {
+   "type": "rectangle",
+   "id": "box009",
+   "x": 95,
+   "y": 185,
+   "width": 350,
+   "height": 105,
+   "roundness": {
+    "type": 3
+   },
+   "backgroundColor": "#232930",
+   "fillStyle": "solid",
+   "strokeColor": "#3a424c",
+   "strokeWidth": 2,
+   "boundElements": [
+    {
+     "id": "lbl010",
+     "type": "text"
+    }
+   ]
+  },
+  {
+   "type": "text",
+   "id": "lbl010",
+   "x": 103,
+   "y": 193,
+   "width": 334,
+   "height": 89,
+   "text": "User A · laptop\nasks the API like OpenAI's",
+   "fontSize": 18,
+   "fontFamily": 1,
+   "strokeColor": "#e8ebee",
+   "textAlign": "center",
+   "verticalAlign": "middle",
+   "containerId": "box009",
+   "originalText": "User A · laptop\nasks the API like OpenAI's",
+   "autoResize": true
+  },
+  {
+   "type": "rectangle",
+   "id": "box011",
+   "x": 95,
+   "y": 315,
+   "width": 350,
+   "height": 105,
+   "roundness": {
+    "type": 3
+   },
+   "backgroundColor": "#232930",
+   "fillStyle": "solid",
+   "strokeColor": "#3a424c",
+   "strokeWidth": 2,
+   "boundElements": [
+    {
+     "id": "lbl012",
+     "type": "text"
+    }
+   ]
+  },
+  {
+   "type": "text",
+   "id": "lbl012",
+   "x": 103,
+   "y": 323,
+   "width": 334,
+   "height": 89,
+   "text": "User B · desktop\nany OpenAI-compatible tool",
+   "fontSize": 18,
+   "fontFamily": 1,
+   "strokeColor": "#e8ebee",
+   "textAlign": "center",
+   "verticalAlign": "middle",
+   "containerId": "box011",
+   "originalText": "User B · desktop\nany OpenAI-compatible tool",
+   "autoResize": true
+  },
+  {
+   "type": "rectangle",
+   "id": "box013",
+   "x": 95,
+   "y": 445,
+   "width": 350,
+   "height": 105,
+   "roundness": {
+    "type": 3
+   },
+   "backgroundColor": "#232930",
+   "fillStyle": "solid",
+   "strokeColor": "#3a424c",
+   "strokeWidth": 2,
+   "boundElements": [
+    {
+     "id": "lbl014",
+     "type": "text"
+    }
+   ]
+  },
+  {
+   "type": "text",
+   "id": "lbl014",
+   "x": 103,
+   "y": 453,
+   "width": 334,
+   "height": 89,
+   "text": "User C · own app\nscript with an API key",
+   "fontSize": 18,
+   "fontFamily": 1,
+   "strokeColor": "#e8ebee",
+   "textAlign": "center",
+   "verticalAlign": "middle",
+   "containerId": "box013",
+   "originalText": "User C · own app\nscript with an API key",
+   "autoResize": true
+  },
+  {
+   "type": "rectangle",
+   "id": "box015",
+   "x": 585,
+   "y": 185,
+   "width": 330,
+   "height": 90,
+   "roundness": {
+    "type": 3
+   },
+   "backgroundColor": "#3a2f1a",
+   "fillStyle": "solid",
+   "strokeColor": "#3a424c",
+   "strokeWidth": 2,
+   "boundElements": [
+    {
+     "id": "lbl016",
+     "type": "text"
+    }
+   ]
+  },
+  {
+   "type": "text",
+   "id": "lbl016",
+   "x": 593,
+   "y": 193,
+   "width": 314,
+   "height": 74,
+   "text": "CoMesh API · port 8765",
+   "fontSize": 20,
+   "fontFamily": 1,
+   "strokeColor": "#e8ebee",
+   "textAlign": "center",
+   "verticalAlign": "middle",
+   "containerId": "box015",
+   "originalText": "CoMesh API · port 8765",
+   "autoResize": true
+  },
+  {
+   "type": "rectangle",
+   "id": "box017",
+   "x": 585,
+   "y": 312,
+   "width": 330,
+   "height": 56,
+   "roundness": {
+    "type": 3
+   },
+   "backgroundColor": "#232930",
+   "fillStyle": "solid",
+   "strokeColor": "#3a424c",
+   "strokeWidth": 2,
+   "boundElements": [
+    {
+     "id": "lbl018",
+     "type": "text"
+    }
+   ]
+  },
+  {
+   "type": "text",
+   "id": "lbl018",
+   "x": 593,
+   "y": 320,
+   "width": 314,
+   "height": 40,
+   "text": "Login by key",
+   "fontSize": 17,
+   "fontFamily": 1,
+   "strokeColor": "#e8ebee",
+   "textAlign": "center",
+   "verticalAlign": "middle",
+   "containerId": "box017",
+   "originalText": "Login by key",
+   "autoResize": true
+  },
+  {
+   "type": "rectangle",
+   "id": "box019",
+   "x": 585,
+   "y": 380,
+   "width": 330,
+   "height": 56,
+   "roundness": {
+    "type": 3
+   },
+   "backgroundColor": "#232930",
+   "fillStyle": "solid",
+   "strokeColor": "#3a424c",
+   "strokeWidth": 2,
+   "boundElements": [
+    {
+     "id": "lbl020",
+     "type": "text"
+    }
+   ]
+  },
+  {
+   "type": "text",
+   "id": "lbl020",
+   "x": 593,
+   "y": 388,
+   "width": 314,
+   "height": 40,
+   "text": "Model access per account",
+   "fontSize": 17,
+   "fontFamily": 1,
+   "strokeColor": "#e8ebee",
+   "textAlign": "center",
+   "verticalAlign": "middle",
+   "containerId": "box019",
+   "originalText": "Model access per account",
+   "autoResize": true
+  },
+  {
+   "type": "rectangle",
+   "id": "box021",
+   "x": 585,
+   "y": 448,
+   "width": 330,
+   "height": 56,
+   "roundness": {
+    "type": 3
+   },
+   "backgroundColor": "#232930",
+   "fillStyle": "solid",
+   "strokeColor": "#3a424c",
+   "strokeWidth": 2,
+   "boundElements": [
+    {
+     "id": "lbl022",
+     "type": "text"
+    }
+   ]
+  },
+  {
+   "type": "text",
+   "id": "lbl022",
+   "x": 593,
+   "y": 456,
+   "width": 314,
+   "height": 40,
+   "text": "Usage statistics",
+   "fontSize": 17,
+   "fontFamily": 1,
+   "strokeColor": "#e8ebee",
+   "textAlign": "center",
+   "verticalAlign": "middle",
+   "containerId": "box021",
+   "originalText": "Usage statistics",
+   "autoResize": true
+  },
+  {
+   "type": "rectangle",
+   "id": "box023",
+   "x": 585,
+   "y": 540,
+   "width": 330,
+   "height": 90,
+   "roundness": {
+    "type": 3
+   },
+   "backgroundColor": "#2a2416",
+   "fillStyle": "solid",
+   "strokeColor": "#3a424c",
+   "strokeWidth": 2,
+   "boundElements": [
+    {
+     "id": "lbl024",
+     "type": "text"
+    }
+   ]
+  },
+  {
+   "type": "text",
+   "id": "lbl024",
+   "x": 593,
+   "y": 548,
+   "width": 314,
+   "height": 74,
+   "text": "Administrator\ncreates accounts and\nreleases models",
+   "fontSize": 17,
+   "fontFamily": 1,
+   "strokeColor": "#e8ebee",
+   "textAlign": "center",
+   "verticalAlign": "middle",
+   "containerId": "box023",
+   "originalText": "Administrator\ncreates accounts and\nreleases models",
+   "autoResize": true
+  },
+  {
+   "type": "rectangle",
+   "id": "box025",
+   "x": 1055,
+   "y": 185,
+   "width": 420,
+   "height": 115,
+   "roundness": {
+    "type": 3
+   },
+   "backgroundColor": "#232930",
+   "fillStyle": "solid",
+   "strokeColor": "#3a424c",
+   "strokeWidth": 2,
+   "boundElements": [
+    {
+     "id": "lbl026",
+     "type": "text"
+    }
+   ]
+  },
+  {
+   "type": "text",
+   "id": "lbl026",
+   "x": 1063,
+   "y": 193,
+   "width": 404,
+   "height": 99,
+   "text": "Provider 1 · own server\nRTX 3080\nllama3.1, qwen3.8",
+   "fontSize": 17,
+   "fontFamily": 1,
+   "strokeColor": "#e8ebee",
+   "textAlign": "center",
+   "verticalAlign": "middle",
+   "containerId": "box025",
+   "originalText": "Provider 1 · own server\nRTX 3080\nllama3.1, qwen3.8",
+   "autoResize": true
+  },
+  {
+   "type": "rectangle",
+   "id": "box027",
+   "x": 1055,
+   "y": 320,
+   "width": 420,
+   "height": 115,
+   "roundness": {
+    "type": 3
+   },
+   "backgroundColor": "#232930",
+   "fillStyle": "solid",
+   "strokeColor": "#3a424c",
+   "strokeWidth": 2,
+   "boundElements": [
+    {
+     "id": "lbl028",
+     "type": "text"
+    }
+   ]
+  },
+  {
+   "type": "text",
+   "id": "lbl028",
+   "x": 1063,
+   "y": 328,
+   "width": 404,
+   "height": 99,
+   "text": "Provider 2 · example\nRTX 4090\nmistral, gemma",
+   "fontSize": 17,
+   "fontFamily": 1,
+   "strokeColor": "#e8ebee",
+   "textAlign": "center",
+   "verticalAlign": "middle",
+   "containerId": "box027",
+   "originalText": "Provider 2 · example\nRTX 4090\nmistral, gemma",
+   "autoResize": true
+  },
+  {
+   "type": "rectangle",
+   "id": "box029",
+   "x": 1055,
+   "y": 455,
+   "width": 420,
+   "height": 115,
+   "roundness": {
+    "type": 3
+   },
+   "backgroundColor": "#232930",
+   "fillStyle": "solid",
+   "strokeColor": "#3a424c",
+   "strokeWidth": 2,
+   "boundElements": [
+    {
+     "id": "lbl030",
+     "type": "text"
+    }
+   ]
+  },
+  {
+   "type": "text",
+   "id": "lbl030",
+   "x": 1063,
+   "y": 463,
+   "width": 404,
+   "height": 99,
+   "text": "Provider 3 · example\nMacBook with M3\nphi, llama3.2",
+   "fontSize": 17,
+   "fontFamily": 1,
+   "strokeColor": "#e8ebee",
+   "textAlign": "center",
+   "verticalAlign": "middle",
+   "containerId": "box029",
+   "originalText": "Provider 3 · example\nMacBook with M3\nphi, llama3.2",
+   "autoResize": true
+  },
+  {
+   "type": "text",
+   "id": "txt031",
+   "x": 1055,
+   "y": 600,
+   "width": 224.0,
+   "height": 40.0,
+   "text": "A node agent on each machine\ntalks to the local Ollama",
+   "fontSize": 16,
+   "fontFamily": 1,
+   "strokeColor": "#8d97a2",
+   "originalText": "A node agent on each machine\ntalks to the local Ollama",
+   "autoResize": true
+  },
+  {
+   "type": "arrow",
+   "id": "arr032",
+   "x": 450,
+   "y": 237,
+   "width": 133,
+   "height": 15,
+   "points": [
+    [
+     0,
+     0
+    ],
+    [
+     133,
+     -15
+    ]
+   ],
+   "endArrowhead": "arrow",
+   "strokeColor": "#c9a24a",
+   "strokeWidth": 2,
+   "roundness": {
+    "type": 2
+   }
+  },
+  {
+   "type": "text",
+   "id": "txt033",
+   "x": 491.3,
+   "y": 207.5,
+   "width": 52.5,
+   "height": 18.75,
+   "text": "Request",
+   "fontSize": 15,
+   "fontFamily": 1,
+   "strokeColor": "#e8ebee",
+   "originalText": "Request",
+   "autoResize": true,
+   "textAlign": "center"
+  },
+  {
+   "type": "arrow",
+   "id": "arr034",
+   "x": 450,
+   "y": 367,
+   "width": 133,
+   "height": 131,
+   "points": [
+    [
+     0,
+     0
+    ],
+    [
+     133,
+     -131
+    ]
+   ],
+   "endArrowhead": "arrow",
+   "strokeColor": "#c9a24a",
+   "strokeWidth": 2,
+   "roundness": {
+    "type": 2
+   },
+   "strokeStyle": "dashed"
+  },
+  {
+   "type": "arrow",
+   "id": "arr035",
+   "x": 450,
+   "y": 497,
+   "width": 133,
+   "height": 247,
+   "points": [
+    [
+     0,
+     0
+    ],
+    [
+     133,
+     -247
+    ]
+   ],
+   "endArrowhead": "arrow",
+   "strokeColor": "#c9a24a",
+   "strokeWidth": 2,
+   "roundness": {
+    "type": 2
+   },
+   "strokeStyle": "dashed"
+  },
+  {
+   "type": "arrow",
+   "id": "arr036",
+   "x": 918,
+   "y": 215,
+   "width": 134,
+   "height": 13,
+   "points": [
+    [
+     0,
+     0
+    ],
+    [
+     134,
+     13
+    ]
+   ],
+   "endArrowhead": "arrow",
+   "strokeColor": "#c9a24a",
+   "strokeWidth": 2,
+   "roundness": {
+    "type": 2
+   }
+  },
+  {
+   "type": "text",
+   "id": "txt037",
+   "x": 974.2,
+   "y": 199.5,
+   "width": 22.5,
+   "height": 18.75,
+   "text": "Job",
+   "fontSize": 15,
+   "fontFamily": 1,
+   "strokeColor": "#e8ebee",
+   "originalText": "Job",
+   "autoResize": true,
+   "textAlign": "center"
+  },
+  {
+   "type": "arrow",
+   "id": "arr038",
+   "x": 1052,
+   "y": 262,
+   "width": 134,
+   "height": 10,
+   "points": [
+    [
+     0,
+     0
+    ],
+    [
+     -134,
+     -10
+    ]
+   ],
+   "endArrowhead": "arrow",
+   "strokeColor": "#c9a24a",
+   "strokeWidth": 2,
+   "roundness": {
+    "type": 2
+   }
+  },
+  {
+   "type": "text",
+   "id": "txt039",
+   "x": 967.0,
+   "y": 235.0,
+   "width": 37.5,
+   "height": 18.75,
+   "text": "Reply",
+   "fontSize": 15,
+   "fontFamily": 1,
+   "strokeColor": "#e8ebee",
+   "originalText": "Reply",
+   "autoResize": true,
+   "textAlign": "center"
+  },
+  {
+   "type": "arrow",
+   "id": "arr040",
+   "x": 918,
+   "y": 372,
+   "width": 134,
+   "height": 32,
+   "points": [
+    [
+     0,
+     0
+    ],
+    [
+     134,
+     -32
+    ]
+   ],
+   "endArrowhead": "arrow",
+   "strokeColor": "#8d97a2",
+   "strokeWidth": 2,
+   "roundness": {
+    "type": 2
+   },
+   "strokeStyle": "dashed"
+  },
+  {
+   "type": "arrow",
+   "id": "arr041",
+   "x": 918,
+   "y": 380,
+   "width": 134,
+   "height": 110,
+   "points": [
+    [
+     0,
+     0
+    ],
+    [
+     134,
+     110
+    ]
+   ],
+   "endArrowhead": "arrow",
+   "strokeColor": "#8d97a2",
+   "strokeWidth": 2,
+   "roundness": {
+    "type": 2
+   },
+   "strokeStyle": "dashed"
+  },
+  {
+   "type": "rectangle",
+   "id": "zone042",
+   "x": 70,
+   "y": 700,
+   "width": 1430,
+   "height": 92,
+   "roundness": {
+    "type": 3
+   },
+   "backgroundColor": "#2a2416",
+   "fillStyle": "solid",
+   "strokeColor": "#868e96",
+   "strokeWidth": 1,
+   "opacity": 100
+  },
+  {
+   "type": "text",
+   "id": "txt043",
+   "x": 92,
+   "y": 716,
+   "width": 909.0,
+   "height": 45.0,
+   "text": "The models stay on the provider's machine. CoMesh only passes requests through — nothing is uploaded.\nEach user only sees the models that have been released for their account.",
+   "fontSize": 18,
+   "fontFamily": 1,
+   "strokeColor": "#e8ebee",
+   "originalText": "The models stay on the provider's machine. CoMesh only passes requests through — nothing is uploaded.\nEach user only sees the models that have been released for their account.",
+   "autoResize": true
+  }
+ ],
+ "appState": {
+  "viewBackgroundColor": "#101419",
+  "gridSize": 20
+ },
+ "files": {}
+}

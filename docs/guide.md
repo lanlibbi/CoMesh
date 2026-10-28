@@ -48,6 +48,11 @@ Zwei Rollen, kombinierbar:
 * **Anbieter** — betreibt den Node-Agenten als Container. Er meldet die GPU an den Pool und nimmt
   Aufträge an. Welche Modelle der Rechner anbietet, legt der Betreiber fest.
 
+![CoMesh im Überblick: Nutzer fragen die API, Anbieter stellen ihre Grafikkarte bereit](images/comesh-setup.png)
+
+*Drei Nutzer links, die CoMesh-API in der Mitte, drei Anbieter rechts. Die Datei zum
+Weiterbearbeiten liegt unter `brand/comesh-setup.excalidraw`.*
+
 ## Erste Schritte
 
 1. **Konto anlegen** auf `/register.html`. Danach ist das Konto angemeldet, aber nicht freigegeben.
