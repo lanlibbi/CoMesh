@@ -6,7 +6,7 @@ COPY index.html login.html register.html credits.html chat.html pool.html nodes.
 # config.js holds the runtime API base (?api= / localStorage / same-origin).
 COPY config.js app.js i18n.js i18n-catalog.js brand-mesh.js style.css /usr/share/nginx/html/
 COPY pool.js nodes.js agent.js profile.js usage.js admin-usage.js admin-registrations.js admin-audit.js admin-nodes.js /usr/share/nginx/html/
-COPY particles.js /usr/share/nginx/html/
+COPY particles.js comesh-setup.png /usr/share/nginx/html/
 
 # Nginx config
 COPY nginx.conf /etc/nginx/conf.d/default.conf
