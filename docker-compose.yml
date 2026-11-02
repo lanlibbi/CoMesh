@@ -26,6 +26,15 @@ services:
       - DEFAULT_MODEL=qwen2.5-coder:7b
       - DATA_DIR=/data
       - DOCKER_ENV=1
+      # Die API steht ausschliesslich hinter dem frontend-nginx. Ohne dieses
+      # Flag keyt die Login-Sperre auf die Adresse des nginx-Containers —
+      # dann sperren fuenf Fehlversuche alle Benutzer aus. TRUSTED_PROXY_NETS
+      # ist bewusst eng: nur das Compose-Netz, aus dem nginx kommt.
+      - TRUST_PROXY_HEADERS=1
+      - TRUSTED_PROXY_NETS=172.31.0.0/16,127.0.0.1/32
+      # Mock-/Simulationspfade der Zahlungen sind in Produktion aus. Zum
+      # Entwickeln in der .env auf 1 setzen; dann schreiben sie Guthaben gut.
+      - PAYMENTS_ALLOW_MOCK=${PAYMENTS_ALLOW_MOCK:-0}
       # Admin bootstrap for /admin/* (see docs/api.md -> Admin).
       - ADMIN_API_KEY=${ADMIN_API_KEY:-}
       - ADMIN_EMAIL=${ADMIN_EMAIL:-admin@gpu-pool.local}

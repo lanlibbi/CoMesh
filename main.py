@@ -415,6 +415,18 @@ def _ensure_node_privacy_columns():
 def _ensure_payments_table():
     """Create the payments table if it doesn't exist (idempotent)."""
     Payment.__table__.create(bind=engine, checkfirst=True)
+    # Security fix 2026-11-02: idempotency key for provider events (PayPal
+    # txn_id, Stripe event id). Adding it to the model is not enough for an
+    # existing DB — create_all() never alters a table.
+    with engine.begin() as conn:
+        cols = [row[1] for row in conn.exec_driver_sql("PRAGMA table_info(payments)").fetchall()]
+        if "provider_event_id" not in cols:
+            conn.exec_driver_sql("ALTER TABLE payments ADD COLUMN provider_event_id VARCHAR")
+            log.info("Added payments.provider_event_id column")
+        conn.exec_driver_sql(
+            "CREATE UNIQUE INDEX IF NOT EXISTS ux_payments_provider_event "
+            "ON payments(provider, provider_event_id) WHERE provider_event_id IS NOT NULL"
+        )
     log.info("Payments table ready.")
 
 

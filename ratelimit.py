@@ -44,7 +44,10 @@ Environment:
   LOGIN_FAILURE_WINDOW_SECONDS  default 900    counting window
   LOGIN_LOCK_SECONDS            default 300    base lockout, doubles per extra failure
   LOGIN_LOCK_MAX_SECONDS        default 3600   lockout ceiling
+  TRUST_PROXY_HEADERS           default 0      set to 1 behind the compose nginx
+  TRUSTED_PROXY_NETS            default 172.16.0.0/12,10.0.0.0/8,127.0.0.1/32
 """
+import ipaddress
 import logging
 import math
 import os
@@ -131,20 +134,65 @@ class RateLimiter:
 LIMITER = RateLimiter()
 
 
+def _trust_proxy_headers() -> bool:
+    return (os.environ.get("TRUST_PROXY_HEADERS", "0") or "0").strip().lower() in (
+        "1", "true", "yes", "on",
+    )
+
+
+DEFAULT_TRUSTED_PROXY_NETS = "172.16.0.0/12,10.0.0.0/8,127.0.0.1/32"
+
+
+def _trusted_proxy_networks():
+    raw = os.environ.get("TRUSTED_PROXY_NETS", DEFAULT_TRUSTED_PROXY_NETS) or ""
+    nets = []
+    for part in raw.split(","):
+        part = part.strip()
+        if not part:
+            continue
+        try:
+            nets.append(ipaddress.ip_network(part, strict=False))
+        except ValueError:
+            log.warning("TRUSTED_PROXY_NETS: ignoring invalid entry %r", part)
+    return tuple(nets)
+
+
+def _is_trusted_proxy(peer: str) -> bool:
+    """True when *peer* (the TCP peer, not a header) may speak for the client."""
+    if not peer:
+        return False
+    try:
+        addr = ipaddress.ip_address(peer.strip().strip("[]"))
+    except ValueError:
+        return False
+    return any(addr in net for net in _trusted_proxy_networks())
+
+
 def client_ip(request: Request) -> str:
     """
     Best-effort client identity for rate limiting.
 
-    We deliberately do NOT trust X-Forwarded-For by default: with a direct
-    Tailscale/LAN deployment it is client-controlled and trivially spoofable.
-    Set TRUST_PROXY_HEADERS=1 when the portal really sits behind a reverse
-    proxy (the compose frontend nginx) whose XFF can be trusted.
+    Without a proxy the socket address is the truth. Behind the bundled nginx
+    (compose service ``frontend``) it is *always* the nginx container's address
+    — then all users share one bucket and five failed logins lock everybody out.
+
+    With ``TRUST_PROXY_HEADERS=1`` the header nginx sets itself is used instead:
+    ``X-Real-IP``, which nginx overwrites with ``$remote_addr`` after its
+    ``real_ip`` module resolved ``CF-Connecting-IP``. This only happens when the
+    TCP peer really is a trusted proxy (``TRUSTED_PROXY_NETS``); otherwise
+    anyone reaching the API directly on 8765 could forge the header.
+    ``X-Forwarded-For`` is deliberately not preferred: as a list, its first
+    element is traditionally client-controlled.
     """
-    if (os.environ.get("TRUST_PROXY_HEADERS", "0") or "0") in ("1", "true", "True"):
+    peer = request.client.host if request.client else "unknown"
+    if _trust_proxy_headers() and _is_trusted_proxy(peer):
+        real = (request.headers.get("x-real-ip") or "").strip()
+        if real:
+            return real
         xff = request.headers.get("x-forwarded-for")
         if xff:
             return xff.split(",")[0].strip()
-    return request.client.host if request.client else "unknown"
+    return peer
 
 
 def enforce(scope: str, *, per_minute: int, burst: int, cost: float = 1.0) -> None:

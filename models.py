@@ -207,6 +207,9 @@ class Payment(Base):
     status = Column(String, default="pending", nullable=False)  # pending | succeeded | failed | cancelled
     credits_added = Column(Integer, default=0, nullable=False)
     transaction_id = Column(String, nullable=True, index=True)  # gateway-side id
+    # Vom Anbieter bestaetigte Ereignis-ID (z. B. PayPals txn_id). Unique je
+    # Anbieter, damit dasselbe Ereignis nicht zweimal Guthaben gutschreibt.
+    provider_event_id = Column(String, nullable=True, index=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 
