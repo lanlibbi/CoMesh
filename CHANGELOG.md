@@ -1,5 +1,34 @@
 # Changelog
 
+## Sicherheitsfix — 2026-11-02
+
+**Zwei offene Türen: globale Login-Sperre und ungeprüfte PayPal-IPN**
+
+1. **Die Sperre sperrte alle aus.** Hinter Cloudflare ist `$remote_addr` in nginx die Adresse des
+   Docker-Gateways (gemessen: 172.31.0.1), die Anwendung sah zusätzlich nur den nginx-Container
+   (172.31.0.3). Alle Benutzer teilten damit einen Zähler — fünf Fehlversuche sperrten die ganze
+   Installation. nginx wertet jetzt `CF-Connecting-IP` über das `real_ip`-Modul aus, aber nur von
+   `172.31.0.0/16` und `127.0.0.1`; aus LAN oder Tailnet bleibt die Verbindungsadresse maßgeblich,
+   ein gefälschter Header wird ignoriert. `X-Forwarded-For` wird überschrieben statt fortgeschrieben.
+   Die Anwendung nimmt `X-Real-IP` (das nginx immer selbst setzt) nur, wenn der TCP-Peer ein
+   vertrauenswürdiger Proxy ist (`TRUST_PROXY_HEADERS=1`, `TRUSTED_PROXY_NETS`).
+
+2. **Kostenloses Guthaben über die PayPal-IPN.** `/payments/paypal/ipn` schrieb bei
+   `payment_status=Completed` Guthaben gut, ohne PayPal zu fragen. Jetzt geht der **Rohtext** der
+   Meldung unverändert mit `cmd=_notify-validate` an PayPal; nur `VERIFIED` wird akzeptiert.
+   Zusätzlich müssen `payment_status`, Empfänger (`PAYPAL_RECEIVER_EMAIL`), Betrag und Währung
+   passen, und `txn_id` schreibt über `payments.provider_event_id` (Unique-Index) nur einmal gut.
+   Die vier weiteren Gutschrift-Pfade (`stripe/success`, `alipay/success`, `applepay/success`,
+   `stripe/simulate-success`) fragen jetzt bei Stripe nach bzw. sind nur mit
+   `PAYMENTS_ALLOW_MOCK=1` erreichbar; der Mock-Webhook ebenso. `_fulfill_payment` lehnt
+   abgebrochene und fehlgeschlagene Aufträge ab.
+
+**Gemessen:** Fünf Fehlversuche von 203.0.113.10 sperren nur diese Adresse (429 mit
+`Retry-After: 216`), ein Login von 198.51.100.20 geht weiter (401) — Log:
+`login blocked by lockout: key=login:ip:203.0.113.10`. Ein gefälschter IPN gegen die laufende
+Instanz ergab HTTP 400 (`IPN verification failed`), PayPals Sandbox antwortete `INVALID`,
+Guthaben und Zahlungstabelle blieben unverändert.
+
 ## 0.6.9 — 2026-10-24
 
 **Werkzeugaufrufe: `tools` rein, `tool_calls` raus**

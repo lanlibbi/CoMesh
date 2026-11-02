@@ -35,6 +35,16 @@ services:
       # Mock-/Simulationspfade der Zahlungen sind in Produktion aus. Zum
       # Entwickeln in der .env auf 1 setzen; dann schreiben sie Guthaben gut.
       - PAYMENTS_ALLOW_MOCK=${PAYMENTS_ALLOW_MOCK:-0}
+      # Zahlungen: leer = keine echten Zahlungen. Sobald PAYPAL_MODE=live gilt,
+      # muss PAYPAL_RECEIVER_EMAIL gesetzt sein, sonst lehnt die IPN-Pruefung
+      # jede Meldung ab (fail closed).
+      - PAYPAL_MODE=${PAYPAL_MODE:-sandbox}
+      - PAYPAL_RECEIVER_EMAIL=${PAYPAL_RECEIVER_EMAIL:-}
+      - PAYPAL_CLIENT_ID=${PAYPAL_CLIENT_ID:-}
+      - PAYPAL_CLIENT_SECRET=${PAYPAL_CLIENT_SECRET:-}
+      - PAYPAL_IPN_URL=${PAYPAL_IPN_URL:-}
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY:-}
+      - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET:-}
       # Admin bootstrap for /admin/* (see docs/api.md -> Admin).
       - ADMIN_API_KEY=${ADMIN_API_KEY:-}
       - ADMIN_EMAIL=${ADMIN_EMAIL:-admin@gpu-pool.local}
