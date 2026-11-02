@@ -91,9 +91,18 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) and [docs/architecture.md](docs/architect
 ```bash
 cp .env.example .env
 docker compose up -d --build
-# Portal: http://localhost:8765
+# UI:  http://localhost:8767
+# API: http://localhost:8765
 # Setup check (no API key): scripts/check_setup.sh http://localhost:8765
 ```
+
+Both ports are published on `127.0.0.1` only, so a fresh install answers on this
+host and nowhere else. To serve other machines — a Cloudflare tunnel, a reverse
+proxy, or clients in your LAN — set `COMESH_BIND_ADDRESS=0.0.0.0` in `.env`
+**before** the first start (or recreate the containers afterwards; `docker compose
+config` shows the resulting binding). That publishes the portal on every interface,
+past whatever proxy you put in front of it — see [.env.example](.env.example) and
+[docs/network.md](docs/network.md).
 
 ### 2. Deploy a node-agent (on the contributor host)
 
@@ -151,7 +160,8 @@ Example client: [examples/client.py](examples/client.py)
 | Role | What it takes |
 |---|---|
 | **User** (send requests) | **nothing.** A browser on `http://<portal>:8767`, or any
-OpenAI-compatible client against `http://<portal>:8765/v1` with an API key. |
+OpenAI-compatible client against `http://<portal>:8767/v1` with an API key (the API
+also answers on `:8765/v1` when the operator published that port). |
 | **Provider** (contribute a GPU) | a local inference backend (Ollama, LM Studio, vLLM …)
 **plus** the node-agent in front of it. The portal only ever calls the agent (`node_url`
 → port `11435`), never the backend directly. |
@@ -168,6 +178,10 @@ LM Studio install alone does not make a node. See [docs/windows.md](docs/windows
 | Portal backend | FastAPI + SQLAlchemy | `8765` | API, pool logic, DB |
 | Portal UI (Alpine) | Alpine.js + canvas, no build step | `8767` | Node/pool/usage/admin dashboard |
 | Node-Agent | Python + psutil + pynvml | `8080` | Heartbeat + inference proxy |
+
+The ports above are container ports. On the host they are published on `127.0.0.1` by
+default (`COMESH_BIND_ADDRESS` for the UI, `COMESH_API_BIND_ADDRESS` for the API); see
+[.env.example](.env.example).
 
 ---
 
@@ -286,9 +300,18 @@ das Portal verteilt sie an den am besten geeigneten **Node-Agent** im Netz.
 ```bash
 cp .env.example .env
 docker compose up -d --build
-# Portal: http://localhost:8765
+# UI:  http://localhost:8767
+# API: http://localhost:8765
 # Setup-Check (ohne API-Key): scripts/check_setup.sh http://localhost:8765
 ```
+
+Beide Ports liegen nur auf `127.0.0.1`, eine frische Installation antwortet also
+allein auf diesem Host. Für andere Rechner — Cloudflare-Tunnel, Reverse Proxy oder
+Clients im LAN — in der `.env` **vor** dem ersten Start `COMESH_BIND_ADDRESS=0.0.0.0`
+setzen (oder die Container danach neu erzeugen; was daraus wird, zeigt `docker
+compose config`). Damit ist das Portal auf allen Schnittstellen veröffentlicht, also
+an jedem vorgelagerten Proxy vorbei — siehe [.env.example](.env.example) und
+[docs/network.md](docs/network.md).
 
 ### 2. Node-Agent deployen (auf dem Contributor-Host)
 
@@ -347,7 +370,8 @@ selbst: ein Admin kann sich weder degradieren noch deaktivieren.
 | Rolle | Was nötig ist |
 |---|---|
 | **Nutzer** | **nichts.** Browser auf `http://<portal>:8767` oder ein OpenAI-kompatibler
-Client auf `http://<portal>:8765/v1` mit einem API-Schlüssel. |
+Client auf `http://<portal>:8767/v1` mit einem API-Schlüssel (die API antwortet auch
+auf `:8765/v1`, wenn der Betreiber diesen Port veröffentlicht hat). |
 | **Provider** | ein lokales Backend (Ollama, LM Studio, vLLM …) **und** der Node-Agent
 davor. Das Portal ruft ausschließlich den Agenten an (`node_url` → Port `11435`). |
 | **Betreiber** | Docker Compose oder Python nativ. |

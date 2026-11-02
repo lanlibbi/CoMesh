@@ -19,8 +19,13 @@ services:
     image: comesh-api:0.6.9
     container_name: comesh-api
     restart: unless-stopped
+    # Nur Loopback per Default: die API ist im Compose-Netz unter
+    # http://api:8000 erreichbar (nginx im Frontend, Node-Agent), dafuer ist
+    # keine Veroeffentlichung noetig. Wer Clients von anderen Rechnern direkt
+    # auf 8765 zeigen laesst, setzt COMESH_API_BIND_ADDRESS=0.0.0.0 in der
+    # .env — dann ist die Anwendung ohne vorgelagerten Proxy erreichbar.
     ports:
-      - "8765:8000"
+      - "${COMESH_API_BIND_ADDRESS:-127.0.0.1}:8765:8000"
     environment:
       - OLLAMA_URL=http://host.docker.internal:11434
       - DEFAULT_MODEL=qwen2.5-coder:7b
@@ -64,8 +69,12 @@ services:
     image: comesh-frontend:0.6.9
     container_name: comesh-frontend
     restart: unless-stopped
+    # Nur Loopback per Default. Fuer den Zugang von aussen (Cloudflare-Tunnel,
+    # Reverse Proxy auf demselben Host) in der .env COMESH_BIND_ADDRESS=0.0.0.0
+    # setzen — damit ist das Portal aber ohne vorgelagerten Proxy direkt
+    # erreichbar, auch an Cloudflare vorbei.
     ports:
-      - "8767:80"
+      - "${COMESH_BIND_ADDRESS:-127.0.0.1}:8767:80"
     depends_on:
       - api
 

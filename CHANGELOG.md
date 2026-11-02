@@ -1,5 +1,34 @@
 # Changelog
 
+## Sicherheitsfix — 2026-11-03
+
+**Veröffentlichte Ports liegen per Default nur noch auf 127.0.0.1**
+
+`docker-compose.yml` veröffentlichte 8767 (Oberfläche) und 8765 (API) auf allen
+Schnittstellen. Wer den Port direkt erreichte, sprach mit dem Portal an Cloudflare
+vorbei — an TLS, Ratenlimit und Zugriffsregeln des Tunnels vorbei. Für eine frische
+Installation ohne Tunnel war das nur eine offene Tür ohne Nutzen.
+
+Beide Bindungen stehen jetzt hinter einer Variablen, Vorgabe `127.0.0.1`:
+
+| Variable | Port | Vorgabe |
+|---|---|---|
+| `COMESH_BIND_ADDRESS` | 8767 → 80 (Oberfläche) | `127.0.0.1` |
+| `COMESH_API_BIND_ADDRESS` | 8765 → 8000 (API) | `127.0.0.1` |
+
+Wer von außen zugreifen will (Cloudflare-Tunnel, Reverse Proxy auf demselben Host),
+setzt `COMESH_BIND_ADDRESS=0.0.0.0` **vor** dem Neuerzeugen der Container. Die API
+braucht das nur, wenn Clients oder ein Node-Agent auf anderen Rechnern sie direkt
+ansprechen; nginx und der Agent auf dem Portal-Host gehen über das Compose-Netz
+(`http://api:8000`).
+
+**Gemessen auf der laufenden Instanz:** mit `COMESH_BIND_ADDRESS=0.0.0.0` und
+`COMESH_API_BIND_ADDRESS=127.0.0.1` in der `.env` zeigt `docker ps`
+`0.0.0.0:8767->80/tcp` und `127.0.0.1:8765->8000/tcp`; Oberfläche und API antworten
+über den Tunnel (HTTP 200), `192.168.2.187:8765` ist von außen nicht mehr
+erreichbar. Ein `docker compose config` ohne `.env` in einem leeren Verzeichnis
+zeigt für beide Ports `host_ip: 127.0.0.1`.
+
 ## Sicherheitsfix — 2026-11-02
 
 **Zwei offene Türen: globale Login-Sperre und ungeprüfte PayPal-IPN**

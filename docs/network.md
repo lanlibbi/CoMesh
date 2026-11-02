@@ -25,7 +25,7 @@ sich der Agent mit einer neuen Adresse, und `node_url` wird neu gesetzt
 | Ort | Wert | Warum |
 |---|---|---|
 | Portal, `.env` → `APP_PUBLIC_URL` | z. B. `http://portal-host:8765` | Rückkehr-URLs der Zahlungsanbieter. Fehlt der Wert, leitet das Portal ihn aus dem Request ab — dann aber pro Anfrage. |
-| Portal, `docker-compose.yml` | nur Port-Mappings (`8765:8000`, `8767:80`) | Keine festen externen Adressen. Container-Namen (`api`) gelten nur im Compose-Netz. |
+| Portal, `docker-compose.yml` | Port-Mappings über `COMESH_BIND_ADDRESS` (8767) und `COMESH_API_BIND_ADDRESS` (8765), Vorgabe `127.0.0.1` | Keine festen externen Adressen. Eine frische Installation antwortet nur auf dem eigenen Host; für Tunnel, vorgelagerten Proxy oder Clients im LAN auf `0.0.0.0` setzen. Container-Namen (`api`) gelten nur im Compose-Netz. |
 | Node-Agent, `.env` → `PORTAL_URL` | Name oder IP des Portals | Der Agent geht **outbound** zum Portal; er braucht keinen offenen Inbound-Port. |
 | Node-Agent, `.env` → `ADVERTISE_HOST` | optional, Name des Nodes | Pinnt den Namen, unter dem das Portal ihn anspricht. |
 | Node-Agent, `NODE_ID` + `NODE_API_KEY` | optional | Werden durch die Selbst-Registrierung ersetzt. |
