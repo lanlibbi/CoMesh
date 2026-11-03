@@ -258,6 +258,11 @@ COMESH_USER_KEY=gpu_… curl -fsSL https://<portal>/downloads/install.sh | sh
 curl -fsSL https://<portal>/downloads/install.sh | sh -s -- --uninstall
 ```
 
+- `--name` gilt bei der **ersten** Registrierung; danach ist der Name eine
+  Eigenschaft der Node im Portal und wird dort geändert (die Konfigurationsdatei
+  umbenennen hilft nicht, weil die Zugangsdaten schon in `node-state.json`
+  stehen).
+
 `--uninstall` entfernt Dienst, Binary, Konfiguration, Protokoll und
 Zustandsdatei. **Die Node bleibt im Portal in der Geräteliste stehen** — dort
 löschen, sonst sieht sie für die Administration wie eine ausgefallene Node aus.
@@ -294,14 +299,29 @@ wieder entfernen.
 
 ## Stand und Grenzen
 
-- **Linux ist gemessen**: Binary gebaut, über `install.sh` installiert,
-  systemd-`--user`-Dienst gestartet, WebSocket-Handshake, Heartbeat und
-  Registrierung gegen ein Testportal geprüft.
+- **Linux ist gemessen** (arm64, Python 3.13, PyInstaller 6.22): Binary gebaut
+  (15 MB, Version aus `VERSION`), über `curl … | sh` installiert, Rechte 600 auf
+  `agent.env`, systemd-`--user`-Dienst `enabled` + `active`, WebSocket-Handshake
+  (`WS welcome received`), Selbstregistrierung und Heartbeat im Portal sichtbar.
+- **Dauerbetrieb**: 100 s nach der Installation weiter Heartbeats (7 → 10) und
+  Pings (9 → 16), `NRestarts=0` — die Node fällt nicht nach 90 s aus dem Routing.
+- **Auch `--transport http` ist gemessen**: in diesem Betrieb startet der
+  eingefrorene uvicorn-Server, `/health` und `/` antworten (das prüft die
+  Hidden Imports in `comesh-agent.spec`).
+- **Fehlerwege gemessen**: fehlende `.sha256` → Abbruch ohne Installation,
+  falsche Prüfsumme → Abbruch mit beiden Werten, unerreichbares Portal →
+  Statuszeilen, Protokollauszug und Exitcode 1.
+- **Idempotenz und Rückweg gemessen**: zweiter Lauf ersetzt statt zu duplizieren
+  (keine zweite Node), `--uninstall` hinterlässt weder Dienst noch Dateien.
 - **macOS und Windows sind vorbereitet, aber nicht auf echter Hardware
-  ausgeführt**: die Skripte sind syntaktisch geprüft (PowerShell-AST,
-  `sh -n`, PSScriptAnalyzer), die Dienstwege (launchd, `schtasks`) nicht.
-  Wer dort installiert, sollte mit `bash -x`/`Set-PSDebug -Trace 1` arbeiten und
-  den Bericht im Repo ergänzen.
+  ausgeführt**: `install.ps1`/`build.ps1` sind über den PowerShell-AST und
+  PSScriptAnalyzer geprüft (0 Befunde außer Stilhinweisen), `install.sh` über
+  `sh -n` und shellcheck; das erzeugte launchd-Plist ist als XML validiert
+  (auch mit `&` im Pfad). **Nicht** ausgeführt: `launchctl`,
+  `schtasks`, `icacls` — und damit die Dienstwege selbst, die
+  Gatekeeper-/SmartScreen-Frage und der Windows-Neustart nach einem Update.
+  Wer dort installiert, sollte mit `bash -x` bzw. `Set-PSDebug -Trace 1`
+  arbeiten und den Bericht hier ergänzen.
 - **Die Binaries sind unsigniert** (weder Apple-Notarisierung noch
   Windows-Codesignatur). Das ist der Grund für die `curl`-Installation; für eine
   breite Verteilung wäre eine Signatur der nächste Schritt.
