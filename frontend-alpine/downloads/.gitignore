@@ -1,0 +1,6 @@
+# Binaries und Installer werden gebaut bzw. aus node-agent/ kopiert und beim
+# Ausliefern hier abgelegt — nicht versioniert: 15–25 MB je Datei, und sie
+# gehören zu einem Release, nicht zum Quellstand. Siehe README.md.
+comesh-agent-*
+install.sh
+install.ps1
