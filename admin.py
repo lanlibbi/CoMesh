@@ -98,7 +98,12 @@ def _iso(dt: Optional[datetime]) -> Optional[str]:
 def _is_online(node: GpuNode, now: Optional[datetime] = None) -> bool:
     """Heartbeat-based liveness. Mirrors nodes._is_online / pool._is_online."""
     now = now or _now()
-    if not node.is_enabled or node.last_seen is None:
+    if not node.is_enabled:
+        return False
+    # Offene WS-Verbindung mit frischem Ping zaehlt ebenfalls (models.ws_is_alive).
+    if node.ws_is_alive():
+        return True
+    if node.last_seen is None:
         return False
     if node.status not in ("online", "busy"):
         return False

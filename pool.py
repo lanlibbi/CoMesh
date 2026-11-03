@@ -65,7 +65,13 @@ class NodeCandidate:
 
 
 def _is_online(node: GpuNode) -> bool:
-    if not node.is_enabled or node.last_seen is None or node.status not in ("online", "busy"):
+    if not node.is_enabled:
+        return False
+    # Eine offene WebSocket-Verbindung mit frischem Ping ist ein Lebenszeichen
+    # eigener Art (WS-Betrieb schreibt nur last_ws_seen, siehe models.ws_is_alive).
+    if node.ws_is_alive():
+        return True
+    if node.last_seen is None or node.status not in ("online", "busy"):
         return False
     return (datetime.utcnow() - node.last_seen).total_seconds() < 90
 

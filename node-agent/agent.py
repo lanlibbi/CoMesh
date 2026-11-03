@@ -1084,6 +1084,10 @@ async def _on_start():
     log.info(f"Advertised as {advertised_host()}:{AGENT_PORT} (portal dials this)")
     if AGENT_TRANSPORT == "ws":
         asyncio.create_task(ws_loop())
+        # Guertel und Hosentraeger: auch im WS-Betrieb HTTP-Heartbeats senden,
+        # solange die API erreichbar ist. Der Ping allein macht die Node nur
+        # ueber last_ws_seen lebendig; status und VRAM kommen ueber diesen Weg.
+        asyncio.create_task(heartbeat_loop())
         log.info(
             f"Node-agent WS transport started. node_id={NODE_ID} portal={PORTAL_URL} "
             f"ollama={OLLAMA_URL} ping={WS_HEARTBEAT_SEC}s"

@@ -92,6 +92,35 @@ Heartbeats drehen, sondern `ADVERTISE_HOST` setzen.
   nur das Portal muss erreichbar sein.
 - **Node-Agent → Portal**: `PORTAL_URL` muss erreichbar sein (Port-Mapping im
   Compose reicht).
+
+## WebSocket-Betrieb (`AGENT_TRANSPORT=ws`)
+
+Im WS-Betrieb oeffnet der Agent eine Verbindung nach
+`ws(s)://<portal>/agent/connect?node_id=…&node_key=…`. Drei Dinge, die
+dazugehoeren und schon einmal gefehlt haben:
+
+1. **Der Pfad muss durch den Reverse Proxy.** `frontend-alpine/nginx.conf`
+   hat dafuer einen eigenen `location = /agent/connect` mit
+   `Upgrade`/`Connection: upgrade`. Ohne ihn kommt eine Node nur ueber die
+   interne API-Adresse herein, nicht ueber den oeffentlichen Portal-Namen.
+2. **Der Ping ist ein Lebenszeichen.** Alle 15 s (`WS_HEARTBEAT_SEC`) sendet
+   der Agent `{"type":"ping"}`; das Portal schreibt darauf `last_ws_seen`,
+   `last_seen` und `status`. `_is_online` (pool/nodes/admin) akzeptiert eine
+   offene Verbindung mit frischem Ping *oder* einen frischen HTTP-Heartbeat,
+   jeweils innerhalb von 90 s. Faellt der Ping aus, ist die Node nach 90 s
+   offline — das ist gewollt.
+3. **Beim Trennen wird aufgeraeumt.** Der Server setzt
+   `connection_state=disconnected` und `status=offline`, damit die Node sofort
+   aus dem Routing faellt und nicht erst nach Ablauf der Frist.
+
+Zusaetzlich sendet der Agent im WS-Betrieb weiter HTTP-Heartbeats
+(`HEARTBEAT_SEC`), solange er die API erreicht — Guertel und Hosentraeger.
+Der WS-Ping allein genuegt fuer die Lebenszeichen, der Heartbeat traegt
+VRAM-Verbrauch und Adresse nach.
+
+Pruefen laesst sich das ohne GPU: Node registrieren, Agent mit
+`AGENT_TRANSPORT=ws` starten und in der Datenbank
+`connection_state`/`last_seen`/`last_ws_seen` ueber mehr als 90 s beobachten.
 - Keine der beiden Seiten gehört ins offene Internet. Ein privates Netz
   (LAN oder Mesh-VPN) genügt.
 

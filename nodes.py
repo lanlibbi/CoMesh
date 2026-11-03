@@ -265,9 +265,13 @@ ONLINE_GRACE = timedelta(seconds=90)  # last_seen within 90s => online
 
 
 def _is_online(node: GpuNode) -> bool:
+    if not node.is_enabled:
+        return False
+    # WS-Verbindung zaehlt wie ein HTTP-Heartbeat (models.ws_is_alive).
+    if node.ws_is_alive():
+        return True
     return (
-        node.is_enabled
-        and node.last_seen is not None
+        node.last_seen is not None
         and (datetime.utcnow() - node.last_seen) < ONLINE_GRACE
         and node.status in ("online", "busy")
     )

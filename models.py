@@ -4,6 +4,7 @@ and the Community GPU-Pool (GpuNode, NodeHeartbeat, NodeEarnings, PoolJob).
 """
 import json
 import secrets
+import time
 from datetime import datetime
 from typing import List, Optional
 
@@ -282,6 +283,25 @@ class GpuNode(Base):
     owner = relationship("User", back_populates="nodes")
     earnings = relationship("NodeEarning", back_populates="node", cascade="all, delete-orphan")
     jobs = relationship("PoolJob", back_populates="node", cascade="all, delete-orphan")
+
+    # ---------- Lebenszeichen ----------
+    def ws_is_alive(self, grace_seconds: float = 90.0) -> bool:
+        """True, wenn die WebSocket-Verbindung als Lebenszeichen zaehlt.
+
+        Im WS-Betrieb setzt der Ping `last_ws_seen`, aber nicht `last_seen` /
+        `status`. Wer nur die HTTP-Regel prueft, haelt eine verbundene Node nach
+        90 s fuer offline und nimmt sie aus dem Routing. Beide Regeln gelten
+        deshalb nebeneinander: offene Verbindung mit frischem Ping ODER
+        frischer HTTP-Heartbeat.
+        """
+        if (self.connection_state or "") != "connected":
+            return False
+        if not self.last_ws_seen:
+            return False
+        try:
+            return (time.time() - float(self.last_ws_seen)) < grace_seconds
+        except (TypeError, ValueError):
+            return False
 
     # ---------- Model-whitelist helpers (mirror of User) ----------
     def get_allowed_models(self) -> Optional[List[str]]:

@@ -75,16 +75,19 @@ Single-Worker-Policy:
   The `docker-compose.yml` already pins workers=1.
 """
 import asyncio
+import hmac
 import json
 import logging
 import time
 import uuid
+from datetime import datetime
 from typing import Any, Dict, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, WebSocket, WebSocketDisconnect
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
+from auth import hash_api_key
 from database import SessionLocal, get_db
 from models import GpuNode
 
@@ -250,7 +253,14 @@ def _authenticate_node(db: Session, node_id: int, node_key: str) -> Optional[Gpu
     node = db.query(GpuNode).filter(GpuNode.id == nid).first()
     if not node:
         return None
-    if not node.api_key or node.api_key != node_key:
+    # Der Agentenschluessel liegt seit der Auth-Haertung als SHA-256-Hash in
+    # `api_key_hash`; `api_key` traegt nur noch Altzeilen im Klartext. Wer hier
+    # nur die Klartextspalte prueft, weist jede Node mit gehashtem Schluessel ab
+    # (4401 „invalid node_id or api_key") — der WS-Betrieb war damit tot.
+    if node.api_key_hash:
+        if not hmac.compare_digest(node.api_key_hash, hash_api_key(node_key)):
+            return None
+    elif not node.api_key or node.api_key != node_key:
         return None
     if not node.is_enabled:
         # Owner paused this node — refuse WS just like we'd refuse HTTP.
@@ -273,6 +283,11 @@ def _set_state(db: Session, node: GpuNode, state: str, session_id: Optional[str]
     node.ws_session_id = session_id  # None clears, str sets
     if ts is not None:
         node.last_ws_seen = ts
+    if state == "connected":
+        # Eine stehende Verbindung ist auch ein HTTP-Lebenszeichen: sonst zeigen
+        # Portal und Adminseite die Node als offline, obwohl sie verbunden ist.
+        node.status = "online"
+        node.last_seen = datetime.utcnow()
     db.add(node)
     db.commit()
 
@@ -390,6 +405,13 @@ async def agent_connect(
             if mtype == "ping":
                 # Update heartbeat timestamp; opportunistically pull vram/jobs.
                 node.last_ws_seen = ts
+                # Der Ping ist ein vollwertiges Lebenszeichen: status und
+                # last_seen mitschreiben. Sonst verlangte _is_online Spalten,
+                # die im WS-Betrieb nie geschrieben wurden, und die Node fiel
+                # nach 90 s aus dem Routing.
+                node.last_seen = datetime.utcnow()
+                jobs = msg.get("active_jobs")
+                node.status = "busy" if isinstance(jobs, int) and jobs > 0 else "online"
                 if isinstance(msg.get("vram_used_gb"), (int, float)):
                     node.vram_used_gb = float(msg["vram_used_gb"])
                 if isinstance(msg.get("active_jobs"), int):
@@ -467,6 +489,9 @@ async def agent_connect(
             try:
                 node_row = cleanup_db.query(GpuNode).filter(GpuNode.id == node_id).first() if node_id else None
                 if node_row is not None:
+                    # Verbindung weg = offline. Ohne diesen Satz blieb der Status
+                    # auf "online", bis die HTTP-Frist ablief.
+                    node_row.status = "offline"
                     _set_state(cleanup_db, node_row, "disconnected", None, time.time())
                     log.info(f"WS disconnected: node_id={node_row.id}")
             finally:
