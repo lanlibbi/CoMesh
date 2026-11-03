@@ -122,6 +122,12 @@ services:
       - NODE_STATE_FILE=/data/node-state.json
       - AGENT_PORT={agent_port}
       - HEARTBEAT_SEC=${{HEARTBEAT_SEC:-30}}
+      # VRAM in GB. Leer = aus NVML lesen; ohne NVIDIA-GPU ist der Wert Pflicht,
+      # sonst meldet der Agent 1 GB und bekommt vom Router keinen Auftrag.
+      - NODE_VRAM_GB=${{NODE_VRAM_GB:-}}
+      # Gemeinsames Geheimnis mit dem Portal (Kopfzeile X-Node-Secret). Leer =
+      # Agent ohne Sperre (warnt beim Start). Muss auf beiden Seiten gleich sein.
+      - NODE_SHARED_SECRET=${{NODE_SHARED_SECRET:-}}
       - LOG_LEVEL=${{LOG_LEVEL:-INFO}}
 {backend_env}
 {transport_env}
@@ -214,6 +220,17 @@ def main() -> None:
             f.write(f"INFERENCE_URL={url}\n")
         f.write(f"AGENT_PORT={agent_port}\n")
         f.write(f"AGENT_TRANSPORT={transport_val}\n")
+        f.write("#\n")
+        f.write("# VRAM, den dieser Node anbietet, in GB. Leer = aus NVML lesen.\n")
+        f.write("# Ohne NVIDIA-GPU (macOS/Apple Silicon, CPU-Node) MUSS der Wert\n")
+        f.write("# gesetzt werden: sonst meldet der Agent 1 GB, das Portal glaubt es,\n")
+        f.write("# und der Router schickt nie einen Auftrag (VRAM-Gate).\n")
+        f.write("# NODE_VRAM_GB=16\n")
+        f.write("#\n")
+        f.write("# Gemeinsames Geheimnis mit dem Portal (Kopfzeile X-Node-Secret).\n")
+        f.write("# Nur setzen, wenn derselbe Wert im Portal steht - sonst antwortet\n")
+        f.write("# der Agent mit 401. Leer = keine Sperre, mit Warnung beim Start.\n")
+        f.write("# NODE_SHARED_SECRET=\n")
 
     compose = build_compose(backend_key, b["backend"], agent_port, url, nvidia_bool, transport_val)
     with open("docker-compose.yml", "w") as f:
