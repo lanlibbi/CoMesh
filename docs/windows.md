@@ -31,14 +31,17 @@ Gemessen auf einem Gaming-PC (RTX 3080 Ti, 12 GB, Treiber 616.56):
 Der Code selbst ist portabel — `netinfo.py` ermittelt die Adresse über reine Sockets (kein
 `ip addr`, kein `ifconfig`), der Agent enthält keine POSIX-Aufrufe (`fork`, `fcntl`,
 `/proc`, `signal.SIGTERM`), und die GPU-Erkennung läuft über `pynvml`, das unter Windows
-funktioniert und bei fehlender NVML sauber auf Stub-Werte zurückfällt. **Was fehlt, ist der
-Installationsweg** — `node-agent/setup.py` ist ein Assistent, der am Ende eine
-`docker-compose.yml` erzeugt.
+funktioniert und bei fehlender NVML sauber auf Stub-Werte zurückfällt. Der Installationsweg steht seit
+`install.ps1` bereit: ein Befehl in einer normalen PowerShell, ohne Python und ohne
+Administratorrechte (Weg A). `node-agent/setup.py` bleibt der Assistent für den
+Container-Betrieb.
 
 Zwei Stolpersteine im Code, die Windows betreffen:
 
-1. **`NODE_STATE_FILE`** steht standardmäßig auf `/data/node-state.json` — ein Linux-Pfad.
-   Unter Windows überschreiben, z. B. `%LOCALAPPDATA%\CoMesh\node-state.json`.
+1. **`NODE_STATE_FILE`** hatte als Vorgabe den Linux-Pfad `/data/node-state.json`. Seit dem
+   Einzelbinary liegt der Standard im Benutzerverzeichnis
+   (`%LOCALAPPDATA%\CoMesh\node-state.json`); der Container setzt den Pfad ausdrücklich
+   in seinem Dockerfile. Wer von Hand konfiguriert, kann ihn weiterhin überschreiben.
 2. **`host.docker.internal`** in den Vorgaben des Assistenten gilt **nur für Docker**. Läuft
    der Agent nativ neben dem Backend, gehört `127.0.0.1` in die `.env`.
 
@@ -47,26 +50,59 @@ die Datei ist dann eben nicht auf den Besitzer beschränkt. Bewusst so gelassen,
 
 ---
 
-## Weg A — `comesh-agent.exe` (geplant, noch nicht gebaut)
+## Weg A — ein Befehl (`comesh-agent.exe`)
 
-Der Agent lässt sich mit PyInstaller einfrieren. Dann braucht der Rechner **kein Python**:
+Der Agent liegt als fertiges Einzelbinary vor; der Rechner braucht **kein Python**,
+kein Docker, kein Repo und **keinen offenen Port**:
+
+```powershell
+irm https://<portal>/downloads/install.ps1 | iex
+```
+
+Das Skript erkennt die Architektur (nur `x86_64` wird ausgeliefert), lädt
+`comesh-agent-windows-x86_64.exe` samt `.sha256`, prüft die Summe und bricht ohne
+Prüfsumme ab. Danach fragt es den Account-Schlüssel verdeckt (`Read-Host
+-AsSecureString` — nicht in der History, nicht in der Prozessliste) und, wenn keine
+NVIDIA-GPU erkannt wird, den VRAM.
 
 ```
 %LOCALAPPDATA%\CoMesh\
-├─ comesh-agent.exe        ~20–30 MB, keine Python-Installation nötig
-├─ agent.env               Konfiguration (siehe unten)
-└─ node-state.json         selbst erzeugt (NODE_ID / NODE_API_KEY)
+├─ comesh-agent.exe        ~15 MB, keine Python-Installation nötig
+├─ agent.env               Konfiguration (Rechte: nur das eigene Konto)
+├─ node-state.json         selbst erzeugt (NODE_ID / NODE_API_KEY)
+└─ agent.log               Protokoll (rotiert)
 ```
 
-Start per Doppelklick oder als Aufgabe in der Aufgabenplanung. Der Agent ist ein
-FastAPI-Dienst; PyInstaller braucht für uvicorn ein paar Hidden-Imports, das ist einmalig
-im Build-Skript erledigt.
+Autostart über die **Aufgabenplanung** — Aufgabe „CoMesh Agent", Auslöser „Bei
+Anmeldung", eingerichtet mit `schtasks /Create /SC ONLOGON`. Das geht **ohne
+Administratorrechte**; ein Dienst (`/SC ONSTART`, `SYSTEM`) bräuchte sie und ist für
+einen Agenten, der im Benutzerkonto läuft, auch nicht nötig.
 
-**Status:** vorgeschlagen, nicht umgesetzt. Wer es vorher braucht, nimmt Weg B.
+```powershell
+schtasks /Query /TN "CoMesh Agent" /V /FO LIST
+Get-Content "$env:LOCALAPPDATA\CoMesh\agent.log" -Tail 30 -Wait
+```
+
+Deinstallieren: `irm https://<portal>/downloads/install.ps1 | iex` mit
+`$env:COMESH_UNINSTALL = "1"` (oder `\install.ps1 -Uninstall`). Einzelheiten:
+[install.md](install.md).
+
+Parameter für Automatisierung (`$env:…`, weil `iex` keine Argumente durchreicht):
+
+| Variable | Bedeutung |
+|---|---|
+| `COMESH_USER_KEY` | Account-Schlüssel (sonst verdeckte Abfrage) |
+| `COMESH_VRAM_GB` | VRAM übersteuern |
+| `COMESH_BASE_URL` | anderer Ort für die Binaries |
+| `COMESH_PORTAL_URL` | API-Basis, Vorgabe `https://<portal>/api` |
+| `COMESH_AGENT_NAME` | Anzeigename der Node |
+
+Der Agent ist ein FastAPI-Dienst; die Hidden-Imports für uvicorn stecken in
+`comesh-agent.spec`, gebaut wird mit `build.ps1`.
 
 ---
 
-## Weg B — Python nativ (heute der einzige Weg)
+## Weg B — Python nativ (ohne Binary)
 
 ```powershell
 # 1. Python installieren (ohne Store-Platzhalter, mit PATH)

@@ -1,5 +1,10 @@
 # CoMesh auf macOS (Apple Silicon)
 
+**Schnellweg:** `curl -fsSL https://<portal>/downloads/install.sh | sh` — Binary,
+Prüfsumme, launchd-Dienst und VRAM-Abfrage in einem Schritt, ohne Python und ohne
+offenen Port ([install.md](install.md)). Der Rest dieser Seite erklärt, was dabei
+passiert und wie man es von Hand macht.
+
 Ein Mac als Provider-Node ist möglich, hat aber **eine** Falle, die still bleibt:
 Ohne NVIDIA-Treiber gibt es kein NVML, also meldet der Agent `unknown` und
 `0 GB` — und das Portal macht daraus 1 GB. Der Router prüft vor jedem Auftrag,
@@ -24,7 +29,32 @@ und der Wert wird beim nächsten Heartbeat auch im Portal nachgezogen.
 
 ---
 
-## Weg A — nativ mit Ollama (empfohlen)
+## Weg 0 — ein Befehl (empfohlen für Provider)
+
+Der Agent liegt als fertiges Binary vor; kein Python, kein Repo, kein Docker:
+
+```bash
+curl -fsSL https://<portal>/downloads/install.sh | sh
+```
+
+Das Skript fragt den Account-Schlüssel verdeckt ab, **fragt nach `NODE_VRAM_GB`**
+(ohne NVIDIA-GPU ist das Pflicht — genau dieser Mac-Fall, Vorgabe: 75 % des
+Speichers), prüft die Prüfsumme und legt einen launchd-Dienst in
+`~/Library/LaunchAgents/de.comesh.agent.plist` an, ohne `sudo`.
+Transport ist WebSocket: der Mac wählt sich ausgehend ein, es muss **kein Port**
+offen sein. Einzelheiten: [install.md](install.md).
+
+Vorher nur Ollama starten und ein Modell ziehen:
+
+```bash
+brew install ollama
+brew services start ollama            # oder: ollama serve
+ollama pull llama3.1:8b               # ein Modell, das in den Speicher passt
+```
+
+---
+
+## Weg A — nativ aus dem Quellbaum (Entwicklung)
 
 Ollama nutzt auf Apple Silicon Metal und damit die GPU; das ist der einfachste
 Weg und braucht kein Docker.

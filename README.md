@@ -168,8 +168,22 @@ also answers on `:8765/v1` when the operator published that port). |
 | **Operator** (run the portal) | Docker Compose (Linux, or Docker Desktop with WSL2), or
 Python natively. |
 
-On Windows a provider needs Python (or the planned `comesh-agent.exe`) — a plain
-LM Studio install alone does not make a node. See [docs/windows.md](docs/windows.md).
+A provider installs the agent with **one command** — no Python, no Docker, no repo,
+no open port:
+
+```bash
+curl -fsSL https://<portal>/downloads/install.sh | sh     # macOS, Linux
+```
+
+```powershell
+irm https://<portal>/downloads/install.ps1 | iex          # Windows
+```
+
+The script verifies a SHA-256 checksum, asks for the account key (hidden), writes
+the config and sets up the service (launchd / systemd --user / Task Scheduler).
+Transport is an **outbound WebSocket**, so nothing has to be reachable from the
+outside. Full details, removal and troubleshooting: [docs/install.md](docs/install.md).
+A plain LM Studio install alone does not make a node. See [docs/windows.md](docs/windows.md).
 
 ## Components
 
@@ -260,6 +274,7 @@ anzutasten. Details: [docs/api.md](docs/api.md).
 - [ARCHITECTURE.md](ARCHITECTURE.md) — ASCII diagram and data flows
 - [docs/architecture.md](docs/architecture.md) — deep-dive architecture
 - [docs/portal.md](docs/portal.md) — portal setup, config, API
+- [docs/install.md](docs/install.md) — **one-command install** for a provider node (macOS/Linux/Windows binary, checksum, service, removal)
 - [docs/node-agent.md](docs/node-agent.md) — node-agent setup and deployment
 - [docs/agent-api.md](docs/agent-api.md) — **agent account**: full-access account for automation (approvals, reports, usage); what it can and cannot do
 - [docs/guide.md](docs/guide.md) — **user guide**: what CoMesh is, first request, credits, error codes (German long form; the in-portal page `/guide.html` switches between German and English)
@@ -378,15 +393,30 @@ auf `:8765/v1`, wenn der Betreiber diesen Port veröffentlicht hat). |
 davor. Das Portal ruft ausschließlich den Agenten an (`node_url` → Port `11435`). |
 | **Betreiber** | Docker Compose oder Python nativ. |
 
-Unter Windows braucht ein Provider Python (oder die geplante `comesh-agent.exe`) —
-LM Studio allein macht noch keinen Node. Details, inklusive der Streaming-Grenze bei
-`BACKEND=openai`, in [docs/windows.md](docs/windows.md).
+Ein Provider installiert den Agenten mit **einem Befehl** — kein Python, kein Docker,
+kein Repo, kein offener Port:
+
+```bash
+curl -fsSL https://<portal>/downloads/install.sh | sh     # macOS, Linux
+```
+
+```powershell
+irm https://<portal>/downloads/install.ps1 | iex          # Windows
+```
+
+Das Skript prüft eine SHA-256-Summe, fragt den Account-Schlüssel verdeckt ab,
+schreibt die Konfiguration und richtet den Dienst ein (launchd / systemd --user /
+Aufgabenplanung). Der Transport ist ein **ausgehender WebSocket** — von außen muss
+nichts erreichbar sein. Einzelheiten, Entfernen und Fehlersuche:
+[docs/install.md](docs/install.md). LM Studio allein macht noch keinen Node; die
+Streaming-Grenze bei `BACKEND=openai` steht in [docs/windows.md](docs/windows.md).
 
 ## Dokumentation (Deutsch)
 
 - [ARCHITECTURE.md](ARCHITECTURE.md) — ASCII-Diagramm und Datenflüsse
 - [docs/architecture.md](docs/architecture.md) — tiefer Architektur-Einblick
 - [docs/portal.md](docs/portal.md) — Portal-Setup, Konfiguration, API
+- [docs/install.md](docs/install.md) — **Installation mit einem Befehl** für eine Provider-Node (Binary für macOS/Linux/Windows, Prüfsumme, Dienst, Entfernen)
 - [docs/node-agent.md](docs/node-agent.md) — Node-Agent-Setup und Deployment
 - [docs/api.md](docs/api.md) — komplette API-Referenz
 - [docs/network.md](docs/network.md) — Adressierung, DHCP, mDNS, optionales Mesh-VPN
