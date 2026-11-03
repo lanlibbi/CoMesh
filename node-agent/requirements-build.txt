@@ -1,0 +1,19 @@
+# Abhängigkeiten für den PyInstaller-Build (das Einzelbinary) — nicht für den
+# Container, der weiterhin requirements.txt benutzt.
+#
+# Bewusst OHNE die Extras aus requirements.txt (`uvicorn[standard]`):
+#   uvloop, httptools und watchfiles sind C- bzw. Rust-Erweiterungen. Sie
+#   müssen für die Zielarchitektur kompiliert werden (auf einem Mac ohne
+#   Xcode, auf einem ARM-Raspberry ohne Rust-Toolchain: Fehlschlag) und
+#   bringen einem Weiterleitungs-Agenten nichts. uvicorn fällt ohne sie
+#   selbst auf h11 + asyncio zurück — genau das läuft im Binary.
+#   `websockets` bleibt, weil der WS-Transport es direkt importiert.
+fastapi==0.115.0
+uvicorn==0.30.6
+httpx==0.27.2
+psutil==5.9.8
+websockets==13.1
+pynvml==11.5.0
+
+# PyInstaller >= 6.11 ist die erste Fassung mit Python-3.13-Unterstützung.
+pyinstaller>=6.11,<7
