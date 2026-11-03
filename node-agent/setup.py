@@ -97,7 +97,27 @@ def build_compose(backend_key: str, backend_value: str, agent_port: int, url: st
     )
 
     transport_env = f"      - AGENT_TRANSPORT={transport}"
-    ports_line = f"      - \"{agent_port}:{agent_port}\"  # Health-Check / Inbound (HTTP-Transport)"
+
+    # Nur im HTTP-Transport muss das Portal die Node erreichen koennen. Im
+    # WS-Betrieb (Vorgabe) baut der Agent die Verbindung ausgehend auf; ein
+    # veroeffentlichter Port waere dann eine offene Tuer ohne Zweck.
+    if transport == "ws":
+        inbound_block = """
+    # Kein `ports:` — der Agent waehlt sich ausgehend ein. Auch der Healthcheck
+    # entfaellt: im WS-Betrieb startet kein HTTP-Server, der antworten koennte.
+"""
+    else:
+        inbound_block = f"""
+    ports:
+      - "{agent_port}:{agent_port}"   # Inbound (HTTP-Transport): das Portal ruft hier an
+
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:{agent_port}/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+"""
 
     # Keine feste externe IP: das Portal wird allein ueber PORTAL_URL angesprochen.
     # Eigene Adresse: leer = automatisch (Outbound-IP). Ein DNS-/mDNS-Name ueberlebt
@@ -131,20 +151,10 @@ services:
       - LOG_LEVEL=${{LOG_LEVEL:-INFO}}
 {backend_env}
 {transport_env}
-
-    ports:
-{ports_line}
-
+{inbound_block}
     # Node-Credentials ueberleben einen Rebuild (kein zweiter Node-Eintrag).
     volumes:
       - agent_state:/data
-
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:{agent_port}/health"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-      start_period: 15s
 {gpu}{extra_hosts}
 volumes:
   agent_state:"""
@@ -178,13 +188,21 @@ def main() -> None:
 
     agent_port = int(ask("Port für den Node-Agent (inbound):", "11435"))
 
-    # WebSocket-Transport ist Standard (kein offener Inbound-Port nötig)
+    # Vorgabe ist WebSocket: der Agent baut die Verbindung ausgehend auf, es
+    # braucht weder eine oeffentlich erreichbare Adresse noch einen offenen
+    # Port. Bei fremden Providern entscheidet genau das zwischen "laeuft" und
+    # einem Support-Anruf — HTTP ist deshalb die ausdrueckliche Ausnahme.
     transport = ask_choice(
-        "\nTransport für die Verbindung zum Portal?",
-        ["WebSocket (empfohlen, outbound, kein offener Port nötig)", "HTTP (offener Port)"],
+        "\nTransport zum Portal? (WebSocket = ausgehend, kein Port, keine erreichbare Adresse nötig)",
+        ["WebSocket (empfohlen — Vorgabe, ausgehend)", "HTTP (nur wenn das Portal die Node aktiv anrufen soll)"],
         default=1,
     )
     transport_val = "ws" if transport.startswith("WebSocket") else "http"
+    if transport_val == "http":
+        print(
+            "  Hinweis: HTTP verlangt, dass das Portal diese Node erreichen kann "
+            "(Port öffnen, ADVERTISE_HOST setzen). Ohne das bleibt die Node offline."
+        )
 
     nvidia = ask_choice(
         "\nHat dieser Node eine NVIDIA-GPU, die durchgereicht werden soll?",
@@ -239,7 +257,7 @@ def main() -> None:
     print("\n✅ Fertig!")
     print(f"  Backend:        {backend_key} ({b['backend']})")
     print(f"  Backend-URL:    {url}")
-    print(f"  Agent-Port:     {agent_port}")
+    print(f"  Agent-Port:     {agent_port}{'  (im WS-Betrieb nur lokal)' if transport_val == 'ws' else ''}")
     print(f"  Transport:      {transport_val}")
     print(f"  NVIDIA-Passthr: {'ja' if nvidia_bool else 'nein'}")
     print(f"\n  .env + docker-compose.yml geschrieben.")
@@ -249,6 +267,8 @@ def main() -> None:
     print(f"       oder NODE_ID + NODE_API_KEY aus dem Portal eintragen (Variante B)")
     print(f"    2. Konfiguration pruefen: docker compose run --rm agent python agent.py --check")
     print(f"    3. docker compose up -d && docker compose logs -f agent")
+    print("\n  Ohne Docker (fremder Rechner, kein Python): node-agent/install.sh bzw.")
+    print("  install.ps1 — ein Befehl, Dienst inklusive. Siehe docs/install.md.")
 
 
 if __name__ == "__main__":
