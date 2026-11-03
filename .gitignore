@@ -25,3 +25,8 @@ Thumbs.db
 /tmp/ws_test_setup.py
 *.tmp
 .pytest_cache/
+
+# PyInstaller-Build des Node-Agenten (node-agent/build.sh, build.ps1)
+node-agent/.venv-build/
+node-agent/build/
+node-agent/dist/
