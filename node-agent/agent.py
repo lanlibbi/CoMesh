@@ -49,9 +49,18 @@ Configuration via environment variables (or a .env file):
   OLLAMA_URL       Local Ollama URL (default: http://localhost:11434)
   AGENT_PORT       Port to listen on (default: 11435)
   HEARTBEAT_SEC    Heartbeat interval in HTTP mode (default: 30)
-  AGENT_TRANSPORT  "http" (default) or "ws"
+  AGENT_TRANSPORT  "http" (default) or "ws". The installer sets "ws": outbound
+                   only, no inbound port, no reachable address needed.
   WS_HEARTBEAT_SEC Ping interval in WS mode (default: 15)
   WS_RECONNECT_MAX_SEC  Cap for reconnect backoff (default: 30)
+  NODE_STATE_FILE  Where self-registration keeps node_id/node_api_key.
+                   Default: <user config dir>/node-state.json (NOT /data — the
+                   container sets that path explicitly in its Dockerfile).
+  COMESH_AGENT_ENV Config file to read instead of the default lookup. Without it
+                   the agent reads <user config dir>/agent.env, then .env in the
+                   working directory. Real environment variables always win.
+  AGENT_LOG_FILE   Optional file to log to (rotated, 2 MB x 3). Needed under
+                   launchd/schtasks, where nothing captures stdout.
 
 Run:
   # HTTP mode (unchanged)
@@ -79,9 +88,19 @@ import asyncio
 import hmac
 import json
 import logging
+import logging.handlers
 import os
+import sys
 import time
+import warnings
 from typing import List, Optional
+
+# FastAPI meldet beim Import "@app.on_event is deprecated". Der Hinweis ist
+# berechtigt, aber er erscheint VOR jeder Ausgabe — auch bei `--version` und
+# `--check`, deren Ausgabe der Installer einliest. Deshalb genau diese eine
+# Meldung stumm schalten (nicht alle Deprecation-Warnungen). Die Meldung beginnt
+# mit einem Zeilenumbruch, darum `\s*` statt `.*` am Anfang.
+warnings.filterwarnings("ignore", message=r"\s*on_event is deprecated")
 
 import httpx
 import psutil
@@ -105,7 +124,98 @@ try:
 except Exception:
     _HAVE_NVML = False
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s [agent] %(levelname)s %(message)s")
+# ----------------------------------------------------------------------------
+# Version, Ordner, Protokoll
+# ----------------------------------------------------------------------------
+# Der Agent laeuft auch als Einzelbinary (PyInstaller, ohne Python und ohne
+# Quellbaum auf der Maschine). Dann zeigt `__file__` in ein temporaeres
+# Entpackverzeichnis, und ein relativer Pfad zu `assets/` oder `.env` ist
+# wertlos. Deshalb: alles, was der Agent zur Laufzeit braucht, haengt an
+# Umgebungsvariablen mit einem Standard im **Benutzerverzeichnis**.
+AGENT_VERSION_FALLBACK = "0.6.0"
+
+
+def _bundle_dir() -> str:
+    """Ordner der mitgelieferten Dateien — im Binary das Entpackverzeichnis."""
+    return getattr(sys, "_MEIPASS", None) or os.path.dirname(os.path.abspath(__file__))
+
+
+def _read_version() -> str:
+    """Version aus der mitgelieferten VERSION-Datei, sonst der feste Ersatzwert."""
+    for candidate in (
+        os.path.join(_bundle_dir(), "VERSION"),
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "VERSION"),
+    ):
+        try:
+            with open(candidate, "r", encoding="utf-8") as fh:
+                value = fh.read().strip()
+            if value:
+                return value
+        except OSError:
+            continue
+    return AGENT_VERSION_FALLBACK
+
+
+AGENT_VERSION = _read_version()
+
+
+def _user_config_dir() -> str:
+    """Benutzer-Konfigurationsordner — dort schreibt der Installer `agent.env`.
+
+    Linux/macOS: ``~/.config/comesh`` (bzw. ``$XDG_CONFIG_HOME/comesh``)
+    Windows:     ``%LOCALAPPDATA%\\CoMesh``
+    Der Container setzt die Variablen ausdruecklich und ist davon nicht betroffen.
+    """
+    if os.name == "nt":
+        base = os.environ.get("LOCALAPPDATA") or os.path.join(
+            os.path.expanduser("~"), "AppData", "Local"
+        )
+        return os.path.join(base, "CoMesh")
+    base = os.environ.get("XDG_CONFIG_HOME") or os.path.join(os.path.expanduser("~"), ".config")
+    return os.path.join(base, "comesh")
+
+
+def _setup_logging() -> None:
+    """Protokoll auf stdout und — wenn ``AGENT_LOG_FILE`` gesetzt ist — in eine Datei.
+
+    Die Datei ist der einzige Weg, unter launchd/schtasks zu sehen, was der Agent
+    tut (dort gibt es kein Journal). Sie wird rotiert und enthaelt keine
+    Geheimnisse: der Agent protokolliert Node-Id und Namen, nie Schluessel.
+    """
+    fmt = logging.Formatter("%(asctime)s [agent] %(levelname)s %(message)s")
+    root = logging.getLogger()
+    root.setLevel(logging.INFO)
+    for handler in list(root.handlers):
+        if getattr(handler, "_comesh", False):
+            root.removeHandler(handler)
+            handler.close()
+    stream = logging.StreamHandler()
+    stream.setFormatter(fmt)
+    stream._comesh = True
+    root.addHandler(stream)
+    # httpx protokolliert jede Anfrage auf INFO ("HTTP Request: GET …"). Für ein
+    # Dienstprotokoll, das ein Provider bei Problemen liest, ist das Rauschen:
+    # die Zeilen, die zählen, sind Registrierung, WS-Verbindung und Fehler.
+    for noisy in ("httpx", "httpcore", "uvicorn.access", "websockets.client"):
+        logging.getLogger(noisy).setLevel(logging.WARNING)
+    path = os.environ.get("AGENT_LOG_FILE", "").strip()
+    if not path:
+        return
+    try:
+        directory = os.path.dirname(path)
+        if directory:
+            os.makedirs(directory, exist_ok=True)
+        file_handler = logging.handlers.RotatingFileHandler(
+            path, maxBytes=2 * 1024 * 1024, backupCount=2, encoding="utf-8"
+        )
+        file_handler.setFormatter(fmt)
+        file_handler._comesh = True
+        root.addHandler(file_handler)
+    except OSError as exc:  # Protokoll ist Beiwerk, nie Startbedingung
+        logging.getLogger("node-agent").warning(f"Cannot write AGENT_LOG_FILE {path}: {exc}")
+
+
+_setup_logging()
 log = logging.getLogger("node-agent")
 
 # ----------------------------------------------------------------------------
@@ -136,7 +246,13 @@ NODE_VRAM_GB = os.environ.get("NODE_VRAM_GB", "")
 # Port erreicht) — beim Start wird davor gewarnt.
 NODE_SHARED_SECRET = os.environ.get("NODE_SHARED_SECRET", "").strip()
 SECRET_HEADER = "X-Node-Secret"
-NODE_STATE_FILE = os.environ.get("NODE_STATE_FILE", "/data/node-state.json")
+# Zustandsdatei mit den selbst registrierten Node-Zugangsdaten. Standard ist
+# seit dem Einzelbinary ein Pfad im **Benutzerverzeichnis**: `/data` gibt es nur
+# im Container (der setzt die Variable ausdruecklich im Dockerfile).
+NODE_STATE_FILE = (
+    os.environ.get("NODE_STATE_FILE", "").strip()
+    or os.path.join(_user_config_dir(), "node-state.json")
+)
 NODE_HOURLY_RATE = os.environ.get("NODE_HOURLY_RATE", "")
 # Host the portal should dial. Empty = detected at runtime (see netinfo).
 ADVERTISE_HOST = os.environ.get("ADVERTISE_HOST", "").strip()
@@ -352,6 +468,39 @@ def _load_env_file(path: str = ".env") -> None:
             os.environ[key] = value
 
 
+def _env_file_candidates() -> List[str]:
+    """Wo der Agent seine Konfiguration sucht, in dieser Reihenfolge.
+
+    Das Binary laeuft unter launchd/systemd/schtasks, und dort ist das
+    Arbeitsverzeichnis beliebig (launchd: ``/``, schtasks: ``C:\\Windows\\System32``).
+    Ein `.env` im Arbeitsverzeichnis ist deshalb kein verlaesslicher Ort. Gesucht
+    wird darum zuerst der Ort, den der Installer schreibt:
+
+      1. ``$COMESH_AGENT_ENV`` (ausdrueckliche Angabe, auch fuer Tests)
+      2. ``<Benutzer-Konfigurationsordner>/agent.env``
+      3. ``.env`` im Arbeitsverzeichnis (bisheriges Verhalten, Docker/Entwicklung)
+
+    Es gewinnt die **erste vorhandene** Datei; echte Umgebungsvariablen schlagen
+    jede Datei, weil `_load_env_file` vorhandene Schluessel nicht ueberschreibt.
+    """
+    explicit = os.environ.get("COMESH_AGENT_ENV", "").strip()
+    if explicit:
+        return [explicit]
+    return [
+        os.path.join(_user_config_dir(), "agent.env"),
+        os.path.join(os.getcwd(), ".env"),
+    ]
+
+
+def _load_agent_env() -> None:
+    """Die erste vorhandene Konfigurationsdatei laden (siehe `_env_file_candidates`)."""
+    for candidate in _env_file_candidates():
+        if os.path.isfile(candidate):
+            _load_env_file(candidate)
+            os.environ["COMESH_AGENT_ENV_USED"] = candidate
+            return
+
+
 def _refresh_config_from_environ() -> None:
     """Re-read the config globals above after _load_env_file() ran.
 
@@ -361,6 +510,7 @@ def _refresh_config_from_environ() -> None:
     global PORTAL_URL, NODE_ID, NODE_API_KEY, PORTAL_USER_KEY, NODE_NAME
     global NODE_GPU_TYPE, NODE_VRAM_GB, NODE_SHARED_SECRET, ADVERTISE_HOST, OLLAMA_URL, BACKEND
     global INFERENCE_URL, AGENT_PORT, HEARTBEAT_SEC, AGENT_TRANSPORT, WS_HEARTBEAT_SEC
+    global NODE_STATE_FILE
     PORTAL_URL = os.environ.get("PORTAL_URL", "").rstrip("/")
     if PORTAL_URL and "://" not in PORTAL_URL:
         PORTAL_URL = "http://" + PORTAL_URL
@@ -379,10 +529,24 @@ def _refresh_config_from_environ() -> None:
     HEARTBEAT_SEC = int(os.environ.get("HEARTBEAT_SEC", "30"))
     AGENT_TRANSPORT = os.environ.get("AGENT_TRANSPORT", "http").lower().strip()
     WS_HEARTBEAT_SEC = int(os.environ.get("WS_HEARTBEAT_SEC", "15"))
+    NODE_STATE_FILE = (
+        os.environ.get("NODE_STATE_FILE", "").strip()
+        or os.path.join(_user_config_dir(), "node-state.json")
+    )
 WS_RECONNECT_MAX_SEC = int(os.environ.get("WS_RECONNECT_MAX_SEC", "30"))
 
-if not NODE_ID or not NODE_API_KEY:
-    log.warning("NODE_ID / NODE_API_KEY not set — heartbeats and auth will not work.")
+
+def _warn_if_unconfigured() -> None:
+    """Beim Start sagen, wenn Zugangsdaten fehlen — nicht beim Import.
+
+    Die Warnung stand früher auf Modulebene und erschien damit auch bei
+    `--version`/`--check`; der Installer liest deren Ausgabe und bekam den
+    Hinweis in die Versionszeile gemischt. Sie läuft NACH der
+    Selbstregistrierung: vorher ist „keine Zugangsdaten" normal und die Meldung
+    würde bei jedem frischen Node-Start fälschlich Alarm schlagen.
+    """
+    if not NODE_ID or not NODE_API_KEY:
+        log.warning("NODE_ID / NODE_API_KEY not set — heartbeats and auth will not work.")
 
 # Where this agent is reachable. Resolved once at start (ADVERTISE_HOST, else the
 # outbound IP, else the hostname) and re-sent with every heartbeat so the portal
@@ -468,7 +632,7 @@ def vram_report() -> tuple:
 # ----------------------------------------------------------------------------
 # FastAPI app
 # ----------------------------------------------------------------------------
-app = FastAPI(title="CoMesh Node-Agent", version="0.6.0")
+app = FastAPI(title="CoMesh Node-Agent", version=AGENT_VERSION)
 
 
 @app.middleware("http")
@@ -808,11 +972,39 @@ def _load_node_identity() -> None:
         log.error(f"Self-registration error: {e!r}")
 
 
+def _portal_probe() -> tuple:
+    """(ok, Zeile) — erreicht dieser Agent die Portal-API?
+
+    Erst ``/net/echo`` (es nennt die Adresse, unter der das Portal den Aufrufer
+    sieht — die eigentliche Frage bei DHCP), dann ``/health``. Der Rueckfall ist
+    noetig, weil der oeffentliche Portalname nur ``/api/...`` an die API
+    durchreicht: ``/api/net/echo`` landet auf der HTML-Ersatzseite. Eine
+    erreichbare Installation darf daran nicht scheitern — und eine HTML-Antwort
+    darf nie als Erfolg gelten, nur weil der Status 200 ist.
+    """
+    with httpx.Client(timeout=10.0) as c:
+        try:
+            r = c.get(f"{PORTAL_URL}/net/echo")
+            if r.status_code == 200 and r.text.lstrip().startswith("{"):
+                portal = (r.json() or {}).get("portal") or {}
+                return True, f"ja (public_url={portal.get('public_url')})"
+        except Exception:
+            pass
+        try:
+            r = c.get(f"{PORTAL_URL}/health")
+            if r.status_code == 200 and r.text.lstrip().startswith("{"):
+                return True, f"ja ({PORTAL_URL}/health)"
+            return False, f"nein (HTTP {r.status_code} von {PORTAL_URL}/health)"
+        except Exception as e:
+            return False, f"nein ({e})"
+
+
 def config_check() -> int:
     """Print what the portal would be told. Exit code 0 = a node can start."""
     ok = True
     advertise = resolve_advertise_host(env_var="ADVERTISE_HOST")
     print("CoMesh node-agent — configuration check")
+    print(f"  version         : {AGENT_VERSION}")
     print(f"  portal URL      : {PORTAL_URL or '(unset — set PORTAL_URL)'}")
     print(f"  advertise host  : {advertise}  (= how the portal will dial this node)")
     print(f"  detected IP     : {detect_outbound_ip()}")
@@ -822,24 +1014,19 @@ def config_check() -> int:
     print(f"  backend         : {BACKEND} @ {INFERENCE_URL}")
     print(f"  node id         : {NODE_ID or '(auto-register on start)'}")
     print(f"  node state file : {NODE_STATE_FILE}")
+    print(f"  config file     : {os.environ.get('COMESH_AGENT_ENV_USED') or '(none found, environment only)'}")
     gpu = gpu_summary()
     print(f"  gpu             : {gpu['name']} ({gpu['vram_gb']} GB)")
+    vram_gb, vram_source = vram_report()
+    print(f"  vram advertised : {vram_gb} GB ({vram_source})")
 
     if not PORTAL_URL:
         print("  !! PORTAL_URL is unset — a node on a fresh network needs at least this one variable.")
         ok = False
     else:
-        try:
-            with httpx.Client(timeout=10.0) as c:
-                r = c.get(f"{PORTAL_URL}/net/echo")
-            if r.status_code == 200:
-                echo = r.json() or {}
-                portal = echo.get("portal") or {}
-                print(f"  portal reachable: yes (public_url={portal.get('public_url')})")
-            else:
-                print(f"  portal /net/echo returned HTTP {r.status_code}")
-        except Exception as e:
-            print(f"  !! portal not reachable at {PORTAL_URL}: {e}")
+        reachable, line = _portal_probe()
+        print(f"  portal reachable: {line}")
+        if not reachable:
             ok = False
     if not (NODE_ID and NODE_API_KEY) and not PORTAL_USER_KEY:
         print("  !! neither NODE_ID/NODE_API_KEY nor PORTAL_USER_KEY set — the node cannot join the pool.")
@@ -915,8 +1102,19 @@ async def heartbeat_loop():
 # Phase 1: Outbound WebSocket client loop
 # ----------------------------------------------------------------------------
 def _portal_ws_url() -> str:
-    """Convert http(s)://portal/... to ws(s)://portal/agent/connect with auth in query string."""
+    """Convert http(s)://portal/... to ws(s)://portal/agent/connect with auth in query string.
+
+    ``PORTAL_URL`` endet beim oeffentlichen Portalnamen auf ``/api`` (dort reicht
+    nginx nur ``/api/...`` an die API durch), der WebSocket haengt aber an
+    ``/agent/connect`` **ohne** dieses Praefix. Ohne das Abschneiden zeigt der
+    Handshake auf ``/api/agent/connect`` und bekommt die HTML-Ersatzseite —
+    die Node bleibt dann still offline, waehrend alles andere zu funktionieren
+    scheint. Eine zweite Variable nur fuer den WS-Weg waere die Alternative;
+    eine URL, die ueberall stimmt, ist die bessere.
+    """
     base = PORTAL_URL.rstrip("/")
+    if base.endswith("/api"):
+        base = base[: -len("/api")]
     if base.startswith("https://"):
         ws_base = "wss://" + base[len("https://"):]
     elif base.startswith("http://"):
@@ -1053,20 +1251,27 @@ async def _handle_job_frame(ws, frame: dict) -> None:
         log.warning(f"WS job_result send failed: {e!r}")
 
 
-@app.on_event("startup")
-async def _on_start():
-    _load_node_identity()
-    if not NODE_SHARED_SECRET:
-        log.warning(
-            "NODE_SHARED_SECRET is NOT set: every port of this agent is open to anyone "
-            "who can reach %s — an LLM proxy without a lock. Set the same value on the "
-            "portal and the agent to require the %s header.",
-            AGENT_PORT, SECRET_HEADER,
-        )
-    else:
-        log.info(
-            f"Zugangssperre aktiv: alle Endpunkte ausser /health verlangen {SECRET_HEADER}"
-        )
+def _startup_warnings() -> None:
+    """Was beim Start sichtbar sein muss — für beide Transporte.
+
+    Der VRAM-Hinweis gehört ausdrücklich auch in den WS-Betrieb: dort gibt es
+    keinen HTTP-Server, aber dieselbe stille Falle (1 GB angenommen, nie ein
+    Auftrag). Die Sperr-Warnung dagegen nur im HTTP-Betrieb — im WS-Betrieb
+    öffnet der Agent gar keinen Port, die Meldung wäre falsch.
+    """
+    _warn_if_unconfigured()
+    if AGENT_TRANSPORT != "ws":
+        if not NODE_SHARED_SECRET:
+            log.warning(
+                "NODE_SHARED_SECRET is NOT set: every port of this agent is open to anyone "
+                "who can reach %s — an LLM proxy without a lock. Set the same value on the "
+                "portal and the agent to require the %s header.",
+                AGENT_PORT, SECRET_HEADER,
+            )
+        else:
+            log.info(
+                f"Zugangssperre aktiv: alle Endpunkte ausser /health verlangen {SECRET_HEADER}"
+            )
     vram_gb, vram_source = vram_report()
     if vram_source == "assumed":
         log.warning(
@@ -1082,6 +1287,12 @@ async def _on_start():
             "Set NODE_ID + NODE_API_KEY, or PORTAL_URL + PORTAL_USER_KEY for self-registration."
         )
     log.info(f"Advertised as {advertised_host()}:{AGENT_PORT} (portal dials this)")
+
+
+@app.on_event("startup")
+async def _on_start():
+    _load_node_identity()
+    _startup_warnings()
     if AGENT_TRANSPORT == "ws":
         asyncio.create_task(ws_loop())
         # Guertel und Hosentraeger: auch im WS-Betrieb HTTP-Heartbeats senden,
@@ -1099,10 +1310,14 @@ async def _on_start():
 
 
 if __name__ == "__main__":
-    # A direct run (`python agent.py`) gets its settings from .env in the
-    # working directory — that is the file the interactive installer writes.
-    _load_env_file()
+    # A direct run (`python agent.py` or the frozen binary) gets its settings from
+    # the config file the installer wrote (`~/.config/comesh/agent.env`), falling
+    # back to `.env` in the working directory — that is the file the interactive
+    # installer writes.
+    _load_agent_env()
     _refresh_config_from_environ()
+    # Erneut, weil AGENT_LOG_FILE meist erst aus der Konfigurationsdatei kommt.
+    _setup_logging()
     import argparse
     parser = argparse.ArgumentParser(description="CoMesh Node-Agent")
     parser.add_argument(
@@ -1113,7 +1328,11 @@ if __name__ == "__main__":
         "--check", action="store_true",
         help="Print the network configuration (portal reachability, detected address) and exit",
     )
+    parser.add_argument("--version", action="store_true", help="Print the agent version and exit")
     args = parser.parse_args()
+    if args.version:
+        print(f"comesh-agent {AGENT_VERSION}")
+        raise SystemExit(0)
     if args.transport:
         AGENT_TRANSPORT = args.transport  # local override for this run
         log.info(f"--transport={args.transport} override applied")
@@ -1121,9 +1340,20 @@ if __name__ == "__main__":
         raise SystemExit(config_check())
     if AGENT_TRANSPORT == "ws":
         # WS mode: don't bind a port, just run the async loop.
+        #
+        # Beide Schleifen, wie im FastAPI-Startup: der WS-Ping allein macht die
+        # Node nur ueber `last_ws_seen` lebendig, waehrend `status` und `vram_gb`
+        # aus dem HTTP-Heartbeat kommen. Wer nur `ws_loop()` startet, laesst eine
+        # verbundene Node im Portal ohne Messwerte stehen — der Fehler, der den
+        # WS-Betrieb schon einmal unbrauchbar gemacht hat.
         _load_node_identity()
+        _startup_warnings()
+
+        async def _run_ws() -> None:
+            await asyncio.gather(ws_loop(), heartbeat_loop())
+
         try:
-            asyncio.run(ws_loop())
+            asyncio.run(_run_ws())
         except KeyboardInterrupt:
             log.info("WS transport interrupted, exiting.")
     else:
