@@ -1,6 +1,9 @@
-# Binaries und Installer werden gebaut bzw. aus node-agent/ kopiert und beim
+# Binaries werden gebaut bzw. aus node-agent/dist/ hierher kopiert und beim
 # Ausliefern hier abgelegt — nicht versioniert: 15–25 MB je Datei, und sie
 # gehören zu einem Release, nicht zum Quellstand. Siehe README.md.
+#
+# Die Installer dagegen SIND versioniert: wenige KB Text, und sie sind der
+# Einstiegspunkt jeder Installation. Wären sie ignoriert, entstünde aus einem
+# frischen Klon ein Image ohne /downloads/install.sh — der dokumentierte
+# Einzeiler liefe ins 404.
 comesh-agent-*
-install.sh
-install.ps1
