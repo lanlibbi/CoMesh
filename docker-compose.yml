@@ -52,6 +52,9 @@ services:
       - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET:-}
       # Admin bootstrap for /admin/* (see docs/api.md -> Admin).
       - ADMIN_API_KEY=${ADMIN_API_KEY:-}
+      # Gemeinsames Geheimnis mit dem Node-Agenten (X-Node-Secret). Aus der
+      # .env, nie aus dem Repo. Leer = Agenten ohne Sperre bleiben erreichbar.
+      - NODE_SHARED_SECRET=${NODE_SHARED_SECRET:-}
       - ADMIN_EMAIL=${ADMIN_EMAIL:-admin@gpu-pool.local}
       - ADMIN_NAME=${ADMIN_NAME:-Platform Admin}
       - PROMOTE_ADMIN_EMAIL=${PROMOTE_ADMIN_EMAIL:-}
@@ -101,6 +104,8 @@ services:
       - NODE_ID=1
       # Aus .env (nicht im Repo): Knoten-Schluessel aus POST /nodes/register
       - NODE_API_KEY=${NODE_API_KEY:-}
+      # Muss dem Wert im API-Container entsprechen, sonst antwortet der Agent 401.
+      - NODE_SHARED_SECRET=${NODE_SHARED_SECRET:-}
       - OLLAMA_URL=http://host.docker.internal:11434
       - AGENT_PORT=11435
       - HEARTBEAT_SEC=30

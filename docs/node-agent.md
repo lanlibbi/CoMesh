@@ -87,6 +87,20 @@ AGENT_PORT=11435
 # Wie oft senden wir Heartbeats?
 HEARTBEAT_SEC=30
 
+# Zugangssperre (Sicherheitsfix 03.11.2026). Derselbe Wert muss im Portal in
+# der .env stehen. Der Portal-Container schickt ihn bei jeder Anfrage als
+# Kopfzeile `X-Node-Secret`; ohne den Kopf antwortet der Agent 401.
+# Fehlt die Variable, bleibt der Agent offen (altes Verhalten) und warnt beim
+# Start — jeder, der den Port erreicht, koennte dann auf dem Modell rechnen.
+NODE_SHARED_SECRET=<langer-zufallswert, z. B. openssl rand -hex 32>
+
+# VRAM, den dieser Node anbietet, in GB. Leer = aus NVML lesen.
+# Ohne NVIDIA-GPU (macOS/Apple Silicon, reine CPU-Nodes) MUSS der Wert gesetzt
+# werden: sonst meldet der Agent 1 GB, das Portal nimmt das an, und der
+# Router schickt nie einen Auftrag (VRAM-Gate). Bei Apple Silicon ist das der
+# Unified-Memory-Anteil, den du hergeben willst, z. B. NODE_VRAM_GB=16.
+# NODE_VRAM_GB=16
+
 # Lokales Ollama
 OLLAMA_URL=http://host.docker.internal:11434
 

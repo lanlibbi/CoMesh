@@ -21,6 +21,7 @@ Endpoints (mounted under /pool):
 import asyncio
 import json
 import logging
+import os
 import time
 from datetime import datetime
 from typing import List, Optional
@@ -67,6 +68,17 @@ def _is_online(node: GpuNode) -> bool:
     if not node.is_enabled or node.last_seen is None or node.status not in ("online", "busy"):
         return False
     return (datetime.utcnow() - node.last_seen).total_seconds() < 90
+
+
+def node_request_headers() -> dict:
+    """Header fuer jede Anfrage an einen Node-Agenten.
+
+    `X-Node-Secret` ist das gemeinsame Geheimnis (NODE_SHARED_SECRET beider
+    Seiten). Ist es nicht gesetzt, bleibt das Verhalten wie bisher — ein Agent
+    ohne Sperre erwartet dann auch keinen Kopf.
+    """
+    secret = (os.environ.get("NODE_SHARED_SECRET") or "").strip()
+    return {"X-Node-Secret": secret} if secret else {}
 
 
 def _node_allows_model(node: GpuNode, model: str) -> bool:
@@ -220,7 +232,7 @@ async def _forward_to_node(node: GpuNode, ollama_payload: dict, timeout: float =
         if ollama_payload.get("tool_choice") is not None:
             openai_payload["tool_choice"] = ollama_payload["tool_choice"]
     async with httpx.AsyncClient(timeout=timeout) as client:
-        r = await client.post(url, json=openai_payload)
+        r = await client.post(url, json=openai_payload, headers=node_request_headers())
         r.raise_for_status()
         data = r.json()
     # Normalize to the dict shape downstream expects (Ollama-style with
@@ -263,7 +275,8 @@ async def _forward_to_node_stream(node: GpuNode, ollama_payload: dict, on_delta,
     completion_tokens = 0
 
     async with _hx.AsyncClient(timeout=timeout) as client:
-        async with client.stream("POST", f"{base.rstrip('/')}/v1/chat/completions", json=payload) as r:
+        async with client.stream("POST", f"{base.rstrip('/')}/v1/chat/completions",
+                                 json=payload, headers=node_request_headers()) as r:
             r.raise_for_status()
             async for line in r.aiter_lines():
                 if not line or not line.startswith("data:"):

@@ -39,6 +39,13 @@ Configuration via environment variables (or a .env file):
   NODE_NAME        Display name for a self-registered node (default: hostname).
   NODE_GPU_TYPE    GPU label for a self-registered node (default: probed via NVML).
   NODE_VRAM_GB     VRAM for a self-registered node (default: probed via NVML).
+                   Set it explicitly when there is no NVIDIA GPU (Apple Silicon:
+                   the unified memory size); otherwise 1 GB is assumed and the
+                   pool will never route a job to this node.
+  NODE_SHARED_SECRET  Shared secret with the portal. The portal sends it as
+                   `X-Node-Secret` on every request; without it the agent
+                   answers 401. Empty = legacy mode, open to anyone who can
+                   reach the port (a loud warning is logged at start).
   OLLAMA_URL       Local Ollama URL (default: http://localhost:11434)
   AGENT_PORT       Port to listen on (default: 11435)
   HEARTBEAT_SEC    Heartbeat interval in HTTP mode (default: 30)
@@ -69,6 +76,7 @@ Run:
   python agent.py --check
 """
 import asyncio
+import hmac
 import json
 import logging
 import os
@@ -121,6 +129,13 @@ PORTAL_USER_KEY = os.environ.get("PORTAL_USER_KEY", "")
 NODE_NAME = os.environ.get("NODE_NAME", "")
 NODE_GPU_TYPE = os.environ.get("NODE_GPU_TYPE", "")
 NODE_VRAM_GB = os.environ.get("NODE_VRAM_GB", "")
+# Gemeinsames Geheimnis Portal <-> Node (Sicherheitsfix 03.11.2026).
+# Das Portal schickt es als `X-Node-Secret` bei jeder Anfrage; ohne den Kopf
+# antwortet der Agent 401. Ist die Variable leer, bleibt das alte Verhalten
+# bestehen (der Agent ist dann ein offener Modell-Proxy fuer jeden, der den
+# Port erreicht) — beim Start wird davor gewarnt.
+NODE_SHARED_SECRET = os.environ.get("NODE_SHARED_SECRET", "").strip()
+SECRET_HEADER = "X-Node-Secret"
 NODE_STATE_FILE = os.environ.get("NODE_STATE_FILE", "/data/node-state.json")
 NODE_HOURLY_RATE = os.environ.get("NODE_HOURLY_RATE", "")
 # Host the portal should dial. Empty = detected at runtime (see netinfo).
@@ -344,7 +359,7 @@ def _refresh_config_from_environ() -> None:
     values that only exist in .env take effect for a direct run.
     """
     global PORTAL_URL, NODE_ID, NODE_API_KEY, PORTAL_USER_KEY, NODE_NAME
-    global NODE_GPU_TYPE, NODE_VRAM_GB, ADVERTISE_HOST, OLLAMA_URL, BACKEND
+    global NODE_GPU_TYPE, NODE_VRAM_GB, NODE_SHARED_SECRET, ADVERTISE_HOST, OLLAMA_URL, BACKEND
     global INFERENCE_URL, AGENT_PORT, HEARTBEAT_SEC, AGENT_TRANSPORT, WS_HEARTBEAT_SEC
     PORTAL_URL = os.environ.get("PORTAL_URL", "").rstrip("/")
     if PORTAL_URL and "://" not in PORTAL_URL:
@@ -355,6 +370,7 @@ def _refresh_config_from_environ() -> None:
     NODE_NAME = os.environ.get("NODE_NAME", "")
     NODE_GPU_TYPE = os.environ.get("NODE_GPU_TYPE", "")
     NODE_VRAM_GB = os.environ.get("NODE_VRAM_GB", "")
+    NODE_SHARED_SECRET = os.environ.get("NODE_SHARED_SECRET", "").strip()
     ADVERTISE_HOST = os.environ.get("ADVERTISE_HOST", "").strip()
     OLLAMA_URL = os.environ.get("OLLAMA_URL", "http://localhost:11434").rstrip("/")
     BACKEND = os.environ.get("BACKEND", "ollama").lower().strip()
@@ -425,10 +441,62 @@ def get_gpu_info() -> dict:
     return info
 
 
+def vram_report() -> tuple:
+    """(vram_gb, source) — the VRAM this node advertises, and where it comes from.
+
+    source is one of:
+      * "override" — NODE_VRAM_GB was set explicitly (authoritative)
+      * "detected" — read from NVML
+      * "assumed"  — nothing detected and nothing declared: 1 GB
+
+    The third case is the one that used to fail silently: the portal accepted
+    1 GB, the VRAM gate in pool.find_best_node then refused every model, and
+    the node sat online without ever getting a job. It is now reported to the
+    portal (gpu_nodes.vram_source) so the operator sees *why*.
+    """
+    if NODE_VRAM_GB:
+        try:
+            return max(1, int(float(NODE_VRAM_GB))), "override"
+        except ValueError:
+            log.warning(f"NODE_VRAM_GB={NODE_VRAM_GB!r} is not a number — ignored")
+    detected = int(gpu_summary().get("vram_gb") or 0)
+    if detected > 0:
+        return detected, "detected"
+    return 1, "assumed"
+
+
 # ----------------------------------------------------------------------------
 # FastAPI app
 # ----------------------------------------------------------------------------
 app = FastAPI(title="CoMesh Node-Agent", version="0.6.0")
+
+
+@app.middleware("http")
+async def _enforce_shared_secret(request: Request, call_next):
+    """Zugangssperre: jeder Endpunkt verlangt den gemeinsamen Schluessel.
+
+    Ohne gesetztes NODE_SHARED_SECRET bleibt alles offen (Rueckwaerts-
+    vertraeglichkeit zu Agenten ohne die Variable) — der Start warnt davor.
+    `/health` ist ausgenommen und antwortet ohne Schluessel nur mit einem
+    nackten {"ok": …}, damit Monitoring weiter funktioniert, ohne dass
+    Node-Id, GPU oder Speicher nach aussen fallen.
+    """
+    if not NODE_SHARED_SECRET:
+        return await call_next(request)
+    if request.url.path == "/health":
+        return await call_next(request)  # antwortet selbst, ggf. ohne Details
+    provided = request.headers.get(SECRET_HEADER, "")
+    if provided and hmac.compare_digest(provided, NODE_SHARED_SECRET):
+        return await call_next(request)
+    return JSONResponse(
+        status_code=401,
+        content={
+            "detail": (
+                f"Missing or invalid {SECRET_HEADER} header. This node-agent requires "
+                "the shared secret configured for the portal (NODE_SHARED_SECRET)."
+            )
+        },
+    )
 app.add_middleware(
     CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"],
 )
@@ -446,7 +514,8 @@ def root():
 
 
 @app.get("/health")
-def health():
+def health(request: Request):
+    """Lebenszeichen. Mit gueltigem Secret die vollen Details, sonst nur {"ok": …}."""
     info = get_gpu_info()
     backend_ok = False
     try:
@@ -455,7 +524,17 @@ def health():
             backend_ok = r.status_code == 200
     except Exception:
         pass
+    ok = backend_ok and bool(NODE_ID)
+    authorized = True
+    if NODE_SHARED_SECRET:
+        authorized = hmac.compare_digest(
+            request.headers.get(SECRET_HEADER, ""), NODE_SHARED_SECRET
+        )
+    if not authorized:
+        # Kein Secret: nur ein Lebenszeichen, keine Node-Id, keine GPU, kein Speicher.
+        return {"ok": ok}
     return {
+        "ok": ok,
         "ok": backend_ok and bool(NODE_ID),
         "backend": BACKEND,
         "ollama_reachable": backend_ok,  # legacy key, kept for portal compat
@@ -688,10 +767,12 @@ def _load_node_identity() -> None:
 
     summary = gpu_summary()
     name = NODE_NAME or local_hostname() or "node"
+    vram_gb, vram_source = vram_report()
     body = {
         "name": name[:80],
         "gpu_type": (NODE_GPU_TYPE or summary["name"] or "unknown")[:80],
-        "vram_gb": max(1, int(NODE_VRAM_GB or summary["vram_gb"] or 1)),
+        "vram_gb": vram_gb,
+        "vram_source": vram_source,
         "port": AGENT_PORT,
         # The address may well be empty here: the portal fills it in from the
         # first heartbeat, so a node on DHCP does not need to know it at all.
@@ -776,11 +857,16 @@ async def send_heartbeat(client: httpx.AsyncClient):
     info = get_gpu_info()
     # status: busy if there are active jobs OR VRAM > 70% used; else online
     busy = info["active_jobs"] > 0 or (info["utilization"] or 0) > 0.7
+    vram_gb, vram_source = vram_report()
     payload = {
         "status": "busy" if busy else "online",
         "gpu_util": info["utilization"],
         "vram_used_gb": info["vram_used_gb"],
         "vram_total_gb": info["vram_total_gb"],
+        # Woher die gemeldete VRAM-Zahl stammt ("override"/"detected"/"assumed");
+        # "assumed" heisst: keine GPU erkannt und nichts gesetzt -> 1 GB.
+        "vram_gb": vram_gb,
+        "vram_source": vram_source,
         "active_jobs": info["active_jobs"],
         # The portal adopts this only while the node has no explicitly configured
         # address. That is how a DHCP node stays dialable without any config.
@@ -970,6 +1056,26 @@ async def _handle_job_frame(ws, frame: dict) -> None:
 @app.on_event("startup")
 async def _on_start():
     _load_node_identity()
+    if not NODE_SHARED_SECRET:
+        log.warning(
+            "NODE_SHARED_SECRET is NOT set: every port of this agent is open to anyone "
+            "who can reach %s — an LLM proxy without a lock. Set the same value on the "
+            "portal and the agent to require the %s header.",
+            AGENT_PORT, SECRET_HEADER,
+        )
+    else:
+        log.info(
+            f"Zugangssperre aktiv: alle Endpunkte ausser /health verlangen {SECRET_HEADER}"
+        )
+    vram_gb, vram_source = vram_report()
+    if vram_source == "assumed":
+        log.warning(
+            "No GPU detected via NVML and NODE_VRAM_GB is unset — advertising %s GB. "
+            "The pool will refuse every job that needs more, so this node looks online "
+            "but never gets work. On Apple Silicon set NODE_VRAM_GB to the unified "
+            "memory size (e.g. NODE_VRAM_GB=16).",
+            vram_gb,
+        )
     if not NODE_ID or not NODE_API_KEY:
         log.warning(
             "Agent is running without node credentials: no heartbeats, no jobs. "
