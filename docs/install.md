@@ -170,9 +170,10 @@ geladene Datei nicht in derselben Form wie ein Browser-Download.
 
 ## Wo die Binaries liegen
 
-Vorgabe ist `<portal>/downloads/` (die Dateien liegen im Repo unter
+Vorgabe ist `<portal>/downloads/` (die Dateien liegen im Deploy-Baum unter
 `frontend-alpine/downloads/` und werden vom Frontend-Container ausgeliefert).
-Erwartete Namen:
+Die Binaries selbst sind **nicht versioniert** (`downloads/.gitignore`), die
+beiden Installer dagegen schon. Erwartete Namen:
 
 ```
 comesh-agent-darwin-arm64          comesh-agent-darwin-arm64.sha256
@@ -181,6 +182,28 @@ comesh-agent-linux-arm64           comesh-agent-linux-arm64.sha256
 comesh-agent-linux-x86_64          comesh-agent-linux-x86_64.sha256
 comesh-agent-windows-x86_64.exe    comesh-agent-windows-x86_64.exe.sha256
 ```
+
+### Was derzeit tatsächlich ausgeliefert wird (Stand 03.11.2026)
+
+| Datei | Zustand |
+|---|---|
+| `install.sh`, `install.ps1` | **vorhanden** (versioniert) |
+| `comesh-agent-linux-x86_64` + `.sha256` | **vorhanden** — 0.6.9, 14 MB, `--version` geprüft, Prüfsumme gegengeprüft |
+| `comesh-agent-windows-x86_64.exe` + `.sha256` | **fehlt** — es stand kein Windows-Bauhost mit Python zur Verfügung |
+| `comesh-agent-darwin-arm64`, `comesh-agent-darwin-x86_64` | **fehlen** |
+| `comesh-agent-linux-arm64` | **fehlt** — entsteht auf einem ARM-Linux (`./build.sh`) |
+
+Fehlt die Datei zu einer Systemkombination, bricht der Installer mit einer
+klaren Meldung ab, statt etwas Falsches zu installieren — eine macOS-Node lässt
+sich mit dem heutigen Stand also **nicht** per Einzeiler aufsetzen.
+
+**Für Mac-Nutzer:** solange es kein `comesh-agent-darwin-*` unter
+`<portal>/downloads/` gibt, muss das Binary auf dem Mac selbst gebaut werden —
+`git clone`, `cd node-agent && ./build.sh` (PyInstaller kann nicht
+architekturübergreifend bauen, ein Linux-Rechner kann das Darwin-Binary nicht
+erzeugen). Danach liegt es als `node-agent/dist/comesh-agent-darwin-<arch>`
+samt `.sha256` bereit und lässt sich mit
+`sh install.sh --base-url <verzeichnis>` oder direkt starten.
 
 Bauen (auf dem jeweiligen Zielsystem, PyInstaller kann nicht
 architekturübergreifend bauen):
