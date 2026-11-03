@@ -239,6 +239,11 @@ class GpuNode(Base):
     name = Column(String, nullable=False)                # "Living Room RTX 4090"
     gpu_type = Column(String, nullable=False)            # "RTX 4090", "A100 80GB", ...
     vram_gb = Column(Integer, nullable=False)            # total VRAM
+    # Woher die Zahl stammt: "detected" (NVML), "override" (NODE_VRAM_GB des
+    # Agenten) oder "assumed" (keine GPU erkannt, nichts gesetzt -> 1 GB).
+    # "assumed" heisst: der Router schickt dieser Node nie einen Auftrag, weil
+    # das VRAM-Gate greift — sichtbar statt still.
+    vram_source = Column(String, nullable=True)
     status = Column(String, default="offline", nullable=False)  # online | offline | busy
     hourly_rate = Column(Float, default=0.05, nullable=False)   # credits/hour charged to the user
     # Deprecated (LANA-89): use `node_url`. Kept so existing SQLite databases

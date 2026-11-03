@@ -362,6 +362,9 @@ class AdminNodeOut(BaseModel):
     name: str
     gpu_type: str
     vram_gb: int
+    # detected | override | assumed — "assumed" heisst: der Agent hat keine GPU
+    # erkannt und NODE_VRAM_GB nicht gesetzt, die 1 GB sind geraten.
+    vram_source: str = ""
     status: str                    # raw stored status
     effective_status: str          # online | offline | busy | disabled
     online: bool
@@ -490,6 +493,7 @@ def _node_out(db: Session, node: GpuNode, now: Optional[datetime] = None,
         name=node.name,
         gpu_type=node.gpu_type,
         vram_gb=node.vram_gb,
+        vram_source=getattr(node, "vram_source", None) or "",
         status=node.status,
         effective_status=_effective_status(node, now),
         online=online,

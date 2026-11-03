@@ -50,6 +50,13 @@ class RegisterNodeRequest(BaseModel):
     name: str = Field(..., min_length=2, max_length=80)
     gpu_type: str = Field(..., min_length=2, max_length=80)
     vram_gb: int = Field(..., ge=1, le=1024)
+    # Herkunft der VRAM-Zahl, wie der Agent sie meldet. "assumed" = keine GPU
+    # erkannt und NODE_VRAM_GB nicht gesetzt; das Portal zeigt das als Hinweis
+    # an, weil genau dieser Fall die Node stumm auftragslos macht.
+    vram_source: Optional[str] = Field(
+        None, pattern="^(detected|override|assumed)$",
+        description="detected | override (NODE_VRAM_GB) | assumed (1 GB angenommen)",
+    )
     hourly_rate: float = Field(0.05, ge=0.0, le=10.0)
     # Reachability of the agent. Optional on purpose: an agent on DHCP can
     # register without knowing its own address — the portal derives it from the
@@ -97,6 +104,12 @@ class HeartbeatRequest(BaseModel):
     gpu_util: float = Field(0.0, ge=0.0, le=1.0)
     vram_used_gb: float = Field(0.0, ge=0.0, le=1024)
     vram_total_gb: Optional[float] = None
+    # Der Agent wiederholt hier seine gemeldete VRAM-Zahl samt Herkunft. Ein
+    # gesetztes NODE_VRAM_GB (source=override) ueberschreibt den Portalwert —
+    # sonst bliebe eine Node auf 1 GB stehen, auch nachdem der Betreiber den
+    # Wert nachgetragen hat.
+    vram_gb: Optional[int] = Field(None, ge=1, le=1024)
+    vram_source: Optional[str] = Field(None, pattern="^(detected|override|assumed)$")
     active_jobs: int = Field(0, ge=0, le=64)
     # Address the agent believes it is reachable under (ADVERTISE_HOST, else its
     # detected outbound IP/hostname). The portal adopts it only while the node
@@ -114,6 +127,7 @@ class NodeOut(BaseModel):
     name: str
     gpu_type: str
     vram_gb: int
+    vram_source: str = ""
     status: str
     hourly_rate: float
     node_url: Optional[str]
@@ -143,6 +157,7 @@ class NodePublicOut(BaseModel):
     name: str
     gpu_type: str
     vram_gb: int
+    vram_source: str = ""
     status: str
     hourly_rate: float
     backend: str = "ollama"
@@ -171,6 +186,7 @@ def node_out_fields(node: GpuNode) -> dict:
         "name": node.name,
         "gpu_type": node.gpu_type,
         "vram_gb": node.vram_gb,
+        "vram_source": getattr(node, "vram_source", None) or "",
         "status": node.status,
         "hourly_rate": node.hourly_rate,
         "node_url": node.node_url,
@@ -299,6 +315,7 @@ def register_node(
         name=req.name,
         gpu_type=req.gpu_type,
         vram_gb=req.vram_gb,
+        vram_source=req.vram_source,
         hourly_rate=req.hourly_rate,
         node_url=resolve_node_url(req.node_url, req.tailscale_ip, req.port),
         node_url_auto=False,
@@ -407,6 +424,7 @@ def list_nodes(
             name=n.name,
             gpu_type=n.gpu_type,
             vram_gb=n.vram_gb,
+            vram_source=getattr(n, "vram_source", None) or "",
             status="online" if online else n.status,
             hourly_rate=n.hourly_rate,
             backend=n.backend or "ollama",
@@ -495,6 +513,14 @@ def heartbeat(
             node.node_url_auto = True
     if req.agent_port:
         node.port = req.agent_port
+
+    # VRAM-Herkunft mitschreiben. Ein ausdrueckliches NODE_VRAM_GB (override)
+    # gewinnt gegen den gespeicherten Wert: so kommt eine Node aus der
+    # 1-GB-Falle, ohne dass jemand die Geräteseite bearbeiten muss.
+    if req.vram_source:
+        node.vram_source = req.vram_source
+        if req.vram_source == "override" and req.vram_gb:
+            node.vram_gb = int(req.vram_gb)
 
     # Update live state
     node.status = req.status

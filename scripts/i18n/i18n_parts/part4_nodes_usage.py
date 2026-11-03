@@ -22,6 +22,12 @@ KEYS = {
     "z-b-wohnzimmer-rtx-4090": {"en": "e.g. living room RTX 4090", "de": "z. B. Wohnzimmer RTX 4090", "es": "p. ej. salón RTX 4090", "fr": "p. ex. salon RTX 4090"},
     "rtx-4090": {"en": "RTX 4090", "de": "RTX 4090", "es": "RTX 4090", "fr": "RTX 4090"},
     "vram-gb": {"en": "VRAM (GB)", "de": "VRAM (GB)", "es": "VRAM (GB)", "fr": "VRAM (GB)"},
+    "vram-angenommen-keine-gpu-erkannt": {
+        "en": "VRAM assumed — no GPU detected: the pool will not route jobs here until NODE_VRAM_GB is set",
+        "de": "VRAM angenommen — keine GPU erkannt: der Pool schickt dieser Node keinen Auftrag, bis NODE_VRAM_GB gesetzt ist",
+        "es": "VRAM supuesta — no se detecta GPU: el pool no enviará trabajos a este node hasta que se defina NODE_VRAM_GB",
+        "fr": "VRAM supposée — aucun GPU détecté : le pool n’enverra aucune tâche à ce node tant que NODE_VRAM_GB n’est pas défini",
+    },
     "stundensatz-credits": {"en": "Rate (Credits)", "de": "Stundensatz (Credits)", "es": "Tarifa (Credits)", "fr": "Tarif (Credits)"},
     "adresse-leer-lassen-der-agent-meldet": {"en": "Leave empty: the agent reports its own address with the first heartbeat (the usual case on DHCP). Prefer a fixed address? Enter a name — DNS/mDNS such as mein-gpu.local:11435, not an IP.", "de": "Leer lassen: der Agent meldet seine Adresse beim ersten Heartbeat selbst (üblich in DHCP-Netzen). Feste Adresse? Dann einen Namen eintragen — DNS/mDNS wie mein-gpu.local:11435 statt einer IP.", "es": "Déjalo vacío: el agente comunica su dirección con el primer heartbeat (lo habitual en DHCP). ¿Prefieres una dirección fija? Usa un nombre — DNS/mDNS como mein-gpu.local:11435, no una IP.", "fr": "Laissez vide : l’agent annonce sa propre adresse au premier heartbeat (le cas habituel en DHCP). Adresse fixe ? Utilisez un nom — DNS/mDNS comme mein-gpu.local:11435, pas une IP."},
     "der-pool-routet-ausschliesslich-ueber-das": {"en": "The pool routes exclusively over the tailnet — publicly reachable nodes are not intended.", "de": "Der Pool routet ausschließlich über das Tailnet — public erreichbare Nodes sind nicht vorgesehen.", "es": "El pool enruta exclusivamente por el tailnet — no se contemplan nodes accesibles públicamente.", "fr": "Le pool route exclusivement via le tailnet — les nodes accessibles publiquement ne sont pas prévus."},

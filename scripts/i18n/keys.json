@@ -934,6 +934,13 @@
    "nodes.html"
   ]
  },
+ "vram-angenommen-keine-gpu-erkannt": {
+  "src": "VRAM angenommen — keine GPU erkannt",
+  "where": "markup",
+  "pages": [
+   "nodes.html"
+  ]
+ },
  "stundensatz-credits": {
   "src": "Stundensatz (Credits)",
   "where": "markup",

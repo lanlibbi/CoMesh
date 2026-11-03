@@ -267,6 +267,8 @@ anzutasten. Details: [docs/api.md](docs/api.md).
 - [docs/network.md](docs/network.md) — addressing, DHCP, mDNS, optional mesh VPN
 - [docs/windows.md](docs/windows.md) — running a **provider** on Windows (LM Studio or
   Ollama, native or Docker, autostart via Task Scheduler)
+- [docs/macos.md](docs/macos.md) — running a **provider** on macOS/Apple Silicon
+  (Ollama with Metal; `NODE_VRAM_GB` is mandatory there)
 
 ---
 
@@ -388,6 +390,8 @@ LM Studio allein macht noch keinen Node. Details, inklusive der Streaming-Grenze
 - [docs/node-agent.md](docs/node-agent.md) — Node-Agent-Setup und Deployment
 - [docs/api.md](docs/api.md) — komplette API-Referenz
 - [docs/network.md](docs/network.md) — Adressierung, DHCP, mDNS, optionales Mesh-VPN
+- [docs/macos.md](docs/macos.md) — ein **Provider** auf macOS/Apple Silicon
+  (Ollama mit Metal; `NODE_VRAM_GB` ist dort Pflicht)
 
 ## Lizenz
 

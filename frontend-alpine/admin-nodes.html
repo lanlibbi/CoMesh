@@ -105,7 +105,18 @@
                         title="Läuft nur zeitweise, nicht im Dauerbetrieb">zeitweise</span>
                   <div class="t-xs text-mute" x-show="!n.is_enabled">vom Besitzer pausiert</div>
                 </td>
-                <td class="num" x-text="(n.vram_gb || 0) + ' GB'"></td>
+                <td class="num">
+                  <span x-text="(n.vram_gb || 0) + ' GB'"></span>
+                  <!-- "assumed" = Agent hat keine GPU erkannt und NODE_VRAM_GB
+                       nicht gesetzt; das VRAM-Gate laesst die Node dann nie
+                       an die Reihe kommen. Sichtbar machen statt still 1 GB. -->
+                  <div class="t-xs text-warn" x-show="n.vram_source === 'assumed'"
+                       title="Keine GPU erkannt, NODE_VRAM_GB nicht gesetzt: der Wert ist angenommen. Der Router schickt dieser Node keinen Auftrag, bis der Betreiber den VRAM setzt.">
+                    angenommen — keine GPU erkannt
+                  </div>
+                  <div class="t-xs text-mute" x-show="n.vram_source === 'override'"
+                       title="Wert stammt aus NODE_VRAM_GB des Agenten">aus NODE_VRAM_GB</div>
+                </td>
                 <td class="t-xs" x-text="modellKurz(n)"></td>
                 <td>
                   <div class="row wrap" style="gap:6px">

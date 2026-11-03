@@ -223,7 +223,10 @@
                     <span x-show="!n.is_enabled" class="pill pill-paused" data-i18n="pausiert">pausiert</span>              </div>
               <div class="t-sm text-dim mt-1">
                 <span x-text="n.gpu_type"></span> ·
-                <span x-text="n.vram_gb"></span> GB VRAM ·
+                <span x-text="n.vram_gb"></span> GB VRAM
+                <span x-show="n.vram_source === 'assumed'" class="pill pill-flat t-xs"
+                      style="color:var(--warn)"
+                      data-i18n="vram-angenommen-keine-gpu-erkannt">VRAM angenommen — keine GPU erkannt</span> ·
                 <span class="mono" x-text="n.node_url || ('? — ' + n.port)"></span>
                 <span x-show="n.node_url_auto" class="pill pill-flat t-xs" data-i18n="automatisch-erkannt">automatisch erkannt</span>
               </div>

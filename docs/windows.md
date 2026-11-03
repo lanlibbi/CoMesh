@@ -115,6 +115,32 @@ Mit **Ollama** statt LM Studio: `BACKEND=ollama` und `INFERENCE_URL=http://127.0
 Der Agent liest seine Konfiguration aus der `.env` im **aktuellen Arbeitsverzeichnis** —
 also im CoMesh-Ordner starten, nicht aus `C:\Windows\System32`.
 
+### VRAM: was der Agent meldet, und was daraus wird
+
+Der Agent liest den Speicher über NVML (die `nvidia-smi`-Bibliothek). Klappt das nicht,
+meldet er `unknown` / `0 GB`, das Portal macht daraus **1 GB** — und der Router weist
+danach jeden Auftrag ab, weil das VRAM-Gate nicht durchgeht. Die Node ist dann online
+und bekommt trotzdem nichts; es gibt keine Fehlermeldung, nur Stille.
+
+Dagegen hilft ein ausdrücklicher Wert:
+
+```bash
+NODE_VRAM_GB=10        # was diese Maschine dem Pool anbieten soll (GB)
+```
+
+`NODE_VRAM_GB` gewinnt immer gegen die Messung und wird beim nächsten Heartbeat auch
+im Portal nachgezogen — auch nachträglich, ein Bearbeiten der Geräteseite ist nicht
+nötig. Die Herkunft steht als `vram_source` an der Node:
+
+| `vram_source` | Bedeutung |
+|---|---|
+| `detected` | über NVML gelesen |
+| `override` | `NODE_VRAM_GB` gesetzt — dieser Wert gilt |
+| `assumed` | nichts erkannt, nichts gesetzt: 1 GB. **Die Node bekommt keine Aufträge.** In der Adminliste steht „VRAM angenommen — keine GPU erkannt“. |
+
+Auf einer Maschine ohne NVIDIA-Treiber (macOS/Apple Silicon, reine CPU-Nodes) ist
+`NODE_VRAM_GB` deshalb Pflicht — siehe [macos.md](macos.md).
+
 ---
 
 ## Weg C — Docker Desktop
@@ -190,8 +216,10 @@ bequemer als „bei Systemstart", weil die GPU-Treiberkontexte dann bereits steh
 | `--check` meldet Backend nicht erreichbar | LM Studio/Server läuft nicht, oder `INFERENCE_URL` zeigt auf `host.docker.internal` statt `127.0.0.1`. |
 | Agent läuft, Portal sieht ihn nicht | Firewall (Port 11435), falsche `ADVERTISE_HOST`, oder der Key hat nicht die Rolle `provider`/`both`. |
 | Antworten kommen ohne Streaming | Seit 0.5.0 nicht mehr nötig: beide Backends streamen. Kommt trotzdem alles auf einmal, fordert der Client kein `stream: true` an oder ein Proxy puffert — `X-Accel-Buffering: no` prüfen. |
-| GPU wird nicht erkannt | `nvidia-smi` in derselben Konsole prüfen. Der Agent fällt sonst auf Stub-Werte zurück und meldet keine GPU. |
+| GPU wird nicht erkannt | `nvidia-smi` in derselben Konsole prüfen. Der Agent fällt sonst auf Stub-Werte zurück und meldet 1 GB — dann mit `NODE_VRAM_GB` den Speicher ausdrücklich setzen, sonst bekommt die Node keine Aufträge (siehe „VRAM“). |
 
-Nach dem Start: `curl http://127.0.0.1:11435/health` liefert `{"status":"ok","agent":"running",
-"ollama":"ok","gpu":"RTX …"}` (der Schlüssel `ollama` steht auch bei `BACKEND=openai` für
-„Backend erreichbar").
+Nach dem Start: `curl -H "X-Node-Secret: <wert>" http://127.0.0.1:11435/health` liefert
+`{"ok":true,"backend":"ollama",…,"node_id":"1","gpu":{…}}` (`backend`/`ollama_reachable`
+stehen auch bei `BACKEND=openai` für „Backend erreichbar“). **Ohne** den Kopf antwortet
+der Agent nur mit `{"ok":true}` — Details gibt es seit dem Sicherheitsfix vom 03.11.2026
+nur noch mit dem gemeinsamen Geheimnis `NODE_SHARED_SECRET`.
