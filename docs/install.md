@@ -193,9 +193,11 @@ comesh-agent-windows-x86_64.exe    comesh-agent-windows-x86_64.exe.sha256
 | `comesh-agent-darwin-arm64`, `comesh-agent-darwin-x86_64` | **fehlen** |
 | `comesh-agent-linux-arm64` | **fehlt** — entsteht auf einem ARM-Linux (`./build.sh`) |
 
-Fehlt die Datei zu einer Systemkombination, bricht der Installer mit einer
-klaren Meldung ab, statt etwas Falsches zu installieren — eine macOS-Node lässt
-sich mit dem heutigen Stand also **nicht** per Einzeiler aufsetzen.
+Fehlt die Datei zu einer Systemkombination, antwortet `/downloads/` mit **404**
+(bewusst kein SPA-Fallback, sonst käme HTML mit 200 zurück) und der Installer
+bricht mit `Download fehlgeschlagen: <url>` ab, statt etwas Falsches zu
+installieren — eine macOS-Node lässt sich mit dem heutigen Stand also **nicht**
+per Einzeiler aufsetzen.
 
 **Für Mac-Nutzer:** solange es kein `comesh-agent-darwin-*` unter
 `<portal>/downloads/` gibt, muss das Binary auf dem Mac selbst gebaut werden —
