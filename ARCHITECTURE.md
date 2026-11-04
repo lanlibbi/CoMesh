@@ -79,13 +79,27 @@ Request-Handler voneinander trennen.
    1. lokales Ollama auf dem Portal-Host. Nur ein *Verbindungs*fehler fällt weiter;
       ein HTTP-Fehler von Ollama wird durchgereicht (`pool.py:548`).
    2. `find_best_node` (`pool.py:126`) filtert in dieser Reihenfolge: online,
-      Node-Whitelist, Konto-Whitelist, **VRAM-Gate** — danach entscheidet der
-      Score. Online heißt: WS-Ping jünger als 90 s **oder** HTTP-Heartbeat jünger
+      Node-Whitelist, Konto-Whitelist, **VRAM-Gate** — danach entscheidet die
+      Auswahl. Online heißt: WS-Ping jünger als 90 s **oder** HTTP-Heartbeat jünger
       als 90 s (`models.py:293`, `pool.py:67`). Das VRAM-Gate vergleicht
       `vram_gb − vram_used_gb` mit einer Schätzung aus dem Modellnamen (`:7b` →
       5 GB, `:13b` → 9 GB, `70b` → 40 GB, sonst 4 GB; `pool.py:183`) und verwirft
-      die Node, wenn der Speicher nicht reicht (`pool.py:163`). Der Score ist
-      `hourly_rate + 0,5 · current_utilization` (`pool.py:170`).
+      die Node, wenn der Speicher nicht reicht (`pool.py:163`).
+
+      **Lastverteilung (seit 0.6.11).** Unter den Kandidaten gilt:
+      1. **wenigste laufende Anfragen** (`pool.node_inflight`, ein Zähler im
+         Prozess, um jede Weiterleitung herum erhöht und im `finally` wieder
+         verringert — Erfolg, Fehler, Timeout, Abbruch),
+      2. dann der **Score** `hourly_rate + 0,5 · current_utilization`
+         (+ 0,2 für `status != online`),
+      3. bei vollständigem Gleichstand **reihum** (`itertools.count`, Modulo über
+         die Gleichstandsgruppe).
+
+      Vorher entschied **nur** der Score. Damit war die Auswahl deterministisch:
+      zwei gleichwertige Nodes mit demselben Modell, dieselbe Sortierreihenfolge —
+      der zweite Eintrag bekam nie einen Auftrag, und zwei gleichzeitige Anfragen
+      liefen beide auf dieselbe Maschine. Der Preis entscheidet weiterhin, aber
+      nur unter gleich belasteten Nodes.
    3. Transport je Node: `connection_state == "connected"` → WS, sonst HTTP. Bis zu
       drei Nodes werden versucht, ein Fehlschlag führt zum nächsten (`pool.py:574`).
    4. Bleibt nichts übrig → 503; der Cloud-Overflow ist ein Stub (`pool.py:634`).

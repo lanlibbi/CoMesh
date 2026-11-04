@@ -81,13 +81,29 @@ Zwei Angaben macht der **Besitzer** an seinem Gerät, nicht die Administration:
 | `gpu_nodes.hide_owner` | `true` / `false` | In `GET /admin/nodes` bleibt `owner_email` leer, `owner_hidden` sagt warum |
 | `gpu_nodes.availability` | `always` / `partial` | `always` = Dauerbetrieb, `partial` = nur zeitweise erreichbar |
 
-Beide setzt der Besitzer über `PUT /nodes/{id}` (nur eigene Geräte):
+Beide setzt der Besitzer über `PUT /nodes/{id}` (eigene Geräte; Administration darf jedes):
 
 ```bash
-curl -X PUT https://<portal>/v1/../nodes/1 \
-  -H "Authorization: Bearer gpu_..." -H "Content-Type: application/json" \
+curl -X PUT https://<portal>/nodes/1 \
+  -H "Authorization: Bearer ***" -H "Content-Type: application/json" \
   -d '{"availability":"partial","hide_owner":true}'
 ```
+
+**Derselbe Endpunkt trägt die Modellfreigabe — und die ist Sache des Providers.**
+`gpu_nodes.allowed_models` sagt, welche Modelle diese Maschine anderen anbietet:
+
+```bash
+# Liste = genau diese Modelle (Cloud-Modelle ausdrücklich eintragen)
+curl -X PUT https://<portal>/nodes/1 -H "Authorization: Bearer ***" \
+  -H "Content-Type: application/json" -d '{"allowed_models":["qwen2.5-coder:7b","llama3.1:8b"]}'
+# zurück auf Standard: alle lokalen Modelle, keine Cloud (NULL)
+curl -X PUT https://<portal>/nodes/1 -H "Authorization: Bearer ***" \
+  -H "Content-Type: application/json" -d '{"clear_allowed_models":true}'
+```
+
+`[]` heißt **nichts** freigegeben, `NULL` (über `clear_allowed_models`) heißt **alle lokalen**. Der
+Eigentümer kommt nicht an fremde Geräte (404) und kann `owner_id` nicht umhängen; `is_enabled`,
+Löschen und der Agent-Schlüssel haben eigene Endpunkte mit eigener Prüfung.
 
 `availability` erscheint auch in `GET /nodes/list` (öffentlicher Katalog), damit Nutzer sehen, ob eine
 Maschine verlässlich läuft. `hide_owner` bleibt dort bewusst draußen — es ist eine Angabe für die
@@ -494,6 +510,37 @@ identischer Aufruf ändert nichts.
 * `is_active: false` entwertet sofort alle Keys des Users.
 * Ein Admin kann sein **eigenes** Konto weder deaktivieren noch degradieren
   (`409`, Lockout-Guard).
+
+### `DELETE /admin/users/{user_id}`
+
+Löscht ein Konto. `Idempotency-Key` wird unterstützt (Wiederholung liefert das
+gespeicherte Ergebnis mit `replayed: true`). Antwort:
+
+```json
+{"user_id":142,"email":"test@example.org","deleted":true,
+ "keys_removed":2,"usages_anonymized":17,"credit_transactions_anonymized":3,
+ "payments_anonymized":0,"node_earnings_anonymized":5,"pool_jobs_anonymized":12,
+ "nodes_kept":[7],"nodes_removed":[9],"tombstone_user_id":143}
+```
+
+Je Tabelle eine eigene Entscheidung — keine pauschale Kaskade:
+
+| Tabelle | Behandlung | Grund |
+|---|---|---|
+| `api_keys` (auch `sess_…`) | gelöscht | der Zugang verschwindet mit dem Konto |
+| `gpu_nodes` | **behalten**, wenn `node_earnings`/`pool_jobs` daran hängen; sonst gelöscht | eine Node mit Umsatz ist Buchhaltung; eine leere Node ist ein Kontodatensatz |
+| `node_earnings` | anonymisiert (Umhängen auf ein Platzhalterkonto) | **die Einnahmen bleiben** |
+| `pool_jobs`, `usages`, `credit_transactions`, `payments` | anonymisiert | Summen und Geldbewegungen bleiben stimmig |
+| `admin_audit_log` | bleibt, `admin_user_id` → `NULL` | die Spur der Administration |
+
+Eine behaltene Node wird **stillgelegt**: `is_enabled = false`, `api_key_hash =
+NULL` — der Agent kann sich nicht mehr melden, und es laufen keine neuen
+Aufträge darauf. Das Platzhalterkonto (`deleted-user-<id>@deleted.invalid`,
+`registration_status = "deleted"`, `quota_mode = "blocked"`) erscheint nicht in
+`GET /admin/users`; mit `?include_deleted=true` ist es sichtbar.
+
+Sperren: das eigene Konto (`409`) und das **letzte** Admin-Konto (`409`) lassen
+sich nicht löschen.
 
 ### `POST /admin/users/{user_id}/topup`
 

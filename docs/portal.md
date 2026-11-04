@@ -25,7 +25,6 @@ PORTAL_PORT=8765
 DB_URL=sqlite:///./gpu_pool.db
 LOCAL_OLLAMA_URL=http://localhost:11434
 NODE_TIMEOUT_SECONDS=30
-HEARTBEAT_INTERVAL_SECONDS=5
 
 docker compose up -d
 ```
@@ -56,15 +55,22 @@ Alle Optionen via `.env`:
 | `DB_URL` | `sqlite:///./gpu_pool.db` | SQLAlchemy-URL |
 | `LOCAL_OLLAMA_URL` | `http://localhost:11434` | Lokales Ollama als Fallback |
 | `NODE_TIMEOUT_SECONDS` | `30` | Nach dieser Zeit ohne Heartbeat → Node als offline markieren |
-| `HEARTBEAT_INTERVAL_SECONDS` | `5` | Erwartetes Heartbeat-Intervall (für Stats) |
 | `LOG_LEVEL` | `INFO` | DEBUG/INFO/WARNING/ERROR |
+
+**Das Heartbeat-Intervall stellt der Agent, nicht das Portal.** `HEARTBEAT_SEC`
+(HTTP-Betrieb, Vorgabe 30 s) und `WS_HEARTBEAT_SEC` (WebSocket-Betrieb, Vorgabe
+15 s) stehen in der Konfiguration des Node-Agenten; das Portal liest sie nicht.
+Es zählt nur die Gegenrichtung: eine Node gilt als online, solange sie sich
+innerhalb von **90 s** gemeldet hat (`ONLINE_GRACE` in `nodes.py`/`pool.py`, per
+WS-Ping oder HTTP-Heartbeat). Eine frühere Variable `HEARTBEAT_INTERVAL_SECONDS`
+hat nie existiert — sie stand nur in dieser Doku.
 
 ## Datenmodell (DB)
 
 Siehe [architecture.md](architecture.md#datenmodell) für Details. Tabellen:
 
 - `gpu_nodes` — Stammdaten der Nodes
-- `node_heartbeats` — Metrik-Historie (alle 5s)
+- `node_heartbeats` — Metrik-Historie (je Heartbeat, im WS-Betrieb je Ping)
 - `node_earnings` — Aggregierte Earnings pro Job
 - `pool_jobs` — Job-Historie mit Status
 
