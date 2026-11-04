@@ -115,6 +115,12 @@ services:
       - OLLAMA_URL=http://host.docker.internal:11434
       - AGENT_PORT=11435
       - HEARTBEAT_SEC=30
+      # Transport zum Portal. "ws" = die Node verbindet **ausgehend**
+      # (/agent/connect), dann braucht sie keinen erreichbaren Port; "http" =
+      # das Portal ruft die Node auf AGENT_PORT (Rueckfall). Der Wert steht in
+      # der .env, damit der Rueckweg ein Einzeiler bleibt:
+      #   AGENT_TRANSPORT=http  ->  docker compose up -d --no-deps --force-recreate node-agent
+      - AGENT_TRANSPORT=${AGENT_TRANSPORT:-http}
     ports:
       # Portal erreicht den Node unter gpu_nodes.tailscale_ip:11435.
       # Lokal (Default) nur 127.0.0.1; auf dem Portal-Host steht
