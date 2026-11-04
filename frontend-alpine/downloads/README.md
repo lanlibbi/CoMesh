@@ -15,17 +15,35 @@ Der Installer lädt von hier:
 |---|---|---|
 | `install.sh` | macOS/Linux-Installer (aus `node-agent/install.sh`) | **vorhanden** |
 | `install.ps1` | Windows-Installer (aus `node-agent/install.ps1`) | **vorhanden** |
-| `comesh-agent-darwin-arm64` + `.sha256` | Apple Silicon | **fehlt** |
-| `comesh-agent-darwin-x86_64` + `.sha256` | Intel-Mac | **fehlt** |
-| `comesh-agent-linux-arm64` + `.sha256` | Linux ARM64 | **fehlt** |
+| `comesh-agent-darwin-arm64` + `.sha256` | Apple Silicon | **vorhanden** — 0.6.9, 13,4 MB, in GitHub Actions gebaut (04.11.2026), `--version` und Prüfsumme geprüft |
+| `comesh-agent-darwin-x86_64` + `.sha256` | Intel-Mac | **fehlt** — `macos-latest` ist arm64; bräuchte einen Lauf auf `macos-13` |
+| `comesh-agent-linux-arm64` + `.sha256` | Linux ARM64 | **fehlt** — nur auf einem ARM-Linux zu bauen, PyInstaller baut nicht über Architekturen |
 | `comesh-agent-linux-x86_64` + `.sha256` | Linux x86_64 | **vorhanden** — 0.6.9, 14 MB |
 | `comesh-agent-windows-x86_64.exe` + `.sha256` | Windows x64 | **vorhanden** — 0.6.9, 13,4 MB |
 
 Nur die Zeilen mit **vorhanden** lassen sich installieren. Der Installer bricht
 bei einem fehlenden Binary mit klarer Meldung ab, statt etwas Falsches
-einzurichten; `docs/install.md` sagt, was dann zu tun ist. Ein fehlendes
-Darwin-Binary heißt: auf dem Mac selbst bauen (`cd node-agent && ./build.sh`) —
-PyInstaller kann nicht architekturübergreifend bauen.
+einzurichten; `docs/install.md` sagt, was dann zu tun ist.
+
+### macOS: gebaut in GitHub Actions, nicht auf einem Mac
+
+Ein Darwin-Binary entsteht seit 04.11.2026 in
+`.github/workflows/build-node-agent.yml` auf `macos-latest` (Apple Silicon):
+Der Workflow misst `uname -m`, prüft `comesh-agent --version` gegen die
+`VERSION`-Datei und lädt Binary + `.sha256` als Artefakt hoch. Das Binary wird
+von dort geholt und hierher gelegt:
+
+```bash
+# Artefakt des letzten grünen Laufs (braucht ein GitHub-Token)
+gh run download --repo lanlibbi/CoMesh --name comesh-agent-darwin-arm64 -D /tmp/mac
+# oder über die REST-API: /repos/lanlibbi/CoMesh/actions/artifacts/<id>/zip
+cp /tmp/mac/comesh-agent-darwin-arm64* frontend-alpine/downloads/
+sha256sum -c frontend-alpine/downloads/comesh-agent-darwin-arm64.sha256
+```
+
+Wer das Binary lieber lokal baut, kann es weiterhin:
+`cd node-agent && ./build.sh` (PyInstaller baut nur für die Architektur des
+Rechners, auf dem es läuft).
 
 **Die Binaries liegen nicht im Repo** (15–25 MB je Datei, und sie gehören zu
 einem Release, nicht zu einem Quellstand); die beiden Installer schon. Erzeugt

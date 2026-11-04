@@ -190,25 +190,26 @@ comesh-agent-windows-x86_64.exe    comesh-agent-windows-x86_64.exe.sha256
 | `install.sh`, `install.ps1` | **vorhanden** (versioniert) |
 | `comesh-agent-linux-x86_64` + `.sha256` | **vorhanden** — 0.6.9, 14 MB, `--version` geprüft, Prüfsumme gegengeprüft |
 | `comesh-agent-windows-x86_64.exe` + `.sha256` | **vorhanden** — 0.6.9, 13,4 MB, `--version` geprüft, Prüfsumme gegengeprüft (gebaut mit `build.ps1` auf Windows Server 2019 / x64, Python 3.12) |
-| `comesh-agent-darwin-arm64`, `comesh-agent-darwin-x86_64` | **fehlen** |
-| `comesh-agent-linux-arm64` | **fehlt** — entsteht auf einem ARM-Linux (`./build.sh`) |
+| `comesh-agent-darwin-arm64` + `.sha256` | **vorhanden** — 0.6.9, 13,4 MB, in GitHub Actions auf `macos-latest` gebaut (04.11.2026), `file` meldet `Mach-O 64-bit arm64`, `--version` geprüft, Prüfsumme gegengeprüft |
+| `comesh-agent-darwin-x86_64` | **fehlt** — `macos-latest` ist Apple Silicon; ein Intel-Binary bräuchte einen Lauf auf `macos-13` |
+| `comesh-agent-linux-arm64` | **fehlt** — PyInstaller baut nur für die Architektur, auf der es läuft; ein x86_64-Host kann kein ARM-Binary einfrieren |
 
 Fehlt die Datei zu einer Systemkombination, antwortet `/downloads/` mit **404**
 (bewusst kein SPA-Fallback, sonst käme HTML mit 200 zurück) und der Installer
 bricht mit `Download fehlgeschlagen: <url>` ab, statt etwas Falsches zu
-installieren — eine macOS-Node lässt sich mit dem heutigen Stand also **nicht**
-per Einzeiler aufsetzen.
+installieren — für einen **Intel-Mac** und **Linux ARM64** geht der Einzeiler
+also noch nicht.
 
-**Für Mac-Nutzer:** solange es kein `comesh-agent-darwin-*` unter
-`<portal>/downloads/` gibt, muss das Binary auf dem Mac selbst gebaut werden —
-`git clone`, `cd node-agent && ./build.sh` (PyInstaller kann nicht
-architekturübergreifend bauen, ein Linux-Rechner kann das Darwin-Binary nicht
-erzeugen). Danach liegt es als `node-agent/dist/comesh-agent-darwin-<arch>`
-samt `.sha256` bereit und lässt sich mit
-`sh install.sh --base-url <verzeichnis>` oder direkt starten.
+**Für Macs mit Apple Silicon ist der Einzeiler der Weg.** Das Binary entsteht in
+`.github/workflows/build-node-agent.yml`: Der Workflow läuft auf `macos-latest`,
+misst die Architektur mit `uname -m` (nicht angenommen — der Dateiname wird
+daraus gebildet), prüft `comesh-agent --version` gegen die `VERSION`-Datei und
+lädt Binary plus `.sha256` als Artefakt hoch. Er committet nichts: das Artefakt
+wird heruntergeladen und nach `frontend-alpine/downloads/` gelegt (siehe
+`frontend-alpine/downloads/README.md`). Wer keinen Mac zur Hand hat, braucht
+also keinen mehr.
 
-Bauen (auf dem jeweiligen Zielsystem, PyInstaller kann nicht
-architekturübergreifend bauen):
+Wer lieber lokal baut (Intel-Mac, Linux ARM, oder um die CI zu umgehen):
 
 ```bash
 cd node-agent && ./build.sh          # macOS/Linux -> dist/
@@ -338,6 +339,15 @@ wieder entfernen.
   Statuszeilen, Protokollauszug und Exitcode 1.
 - **Idempotenz und Rückweg gemessen**: zweiter Lauf ersetzt statt zu duplizieren
   (keine zweite Node), `--uninstall` hinterlässt weder Dienst noch Dateien.
+- **Das macOS-Binary ist in CI gebaut und geprüft, aber nicht auf einem Mac
+  gestartet.** GitHub Actions, `macos-latest` (arm64, Darwin 25.6, Python 3.12.10,
+  PyInstaller 6.22.3, ohne Codesignatur): Bau in 32 s, `comesh-agent --version`
+  meldet `comesh-agent 0.6.9`, `file` sagt `Mach-O 64-bit executable arm64`,
+  Größe 14.044.496 B, SHA-256
+  `7cdfce5f1e92a55794cbda507c90503a1c0be4e29754c4df29c10475f5a74e76`. Das
+  Artefakt ist über HTTPS geladen und die Prüfsumme gegen die ausgelieferte
+  `.sha256` gerechnet. **Nicht** ausgeführt: der Start des Binaries auf echter
+  Apple-Hardware, `launchctl`, der Gatekeeper-Weg und der Quarantäne-Hinweis.
 - **macOS und Windows sind vorbereitet, aber nicht auf echter Hardware
   ausgeführt**: `install.ps1`/`build.ps1` sind über den PowerShell-AST und
   PSScriptAnalyzer geprüft (0 Befunde außer Stilhinweisen), `install.sh` über
