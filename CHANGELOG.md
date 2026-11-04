@@ -59,6 +59,41 @@ Lastverteilung**
    Intervall setzt der Agent (`HEARTBEAT_SEC` 30 s, `WS_HEARTBEAT_SEC` 15 s),
    das Portal zählt nur die Gegenrichtung (90 s ohne Lebenszeichen → offline).
 
+6. **Konto-Seite: eigene API-Schlüssel einsehen und erzeugen.** Der Abschnitt
+   „Eigene Node beitragen" verlangt den Account-Schlüssel als
+   `PORTAL_USER_KEY` — in der Oberfläche war er nirgends zu sehen. Das Profil hat
+   jetzt einen Abschnitt „API-Schlüssel": Liste der ausgestellten Schlüssel mit
+   Präfix, Erstellungsdatum und Zustand (aktiv/ersetzt), nie der volle Wert
+   (gespeichert ist nur ein SHA-256-Hash), dazu „Neuen Schlüssel erzeugen" mit
+   Passwortfeld — der Wert erscheint **genau einmal**, mit Warnung und
+   Kopierknopf. `GET /v1/me/keys` liefert zusätzlich `count`, `active` und
+   `last_used_at`; die neuen Felder sind reine Anzeige, der Schlüssel selbst
+   bleibt nicht rekonstruierbar. `nodes.html` verweist jetzt auf
+   `profile.html#schluessel` statt auf „derzeit nicht erneut anzeigen".
+
+7. **Doku auf den Code-Stand.** `README.md` neu als Produkttext, Englisch zuerst
+   und Deutsch darunter, mit Abschnitt „Eigene Node beitragen" (Befehle,
+   Downloads, Prüfsummen, Größen). `ARCHITECTURE.md` beschrieb noch einen POC
+   ohne Auth und Streaming mit Agent auf 8080; jetzt Rollen, beide
+   Transportwege samt Begründung, Anfrageweg mit Node-Auswahl und VRAM-Gate, die
+   drei Zugangssperren, Tabellen und die bewussten Lücken — jede Aussage mit der
+   Datei, aus der sie stammt. Der eine 8080-Treffer ist Open WebUI auf demselben
+   Host und als Historie gekennzeichnet, `gpu_nodes.port` hat jetzt die
+   Vorgabe 11435 (`DEFAULT_AGENT_PORT`) statt 11434 (Ollama selbst; gilt nur für
+   neue Zeilen, keine Migration).
+
+   **Downloads am Cloudflare-Edge:** nach dem Austausch des Windows-Binaries
+   lieferte der Edge weiter die 0.6.9er Datei (`cf-cache-status: HIT`, age 6508),
+   während die `.sha256` daneben schon die neue Summe trug — Installationen
+   brachen an der Prüfsumme ab. `install.sh`/`install.ps1` holen jetzt zuerst die
+   `.sha256` und laden das Binary unter `<base>/<asset>?sha=<erste 12 Zeichen>`;
+   der Query ändert sich mit dem Inhalt, eine alte Cache-Kopie greift nicht mehr.
+   nginx `/downloads/` setzt zusätzlich `Cache-Control: no-cache` (am Edge
+   wirkungslos, deshalb der Query als tragender Teil).
+
+   **Nebenbefund:** `nodes.html` brach den Aufbau ab, weil ein Credits-Flag nicht
+   definiert war — jetzt definiert.
+
 ## 0.6.10 — 2026-11-04
 
 **Node-Agent: Zugangssperre, WebSocket-Betrieb, ein Befehl zur Installation**
