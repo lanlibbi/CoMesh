@@ -22,6 +22,9 @@ Covered:
    9. Public node listings do not leak contributor-private fields
   10. /pool/jobs is scoped to the caller instead of exposing all users' jobs
   11. Register enforces a minimum password length
+  12. Register only files a request: no key, no login before an admin approves
+      (0.6.3) — the usable account in this script goes through that approval
+      and then issues its client key via POST /v1/me/keys
 
 Exits with code 0 on success, 1 on failure.
 """
@@ -105,12 +108,62 @@ def fresh_email(tag: str) -> str:
     return f"auth-{tag}-{int(time.time())}-{secrets.token_hex(3)}@example.com"
 
 
-async def register(api, tag, *, password="test123456", role="both"):
-    """Public signup. Returns (status, body, headers). Email is in body["email"]."""
-    return await api.request("POST", "/auth/register", {
+async def register(api, tag, *, password="test123456", role="both", activate=True):
+    """Public signup. Returns (status, body, headers). Email is in body["email"].
+
+    Seit 0.6.3 ist die Registrierung nur noch ein **Antrag**: `registration_status`
+    steht auf `pending`, `is_active` auf False und es wird ausdruecklich **kein**
+    Schluessel ausgestellt (vorher war die Registrierung eine Selbstbedienung ohne
+    Freigabe). Die uebrigen Pruefungen hier (Login, Token-Rotation, Rate-Limits,
+    Node-Schluessel, /pool/jobs) brauchen aber ein benutzbares Konto.
+
+    `activate=True` geht deshalb denselben Weg wie ein Betreiber: Freigabe ueber
+    `POST /admin/registrations/{id}/approve`, dann Login und ein Client-Schluessel
+    ueber `POST /v1/me/keys` (seit 0.6.3 der einzige Weg zu einem `gpu_`-Schluessel).
+    Der Schluessel landet in `body["api_key"]`, damit die Aufrufer unveraendert
+    bleiben. `activate=False` laesst die rohe Registrierung stehen — das ist der
+    Zustand, den Test 1 prueft.
+    """
+    st, body, hdrs = await api.request("POST", "/auth/register", {
         "email": fresh_email(tag), "name": f"Auth {tag}", "password": password,
         "role": role, "initial_credits": 100,
     })
+    if activate and st == 200 and body and body.get("user_id"):
+        await activate_account(api, body, password=password)
+    return st, body, hdrs
+
+
+async def approve_account(api, reg) -> bool:
+    """Freigabe wie ein Betreiber: `POST /admin/registrations/{id}/approve`."""
+    st, body, _h = await api.request(
+        "POST", f"/admin/registrations/{reg['user_id']}/approve", {}, headers=ADMIN_HEADERS
+    )
+    return check("account approved by an admin", st == 200, f"got {st}: {str(body)[:100]}")
+
+
+async def activate_account(api, reg, *, password="test123456"):
+    """Freigeben (Admin) + einloggen + Client-Schluessel ausstellen.
+
+    Der Schluessel landet in `reg["api_key"]`. Bricht ein Schritt, meldet `check()`
+    das als Fehler — ein stiller Fehlschlag hier wuerde alle folgenden Gruppen mit
+    401 fuellen und die Ursache verschleiern.
+    """
+    if not await approve_account(api, reg):
+        return reg
+
+    st, login_body, _h = await login(api, reg["email"], password)
+    if not check("approved account can log in", st == 200,
+                 f"got {st}: {str(login_body)[:100]}"):
+        return reg
+    session = (login_body or {}).get("api_key")
+
+    st, key_body, _h = await api.request("POST", "/v1/me/keys",
+                                         {"password": password}, token=session)
+    if check("self-service API key issued", st == 200 and bool((key_body or {}).get("api_key")),
+             f"got {st}: {str(key_body)[:100]}"):
+        reg["api_key"] = key_body["api_key"]
+        reg["key_prefix"] = key_body.get("key_prefix")
+    return reg
 
 
 async def login(api, email, password):
@@ -122,7 +175,7 @@ async def login(api, email, password):
 # ---------------------------------------------------------------------------
 async def test_password_storage(api, env):
     print("\nTest 1: password storage (PBKDF2 + legacy upgrade)")
-    st, body, _h = await register(api, "pw")
+    st, body, _h = await register(api, "pw", activate=False)
     email = (body or {}).get("email")
     check("register -> 200", st == 200, f"got {st}: {str(body)[:120]}")
     if st != 200:
@@ -140,9 +193,16 @@ async def test_password_storage(api, env):
         check("hash is salted (no plain sha256 of the password)",
               stored != hashlib.sha256(b"test123456").hexdigest())
         check("password not stored in plaintext", "test123456" not in stored)
-        check("token stored hashed, not raw",
-              s.query(models.ApiKey).filter(models.ApiKey.user_id == user.id).first().key_hash
-              == hashlib.sha256(body["api_key"].encode()).hexdigest())
+    # Kein Schluessel bei der Registrierung: das Konto wartet auf Freigabe. Der
+    # fruehere Check verglich `body["api_key"]` mit einer `api_keys`-Zeile und lief
+    # seit 0.6.3 in einen AttributeError (`None.key_hash`), weil die Registrierung
+    # keinen Schluessel mehr ausstellt. Geprueft wird jetzt die Absicht: erst gar
+    # kein Token — und der erste wirklich ausgestellte (Login, unten) liegt nur als
+    # SHA-256-Hash in der Datenbank.
+        check("register issues no api key (pending approval)",
+              (body or {}).get("api_key") == "", str((body or {}).get("api_key"))[:12])
+        check("register writes no token row",
+              s.query(models.ApiKey).filter(models.ApiKey.user_id == user.id).count() == 0)
 
         # Downgrade to the legacy POC hash and prove login still works + upgrades.
         s.query(models.User).filter(models.User.id == user.id).update(
@@ -153,7 +213,27 @@ async def test_password_storage(api, env):
         s.close()
 
     st, body2, _h = await login(api, email, "legacypw1")
+    check("pending account cannot log in before approval -> 403", st == 403,
+          f"got {st}: {str(body2)[:120]}")
+
+    await approve_account(api, body)
+
+    st, body2, _h = await login(api, email, "legacypw1")
     check("legacy sha256 password still logs in", st == 200, f"got {st}: {str(body2)[:120]}")
+
+    # Der erste wirklich ausgestellte Token kommt vom Login. Gespeichert wird nur
+    # sein SHA-256-Hash — der Rohwert existiert ausschliesslich in der Antwort.
+    raw_session = (body2 or {}).get("api_key") or ""
+    s = db.SessionLocal()
+    try:
+        hashes = {r.key_hash for r in
+                  s.query(models.ApiKey).filter(models.ApiKey.user_id == body["user_id"]).all()}
+        check("token stored hashed, not raw",
+              bool(raw_session) and hashlib.sha256(raw_session.encode()).hexdigest() in hashes
+              and raw_session not in hashes,
+              f"{len(hashes)} token row(s)")
+    finally:
+        s.close()
 
     s = db.SessionLocal()
     try:
@@ -172,6 +252,10 @@ async def test_password_storage(api, env):
 # ---------------------------------------------------------------------------
 async def test_sessions(api, env):
     print("\nTest 2: session tokens (TTL + rotation)")
+    # Eigener Eimer: test_password_storage hat bereits drei Logins verbraucht, und
+    # die Freigabe/Schluesselausstellung in register() kostet einen weiteren. Die
+    # Login-Grenze selbst wird in Test 6 geprueft, hier darf sie nicht dazwischenfunken.
+    reset_limits(env)
     st, body, _h = await register(api, "sess")
     email = (body or {}).get("email")
     if st != 200:
