@@ -46,7 +46,7 @@ jobs:
         uses: actions/setup-python@v5
         with:
           # Es gibt keine `.python-version` im Repo. 3.12 ist die Fassung, mit der
-          # auch die Linux- und Windows-Binaries der 0.6.9 gebaut wurden.
+          # auch die Linux- und Windows-Binaries gebaut werden (PyInstaller 6.x).
           python-version: "3.12"
 
       # Die Architektur wird gemessen, nicht angenommen: der ausgelieferte Name
@@ -79,7 +79,7 @@ jobs:
         run: ./build.sh --no-venv
 
       # Der Installer liest die Ausgabe von `--version` ein: sie muss genau eine
-      # Zeile sein und die Version aus der VERSION-Datei tragen (0.6.9).
+      # Zeile sein und die Version aus der VERSION-Datei tragen.
       - name: Version prüfen
         working-directory: node-agent
         run: |

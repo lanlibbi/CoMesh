@@ -146,6 +146,39 @@ im Kopf blendet sie ein. Hat ein Besitzer sein Konto anonymisieren lassen, steht
 Adresse wird dann gar nicht erst ausgeliefert. Ein Etikett „zeitweise" heißt: die Maschine läuft nicht
 im Dauerbetrieb und ist nicht immer erreichbar.
 
+## Rechner beitragen: ein Befehl
+
+Wer eine GPU beisteuern will, braucht kein Python, kein Docker und kein Repo — ein fertiges Binary,
+ein Befehl, ein Account-Schlüssel (Rolle `provider` oder „beides", im Profil ausgestellt, `gpu_…`).
+Auf demselben Rechner muss ein Backend laufen: Ollama auf `127.0.0.1:11434` oder ein
+OpenAI-kompatibler Server wie LM Studio auf `127.0.0.1:1234`.
+
+| System | Befehl |
+|---|---|
+| macOS, Linux | `curl -fsSL https://<portal>/downloads/install.sh \| sh` |
+| Windows (PowerShell) | `irm https://<portal>/downloads/install.ps1 \| iex` |
+
+Beide prüfen die SHA-256 des Binaries (ohne Prüfsumme keine Installation), fragen den Schlüssel
+verdeckt ab und richten den Dienst ein — launchd, `systemd --user` oder eine Aufgabe in der
+Aufgabenplanung, alles ohne Administratorrechte. Der ausführliche Weg samt Fehlerbildern steht in
+[install.md](install.md).
+
+**Der Agent verbindet ausgehend (WebSocket).** Auf dem Rechner bleibt kein Port offen: keine
+Firewall-Regel, keine Portweiterleitung, keine vom Portal erreichbare Adresse. Die Node meldet sich
+mit ihrem Account-Schlüssel an. Nur wer den alten Weg erzwingt (`--transport http`), braucht Port
+`11435` offen.
+
+**Ohne erkannte GPU: `NODE_VRAM_GB`.** Auf Apple Silicon und ohne NVIDIA-Treiber misst der Agent
+`0 GB`; die Registrierung macht daraus 1 GB, und das VRAM-Gate verwirft die Node **still** — sie
+steht als online in der Liste und bekommt nie einen Auftrag. Deshalb fragt der Installer den Wert ab
+(Apple Silicon: Unified Memory, ein M2 mit 16 GB antwortet `16`). Im Portal steht danach
+`vram_source: override` statt `assumed`.
+
+**Zugangssperre `NODE_SHARED_SECRET`.** Der Agent ist ein Modell-Proxy: wer seinen Port erreicht,
+rechnet auf der Node. Er prüft deshalb bei allen Endpunkten außer `/health` den Kopf
+`X-Node-Secret`. Das Geheimnis steht auf beiden Seiten (Portal und Agent) und muss gleich sein;
+fehlt es, bleibt der Agent offen und warnt beim Start.
+
 ## Credits
 
 Kein Geld. Der Verbrauch wird in Credits gemessen, die jedem Konto zugeteilt werden. Wer eine GPU

@@ -15,11 +15,11 @@ Der Installer lädt von hier:
 |---|---|---|
 | `install.sh` | macOS/Linux-Installer (aus `node-agent/install.sh`) | **vorhanden** |
 | `install.ps1` | Windows-Installer (aus `node-agent/install.ps1`) | **vorhanden** |
-| `comesh-agent-darwin-arm64` + `.sha256` | Apple Silicon | **vorhanden** — 0.6.9, 13,4 MB, in GitHub Actions gebaut (04.11.2026), `--version` und Prüfsumme geprüft |
+| `comesh-agent-darwin-arm64` + `.sha256` | Apple Silicon | **vorhanden** — 0.6.10, 14,0 MB, in GitHub Actions gebaut (04.11.2026), `--version` und Prüfsumme geprüft |
 | `comesh-agent-darwin-x86_64` + `.sha256` | Intel-Mac | **fehlt** — `macos-latest` ist arm64; bräuchte einen Lauf auf `macos-13` |
 | `comesh-agent-linux-arm64` + `.sha256` | Linux ARM64 | **fehlt** — nur auf einem ARM-Linux zu bauen, PyInstaller baut nicht über Architekturen |
-| `comesh-agent-linux-x86_64` + `.sha256` | Linux x86_64 | **vorhanden** — 0.6.9, 14 MB |
-| `comesh-agent-windows-x86_64.exe` + `.sha256` | Windows x64 | **vorhanden** — 0.6.9, 13,4 MB |
+| `comesh-agent-linux-x86_64` + `.sha256` | Linux x86_64 | **vorhanden** — 0.6.10, 14,6 MB |
+| `comesh-agent-windows-x86_64.exe` + `.sha256` | Windows x64 | **vorhanden** — 0.6.10, 14,1 MB |
 
 Nur die Zeilen mit **vorhanden** lassen sich installieren. Der Installer bricht
 bei einem fehlenden Binary mit klarer Meldung ab, statt etwas Falsches

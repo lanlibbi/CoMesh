@@ -188,9 +188,9 @@ comesh-agent-windows-x86_64.exe    comesh-agent-windows-x86_64.exe.sha256
 | Datei | Zustand |
 |---|---|
 | `install.sh`, `install.ps1` | **vorhanden** (versioniert) |
-| `comesh-agent-linux-x86_64` + `.sha256` | **vorhanden** — 0.6.9, 14 MB, `--version` geprüft, Prüfsumme gegengeprüft |
-| `comesh-agent-windows-x86_64.exe` + `.sha256` | **vorhanden** — 0.6.9, 13,4 MB, `--version` geprüft, Prüfsumme gegengeprüft (gebaut mit `build.ps1` auf Windows Server 2019 / x64, Python 3.12) |
-| `comesh-agent-darwin-arm64` + `.sha256` | **vorhanden** — 0.6.9, 13,4 MB, in GitHub Actions auf `macos-latest` gebaut (04.11.2026), `file` meldet `Mach-O 64-bit arm64`, `--version` geprüft, Prüfsumme gegengeprüft |
+| `comesh-agent-linux-x86_64` + `.sha256` | **vorhanden** — 0.6.10, 14,6 MB, `--version` geprüft (`comesh-agent 0.6.10`), Prüfsumme gegengeprüft |
+| `comesh-agent-windows-x86_64.exe` + `.sha256` | **vorhanden** — 0.6.10, 14,1 MB, `--version` geprüft (`comesh-agent 0.6.10`), Prüfsumme gegengeprüft (gebaut mit `build.ps1` auf Windows Server 2019 / x64, Python 3.12) |
+| `comesh-agent-darwin-arm64` + `.sha256` | **vorhanden** — 0.6.10, 14,0 MB, in GitHub Actions auf `macos-latest` gebaut (04.11.2026), `file` meldet `Mach-O 64-bit arm64`, `--version` geprüft (`comesh-agent 0.6.10`), Prüfsumme gegengeprüft |
 | `comesh-agent-darwin-x86_64` | **fehlt** — `macos-latest` ist Apple Silicon; ein Intel-Binary bräuchte einen Lauf auf `macos-13` |
 | `comesh-agent-linux-arm64` | **fehlt** — PyInstaller baut nur für die Architektur, auf der es läuft; ein x86_64-Host kann kein ARM-Binary einfrieren |
 
@@ -342,9 +342,9 @@ wieder entfernen.
 - **Das macOS-Binary ist in CI gebaut und geprüft, aber nicht auf einem Mac
   gestartet.** GitHub Actions, `macos-latest` (arm64, Darwin 25.6, Python 3.12.10,
   PyInstaller 6.22.3, ohne Codesignatur): Bau in 32 s, `comesh-agent --version`
-  meldet `comesh-agent 0.6.9`, `file` sagt `Mach-O 64-bit executable arm64`,
-  Größe 14.044.496 B, SHA-256
-  `7cdfce5f1e92a55794cbda507c90503a1c0be4e29754c4df29c10475f5a74e76`. Das
+  meldet `comesh-agent 0.6.10`, `file` sagt `Mach-O 64-bit executable arm64`,
+  Größe 14.044.992 B, SHA-256
+  `3881a74dece11fe11c297f0abaa4e44fea96c573ba5358ff4bfead0303c95eb1`. Das
   Artefakt ist über HTTPS geladen und die Prüfsumme gegen die ausgelieferte
   `.sha256` gerechnet. **Nicht** ausgeführt: der Start des Binaries auf echter
   Apple-Hardware, `launchctl`, der Gatekeeper-Weg und der Quarantäne-Hinweis.
