@@ -12,6 +12,7 @@ Endpoint map
   GET    /admin/users                                   list/filter users (paged)
   GET    /admin/users/{user_id}                         single user detail (+ key metadata)
   PATCH  /admin/users/{user_id}                         role / is_active / name / model whitelist
+  DELETE /admin/users/{user_id}                         delete a user, keep the node books
   POST   /admin/users/{user_id}/topup                   add credits (Idempotency-Key supported)
   POST   /admin/users/{user_id}/keys                    issue a fresh API key (old ones revoked)
   POST   /admin/users/{user_id}/keys/{key_id}/revoke    revoke a single API key
@@ -66,6 +67,9 @@ from models import (
 from usage_stats import AdminUsageOut, build_admin_usage
 
 log = logging.getLogger("gpu-pool.admin")
+
+# Kennzeichen der Platzhalter-Konten, die die Abrechnung geloeschter Konten halten.
+TOMBSTONE_STATUS = "deleted"
 
 
 def _admin_label(admin) -> str:
@@ -683,14 +687,24 @@ def admin_list_users(
     role: Optional[str] = Query(None, description="admin | provider | consumer | both"),
     is_active: Optional[bool] = Query(None),
     include_inactive: bool = Query(True, description="False = only active users"),
+    include_deleted: bool = Query(
+        False, description="True = auch die Platzhalter gelöschter Konten zeigen"
+    ),
     limit: int = Query(50, ge=1, le=MAX_PAGE),
     offset: int = Query(0, ge=0),
     admin: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
-    """List users with filters + paging. Active and inactive users are both listed."""
+    """List users with filters + paging. Active and inactive users are both listed.
+
+    Platzhalter gelöschter Konten (`registration_status = "deleted"`) sind
+    standardmäßig ausgeblendet: sie halten nur die Abrechnung zusammen und sind
+    keine Konten mehr.
+    """
     limit, offset = _paging(limit, offset)
     query = db.query(User)
+    if not include_deleted:
+        query = query.filter(User.registration_status != TOMBSTONE_STATUS)
     if role:
         if role not in ADMIN_MANAGED_ROLES:
             raise _client_error(422, f"Unknown role '{role}'. Valid: {', '.join(ADMIN_MANAGED_ROLES)}")
@@ -1019,6 +1033,185 @@ def admin_update_user(
 
     log.info(f"admin {_admin_label(admin)}: update user {user.email} changes={list(changes.keys())}")
     return _user_out(db, user)
+
+
+def _tombstone_account(db: Session, deleted_user_id: int) -> User:
+    """A nameless placeholder account that keeps a deleted account's books.
+
+    Abrechnungsdaten (Einnahmen einer Node, Nutzung, Zahlungen) tragen eine
+    `user_id`, die nicht NULL sein darf. Statt sie zu löschen, wandern sie auf
+    dieses Konto: der Bezug zur Person ist weg, die Summen der Plattform
+    bleiben richtig. Es ist gesperrt (`quota_mode = blocked`, `is_active =
+    False`) und kann sich nicht anmelden.
+    """
+    email = f"deleted-user-{deleted_user_id}@deleted.invalid"
+    existing = db.query(User).filter(User.email == email).first()
+    if existing:
+        return existing
+    tomb = User(
+        email=email,
+        name=f"gelöschtes Konto #{deleted_user_id}",
+        password_hash=None,
+        is_active=False,
+        registration_status=TOMBSTONE_STATUS,
+        signup_credits=0.0,
+        role="consumer",
+        quota_mode="blocked",
+        allow_cloud=False,
+    )
+    tomb.set_allowed_models([])  # nichts freigegeben
+    db.add(tomb)
+    db.flush()
+    return tomb
+
+
+class DeleteUserResponse(BaseModel):
+    user_id: int
+    email: str
+    deleted: bool
+    # Was mit den abhängigen Zeilen passiert ist — je Tabelle eine Entscheidung,
+    # keine pauschale Kaskade.
+    keys_removed: int = 0
+    usages_anonymized: int = 0
+    credit_transactions_anonymized: int = 0
+    payments_anonymized: int = 0
+    node_earnings_anonymized: int = 0
+    pool_jobs_anonymized: int = 0
+    nodes_kept: List[int] = []
+    nodes_removed: List[int] = []
+    tombstone_user_id: Optional[int] = None
+    replayed: bool = False
+
+
+@router.delete("/users/{user_id}", response_model=DeleteUserResponse)
+def admin_delete_user(
+    user_id: int,
+    admin: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+    idempotency_key: Optional[str] = Header(None, alias="Idempotency-Key"),
+):
+    """Ein Konto löschen — Schlüssel und Sitzungen mit, Abrechnung bleibt.
+
+    Was mit den abhängigen Zeilen passiert (bewusst je Tabelle entschieden):
+
+    | Tabelle | Behandlung | Warum |
+    |---|---|---|
+    | `api_keys` (auch `sess_…`) | **löschen** | Zugang verschwindet mit dem Konto |
+    | `gpu_nodes` | **behalten**, wenn Umsatz/Jobs daran hängen — sonst löschen | eine Node mit Einnahmen ist Buchhaltung, kein Kontodatensatz |
+    | `node_earnings` | **anonymisieren** (Umhängen) | Einnahmen des Providers bleiben |
+    | `pool_jobs` | **anonymisieren** | Grundlage der Einnahmen und der Auslastungsstatistik |
+    | `usages` | **anonymisieren** | Summen der Plattform bleiben stimmig |
+    | `credit_transactions`, `payments` | **anonymisieren** | Geldbewegungen werden nicht rückgängig gemacht |
+    | `admin_audit_log` | **behalten** (`admin_user_id` → NULL) | das Protokoll ist die Spur der Administration |
+
+    **Nicht** über `db.delete(user)` löschen: die ORM-Kaskade von `User.nodes`
+    (`cascade="all, delete-orphan"`) nimmt die Nodes und damit über
+    `GpuNode.earnings` auch die Einnahmen mit — genau die Daten, die bleiben
+    sollen. Und die Datenbank erzwingt keine Fremdschlüssel (kein
+    `PRAGMA foreign_keys=ON`), eine verwaiste Zeile fällt also still auf.
+    Deshalb wird die `users`-Zeile am Ende mit einem Core-DELETE entfernt.
+    """
+    # Für das Protokoll (und die Antwort bei einer Wiederholung) vorab lesen;
+    # die Prüfungen selbst stehen in `_mutate`, damit eine Wiederholung mit
+    # derselben `Idempotency-Key` das gespeicherte Ergebnis bekommt statt 404.
+    vorab = db.query(User).filter(User.id == user_id).first()
+    email = vorab.email if vorab else ""
+
+    def _mutate() -> Dict:
+        user = db.query(User).filter(User.id == user_id).first()
+        if not user:
+            raise _client_error(404, "User not found")
+        if user.id == getattr(admin, "id", 0):
+            raise _client_error(409, "Refusing to delete your own admin account (lockout guard).")
+        if (user.role or "").lower() == ADMIN_ROLE:
+            andere = db.query(func.count(User.id)).filter(
+                User.role == ADMIN_ROLE, User.id != user.id
+            ).scalar() or 0
+            if andere == 0:
+                raise _client_error(
+                    409, "Refusing to delete the last admin account (lockout guard)."
+                )
+        tomb = _tombstone_account(db, user.id)
+
+        kept_nodes: List[int] = []
+        removed_nodes: List[int] = []
+        for node in db.query(GpuNode).filter(GpuNode.owner_id == user.id).all():
+            hat_umsatz = (db.query(func.count(NodeEarning.id))
+                          .filter(NodeEarning.node_id == node.id).scalar() or 0)
+            hat_jobs = (db.query(func.count(PoolJob.id))
+                        .filter(PoolJob.node_id == node.id).scalar() or 0)
+            if hat_umsatz or hat_jobs:
+                # Node bleibt (Abrechnung), wird aber stillgelegt: kein Agent
+                # meldet sich mehr, kein Job wird mehr angenommen.
+                node.owner_id = tomb.id
+                node.is_enabled = False
+                node.status = "offline"
+                node.connection_state = "disconnected"
+                node.api_key_hash = None
+                node.api_key = None
+                kept_nodes.append(node.id)
+            else:
+                # Keine Buchhaltung daran: die Node verschwindet mit dem Konto.
+                db.query(NodeHeartbeat).filter(NodeHeartbeat.node_id == node.id).delete(
+                    synchronize_session=False
+                )
+                db.delete(node)
+                removed_nodes.append(node.id)
+
+        n_earn = (db.query(NodeEarning).filter(NodeEarning.owner_id == user.id)
+                  .update({NodeEarning.owner_id: tomb.id}, synchronize_session=False))
+        n_jobs = (db.query(PoolJob).filter(PoolJob.user_id == user.id)
+                  .update({PoolJob.user_id: tomb.id}, synchronize_session=False))
+        n_usage = (db.query(Usage).filter(Usage.user_id == user.id)
+                   .update({Usage.user_id: tomb.id}, synchronize_session=False))
+        n_credits = (db.query(CreditTransaction).filter(CreditTransaction.user_id == user.id)
+                     .update({CreditTransaction.user_id: tomb.id}, synchronize_session=False))
+        n_pay = (db.query(Payment).filter(Payment.user_id == user.id)
+                 .update({Payment.user_id: tomb.id}, synchronize_session=False))
+
+        n_keys = (db.query(ApiKey).filter(ApiKey.user_id == user.id)
+                  .delete(synchronize_session=False))
+
+        db.query(User).filter(User.id == user.id).delete(synchronize_session=False)
+        db.flush()
+
+        return {
+            "user_id": user_id,
+            "email": email,
+            "deleted": True,
+            "keys_removed": int(n_keys or 0),
+            "usages_anonymized": int(n_usage or 0),
+            "credit_transactions_anonymized": int(n_credits or 0),
+            "payments_anonymized": int(n_pay or 0),
+            "node_earnings_anonymized": int(n_earn or 0),
+            "pool_jobs_anonymized": int(n_jobs or 0),
+            "nodes_kept": kept_nodes,
+            "nodes_removed": removed_nodes,
+            "tombstone_user_id": tomb.id,
+        }
+
+    result = run_idempotent(
+        db=db,
+        admin=admin,
+        idempotency_key=idempotency_key,
+        action="user.delete",
+        target_type="user",
+        target_id=user_id,
+        payload={"email": email},
+        mutate=_mutate,
+        store_fields=[
+            "user_id", "email", "deleted", "keys_removed", "usages_anonymized",
+            "credit_transactions_anonymized", "payments_anonymized",
+            "node_earnings_anonymized", "pool_jobs_anonymized",
+            "nodes_kept", "nodes_removed", "tombstone_user_id",
+        ],
+    )
+    log.info(
+        f"admin {_admin_label(admin)}: deleted user {email} (id={user_id}), "
+        f"keys={result.get('keys_removed')}, nodes kept={result.get('nodes_kept')} "
+        f"removed={result.get('nodes_removed')}"
+    )
+    return _build(DeleteUserResponse, result)
 
 
 @router.get("/audit")
