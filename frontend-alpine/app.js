@@ -146,22 +146,37 @@ function mountBackground() {
 // Labels are catalog *keys* resolved at render time, never pre-translated
 // strings: this array is evaluated once at load, so a stored translation here
 // would freeze the nav in whatever language was active on the first paint.
+//
+// Genau das war der Fehler: die Einträge trugen ein `label:` mit deutschem
+// Text, das `I18n.t(labelKey)` überschrieb (der Ausdruck `i.label || I18n.t(...)`
+// nimmt immer das Literal). Nach einem Sprachwechsel blieben „Mein Verbrauch",
+// „Konten", „Protokoll" und „Geräte" deutsch — in jeder Sprache. Jetzt gibt es
+// nur noch Schlüssel, und jeder Eintrag hat einen eigenen (vier Admin-Punkte
+// teilten sich vorher `nav.admin`).
 const NAV_ITEMS = [
   { key: "dashboard", href: "index.html", labelKey: "nav.dashboard" },
   { key: "chat", href: "chat.html", labelKey: "nav.chat" },
-  { key: "usage", href: "usage.html", labelKey: "nav.usage", label: "Mein Verbrauch" },
+  { key: "usage", href: "usage.html", labelKey: "nav.usage" },
   // Admin-only view of every user's consumption; the server gates /admin/usage too.
-  { key: "admin-usage", href: "admin-usage.html", labelKey: "nav.admin", label: "Verbrauch (alle)", adminOnly: true },
-  { key: "admin-registrations", href: "admin-registrations.html", labelKey: "nav.admin", label: "Konten", adminOnly: true },
-  { key: "admin-audit", href: "admin-audit.html", labelKey: "nav.admin", label: "Protokoll", adminOnly: true },
-  { key: "admin-nodes", href: "admin-nodes.html", labelKey: "nav.admin", label: "Geräte", adminOnly: true },
+  { key: "admin-usage", href: "admin-usage.html", labelKey: "nav.admin.usage", adminOnly: true },
+  { key: "admin-registrations", href: "admin-registrations.html", labelKey: "nav.admin.accounts", adminOnly: true },
+  { key: "admin-audit", href: "admin-audit.html", labelKey: "nav.admin.audit", adminOnly: true },
+  { key: "admin-nodes", href: "admin-nodes.html", labelKey: "nav.admin.nodes", adminOnly: true },
   { key: "pool", href: "pool.html", labelKey: "nav.pool" },
   { key: "nodes", href: "nodes.html", labelKey: "nav.nodes", providerOnly: true },
   { key: "agent", href: "agent.html", labelKey: "nav.agent" },
   { key: "profile", href: "profile.html", labelKey: "nav.profile" },
 ];
 
-function navHTML(active) {
+/**
+ * @param {string} active  key of the current page
+ * @param {string} [langCode]  nur eine reaktive Abhängigkeit: das Markup liest
+ *   `$store.lang.code`, damit Alpine die Kopfzeile bei einem Sprachwechsel neu
+ *   auswertet. Ohne diesen Zugriff blieb die Navigation in der Sprache des
+ *   ersten Seitenaufbaus stehen (der Inhalt wird über `I18n.t` gebaut, nicht
+ *   über `data-i18n`).
+ */
+function navHTML(active, langCode) {
   const user = Auth.currentUser() || {};
   const isProvider = Auth.hasRole("provider");
   // Deliberately NOT Auth.hasRole("admin"): that helper treats role "both" as
@@ -171,7 +186,7 @@ function navHTML(active) {
   const links = NAV_ITEMS
     .filter((i) => !i.providerOnly || isProvider)
     .filter((i) => !i.adminOnly || isAdmin)
-    .map((i) => `<a href="${i.href}" class="nav-link${active === i.key ? " active" : ""}">${i.label || I18n.t(i.labelKey)}</a>`)
+    .map((i) => `<a href="${i.href}" class="nav-link${active === i.key ? " active" : ""}">${I18n.t(i.labelKey)}</a>`)
     .join("");
 
   return `

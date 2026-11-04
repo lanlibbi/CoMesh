@@ -106,6 +106,37 @@ document.addEventListener("alpine:init", () => {
       }
     },
 
+    /** Modellfreigabe einer Node ändern (Administrationsweg).
+     *
+     * Die Freigabe gehört dem Provider — er pflegt sie in seiner Geräteseite.
+     * Die Administration behält den Zugriff für Supportfälle, deshalb derselbe
+     * Endpunkt `PUT /nodes/{id}` mit derselben Wirkung. Leeres Feld setzt die
+     * Liste auf NULL zurück (= alle lokalen Modelle, keine Cloud).
+     */
+    async modelle(n) {
+      const aktuell = Array.isArray(n.allowed_models) ? n.allowed_models.join(", ") : "";
+      const eingabe = prompt(
+        `Modelle, die "${n.name}" anbietet (durch Komma getrennt).\n` +
+        `Leer = alle lokalen Modelle dieser Maschine, keine Cloud-Modelle.`,
+        aktuell
+      );
+      if (eingabe === null) return;  // abgebrochen
+      const liste = eingabe.split(/[,\n;]+/).map((m) => m.trim()).filter(Boolean);
+      this.busyId = n.id;
+      this.actionError = "";
+      try {
+        const body = liste.length > 0 ? { allowed_models: liste } : { clear_allowed_models: true };
+        const r = await api(`/nodes/${n.id}`, { method: "PUT", auth: true, body });
+        n.allowed_models = r.allowed_models;
+        if (this.detail && this.detail.id === n.id) this.detail.allowed_models = r.allowed_models;
+        this.actionOk = `${n.name}: ${this.modellKurz(n)}.`;
+      } catch (e) {
+        this.actionError = (e && e.message) || "Modelle konnten nicht gespeichert werden";
+      } finally {
+        this.busyId = null;
+      }
+    },
+
     /** Zustand als Pille: online grün, beschäftigt gelb, offline grau, pausiert dunkel. */
     zustandsKlasse(n) {
       if (!n.is_enabled) return "pill pill-paused";

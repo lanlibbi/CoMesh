@@ -27,7 +27,7 @@
 <link rel="stylesheet" href="style.css" />
 </head>
 <body x-data="poolPage()" x-init="init()">
-  <div x-html="navHTML('pool')"></div>
+  <div x-html="navHTML('pool', $store.lang?.code)"></div>
 
   <main class="shell">
     <div class="page-head">

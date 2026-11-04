@@ -27,7 +27,7 @@
 <link rel="stylesheet" href="style.css" />
 </head>
 <body x-data="adminUsagePage()" x-init="init()">
-  <div x-html="navHTML('admin-usage')"></div>
+  <div x-html="navHTML('admin-usage', $store.lang?.code)"></div>
 
   <main class="shell">
     <div class="page-head">

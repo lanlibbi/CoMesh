@@ -147,6 +147,15 @@ const I18n = {
     // The store drives bound markup (the nav); the explicit event covers any
     // page that binds its own strings.
     document.dispatchEvent(new CustomEvent("lang:changed", { detail: { lang } }));
+    // Ein Sprachwechsel ist ein Wechsel der *Seite*, nicht nur der Beschriftung:
+    // Texte, die im JS gebaut werden (Gruß, Kopfzeile, Tabellen, Toasts), hängen
+    // an `I18n.t(...)` und werden von `data-i18n` nicht erfasst. Ohne neuen
+    // Seitenaufbau blieben sie in der alten Sprache stehen — genau der Eindruck
+    // „die Sprachauswahl tut nichts". Der Zustand (localStorage) ist gesetzt,
+    // der Aufbau danach ist vollständig in der neuen Sprache.
+    if (typeof window !== "undefined" && window.location && document.readyState !== "loading") {
+      window.location.reload();
+    }
     return lang;
   },
 };

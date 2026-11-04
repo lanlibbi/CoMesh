@@ -21,7 +21,7 @@
 <link rel="stylesheet" href="style.css" />
 </head>
 <body x-data="auditPage()" x-init="init()">
-  <div x-html="navHTML('admin-audit')"></div>
+  <div x-html="navHTML('admin-audit', $store.lang?.code)"></div>
 
   <main class="shell">
     <div class="page-head">

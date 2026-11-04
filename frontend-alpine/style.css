@@ -730,6 +730,31 @@ main.shell { padding-bottom: 72px; }
 }
 .input:disabled { opacity: 0.5; cursor: not-allowed; }
 textarea.input { resize: vertical; line-height: 1.5; }
+
+/* Nativedropdowns. Die ausgeklappte Liste eines <select> ist kein Kind der
+   Seite, sondern ein Fenster des Betriebssystems: sie erbt `background` und
+   `color` **nicht** zuverlaessig vom <select>. Chromium nimmt fuer die Liste den
+   Hintergrund des Elements, andere nehmen die Systemfarbe — ohne explizite
+   Angabe entsteht im dunklen Design weisse Schrift auf weissem Grund (oder
+   andersherum im hellen). Deshalb: `color-scheme` je Design UND `option` mit
+   eigener Hintergrund- und Textfarbe. Gilt fuer alle <select> im Projekt
+   (Konten, Geraete, Protokoll, Chat-Modell, Betriebsart, Mail-Sicherheit). */
+select.input {
+  color-scheme: dark;
+}
+[data-theme="light"] select.input {
+  color-scheme: light;
+}
+select.input option,
+select.input optgroup {
+  /* --bg-deep gegen --text: 16,9:1 (dunkel) bzw. 15,9:1 (hell) — deutlich ueber 4,5:1. */
+  background-color: var(--bg-deep);
+  color: var(--text);
+}
+select.input option:disabled {
+  color: var(--text-mute);
+}
+
 select.input {
   appearance: none;
   padding-right: 30px;
@@ -1273,6 +1298,10 @@ td.neg { color: var(--err); }
   border-radius: var(--radius);
   background: var(--surface);
   box-shadow: var(--shadow-2);
+  /* Die Optionsliste ist ein eigenes Fenster des Betriebssystems und erbt Farbe
+     und Hintergrund anders als das <select>. Explizit gesetzt, in beiden
+     Designs — sonst entscheidet die Laune des Browsers. */
+  color: var(--text);
 }
 .lang-item {
   display: flex;
@@ -1422,6 +1451,16 @@ td.neg { color: var(--err); }
    232x48 Animation. Die Kopfzeile waechst mit, damit nichts klemmt.
    ========================================================================= */
 .topbar-inner { min-height: 70px; }
+
+/* Zwei Zeilen in der Kopfzeile: Marke/Knoepfe oben, Navigation darunter. Beide
+   Zeilen sind `.shell` und tragen damit `position: relative; z-index: 1` — bei
+   gleichem z-index gewinnt das spaeter stehende Element, also die Navigation.
+   Genau das hat die Sprachauswahl unsichtbar gemacht: sie oeffnet nach unten in
+   die Navigationszeile hinein, wurde von ihr ueberdeckt (Text der Menuepunkte
+   lag unter den Navigationslinks) und war dort nicht anklickbar — „transparent"
+   und „Deutsch fast nicht auswaehlbar". Die obere Zeile muss davor liegen. */
+.topbar-2row .topbar-inner { z-index: 3; }
+.topbar-2row .topbar-row-nav { z-index: 1; }
 
 .brand { gap: 14px; }
 .brand-mark {

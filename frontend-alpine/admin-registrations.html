@@ -21,7 +21,7 @@
 <link rel="stylesheet" href="style.css" />
 </head>
 <body x-data="registrationAdminPage()" x-init="init()">
-  <div x-html="navHTML('admin-registrations')"></div>
+  <div x-html="navHTML('admin-registrations', $store.lang?.code)"></div>
 
   <main class="shell">
     <div class="page-head">
@@ -181,6 +181,8 @@
                     <button class="btn-ghost btn-sm" :disabled="busyId === r.id" @click="schluessel(r)">Schlüssel</button>
                     <button class="btn-ghost btn-sm" :disabled="busyId === r.id" @click="toggleActive(r)"
                             x-text="r.is_active ? 'Deaktivieren' : 'Aktivieren'"></button>
+                    <button class="btn-ghost btn-sm btn-danger" :disabled="busyId === r.id" @click="loeschen(r)"
+                            data-i18n="loeschen">Löschen</button>
                   </div>
                 </td>
               </tr>

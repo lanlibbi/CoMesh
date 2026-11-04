@@ -27,7 +27,7 @@
 <link rel="stylesheet" href="style.css" />
 </head>
 <body x-data="dashboard()" x-init="init()">
-  <div x-html="navHTML('dashboard')"></div>
+  <div x-html="navHTML('dashboard', $store.lang?.code)"></div>
 
   <main class="shell">
     <!-- New account / fresh API key -->
@@ -149,8 +149,10 @@
           <button x-show="isApiKey" class="btn-ghost btn-sm" @click="revealKey = !revealKey"
                   x-text="revealKey ? I18n.t('verbergen') : I18n.t('anzeigen')"></button>
           <button x-show="isApiKey" class="btn-ghost btn-sm" @click="copyKey($event)" data-i18n="kopieren">Kopieren</button>
-          <button class="btn-primary btn-sm" @click="regenerate()" :disabled="regenerating"
-                  data-i18n="api_key_issue">API-Schlüssel ausstellen</button>
+          <!-- Schlüssel werden an genau einer Stelle ausgestellt: im Profil.
+               Zwei Orte mit derselben Wirkung (hier und profile.html#schluessel)
+               haben schon zu Verwirrung geführt — welcher Knopf gilt? -->
+          <a class="btn-primary btn-sm" href="profile.html#schluessel" data-i18n="api_key_manage">Schlüssel verwalten</a>
         </div>
       </div>
       <template x-if="isApiKey">
@@ -163,10 +165,10 @@
         <span class="t-sm text-dim" data-i18n="api_key_scope_hint">Modelle und Freigaben hängen an diesem Konto — nicht an dem, das du erwartest.</span>
       </p>
       <template x-if="!isApiKey">
-        <p class="hint" data-i18n="api_key_session_only">Im Browser arbeitest du mit einer Sitzung, nicht mit einem API-Schlüssel. Für ein Programm, einen Hermes oder ein SDK stelle hier einen Schlüssel aus — er beginnt mit <code class="inline">gpu_</code> und wird genau einmal angezeigt.</p>
+        <p class="hint" data-i18n-html="api_key_session_only">Im Browser arbeitest du mit einer Sitzung, nicht mit einem API-Schlüssel. Einen Schlüssel für ein Programm, einen Hermes oder ein SDK stellst du in den Kontoeinstellungen aus — er beginnt mit <code class="inline">gpu_</code> und wird genau einmal angezeigt.</p>
       </template>
       <p class="hint">
-        Header: <code class="inline" data-i18n="authorization-bearer-lt-api-key-gt">Authorization: Bearer &lt;api-key&gt;</code>
+        Header: <code class="inline" data-i18n-html="authorization-bearer-lt-api-key-gt">Authorization: Bearer &lt;api-key&gt;</code>
         <span class="t-sm text-dim" data-i18n="api_key_no_bearer">— in Konfigurationsdateien und SDKs
           nur der Schlüssel, ohne &quot;Bearer&quot;.</span>
       </p>
@@ -235,7 +237,6 @@
         showNewKey: false,
         newKey: "",
         revealKey: false,
-        regenerating: false,
         loading: true,
         usage: null,
         recent: [],
@@ -247,7 +248,13 @@
         greeting() {
           const n = (this.me?.name || "").split(" ")[0];
           const h = new Date().getHours();
-          const part = h < 11 ? "Guten Morgen" : h < 18 ? "Guten Tag" : "Guten Abend";
+          // Über den Katalog, nicht als Literal: der Gruß stand sonst deutsch
+          // auf jeder englischen, spanischen und französischen Seite.
+          const part = h < 11
+            ? I18n.t("dash.greeting.morning")
+            : h < 18
+              ? I18n.t("dash.greeting.day")
+              : I18n.t("dash.greeting.evening");
           return n ? `${part}, ${n}` : part;
         },
 
@@ -317,26 +324,6 @@
           });
         },
 
-        async regenerate() {
-          // Frueher war das ein erneuter Login — die Antwort enthielt die Sitzungsmarke
-          // (sess_...), und die stand dann als "API-Key" im Feld. Jetzt ein echter Schluessel.
-          if (!confirm(I18n.t("api_key_confirm"))) return;
-          this.regenerating = true;
-          try {
-            const pw = prompt(I18n.t("password_confirm"));
-            if (!pw) { this.regenerating = false; return; }
-            const r = await API("/v1/me/keys", { method: "POST", auth: true, body: { password: pw } });
-            this.apiKey = r.api_key;
-            this.revealKey = true;
-            this.newKey = r.api_key;
-            this.showNewKey = true;
-            toast(I18n.t("api_key_issued_toast"));
-          } catch (e) {
-            toast("Fehlgeschlagen: " + e.message, "err");
-          } finally {
-            this.regenerating = false;
-          }
-        }
       };
     }
   </script>

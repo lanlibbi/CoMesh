@@ -2249,5 +2249,33 @@
   "pages": [
    "usage.html"
   ]
+ },
+ "nav.admin.usage": {
+  "src": "Verbrauch (alle)",
+  "where": "js",
+  "pages": [
+   "app.js"
+  ]
+ },
+ "nav.admin.accounts": {
+  "src": "Konten",
+  "where": "js",
+  "pages": [
+   "app.js"
+  ]
+ },
+ "nav.admin.audit": {
+  "src": "Protokoll",
+  "where": "js",
+  "pages": [
+   "app.js"
+  ]
+ },
+ "nav.admin.nodes": {
+  "src": "Geräte",
+  "where": "js",
+  "pages": [
+   "app.js"
+  ]
  }
 }

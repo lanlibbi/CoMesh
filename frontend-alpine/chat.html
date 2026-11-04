@@ -27,7 +27,7 @@
 <link rel="stylesheet" href="style.css" />
 </head>
 <body x-data="chatPage()" x-init="init()">
-  <div x-html="navHTML('chat')"></div>
+  <div x-html="navHTML('chat', $store.lang?.code)"></div>
 
   <main class="shell" style="max-width:960px">
     <div class="page-head">

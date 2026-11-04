@@ -27,7 +27,7 @@
 <link rel="stylesheet" href="style.css" />
 </head>
 <body x-data="nodesPage()" x-init="init()">
-  <div x-html="navHTML('nodes')"></div>
+  <div x-html="navHTML('nodes', $store.lang?.code)"></div>
 
   <main class="shell">
     <div class="page-head">
@@ -427,7 +427,20 @@
 
           <div x-show="editingId === n.id" x-cloak class="mt-3">
             <div class="divider inset"></div>
-            <p class="label" data-i18n="modell-whitelist-bearbeiten">Modell-Whitelist bearbeiten</p>
+            <label class="label" for="node-models-text" data-i18n="node.models.free_label">Modelle dieser Node</label>
+            <textarea id="node-models-text" class="input mono" rows="3" x-model="editModelsText"
+                      data-i18n-placeholder="node.models.free_placeholder"
+                      placeholder="qwen2.5-coder:7b, llama3.1:8b"></textarea>
+            <p class="hint" data-i18n="node.models.free_hint">
+              Ein Modellname je Zeile oder durch Komma getrennt. Leer heißt: alle lokalen Modelle
+              dieser Maschine, keine Cloud-Modelle. Genau diese Liste bestimmt, welche Modelle
+              andere über deine Node nutzen können.
+            </p>
+            <p class="label mt-4" data-i18n="modell-whitelist-bearbeiten">Modell-Whitelist bearbeiten</p>
+            <p class="hint" data-i18n="node.models.catalog_hint">
+              Die Liste unten ist der Katalog des Portal-Hosts — nicht die Modelle deiner Node.
+              Was nur auf deiner Maschine liegt, steht oben im Feld.
+            </p>
             <div class="option-list">
               <template x-for="m in availableModels" :key="m.name">
                 <label class="check">
@@ -446,6 +459,7 @@
             </p>
             <div class="row mt-3">
               <button class="btn-primary btn-sm" @click="saveEdit(n)" data-i18n="speichern">Speichern</button>
+              <button class="btn-ghost btn-sm" @click="uebernehmeFreitext()" data-i18n="node.models.adopt">In die Auswahl übernehmen</button>
               <button class="btn-ghost btn-sm" @click="cancelEdit()" data-i18n="abbrechen">Abbrechen</button>
             </div>
           </div>

@@ -17,8 +17,14 @@ KEYS = {
     # ------------------------------------------------------------ navigation
     "nav.dashboard":        {"en": "Dashboard", "de": "Dashboard", "es": "Panel", "fr": "Tableau"},
     "nav.chat":             {"en": "Chat", "de": "Chat", "es": "Chat", "fr": "Chat"},
-    "nav.usage":            {"en": "Usage", "de": "Nutzung", "es": "Consumo", "fr": "Usage"},
+    "nav.usage":            {"en": "My usage", "de": "Mein Verbrauch", "es": "Mi consumo", "fr": "Ma consommation"},
     "nav.admin":            {"en": "Admin", "de": "Admin", "es": "Admin", "fr": "Admin"},
+    # Die vier Admin-Punkte hatten sich `nav.admin` geteilt und ihren Text als
+    # Literal im JS getragen — daher deutsch in jeder Sprache. Eigene Schlüssel.
+    "nav.admin.usage":      {"en": "Usage (all)", "de": "Verbrauch (alle)", "es": "Consumo (todos)", "fr": "Consommation (tous)"},
+    "nav.admin.accounts":   {"en": "Accounts", "de": "Konten", "es": "Cuentas", "fr": "Comptes"},
+    "nav.admin.audit":      {"en": "Audit log", "de": "Protokoll", "es": "Registro", "fr": "Journal"},
+    "nav.admin.nodes":      {"en": "Devices", "de": "Geräte", "es": "Dispositivos", "fr": "Appareils"},
     "nav.pool":             {"en": "Pool", "de": "Pool", "es": "Pool", "fr": "Pool"},
     "nav.nodes":            {"en": "Nodes", "de": "Nodes", "es": "Nodes", "fr": "Nodes"},
     "nav.earnings":         {"en": "Earnings", "de": "Einnahmen", "es": "Ingresos", "fr": "Revenus"},

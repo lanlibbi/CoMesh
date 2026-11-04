@@ -24,7 +24,7 @@
 <link rel="stylesheet" href="style.css" />
 </head>
 <body x-data="adminNodesPage()" x-init="init()">
-  <div x-html="navHTML('admin-nodes')"></div>
+  <div x-html="navHTML('admin-nodes', $store.lang?.code)"></div>
 
   <main class="shell">
     <div class="page-head">
@@ -121,6 +121,8 @@
                 <td>
                   <div class="row wrap" style="gap:6px">
                     <button class="btn-ghost btn-sm" @click="details(n)" :disabled="busyId === n.id">Details</button>
+                    <button class="btn-ghost btn-sm" @click="modelle(n)" :disabled="busyId === n.id"
+                            title="Modellfreigabe dieser Node ändern. Der Besitzer darf das selbst; hier ist der Weg der Administration.">Modelle</button>
                     <button class="btn-ghost btn-sm" @click="umschalten(n)" :disabled="busyId === n.id"
                             x-text="n.is_enabled ? 'Pausieren' : 'Aktivieren'"></button>
                   </div>

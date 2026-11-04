@@ -226,6 +226,38 @@ document.addEventListener("alpine:init", () => {
       } catch (e) { this._err(e, "Aktivierung fehlgeschlagen"); } finally { this.busyId = null; }
     },
 
+    /** Ein Konto löschen — mit Sicherheitsabfrage, die den Bestand nennt.
+     *
+     * Die Abfrage sagt, was verschwindet und was bleibt: Schlüssel und Sitzungen
+     * gehen mit, die Einnahmen einer Node nicht. Ohne diesen Hinweis ist
+     * "Löschen" ein Knopf mit unbekannter Wirkung.
+     */
+    async loeschen(item) {
+      const frage = I18n.t("admin.delete.confirm", { email: item.email });
+      if (!confirm(frage)) return;
+      // Zweite, bewusste Bestätigung: der Vorgang ist nicht rückgängig zu machen.
+      if (!confirm(I18n.t("admin.delete.confirm2", { email: item.email }))) return;
+      this.busyId = item.id;
+      try {
+        const r = await api(`/admin/users/${item.id}`, { method: "DELETE", auth: true });
+        const teile = [];
+        if (r && r.keys_removed) teile.push(I18n.t("admin.delete.keys", { n: r.keys_removed }));
+        if (r && r.nodes_kept && r.nodes_kept.length) {
+          teile.push(I18n.t("admin.delete.nodes_kept", { ids: r.nodes_kept.join(", ") }));
+        }
+        if (r && r.nodes_removed && r.nodes_removed.length) {
+          teile.push(I18n.t("admin.delete.nodes_removed", { n: r.nodes_removed.length }));
+        }
+        this._ok(I18n.t("admin.delete.done", { email: item.email, details: teile.join(" · ") }));
+        await this.reload();
+        await this.loadCounts();
+      } catch (e) {
+        this._err(e, I18n.t("admin.delete.failed"));
+      } finally {
+        this.busyId = null;
+      }
+    },
+
     /** Passwort setzen — der Supportfall "Passwort vergessen". */
     async setPasswort(item) {
       const pw = prompt(`Neues Passwort für ${item.email}:`);

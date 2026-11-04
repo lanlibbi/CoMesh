@@ -27,7 +27,7 @@
 <link rel="stylesheet" href="style.css" />
 </head>
 <body x-data="profilePage()" x-init="init()">
-  <div x-html="navHTML('profile')"></div>
+  <div x-html="navHTML('profile', $store.lang?.code)"></div>
 
   <main class="shell" style="max-width:900px">
     <div class="page-head">

@@ -38,6 +38,10 @@ document.addEventListener("alpine:init", () => {
   availableModels: [],
   editingId: null,
   editAllowed: [],
+  // Freitextfeld: die Modelle, die WIRKLICH auf dieser Node liegen. Der
+  // Katalog unten kommt vom Portal-Host und ist fuer einen Provider oft der
+  // falsche — deshalb ist das Feld die fuehrende Eingabe.
+  editModelsText: "",
   selectedIds: [],          // Node-IDs der Auswahl (Bulk-Aktionen)
   bulkBusy: false,
   bulkProgress: "",
@@ -421,12 +425,28 @@ document.addEventListener("alpine:init", () => {
     startEdit(n) {
       this.editingId = n.id;
       this.editAllowed = Array.isArray(n.allowed_models) ? [...n.allowed_models] : [];
+      this.editModelsText = this.editAllowed.join(", ");
     },
-    cancelEdit() { this.editingId = null; this.editAllowed = []; },
+    cancelEdit() { this.editingId = null; this.editAllowed = []; this.editModelsText = ""; },
     toggleEditModel(name) {
       const i = this.editAllowed.indexOf(name);
       if (i >= 0) this.editAllowed.splice(i, 1);
       else this.editAllowed.push(name);
+      this.editModelsText = this.editAllowed.join(", ");
+    },
+    /** Freitext -> Liste. Komma, Semikolon und Zeilenumbrueche trennen. */
+    parseModelsText(text) {
+      return String(text || "")
+        .split(/[,\n;]+/)
+        .map((m) => m.trim())
+        .filter((m) => m.length > 0);
+    },
+    /** Modelle aus dem Freitext in die Auswahlliste uebernehmen. */
+    uebernehmeFreitext() {
+      const liste = this.parseModelsText(this.editModelsText);
+      const fremde = liste.filter((m) => !this.editAllowed.includes(m));
+      this.editAllowed = [...this.editAllowed, ...fremde];
+      toast(I18n.t("nodes.models.adopted", { n: fremde.length }), "ok");
     },
     /** Betriebsart umschalten (always | partial). */
     async betriebSetzen(n, wert) {
@@ -454,11 +474,13 @@ document.addEventListener("alpine:init", () => {
 
     async saveEdit(n) {
       try {
-        await api(`/nodes/${n.id}`, {
-          method: "PUT",
-          auth: true,
-          body: { allowed_models: this.editAllowed.length > 0 ? this.editAllowed : [] },
-        });
+        // Das Freitextfeld gilt: es beschreibt die Maschine des Providers.
+        // Leer heisst "alle lokalen Modelle" (NULL), nicht "nichts".
+        const liste = this.parseModelsText(this.editModelsText);
+        const body = liste.length > 0
+          ? { allowed_models: liste }
+          : { clear_allowed_models: true };
+        await api(`/nodes/${n.id}`, { method: "PUT", auth: true, body });
         toast(I18n.t("nodes.whitelist_updated"), "ok");
         this.editingId = null;
         await this.load();
