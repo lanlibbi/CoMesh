@@ -1,0 +1,134 @@
+name: node-agent-macos
+
+# Baut das Einzelbinary des CoMesh-Node-Agenten für macOS.
+#
+# Warum ein eigener Workflow: PyInstaller friert nur für die Architektur ein, auf
+# der es läuft (`target_arch=None` in `comesh-agent.spec`). Ein Linux- oder
+# Windows-Rechner kann das Darwin-Binary deshalb nicht erzeugen — es braucht
+# einen Mac. `macos-latest` ist derzeit ein Apple-Silicon-Runner (arm64); die
+# Architektur wird im Lauf mit `uname -m` **gemessen** und der Dateiname danach
+# gebildet, nicht angenommen. Für einen Intel-Mac bräuchte es `macos-13` (x86_64).
+#
+# Der Workflow committet nichts. Binary und Prüfsumme gehen als Artefakt heraus
+# und werden von Hand nach `frontend-alpine/downloads/` gelegt — dort sind sie
+# bewusst nicht versioniert (15–25 MB je Datei, sie gehören zu einem Release).
+#
+# Kosten: genau ein Job, keine Matrix, kein Cache. Ein macOS-Runner kostet das
+# Zehnfache eines Linux-Runners; deshalb bleibt der Ablauf so kurz wie möglich.
+
+on:
+  # Von Hand starten (Actions → node-agent-macos → Run workflow).
+  workflow_dispatch:
+  # Ein Push, der den Agenten anfasst, baut neu — ohne Token und ohne Klick.
+  push:
+    paths:
+      - "node-agent/**"
+      # Der Workflow selbst gehört dazu: ohne diesen Eintrag löst der Push dieser
+      # Datei keinen Lauf aus, und genau dieser erste Lauf ist der Beleg.
+      - ".github/workflows/build-node-agent.yml"
+
+# Nur lesen: der Lauf braucht weder Schreibrechte aufs Repo noch auf Packages.
+permissions:
+  contents: read
+
+jobs:
+  darwin:
+    name: macOS
+    runs-on: macos-latest
+    # Notbremse: ein hängender macOS-Runner ist teuer. Normal dauert der Bau 2–4 min.
+    timeout-minutes: 25
+
+    steps:
+      - name: Quellen holen
+        uses: actions/checkout@v4
+
+      - name: Python einrichten
+        uses: actions/setup-python@v5
+        with:
+          # Es gibt keine `.python-version` im Repo. 3.12 ist die Fassung, mit der
+          # auch die Linux- und Windows-Binaries der 0.6.9 gebaut wurden.
+          python-version: "3.12"
+
+      # Die Architektur wird gemessen, nicht angenommen: der ausgelieferte Name
+      # muss zu dem passen, was `install.sh` sucht (`comesh-agent-darwin-arm64`
+      # auf Apple Silicon, `…-x86_64` auf Intel).
+      - name: Architektur messen
+        run: |
+          set -euo pipefail
+          echo "uname -m: $(uname -m)"
+          echo "uname -a: $(uname -a)"
+          case "$(uname -m)" in
+            arm64|aarch64) arch=arm64 ;;
+            x86_64|amd64)  arch=x86_64 ;;
+            *) echo "Nicht unterstützte Architektur: $(uname -m)" >&2; exit 1 ;;
+          esac
+          echo "ARCH=$arch" >> "$GITHUB_ENV"
+          echo "Gemessene Architektur: $arch"
+
+      - name: Build-Abhängigkeiten installieren
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          python -m pip install -r node-agent/requirements-build.txt
+
+      # `--no-venv`: die Abhängigkeiten stehen schon im Runner-Python. Ohne den
+      # Schalter legt build.sh ein eigenes venv an und installiert alles ein
+      # zweites Mal — auf einem macOS-Runner unnötige Minuten.
+      - name: Binary bauen
+        working-directory: node-agent
+        run: ./build.sh --no-venv
+
+      # Der Installer liest die Ausgabe von `--version` ein: sie muss genau eine
+      # Zeile sein und die Version aus der VERSION-Datei tragen (0.6.9).
+      - name: Version prüfen
+        working-directory: node-agent
+        run: |
+          set -euo pipefail
+          bin="dist/comesh-agent-darwin-${ARCH}"
+          test -f "$bin" || { echo "Erwartet: $bin — dist/ enthält:"; ls -l dist; exit 1; }
+          wanted="$(cat ../VERSION)"
+          got="$(./"$bin" --version)"
+          echo "gemeldet: $got"
+          test "$got" = "comesh-agent $wanted" \
+            || { echo "Falsche Version: '$got' statt 'comesh-agent $wanted'" >&2; exit 1; }
+
+      # Name und Prüfsumme: `install.sh` bildet den Namen als
+      # `comesh-agent-$OS-$ARCH` (OS=darwin) und verweigert die Installation ohne
+      # passende `.sha256`-Datei. build.sh benennt schon richtig — dieser Schritt
+      # prüft es nach und erzeugt die Prüfsumme neu, damit sie garantiert zur
+      # hochgeladenen Datei gehört.
+      - name: Name und Prüfsumme festlegen
+        working-directory: node-agent
+        run: |
+          set -euo pipefail
+          bin="comesh-agent-darwin-${ARCH}"
+          test -f "dist/$bin"
+          ( cd dist && shasum -a 256 "$bin" > "$bin.sha256" )
+          echo "--- dist/ ---"
+          ls -l "dist/$bin" "dist/$bin.sha256"
+          echo "--- Prüfsumme ---"
+          cat "dist/$bin.sha256"
+          echo "--- Dateityp ---"
+          file "dist/$bin"
+          # Beleg in der Laufzusammenfassung, damit man die Werte ohne Logsuche hat.
+          {
+            echo "### comesh-agent-darwin-${ARCH}"
+            echo
+            echo "| Feld | Wert |"
+            echo "|---|---|"
+            echo "| Größe | $(stat -f%z "dist/$bin") Bytes |"
+            echo "| SHA-256 | \`$(cut -d' ' -f1 "dist/$bin.sha256")\` |"
+            echo "| Version | \`$(./"dist/$bin" --version)\` |"
+            echo "| Dateityp | \`$(file -b "dist/$bin")\` |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Artefakt hochladen
+        uses: actions/upload-artifact@v4
+        with:
+          # Binary und Prüfsumme zusammen: einzeln ist das Artefakt wertlos.
+          name: comesh-agent-darwin-${{ env.ARCH }}
+          path: |
+            node-agent/dist/comesh-agent-darwin-${{ env.ARCH }}
+            node-agent/dist/comesh-agent-darwin-${{ env.ARCH }}.sha256
+          if-no-files-found: error
+          retention-days: 14
