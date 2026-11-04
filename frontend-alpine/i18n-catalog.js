@@ -210,10 +210,10 @@ window.GP_I18N = {
    "fr": "Pool"
   },
   "nav.nodes": {
-   "en": "Nodes",
-   "de": "Nodes",
-   "es": "Nodes",
-   "fr": "Nodes"
+   "en": "Your node",
+   "de": "Deine Node",
+   "es": "Tu node",
+   "fr": "Votre node"
   },
   "nav.earnings": {
    "en": "Earnings",
@@ -450,10 +450,10 @@ window.GP_I18N = {
    "fr": "Pool communautaire · CoMesh"
   },
   "title.nodes": {
-   "en": "My nodes · CoMesh",
-   "de": "Meine Nodes · CoMesh",
-   "es": "Mis nodes · CoMesh",
-   "fr": "Mes nodes · CoMesh"
+   "en": "Share your GPU · CoMesh",
+   "de": "Teile deine GPU · CoMesh",
+   "es": "Comparte tu GPU · CoMesh",
+   "fr": "Partagez votre GPU · CoMesh"
   },
   "title.earnings": {
    "en": "Earnings · CoMesh",
@@ -1619,11 +1619,17 @@ window.GP_I18N = {
    "es": "Clave nueva creada: la anterior ya no es válida.",
    "fr": "Nouvelle clé créée — la précédente est invalide."
   },
+  "node.page.eyebrow": {
+   "en": "Your node",
+   "de": "Deine Node",
+   "es": "Tu node",
+   "fr": "Votre node"
+  },
   "gpu-bereitstellen": {
-   "en": "Contribute a GPU",
-   "de": "GPU bereitstellen",
-   "es": "Aportar una GPU",
-   "fr": "Fournir un GPU"
+   "en": "Share your GPU",
+   "de": "Teile deine GPU",
+   "es": "Comparte tu GPU",
+   "fr": "Partagez votre GPU"
   },
   "node-registrieren": {
    "en": "Register node",
@@ -1632,10 +1638,10 @@ window.GP_I18N = {
    "fr": "Enregistrer le node"
   },
   "node-registrieren-agent-starten-fertig-70": {
-   "en": "Register the node, start the agent, done. 70 % of job cost is credited to the node owner as Credits.",
-   "de": "Node registrieren, Agent starten, fertig. 70 % der Job-Kosten werden dem Node-Owner als Credits gutgeschrieben.",
-   "es": "Registra el node, inicia el agente y listo. El 70 % del coste del job se abona al node owner como Credits.",
-   "fr": "Enregistrez le node, démarrez l'agent, terminé. 70 % du coût du job est crédité au node owner en Credits."
+   "en": "One machine with a free GPU is enough: the agent signs in with your account key and takes jobs. 70 % of the job cost is credited to you as Credits.",
+   "de": "Ein Rechner mit freier GPU genügt: der Agent meldet sich mit deinem Account-Schlüssel an und nimmt Aufträge an. 70 % der Job-Kosten gehen als Credits an dich.",
+   "es": "Basta un equipo con una GPU libre: el agente se registra con la clave de tu cuenta y acepta trabajos. El 70 % del coste del trabajo se te abona en Credits.",
+   "fr": "Une machine avec un GPU libre suffit : l'agent s'authentifie avec la clé de votre compte et prend des tâches. 70 % du coût de la tâche vous sont crédités en Credits."
   },
   "alle-nodes-auswaehlen": {
    "en": "Select all nodes",
@@ -2910,10 +2916,10 @@ window.GP_I18N = {
    "fr": "Vous recevez une <code class=\"inline\">agent_api_key</code> — affichée une seule fois, à conserver en lieu sûr."
   },
   "node.role_gate.title": {
-   "en": "No provider account yet",
-   "de": "Noch kein Provider-Konto",
-   "es": "Todavía no es una cuenta provider",
-   "fr": "Pas encore de compte provider"
+   "en": "Role not set yet",
+   "de": "Rolle noch nicht gesetzt",
+   "es": "Rol aún no configurado",
+   "fr": "Rôle pas encore défini"
   },
   "node.role_gate.body": {
    "en": "The installation commands below work for every account. The agent registers the node with your account key, though, and for that your account needs the role <b>provider</b> (or <b>both</b>). You change that yourself in the <a href=\"profile.html#rolle\" class=\"link\">profile</a> — no administrator needed. Your node then appears in the list on this page.",

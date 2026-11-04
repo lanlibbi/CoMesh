@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title data-i18n="title.nodes">Meine Nodes · CoMesh</title>
+<title data-i18n="title.nodes">Teile deine GPU · CoMesh</title>
 <meta name="color-scheme" content="dark light" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -31,11 +31,11 @@
 
   <main class="shell">
     <div class="page-head">
-      <div class="eyebrow">Provider</div>
-      <h1 data-i18n="gpu-bereitstellen">GPU bereitstellen</h1>
+      <div class="eyebrow" data-i18n="node.page.eyebrow">Deine Node</div>
+      <h1 data-i18n="gpu-bereitstellen">Teile deine GPU</h1>
       <p class="lede" data-i18n="node-registrieren-agent-starten-fertig-70">
-        Node registrieren, Agent starten, fertig. 70 % der Job-Kosten werden dem
-        Node-Owner als Credits gutgeschrieben.
+        Ein Rechner mit freier GPU genügt: der Agent meldet sich mit deinem Account-Schlüssel
+        an und nimmt Aufträge an. 70 % der Job-Kosten gehen als Credits an dich.
       </p>
     </div>
 
@@ -46,7 +46,7 @@
       <div class="notice mb-4" x-show="!isProvider" x-cloak data-role-gate>
         <span class="notice-icon" aria-hidden="true">i</span>
         <div class="grow">
-          <div class="semibold" data-i18n="node.role_gate.title">Noch kein Provider-Konto</div>
+          <div class="semibold" data-i18n="node.role_gate.title">Rolle noch nicht gesetzt</div>
           <p class="t-sm text-dim mt-1" data-i18n-html="node.role_gate.body">
             Die Installationsbefehle unten gelten für jedes Konto. Der Agent meldet die Node aber
             mit deinem Account-Schlüssel an, und dafür muss dein Konto die Rolle

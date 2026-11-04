@@ -843,14 +843,14 @@
   ]
  },
  "gpu-bereitstellen": {
-  "src": "GPU bereitstellen",
+  "src": "Teile deine GPU",
   "where": "markup",
   "pages": [
    "nodes.html"
   ]
  },
  "node-registrieren-agent-starten-fertig-70": {
-  "src": "Node registrieren, Agent starten, fertig. 70 % der Job-Kosten werden dem Node-Owner als Credits gutgeschrieben.",
+  "src": "Ein Rechner mit freier GPU genügt: der Agent meldet sich mit deinem Account-Schlüssel an und nimmt Aufträge an. 70 % der Job-Kosten gehen als Credits an dich.",
   "where": "markup",
   "pages": [
    "nodes.html"
@@ -1727,7 +1727,7 @@
   "pages": []
  },
  "nav.nodes": {
-  "src": "Nodes",
+  "src": "Deine Node",
   "where": "js",
   "pages": []
  },
@@ -2216,7 +2216,7 @@
   ]
  },
  "title.nodes": {
-  "src": "Meine Nodes · GPU-Pool",
+  "src": "Teile deine GPU · CoMesh",
   "where": "title",
   "pages": [
    "nodes.html"
@@ -2276,6 +2276,13 @@
   "where": "js",
   "pages": [
    "app.js"
+  ]
+ },
+ "node.page.eyebrow": {
+  "src": "Deine Node",
+  "where": "markup",
+  "pages": [
+   "nodes.html"
   ]
  }
 }

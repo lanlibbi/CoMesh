@@ -727,13 +727,13 @@
    ]
   },
   "gpu-bereitstellen": {
-   "src": "GPU bereitstellen",
+   "src": "Teile deine GPU",
    "pages": [
     "nodes.html"
    ]
   },
   "node-registrieren-agent-starten-fertig-70": {
-   "src": "Node registrieren, Agent starten, fertig. 70 % der Job-Kosten werden dem Node-Owner als Credits gutgeschrieben.",
+   "src": "Ein Rechner mit freier GPU genügt: der Agent meldet sich mit deinem Account-Schlüssel an und nimmt Aufträge an. 70 % der Job-Kosten gehen als Credits an dich.",
    "pages": [
     "nodes.html"
    ]
@@ -1549,6 +1549,12 @@
    "where": "markup",
    "pages": [
     "profile.html"
+   ]
+  },
+  "node.page.eyebrow": {
+   "src": "Deine Node",
+   "pages": [
+    "nodes.html"
    ]
   }
  },

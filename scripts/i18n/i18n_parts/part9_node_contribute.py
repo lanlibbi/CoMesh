@@ -218,10 +218,10 @@ KEYS = {
         "fr": "Vous recevez une <code class=\"inline\">agent_api_key</code> — affichée une seule fois, à conserver en lieu sûr.",
     },
     "node.role_gate.title": {
-        "en": "No provider account yet",
-        "de": "Noch kein Provider-Konto",
-        "es": "Todavía no es una cuenta provider",
-        "fr": "Pas encore de compte provider",
+        "en": "Role not set yet",
+        "de": "Rolle noch nicht gesetzt",
+        "es": "Rol aún no configurado",
+        "fr": "Rôle pas encore défini",
     },
     # html
     "node.role_gate.body": {

@@ -4,13 +4,16 @@
 
 KEYS = {
     # ============================================================ nodes.html
-    "gpu-bereitstellen": {"en": "Contribute a GPU", "de": "GPU bereitstellen", "es": "Aportar una GPU", "fr": "Fournir un GPU"},
+    # Der Titel laedt ein, statt eine Rolle zu verlangen: die Seite ist fuer jedes
+    # Konto der Einstieg ("Teile deine GPU"), nicht die Visitenkarte der Provider.
+    "node.page.eyebrow": {"en": "Your node", "de": "Deine Node", "es": "Tu node", "fr": "Votre node"},
+    "gpu-bereitstellen": {"en": "Share your GPU", "de": "Teile deine GPU", "es": "Comparte tu GPU", "fr": "Partagez votre GPU"},
     "node-registrieren": {"en": "Register node", "de": "Node registrieren", "es": "Registrar node", "fr": "Enregistrer le node"},
     "node-registrieren-agent-starten-fertig-70": {
-        "en": "Register the node, start the agent, done. 70 % of job cost is credited to the node owner as Credits.",
-        "de": "Node registrieren, Agent starten, fertig. 70 % der Job-Kosten werden dem Node-Owner als Credits gutgeschrieben.",
-        "es": "Registra el node, inicia el agente y listo. El 70 % del coste del job se abona al node owner como Credits.",
-        "fr": "Enregistrez le node, démarrez l'agent, terminé. 70 % du coût du job est crédité au node owner en Credits.",
+        "en": "One machine with a free GPU is enough: the agent signs in with your account key and takes jobs. 70 % of the job cost is credited to you as Credits.",
+        "de": "Ein Rechner mit freier GPU genügt: der Agent meldet sich mit deinem Account-Schlüssel an und nimmt Aufträge an. 70 % der Job-Kosten gehen als Credits an dich.",
+        "es": "Basta un equipo con una GPU libre: el agente se registra con la clave de tu cuenta y acepta trabajos. El 70 % del coste del trabajo se te abona en Credits.",
+        "fr": "Une machine avec un GPU libre suffit : l'agent s'authentifie avec la clé de votre compte et prend des tâches. 70 % du coût de la tâche vous sont crédités en Credits.",
         },
     "alle-nodes-auswaehlen": {"en": "Select all nodes", "de": "Alle Nodes auswählen", "es": "Seleccionar todos los nodes", "fr": "Sélectionner tous les nodes"},
     "alle-auswaehlen": {"en": "Select all", "de": "Alle auswählen", "es": "Seleccionar todo", "fr": "Tout sélectionner"},
