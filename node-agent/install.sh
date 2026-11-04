@@ -260,10 +260,9 @@ ASSET="comesh-agent-$OS-$ARCH"
 WORK="$(mktemp -d "${TMPDIR:-/tmp}/comesh-install.XXXXXX")" || die "Kein Temporärverzeichnis verfügbar."
 trap 'rm -rf "$WORK"' EXIT
 
-if ! fetch "$BASE_URL/$ASSET" "$WORK/$ASSET"; then
-  die "Download fehlgeschlagen: $BASE_URL/$ASSET
-Prüfe die Basis-URL (--base-url) und ob die Datei dort liegt."
-fi
+# Reihenfolge: erst die Prüfsumme, dann das Binary. Die Prüfsumme ist die
+# einzige Angabe, die sich mit jedem Release ändert — und sie wandert in die
+# Download-Adresse (siehe unten).
 if ! fetch "$BASE_URL/$ASSET.sha256" "$WORK/$ASSET.sha256"; then
   die "Prüfsumme nicht ladbar: $BASE_URL/$ASSET.sha256
 Ohne Prüfsumme wird nichts installiert. Das ist Absicht: ein Binary aus dem
@@ -273,6 +272,20 @@ fi
 EXPECTED=$(cut -d' ' -f1 "$WORK/$ASSET.sha256" | head -n 1 | tr -d '\r' | tr 'A-F' 'a-f')
 printf '%s' "$EXPECTED" | grep -Eq '^[0-9a-f]{64}$' \
   || die "Die Datei $ASSET.sha256 enthält keine gültige SHA-256-Summe (gelesen: '$EXPECTED')."
+
+# Die Prüfsumme als Cache-Schlüssel: Cloudflare liefert Dateien mit
+# Endung `.exe` aus dem eigenen Edge-Cache (gemessen 04.11.2026: nach dem
+# Austausch des Windows-Binaries kam über HTTPS weiter die alte Datei,
+# `cf-cache-status: HIT`, `age: 6508`, TTL 4 h — die Prüfsumme daneben war
+# schon die neue, der Installer brach also an der Prüfsumme ab). Ein Query,
+# der sich mit dem Inhalt ändert, macht den Cache-Treffer unmöglich: er passt
+# genau dann nicht mehr, wenn sich das Binary ändert. Damit kann keine
+# Zwischenschicht eine Datei liefern, die nicht zur Prüfsumme gehört.
+BINARY_URL="$BASE_URL/$ASSET?sha=$(printf '%s' "$EXPECTED" | cut -c1-12)"
+if ! fetch "$BINARY_URL" "$WORK/$ASSET"; then
+  die "Download fehlgeschlagen: $BINARY_URL
+Prüfe die Basis-URL (--base-url) und ob die Datei dort liegt."
+fi
 ACTUAL=$(sha256_of "$WORK/$ASSET" | tr 'A-F' 'a-f')
 [ "$EXPECTED" = "$ACTUAL" ] || die "Prüfsumme stimmt nicht.
   erwartet: $EXPECTED

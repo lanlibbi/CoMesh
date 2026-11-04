@@ -137,11 +137,6 @@ $tmpExe = Join-Path $tmpDir $asset
 $tmpSha = "$tmpExe.sha256"
 
 try {
-    Invoke-WebRequest -UseBasicParsing -Uri $assetUrl -OutFile $tmpExe
-} catch {
-    Fail "Download fehlgeschlagen: $assetUrl`n$($_.Exception.Message)`nPruefe -BaseUrl und ob die Datei dort liegt."
-}
-try {
     Invoke-WebRequest -UseBasicParsing -Uri $shaUrl -OutFile $tmpSha
 } catch {
     Fail "Pruefsumme nicht ladbar: $shaUrl`nOhne Pruefsumme wird nichts installiert."
@@ -150,6 +145,18 @@ try {
 $expected = ((Get-Content -LiteralPath $tmpSha -Raw).Trim() -split '\s+')[0].ToLower()
 if ($expected -notmatch '^[0-9a-f]{64}$') {
     Fail "Die Datei $asset.sha256 enthaelt keine gueltige SHA-256-Summe (gelesen: '$expected')."
+}
+
+# Pruefsumme als Cache-Schluessel: Cloudflare liefert `.exe` aus dem eigenen
+# Edge-Cache (gemessen 04.11.2026: nach dem Austausch des Windows-Binaries kam
+# ueber HTTPS weiter die alte Datei, cf-cache-status HIT, TTL 4 h, waehrend die
+# .sha256 daneben schon die neue Summe trug). Der Query aendert sich mit dem
+# Inhalt und macht den Cache-Treffer damit unmoeglich.
+$dlUrl = "$assetUrl" + "?sha=" + $expected.Substring(0, 12)
+try {
+    Invoke-WebRequest -UseBasicParsing -Uri $dlUrl -OutFile $tmpExe
+} catch {
+    Fail "Download fehlgeschlagen: $dlUrl`n$($_.Exception.Message)`nPruefe -BaseUrl und ob die Datei dort liegt."
 }
 $actual = (Get-FileHash -LiteralPath $tmpExe -Algorithm SHA256).Hash.ToLower()
 if ($actual -ne $expected) {
