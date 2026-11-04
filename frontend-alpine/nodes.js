@@ -1,6 +1,6 @@
 // CoMesh — /nodes page (alpine frontend). Register a node + list mine.
 
-// Der Abschnitt „Eigene Node beitragen" (nodes.html) braucht drei Dinge, die
+// Der Abschnitt „Eigene Node beitragen" (nodes.html) braucht zwei Dinge, die
 // nicht im Markup stehen können:
 //
 //   * die Adresse, unter der das Portal gerade benutzt wird (window.location)
