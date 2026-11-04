@@ -163,6 +163,13 @@ verdeckt ab und richten den Dienst ein — launchd, `systemd --user` oder eine A
 Aufgabenplanung, alles ohne Administratorrechte. Der ausführliche Weg samt Fehlerbildern steht in
 [install.md](install.md).
 
+**Im Portal steht derselbe Weg unter `nodes.html#beitragen`** (Menüpunkt **Nodes**, für jedes Konto
+sichtbar): beide Befehle, die Download-Tabelle mit Größe und SHA-256 aus der ausgelieferten Datei,
+der Verweis auf den Account-Schlüssel. Das Dashboard zeigt einem Konto ohne Node den Befehl als
+Karte. Registrieren und die Massenaktionen der Seite hängen an der Rolle `provider` — ein Consumer
+stellt sie selbst im Profil um (`PUT /v1/me/role` → `profile.html#rolle`); ein Administrator ist
+dafür nicht nötig, nur für `admin`.
+
 **Der Agent verbindet ausgehend (WebSocket).** Auf dem Rechner bleibt kein Port offen: keine
 Firewall-Regel, keine Portweiterleitung, keine vom Portal erreichbare Adresse. Die Node meldet sich
 mit ihrem Account-Schlüssel an. Nur wer den alten Weg erzwingt (`--transport http`), braucht Port

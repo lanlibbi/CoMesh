@@ -1,5 +1,25 @@
 # Changelog
 
+## Unveröffentlicht
+
+**Installationsweg im Portal sichtbar**
+
+1. **`nodes.html` hängt an keiner Rolle mehr.** Der Menüpunkt **Nodes** stand nur für
+   `provider` in der Navigation (`NAV_ITEMS`, `providerOnly: true`) — ein Consumer fand den
+   Abschnitt „Eigene Node beitragen" deshalb gar nicht, obwohl genau das der Weg ist, über den
+   ein Konto Provider wird. Die Seite ist jetzt für jedes Konto offen; ausgeblendet werden nur
+   die Provider-Funktionen (Registrierungsformular, Massenaktionen), und das Server-Gate in
+   `POST /nodes/register` bleibt unverändert.
+2. **Rollen-Hinweis mit Weg statt Sackgasse.** Ein Konto ohne Provider-Rolle sieht auf der
+   Node-Seite, dass die Befehle gelten, der Agent die Node aber mit dem Account-Schlüssel
+   anmeldet — und dass die Rolle im Profil selbst umgestellt wird
+   (`PUT /v1/me/role`, `profile.html#rolle`). Kein Administrator nötig.
+3. **Karte auf dem Dashboard.** Ein Konto ohne Node sieht „Teile deine GPU" mit dem fertigen
+   Ein-Zeilen-Befehl, Kopierknopf und Link auf `nodes.html#beitragen`; ein Konto mit Node sieht
+   stattdessen Name, Status (online/offline, pausiert) und den Weg zur Node-Seite.
+4. **Anleitung verlinkt.** `guide.html` (vier Sprachen) verweist vom Abschnitt „Einen Rechner
+   beitragen" auf `nodes.html#beitragen` und auf die Rollenwahl im Profil.
+
 ## 0.6.11 — 2026-11-04
 
 **Konten löschen, Sprachauswahl reparieren, Modellfreigabe zum Provider, echte
