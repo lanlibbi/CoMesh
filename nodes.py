@@ -79,7 +79,7 @@ class RegisterNodeRequest(BaseModel):
 
 
 class UpdateNodeRequest(BaseModel):
-    """Partial update for an existing node (owner only)."""
+    """Partial update for an existing node (owner or admin)."""
     name: Optional[str] = Field(None, min_length=2, max_length=80)
     gpu_type: Optional[str] = Field(None, min_length=2, max_length=80)
     vram_gb: Optional[int] = Field(None, ge=1, le=1024)
@@ -89,7 +89,13 @@ class UpdateNodeRequest(BaseModel):
     port: Optional[int] = Field(None, ge=1, le=65535)
     backend: Optional[str] = Field(None, pattern="^(ollama|openai)$")
     description: Optional[str] = None
-    allowed_models: Optional[List[str]] = None  # NULL clears the whitelist
+    allowed_models: Optional[List[str]] = None  # [] = nothing; see clear_allowed_models
+    # NULL (= alle lokalen Modelle, keine Cloud) ist kein gueltiger JSON-Wert in
+    # einer Liste. Ohne dieses Kennzeichen kaeme ein Formular nie von einer
+    # Freigabeliste zurueck auf "Standard".
+    clear_allowed_models: bool = Field(
+        False, description="Setzt allowed_models auf NULL: alle lokalen Modelle, keine Cloud."
+    )
     hide_owner: Optional[bool] = Field(
         None, description="Besitzer im Adminbereich anonymisieren"
     )
@@ -342,9 +348,21 @@ def update_node(
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """Partial update of a node's metadata + model whitelist (owner only)."""
-    node = db.query(GpuNode).filter(GpuNode.id == node_id, GpuNode.owner_id == user.id).first()
-    if not node:
+    """Partial update of a node's metadata + model whitelist.
+
+    Berechtigt sind **der Eigentümer der Node und Administratoren**. Der
+    Eigentümer pflegt damit selbst, welche Modelle seine Maschine anderen
+    anbietet (`allowed_models`) — das ist eine Entscheidung des Providers, nicht
+    der Administration. Ein Fremder bekommt 404 (nicht 403: die Node geht ihn
+    nichts an, und die Antwort soll nicht verraten, dass es sie gibt).
+
+    Die Rechte bleiben auf **diese eine Node** beschränkt: Freischalten
+    (`/enable`), Löschen und Schlüsselwechsel haben eigene Endpunkte mit eigener
+    Prüfung; `owner_id` ist nicht Teil der Anfrage und lässt sich hier nicht
+    umhängen.
+    """
+    node = db.query(GpuNode).filter(GpuNode.id == node_id).first()
+    if not node or not _node_is_owner_or_admin(node, user):
         raise HTTPException(status_code=404, detail="Node not found or not owned by you")
     if req.name is not None:
         node.name = req.name
@@ -368,19 +386,26 @@ def update_node(
     if req.description is not None:
         node.description = req.description
     if req.allowed_models is not None:
+        # Leere Liste heisst "nichts freigeben" und wird bewusst geschrieben;
+        # "alle lokalen" ist NULL und laesst sich nur ueber `clear_allowed_models`
+        # setzen (sonst käme man mit einem Formular nie dorthin zurück).
         node.set_allowed_models(req.allowed_models)
+    if req.clear_allowed_models:
+        node.allowed_models = None
     if req.hide_owner is not None:
         node.hide_owner = bool(req.hide_owner)
     if req.availability is not None:
         node.availability = req.availability
     db.commit()
     db.refresh(node)
-    log.info(f"User {user.email} updated node {node.id}: addr={node.node_url or 'auto'}, models={node.get_allowed_models()}")
+    log.info(
+        f"User {user.email} (role={user.role}) updated node {node.id}: "
+        f"addr={node.node_url or 'auto'}, models={node.get_allowed_models()}"
+    )
     fields = node_out_fields(node)
     if not _is_online(node):
         fields["status"] = "offline"
     return NodeOut(**fields)
-
 
 
 @router.post("/{node_id}/rotate-key")
