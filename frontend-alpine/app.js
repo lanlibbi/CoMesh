@@ -315,6 +315,21 @@ async function refreshUser() {
   }
 }
 
+// ---------- Feature-Flag „Credits" ----------
+// Der Server führt das Kennzeichen (/v1/me → credits_enabled); die Oberfläche
+// fragt es ab, bevor sie Guthaben oder Stundensätze zeigt. Die Definition fehlte
+// hier: nodes.html rief `Credits.enabled()` beim Aufbau auf, bekam einen
+// ReferenceError, Alpine brach die Komponente ab — die Seite blieb ohne
+// Formular, ohne Node-Liste und ohne Rückmeldung stehen. Unbekannt heißt
+// „aus": lieber nichts anzeigen als eine Währung erfinden.
+const Credits = {
+  enabled() {
+    const user = LS.get("user");
+    if (user && typeof user.credits_enabled === "boolean") return user.credits_enabled;
+    return false;
+  },
+};
+
 // ---------- Bootstrap: background + footer on every page ----------
 mountBackground();
 document.addEventListener("DOMContentLoaded", () => {
@@ -380,6 +395,7 @@ window.addEventListener("load", revealActiveNav);
 // Expose helpers globally
 window.API = api;
 window.Auth = Auth;
+window.Credits = Credits;
 window.LS = LS;
 window.toast = toast;
 window.fmtCredits = fmtCredits;
