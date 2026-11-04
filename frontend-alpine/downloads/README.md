@@ -11,7 +11,7 @@ irm https://<portal>/downloads/install.ps1 | iex
 
 Der Installer lädt von hier:
 
-| Datei | Ziel | Stand (03.11.2026) |
+| Datei | Ziel | Stand (04.11.2026) |
 |---|---|---|
 | `install.sh` | macOS/Linux-Installer (aus `node-agent/install.sh`) | **vorhanden** |
 | `install.ps1` | Windows-Installer (aus `node-agent/install.ps1`) | **vorhanden** |
@@ -19,7 +19,7 @@ Der Installer lädt von hier:
 | `comesh-agent-darwin-x86_64` + `.sha256` | Intel-Mac | **fehlt** |
 | `comesh-agent-linux-arm64` + `.sha256` | Linux ARM64 | **fehlt** |
 | `comesh-agent-linux-x86_64` + `.sha256` | Linux x86_64 | **vorhanden** — 0.6.9, 14 MB |
-| `comesh-agent-windows-x86_64.exe` + `.sha256` | Windows x64 | **fehlt** |
+| `comesh-agent-windows-x86_64.exe` + `.sha256` | Windows x64 | **vorhanden** — 0.6.9, 13,4 MB |
 
 Nur die Zeilen mit **vorhanden** lassen sich installieren. Der Installer bricht
 bei einem fehlenden Binary mit klarer Meldung ab, statt etwas Falsches

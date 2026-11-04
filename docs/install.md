@@ -183,13 +183,13 @@ comesh-agent-linux-x86_64          comesh-agent-linux-x86_64.sha256
 comesh-agent-windows-x86_64.exe    comesh-agent-windows-x86_64.exe.sha256
 ```
 
-### Was derzeit tatsächlich ausgeliefert wird (Stand 03.11.2026)
+### Was derzeit tatsächlich ausgeliefert wird (Stand 04.11.2026)
 
 | Datei | Zustand |
 |---|---|
 | `install.sh`, `install.ps1` | **vorhanden** (versioniert) |
 | `comesh-agent-linux-x86_64` + `.sha256` | **vorhanden** — 0.6.9, 14 MB, `--version` geprüft, Prüfsumme gegengeprüft |
-| `comesh-agent-windows-x86_64.exe` + `.sha256` | **fehlt** — es stand kein Windows-Bauhost mit Python zur Verfügung |
+| `comesh-agent-windows-x86_64.exe` + `.sha256` | **vorhanden** — 0.6.9, 13,4 MB, `--version` geprüft, Prüfsumme gegengeprüft (gebaut mit `build.ps1` auf Windows Server 2019 / x64, Python 3.12) |
 | `comesh-agent-darwin-arm64`, `comesh-agent-darwin-x86_64` | **fehlen** |
 | `comesh-agent-linux-arm64` | **fehlt** — entsteht auf einem ARM-Linux (`./build.sh`) |
 
