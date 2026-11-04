@@ -1,7 +1,8 @@
 # CoMesh — Anleitung für Einsteiger
 
-**Sprachen:** die Seite im Portal (`/guide.html`) schaltet zwischen **Deutsch und Englisch**
-um; die Wahl liegt in `localStorage.gp_lang` und gilt damit auch für die übrigen Seiten.
+**Sprachen:** die Seite im Portal (`/guide.html`) schaltet zwischen **Deutsch, Englisch,
+Spanisch und Französisch** um; die Wahl liegt in `localStorage.gp_lang` und gilt damit auch für die
+übrigen Seiten.
 Die Langfassung hier ist deutsch — bei Abweichungen gilt die Seite.
 
 ---
@@ -146,12 +147,21 @@ im Kopf blendet sie ein. Hat ein Besitzer sein Konto anonymisieren lassen, steht
 Adresse wird dann gar nicht erst ausgeliefert. Ein Etikett „zeitweise" heißt: die Maschine läuft nicht
 im Dauerbetrieb und ist nicht immer erreichbar.
 
-## Rechner beitragen: ein Befehl
+## Teile deine GPU: ein Befehl
 
-Wer eine GPU beisteuern will, braucht kein Python, kein Docker und kein Repo — ein fertiges Binary,
-ein Befehl, ein Account-Schlüssel (Rolle `provider` oder „beides", im Profil ausgestellt, `gpu_…`).
+Kein Python, kein Docker und kein Repo — ein fertiges Binary, ein Befehl, ein Account-Schlüssel.
 Auf demselben Rechner muss ein Backend laufen: Ollama auf `127.0.0.1:11434` oder ein
 OpenAI-kompatibler Server wie LM Studio auf `127.0.0.1:1234`.
+
+1. **Konto anlegen** auf `/register.html` — falls noch nicht geschehen. Ein Administrator gibt es frei.
+2. **Rolle setzen:** im Profil unter „Rolle" (`profile.html#rolle`) auf `provider` oder `beides`
+   stellen. Das geht selbst, ohne Administrator.
+3. **Account-Schlüssel ausstellen** im Profil unter „API-Schlüssel" (`profile.html#schluessel`):
+   Passwort bestätigen, der Wert beginnt mit `gpu_` und wird **einmal** angezeigt.
+4. **Node installieren** mit dem Befehl unten — Linux/macOS oder Windows. Beide Installer prüfen die
+   Prüfsumme und richten den Dienst ein, ohne Administratorrechte.
+5. **Node erscheint in der Liste** der Node-Seite (`nodes.html`). Der Agent verbindet ausgehend
+   (WebSocket): kein offener Port, keine Firewall-Regel, keine Portweiterleitung.
 
 | System | Befehl |
 |---|---|
@@ -163,12 +173,12 @@ verdeckt ab und richten den Dienst ein — launchd, `systemd --user` oder eine A
 Aufgabenplanung, alles ohne Administratorrechte. Der ausführliche Weg samt Fehlerbildern steht in
 [install.md](install.md).
 
-**Im Portal steht derselbe Weg unter `nodes.html#beitragen`** (Menüpunkt **Nodes**, für jedes Konto
+**Im Portal steht derselbe Weg unter `nodes.html#beitragen`** (Menüpunkt **Deine Node**, für jedes Konto
 sichtbar): beide Befehle, die Download-Tabelle mit Größe und SHA-256 aus der ausgelieferten Datei,
 der Verweis auf den Account-Schlüssel. Das Dashboard zeigt einem Konto ohne Node den Befehl als
-Karte. Registrieren und die Massenaktionen der Seite hängen an der Rolle `provider` — ein Consumer
-stellt sie selbst im Profil um (`PUT /v1/me/role` → `profile.html#rolle`); ein Administrator ist
-dafür nicht nötig, nur für `admin`.
+Karte. Registrieren und die Massenaktionen der Seite hängen an der Rolle `provider` — ein Konto ohne
+Provider-Rolle stellt sie selbst im Profil um (`PUT /v1/me/role` → `profile.html#rolle`); ein
+Administrator ist dafür nicht nötig, nur für `admin`.
 
 **Der Agent verbindet ausgehend (WebSocket).** Auf dem Rechner bleibt kein Port offen: keine
 Firewall-Regel, keine Portweiterleitung, keine vom Portal erreichbare Adresse. Die Node meldet sich

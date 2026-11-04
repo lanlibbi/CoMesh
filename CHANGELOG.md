@@ -1,11 +1,11 @@
 # Changelog
 
-## Unveröffentlicht
+## 0.6.12 — 2026-11-04
 
-**Installationsweg im Portal sichtbar**
+**Der Provider-Weg steht im Portal, und er ist benannt wie eine Einladung**
 
-1. **`nodes.html` hängt an keiner Rolle mehr.** Der Menüpunkt **Nodes** stand nur für
-   `provider` in der Navigation (`NAV_ITEMS`, `providerOnly: true`) — ein Consumer fand den
+1. **`nodes.html` hängt an keiner Rolle mehr.** Der Menüpunkt **Nodes** (seit dieser Fassung
+   **Deine Node**) stand nur für `provider` in der Navigation (`NAV_ITEMS`, `providerOnly: true`) — ein Consumer fand den
    Abschnitt „Eigene Node beitragen" deshalb gar nicht, obwohl genau das der Weg ist, über den
    ein Konto Provider wird. Die Seite ist jetzt für jedes Konto offen; ausgeblendet werden nur
    die Provider-Funktionen (Registrierungsformular, Massenaktionen), und das Server-Gate in
@@ -17,8 +17,22 @@
 3. **Karte auf dem Dashboard.** Ein Konto ohne Node sieht „Teile deine GPU" mit dem fertigen
    Ein-Zeilen-Befehl, Kopierknopf und Link auf `nodes.html#beitragen`; ein Konto mit Node sieht
    stattdessen Name, Status (online/offline, pausiert) und den Weg zur Node-Seite.
-4. **Anleitung verlinkt.** `guide.html` (vier Sprachen) verweist vom Abschnitt „Einen Rechner
-   beitragen" auf `nodes.html#beitragen` und auf die Rollenwahl im Profil.
+4. **Anleitung verlinkt.** `guide.html` (vier Sprachen) verweist vom Abschnitt „Teile deine
+   GPU" auf `nodes.html#beitragen` und auf die Rollenwahl im Profil.
+5. **Die Node-Seite lädt ein, statt eine Rolle zu verlangen.** Sie hieß „PROVIDER / GPU
+   bereitstellen" — ein Rollenetikett als Überschrift, genau an der Stelle, an der ein
+   normales Konto erst erfahren soll, dass es eine Node beitragen kann. Jetzt: **Teile deine
+   GPU** (EN „Share your GPU", ES „Comparte tu GPU", FR „Partagez votre GPU"), darüber die
+   kleine Zeile **Deine Node**. Durchgezogen bis in Seitentitel, Navigation, Dashboard-Karte
+   (die schon so hieß) und Anleitung; der Rollen-Hinweis heißt „Rolle noch nicht gesetzt"
+   statt „Noch kein Provider-Konto" und sagt weiter, dass die Befehle für jedes Konto gelten.
+6. **Anleitung beschreibt den Weg vollständig.** Der Abschnitt „Teile deine GPU" führt jetzt
+   fünf Schritte in allen vier Sprachen: Konto, Rolle im Profil (`profile.html#rolle`),
+   Account-Schlüssel (`profile.html#schluessel`), Installation per Ein-Zeilen-Befehl für
+   Linux/macOS und Windows, und dass die Node danach in der Liste steht und **ausgehend**
+   verbindet (kein offener Port). `docs/guide.md` ist angeglichen, die Fußnote nennt Stand
+   und Version, und der Guide sagt nicht mehr „Deutsch und Englisch", wo vier Sprachen
+   umschaltbar sind.
 
 ## 0.6.11 — 2026-11-04
 
