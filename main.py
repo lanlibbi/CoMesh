@@ -83,6 +83,25 @@ log = logging.getLogger("gpu-pool")
 
 
 # ----------------------------------------------------------------------------
+# Version — eine Quelle (VERSION-Datei), damit auch die FastAPI-Kennung
+# (/openapi.json -> info.version) nicht wieder hinter der Portalversion
+# herlaeuft. Vorher stand hier version="0.6.0".
+# ----------------------------------------------------------------------------
+def _lies_version() -> str:
+    """Version aus der VERSION-Datei — eine Quelle statt zwei Konstanten."""
+    try:
+        from pathlib import Path as _Path
+        return (_Path(__file__).with_name("VERSION")).read_text(encoding="utf-8").strip()
+    except Exception:  # noqa: BLE001
+        return "0.0.0"
+
+
+VERSION = _lies_version()
+# Portal und Node-Agent laufen seit 0.5.0 auf derselben Version.
+NODE_AGENT_VERSION = VERSION
+
+
+# ----------------------------------------------------------------------------
 # Lifespan: init DB on startup
 # ----------------------------------------------------------------------------
 @asynccontextmanager
@@ -115,7 +134,7 @@ app = FastAPI(
         "load-balancing, usage accounting, credits, and a role-gated admin "
         "console with an audit log."
     ),
-    version="0.6.0",
+    version=VERSION,
     lifespan=lifespan,
 )
 
@@ -461,18 +480,8 @@ def _ensure_node_tables():
 # ----------------------------------------------------------------------------
 # Endpoints
 # ----------------------------------------------------------------------------
-def _lies_version() -> str:
-    """Version aus der VERSION-Datei — eine Quelle statt zwei Konstanten."""
-    try:
-        from pathlib import Path as _Path
-        return (_Path(__file__).with_name("VERSION")).read_text(encoding="utf-8").strip()
-    except Exception:  # noqa: BLE001
-        return "0.0.0"
-
-
-VERSION = _lies_version()
-# Portal und Node-Agent laufen seit 0.5.0 auf derselben Version.
-NODE_AGENT_VERSION = VERSION
+# _lies_version() / VERSION / NODE_AGENT_VERSION stehen oben bei der Config,
+# weil die FastAPI-Kennung sie schon beim Import braucht.
 
 
 @app.get("/version")

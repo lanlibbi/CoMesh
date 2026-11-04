@@ -16,7 +16,7 @@ name: comesh
 services:
   api:
     build: .
-    image: comesh-api:0.6.9
+    image: comesh-api:0.6.10
     container_name: comesh-api
     restart: unless-stopped
     # Nur Loopback per Default: die API ist im Compose-Netz unter
@@ -69,7 +69,7 @@ services:
 
   frontend:
     build: ./frontend-alpine
-    image: comesh-frontend:0.6.9
+    image: comesh-frontend:0.6.10
     container_name: comesh-frontend
     restart: unless-stopped
     # Nur Loopback per Default. Fuer den Zugang von aussen (Cloudflare-Tunnel,
@@ -93,8 +93,14 @@ services:
   # ---------------------------------------------------------------- #
   node-agent:
     profiles: ["node"]
-    build: ./node-agent
-    image: comesh-agent:0.6.9
+    # Build-Kontext ist die Repo-Wurzel, damit die VERSION-Datei ins Image
+    # kommt: der Agent liest seine Version aus `VERSION` (FastAPI-Kennung,
+    # `--version`). Mit `build: ./node-agent` fehlte die Datei und der Agent
+    # meldete den Ersatzwert 0.6.0, waehrend das Portal 0.6.9 sagte.
+    build:
+      context: .
+      dockerfile: node-agent/Dockerfile
+    image: comesh-agent:0.6.10
     container_name: comesh-agent
     restart: unless-stopped
     depends_on:

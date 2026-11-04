@@ -132,7 +132,9 @@ except Exception:
 # Entpackverzeichnis, und ein relativer Pfad zu `assets/` oder `.env` ist
 # wertlos. Deshalb: alles, was der Agent zur Laufzeit braucht, haengt an
 # Umgebungsvariablen mit einem Standard im **Benutzerverzeichnis**.
-AGENT_VERSION_FALLBACK = "0.6.0"
+AGENT_VERSION_FALLBACK = "0.0.0"
+# Absichtlich keine plausible Versionsnummer: fehlt die VERSION-Datei (im Image
+# oder im Bundle), muss `--version` das zeigen, statt eine alte Nummer zu behaupten.
 
 
 def _bundle_dir() -> str:

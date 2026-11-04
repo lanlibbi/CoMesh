@@ -1,5 +1,61 @@
 # Changelog
 
+## 0.6.10 — 2026-11-04
+
+**Node-Agent: Zugangssperre, WebSocket-Betrieb, ein Befehl zur Installation**
+
+Diese Fassung schließt die Lücke, die eine Node bisher zu einem offenen Modell-Proxy
+machte, und bringt den Agenten überallhin, wo ein Rechner steht — ohne Docker, ohne
+Python, ohne offenen Port.
+
+1. **Zugangssperre am Agenten (`NODE_SHARED_SECRET`).** Der Agent nahm jeden
+   Chat-Aufruf ohne Schlüssel an und reichte ihn an das lokale Backend weiter;
+   `/health` verriet unangemeldet Node-Id, GPU und Speicher. Ohne NVML-Absicherung war
+   nur die Bindung an die Tailscale-Adresse der Schutz. Jetzt verlangt **jeder**
+   Endpunkt außer `/health` den Kopf `X-Node-Secret`; das Portal schickt ihn aus
+   `pool.node_request_headers()`. Fehlt die Variable, bleibt der Agent offen und warnt
+   beim Start — das ist der Rückweg, nicht der Normalzustand.
+
+2. **WebSocket-Betrieb repariert.** Im WS-Modus fiel eine verbundene Node nach 90 s aus
+   dem Routing, obwohl die Verbindung stand: die Online-Regel las nur `last_seen`, nicht
+   `last_ws_seen`. `GpuNode.ws_is_alive()` (offene Verbindung **und** Ping innerhalb von
+   90 s) ist jetzt in allen drei `_is_online`-Varianten (pool, nodes, admin) verankert,
+   der Ping schreibt zusätzlich `status`/`last_seen`. Damit verbindet eine Node
+   **ausgehend** und braucht keinen eingehenden Port mehr. `_authenticate_node` prüft
+   dabei `api_key_hash` (SHA-256) statt der Klartextspalte.
+
+3. **macOS/Apple Silicon: VRAM-Übersteuerung (`NODE_VRAM_GB`).** Ohne NVML meldete der
+   Agent 0 GB, die Registrierung machte `max(1, …)` daraus, und das VRAM-Gate verwarf
+   die Node still (4,0 GB bei `*:8b`): online, aber dauerhaft auftragslos.
+   `NODE_VRAM_GB` setzt den Wert von Hand (Unified Memory), `gpu_nodes.vram_source`
+   sagt, woher er kommt (`detected` | `override` | `assumed`), und ein Heartbeat mit
+   `override` korrigiert den Portalwert selbst.
+
+4. **Ein-Befehl-Installer für Linux, macOS und Windows** (`node-agent/install.sh`,
+   `install.ps1`). Holt das Binary von `<portal>/downloads/`, prüft die SHA-256 aus der
+   `.sha256` daneben (ohne Prüfsumme kein Install), fragt den Account-Schlüssel verdeckt
+   ab, setzt `AGENT_TRANSPORT=ws` als Vorgabe und richtet den Dienst ein — launchd,
+   `systemd --user` oder `schtasks /SC ONLOGON`, alles ohne sudo.
+
+5. **Binaries für Linux x86_64, Windows x86_64 und macOS arm64.** PyInstaller-Builds
+   mit der `VERSION`-Datei im Bundle, `--version` geprüft, `.sha256` daneben. Das
+   Darwin-Binary entsteht in GitHub Actions auf `macos-latest`, nicht auf einem Mac.
+
+6. **`/downloads` ohne SPA-Fallback.** `try_files $uri $uri/ /index.html` antwortete für
+   eine fehlende Datei mit **200 und HTML**; `install.sh` holt mit `curl -fsSL`, sah 200
+   und meldete dann „die Datei …sha256 enthält keine gültige SHA-256-Summe (gelesen:
+   `<!doctype html>`)" — der Fehler sah nach einem Installer-Problem aus. Jetzt gibt es
+   einen eigenen Block `location /downloads/ { try_files $uri =404; }` **vor**
+   `location /`: eine fehlende Datei antwortet 404, der Installer sagt
+   „Download fehlgeschlagen".
+
+**Nebenbefund behoben:** Der Agent meldete im FastAPI-Titel hart `0.6.0`, während
+`/version` längst 0.6.9 sagte — das Image kopierte die `VERSION`-Datei nicht mit. Der
+Agent liest sie jetzt aus dem Image (`COPY VERSION`), der Build-Kontext ist die
+Repo-Wurzel, und auch die FastAPI-Kennung des Portals kommt aus `VERSION` statt aus
+einer zweiten Konstante. Der Ersatzwert ist `0.0.0`: fehlt die Datei, sieht man das,
+statt eine alte Nummer zu lesen.
+
 ## Sicherheitsfix — 2026-11-03
 
 **Veröffentlichte Ports liegen per Default nur noch auf 127.0.0.1**
