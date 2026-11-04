@@ -2,174 +2,222 @@
   <img src="docs/brand/comesh-banner.svg" alt="CoMesh — your compute, meshed" width="100%">
 </p>
 
-> **Your compute, meshed.**
->
-> Contribute GPUs to the pool, use the whole pool through one OpenAI-compatible API — free and powered by your community.
+# CoMesh
 
-CoMesh joins local and remote self-hosted inference servers into one shared
-inference layer. Users send requests to a **Portal**,
-which routes them to the most suitable **Node-Agent** in the pool.
+**Deutsch** · [English](#english)
 
-> **Status:** Proof of Concept (POC), running end-to-end: Portal, Node-Agents,
-> load-balancing, credits-based billing and a role-gated **admin console** with an
-> audit log. This repo contains **code + docs**.
->
-> **Version:** `0.4.0` — Portal and Node-Agent share one version from here on.
-> See [CHANGELOG.md](CHANGELOG.md).
+Eine selbst gehostete Plattform für gemeinsame GPU-Leistung: Rechner stellen ihre
+KI-Modelle als Endpunkt bereit, alle anderen nutzen sie über eine einzige
+OpenAI-kompatible API.
 
-> **Network:** no fixed addresses anywhere. The portal and its nodes find each
-> other over a plain LAN, Docker network or mesh VPN — DHCP is fine. Nothing has
-> to be configured beyond `.env` variables. See [docs/network.md](docs/network.md).
+## Was ist CoMesh
+
+CoMesh bündelt die Rechenleistung mehrerer Rechner zu einem Pool. Wer eine GPU
+hat, betreibt darauf einen kleinen Agenten, der die lokale Inferenz — Ollama oder
+ein beliebiger OpenAI-kompatibler Server — nach außen vertritt. Wer Modelle
+braucht, richtet einen OpenAI-Client auf das Portal und bekommt pro Anfrage eine
+Maschine, die das Modell anbietet und den Speicher dafür hat.
+
+Das Portal ist die einzige feste Adresse im Spiel: es nimmt die Anfragen an, wählt
+die Node, rechnet den Verbrauch ab und zeigt beides in einer Web-Oberfläche.
+
+## Was es kann
+
+- **OpenAI-kompatible API** — `GET /v1/models`, `POST /v1/chat/completions`,
+  Streaming über Server-Sent Events. Jeder OpenAI-Client läuft unverändert dagegen.
+- **Mehrere Nodes, eine Adresse** — die Auswahl erfolgt nach freiem VRAM,
+  Modellfreigabe der Node, Freigabe des Kontos und aktueller Auslastung.
+- **Freigaben pro Node und pro Konto** — eine Node bietet nur an, was in ihrer
+  Liste steht; ein Konto sieht nur, was für es freigegeben ist. `GET /v1/models`
+  liefert genau diese Schnittmenge.
+- **Konten mit Guthaben** — Verbrauch wird in Credits gemessen (zuschaltbar),
+  Registrierungen gibt die Administration frei.
+- **Verwaltung mit Protokoll** — Freigaben, Rollen, Passwörter, Credits, Schlüssel
+  und Modellfreigaben in der Oberfläche; jede Änderung landet im Audit-Log,
+  Schlüssel und Passwörter nie im Klartext.
+- **Kein offener Port auf der Node** — der Agent verbindet sich ausgehend per
+  WebSocket. NAT, Firewall und wechselnde Adressen sind kein Thema.
+- **Installation in einem Befehl** — fertige Binaries für Linux, macOS und
+  Windows, mit Prüfsumme, als Dienst (systemd, launchd, Aufgabenplanung) und ohne
+  Administratorrechte.
+- **Web-Oberfläche** mit Chat, Geräteliste, Verbrauch und Verwaltung — deutsch
+  und englisch.
+
+## Schnellstart
+
+### 1. Portal starten (Betreiber)
+
+```bash
+git clone https://github.com/lanlibbi/CoMesh.git && cd CoMesh
+cp .env.example .env
+# in .env: ADMIN_API_KEY und ADMIN_EMAIL für den ersten Admin setzen
+docker compose up -d --build
+```
+
+- Oberfläche: <http://localhost:8767>
+- API: <http://localhost:8765>
+- Installation prüfen, ohne Schlüssel: `scripts/check_setup.sh http://localhost:8765`
+
+Beide Ports liegen standardmäßig nur auf `127.0.0.1`. Soll das Portal von anderen
+Rechnern erreichbar sein (LAN, Reverse Proxy, Tunnel), in der `.env` **vor** dem
+ersten Start `COMESH_BIND_ADDRESS=0.0.0.0` setzen und die Container neu erzeugen —
+siehe [docs/network.md](docs/network.md).
+
+### 2. Rechner beisteuern (Provider)
+
+Nötig sind ein Konto mit Rolle `provider` (vergibt die Administration) und ein
+laufendes Backend auf demselben Rechner: Ollama auf `127.0.0.1:11434` oder ein
+OpenAI-kompatibler Server wie LM Studio auf `127.0.0.1:1234`.
+
+```bash
+curl -fsSL https://<portal>/downloads/install.sh | sh     # macOS, Linux
+```
+
+```powershell
+irm https://<portal>/downloads/install.ps1 | iex          # Windows
+```
+
+Der Installer prüft die SHA-256-Summe, fragt den Account-Schlüssel verdeckt ab und
+richtet den Dienst ein. Fehlerbilder, Aktualisieren und Entfernen stehen in
+[docs/install.md](docs/install.md).
+
+Wer aus dem Repo heraus arbeitet, nimmt den Container-Weg:
+`cd node-agent && python3 setup.py && docker compose up -d`.
+
+### 3. Erste Anfrage (Nutzer)
+
+1. Auf `/register.html` ein Konto anlegen und freischalten lassen.
+2. Im Profil einen API-Schlüssel ausstellen (`gpu_…`, wird einmal angezeigt).
+3. Aufrufen:
+
+```bash
+curl https://<portal>/v1/chat/completions \
+  -H "Authorization: Bearer gpu_…" \
+  -H "Content-Type: application/json" \
+  -d '{"model": "qwen2.5-coder:7b",
+       "messages": [{"role": "user", "content": "Hallo CoMesh!"}],
+       "stream": false}'
+```
+
+Eine lokale Installation ohne HTTPS antwortet unter `http://localhost:8765/v1` —
+dort ersetzt `8765` die öffentliche Adresse; ein Port gehört nur in diese Variante.
+Welche Modelle erlaubt sind, sagt `GET /v1/models` mit demselben Schlüssel. Welche
+Maschine die Anfrage bedient hat, steht danach in der Geräteliste des Portals.
+
+Fertiges Beispiel: [examples/client.py](examples/client.py).
+
+## Wie es aufgebaut ist
+
+![Nutzer fragen die CoMesh-API, Provider stellen ihre Rechner bereit](docs/images/comesh-setup.png)
+
+- **Portal** (FastAPI + SQLAlchemy): API, Pool-Logik, Abrechnung, Konten und
+  Web-Oberfläche. Die einzige Adresse, die ein Client kennt.
+- **Node-Agent** (Python, ein Binary): läuft auf jedem Provider-Rechner, meldet
+  GPU, Speicher und Auslastung und vermittelt Aufträge an das lokale Backend —
+  Ollama nativ oder jeden OpenAI-kompatiblen Server (`BACKEND=openai`).
+- **Transport**: der Agent verbindet sich ausgehend (`/agent/connect`). Das Portal
+  ruft keine Node an, deshalb braucht keine Node einen offenen Port.
+
+Details und Datenflüsse: [ARCHITECTURE.md](ARCHITECTURE.md),
+[docs/architecture.md](docs/architecture.md), [docs/node-agent.md](docs/node-agent.md).
+
+## Was es nicht ist
+
+- **Kein fertiges Produkt.** Stand 0.6.10; Schnittstellen können sich ändern.
+- **Keine signierten Binaries.** Weder Apple-Notarisierung noch Windows-Signatur —
+  deshalb der `curl`-Weg statt eines Downloads im Browser.
+- **Kein Support- und kein Verfügbarkeitsversprechen.** Der Pool besteht aus
+  privaten Rechnern; fällt einer aus, gibt es einen Fehler und keine späte Antwort.
+- **Keine Vollabdeckung der Plattformen.** `darwin-x86_64` und `linux-arm64`
+  fehlen derzeit.
+- **Kein Aufbewahrungsversprechen.** Eingaben laufen über einen fremden Rechner —
+  keine Passwörter, keine vertraulichen Dokumente.
+- **Kein Model-Catalog-Sync.** Was eine Node anbieten darf, steht in ihrer Liste im
+  Portal, nicht in dem, was lokal installiert ist.
+
+## Lizenz und Stand
+
+Version **0.6.10**; was sich geändert hat, steht in [CHANGELOG.md](CHANGELOG.md).
+
+Im Repo liegt **keine Lizenzdatei**. Ohne ausdrückliche Lizenz gilt der gesetzliche
+Standard (alle Rechte vorbehalten) — wer CoMesh weiterverwenden, weitergeben oder
+kommerziell einsetzen will, sollte vorher fragen.
+
+## Dokumentation
+
+- [docs/install.md](docs/install.md) — Installation einer Provider-Node in einem Befehl
+- [docs/guide.md](docs/guide.md) — Anleitung für Einsteiger: erster Aufruf, Credits, Fehlercodes
+- [docs/api.md](docs/api.md) — API-Referenz
+- [docs/node-agent.md](docs/node-agent.md) — Node-Agent im Detail
+- [docs/network.md](docs/network.md) — Adressierung, DHCP, mDNS, optionales Mesh-VPN
+- [docs/windows.md](docs/windows.md) · [docs/macos.md](docs/macos.md) — Provider unter Windows und macOS
+- [docs/agent-api.md](docs/agent-api.md) — Vollzugangskonto für Automatisierung
+- [docs/portal.md](docs/portal.md) — Portal-Setup und Konfiguration
 
 ---
 
-Admin console and portal, real captures (1440×900, dark and light theme):
+# English
 
-| | |
-|---|---|
-| **Dashboard** — pool status, credits, own usage | **Admin · Accounts** — approve, roles, passwords, credits, keys |
-| **Admin · Audit log** — who changed what, when | **Sign in** — brand, theme and language switch |
-| **Light theme** — same UI, brass accents follow the theme | |
+A self-hosted platform for shared GPU capacity: machines publish their AI models as
+an endpoint, everyone else uses them through a single OpenAI-compatible API.
 
-The header animation is a small canvas (`frontend-alpine/brand-mesh.js`): a miniature of
-the pool — nodes, links, packets travelling along them. It follows the theme colours,
-stops when the tab is hidden, and renders a single static frame under
-`prefers-reduced-motion`.
+## What CoMesh is
 
----
+CoMesh pools the compute of several machines. If you have a GPU, you run a small
+agent next to your local inference server — Ollama or any OpenAI-compatible
+backend — and the agent represents it to the pool. If you need models, you point an
+OpenAI client at the portal and get, per request, a machine that offers the model
+and has the memory for it.
 
-## Repository layout
+The portal is the only fixed address involved: it accepts requests, picks the node,
+books the usage and shows both in a web interface.
 
-```
-├── main.py               # FastAPI portal (API, pool logic, auth)
-├── models.py             # SQLAlchemy models (User, GpuNode, Earnings…)
-├── nodes.py              # Node registration / heartbeats / CRUD
-├── pool.py               # Load balancing + node selection
-├── ws.py                 # WebSocket transport (phase 1/2)
-├── payments.py           # Stripe/PayPal (mock mode)
-├── frontend/             # Legacy Jinja2 UI
-├── frontend-alpine/      # Alpine.js + Tailwind UI (particle effect, recommended)
-├── node-agent/           # Contributor agent (backend-agnostic: Ollama/OpenAI-compatible)
-│   └── setup.py          # Interactive installer with backend selection
-├── docker-compose.yml    # Portal + frontend stack
-├── netinfo.py            # address detection + node_url helpers (no fixed IPs)
-├── docs/                 # Architecture / API / Node-Agent / Network
-├── scripts/check_setup.sh # portal-side setup check (no API key needed)
-└── examples/             # Example client + node-agent compose
-```
+## What it does
 
-## Architecture (overview)
-
-```
-┌──────────┐    OpenAI-API     ┌──────────┐  HTTP/WS to      ┌──────────────┐
-│  Client  │ ────────────────► │  Portal  │  node_url        │  Node-Agent  │
-│ (Python) │                  │ (FastAPI)│ ────────────────►│   (Docker)   │
-└───────────                  └──────────┘                  └──────┬───────┘
-                                   │                              │
-                                   │ Heartbeats (carry the        │ HTTP (local)
-                                   │ node's own address)          ▼
-                                   ▼                        ┌──────────┐
-                              ┌─────────┐                   │  Ollama  │
-                              │  Nodes  │                   │  :11434  │
-                              │  DB     │                   └──────────┘
-                              └─────────┘
-```
-
-- **Portal** (FastAPI): receives requests, picks the best node, dispatches jobs, books credits against the caller's balance.
-- **Node-Agent** (Python container): runs on contributor hosts, reports heartbeats (CPU/GPU/RAM/price), proxies requests to the local backend.
-- **Network**: portal → node-agent over `node_url` (DNS/mDNS name, LAN IP, or a
-  mesh-VPN name — e.g. Tailscale, optionally). No public ports, no fixed IPs.
-
-See [ARCHITECTURE.md](ARCHITECTURE.md) and [docs/architecture.md](docs/architecture.md).
-
----
+- **OpenAI-compatible API** — `GET /v1/models`, `POST /v1/chat/completions`,
+  streaming via server-sent events. Any OpenAI client works unchanged.
+- **Many nodes, one address** — selection by free VRAM, the node's model list, the
+  account's model list and current load.
+- **Releases per node and per account** — a node offers only what its list allows,
+  an account only sees what was released to it; `GET /v1/models` returns exactly
+  that intersection.
+- **Accounts with credits** — usage is measured in credits (optional); sign-ups are
+  approved by an administrator.
+- **Administration with an audit log** — approvals, roles, passwords, credits, keys
+  and model releases in the UI; every change is logged, keys and passwords never in
+  plain text.
+- **No open port on a node** — the agent connects outbound over WebSocket, so NAT,
+  firewalls and changing addresses do not matter.
+- **One-command install** — prebuilt binaries for Linux, macOS and Windows with a
+  checksum, registered as a service (systemd, launchd, Task Scheduler) without
+  administrator rights.
+- **Web interface** with chat, device list, usage and administration — German and
+  English.
 
 ## Quickstart
 
-### 1. Start the portal
+### 1. Start the portal (operator)
 
 ```bash
+git clone https://github.com/lanlibbi/CoMesh.git && cd CoMesh
 cp .env.example .env
+# in .env: set ADMIN_API_KEY and ADMIN_EMAIL for the first admin
 docker compose up -d --build
-# UI:  http://localhost:8767
-# API: http://localhost:8765
-# Setup check (no API key): scripts/check_setup.sh http://localhost:8765
 ```
 
-Both ports are published on `127.0.0.1` only, so a fresh install answers on this
-host and nowhere else. To serve other machines — a Cloudflare tunnel, a reverse
-proxy, or clients in your LAN — set `COMESH_BIND_ADDRESS=0.0.0.0` in `.env`
-**before** the first start (or recreate the containers afterwards; `docker compose
-config` shows the resulting binding). That publishes the portal on every interface,
-past whatever proxy you put in front of it — see [.env.example](.env.example) and
-[docs/network.md](docs/network.md).
+- UI: <http://localhost:8767>
+- API: <http://localhost:8765>
+- Check the install without a key: `scripts/check_setup.sh http://localhost:8765`
 
-### 2. Deploy a node-agent (on the contributor host)
+Both ports are bound to `127.0.0.1` by default. To serve other machines (LAN,
+reverse proxy, tunnel), set `COMESH_BIND_ADDRESS=0.0.0.0` in `.env` **before** the
+first start and recreate the containers — see [docs/network.md](docs/network.md).
 
-```bash
-cd node-agent/
-python3 setup.py            # interactive: backend, portal URL, optional own name
-python agent.py --check     # which address will the portal dial?
-docker compose up -d
-```
+### 2. Contribute a machine (provider)
 
-All it needs is the portal's address; the agent registers itself and reports the
-address it is reachable under:
-
-```bash
-# node-agent/.env — the whole network configuration
-PORTAL_URL=http://portal-host:8765   # name of the portal host (your LAN / mDNS / VPN)
-PORTAL_USER_KEY=gpu_...              # API key of an account with role provider/both
-ADVERTISE_HOST=my-node.local         # optional; omit to auto-detect
-```
-
-The agent registers with the portal automatically and becomes available after ~5 seconds.
-Both sides work on DHCP: nothing in this setup has to know an IP in advance, and a
-lease change re-registers the address by itself ([docs/network.md](docs/network.md)).
-
-**Backend selection:** the setup installer generates the matching `.env` + `docker-compose.yml` for your self-hosted backend:
-
-| Backend | Protocol | Notes |
-|---------|----------|-------|
-| **Ollama** | `/api/chat` (native) | Default, local |
-| **LM Studio** | `/v1/chat/completions` (OpenAI) | Enable the server flag |
-| **LiteLLM** | `/v1/chat/completions` (OpenAI) | Proxy in front of any model |
-| **Other OpenAI-compatible servers** | `/v1/chat/completions` | vLLM, llama.cpp, … |
-
-The node-agent translates as needed: `BACKEND=ollama` speaks native Ollama, `BACKEND=openai` speaks any OpenAI-compatible backend.
-
-### 3. Send your first request
-
-```bash
-curl -X POST http://localhost:8765/v1/chat/completions \
-  -H "Content-Type: application/json" \
-  -d '{
-    "model": "qwen2.5-coder:14b",
-    "messages": [{"role": "user", "content": "Hello GPU pool!"}]
-  }'
-```
-
-The portal automatically picks the cheapest node with the lowest current load. The response includes an `x-pool-node` header with the selected node's address.
-
-Example client: [examples/client.py](examples/client.py)
-
----
-
-## Who needs what
-
-| Role | What it takes |
-|---|---|
-| **User** (send requests) | **nothing.** A browser on `http://<portal>:8767`, or any
-OpenAI-compatible client against `http://<portal>:8767/v1` with an API key (the API
-also answers on `:8765/v1` when the operator published that port). |
-| **Provider** (contribute a GPU) | a local inference backend (Ollama, LM Studio, vLLM …)
-**plus** the node-agent in front of it. The portal only ever calls the agent (`node_url`
-→ port `11435`), never the backend directly. |
-| **Operator** (run the portal) | Docker Compose (Linux, or Docker Desktop with WSL2), or
-Python natively. |
-
-A provider installs the agent with **one command** — no Python, no Docker, no repo,
-no open port:
+You need an account with the `provider` role (granted by an administrator) and a
+running backend on the same machine: Ollama on `127.0.0.1:11434`, or an
+OpenAI-compatible server such as LM Studio on `127.0.0.1:1234`.
 
 ```bash
 curl -fsSL https://<portal>/downloads/install.sh | sh     # macOS, Linux
@@ -179,260 +227,77 @@ curl -fsSL https://<portal>/downloads/install.sh | sh     # macOS, Linux
 irm https://<portal>/downloads/install.ps1 | iex          # Windows
 ```
 
-The script verifies a SHA-256 checksum, asks for the account key (hidden), writes
-the config and sets up the service (launchd / systemd --user / Task Scheduler).
-Transport is an **outbound WebSocket**, so nothing has to be reachable from the
-outside. Full details, removal and troubleshooting: [docs/install.md](docs/install.md).
-A plain LM Studio install alone does not make a node. See [docs/windows.md](docs/windows.md).
+The installer verifies the SHA-256 checksum, asks for the account key without
+echoing it and sets up the service. Failure modes, updates and removal are covered
+in [docs/install.md](docs/install.md).
 
-## Components
+Working from the repo instead: `cd node-agent && python3 setup.py && docker compose up -d`.
 
-| Component | Stack | Port | Description |
-|---|---|---|---|
-| Portal backend | FastAPI + SQLAlchemy | `8765` | API, pool logic, DB |
-| Portal UI (Alpine) | Alpine.js + canvas, no build step | `8767` | Node/pool/usage/admin dashboard |
-| Node-Agent | Python + psutil + pynvml | `8080` | Heartbeat + inference proxy |
+### 3. Send a first request (user)
 
-The ports above are container ports. On the host they are published on `127.0.0.1` by
-default (`COMESH_BIND_ADDRESS` for the UI, `COMESH_API_BIND_ADDRESS` for the API); see
-[.env.example](.env.example).
-
----
-
-## Admin operations
-
-Everything under `/admin` requires an API key of a user with `role = "admin"`.
-
-Bootstrap the first admin by setting `ADMIN_API_KEY` in the environment (see
-`.env.example`). The account named by `ADMIN_EMAIL` is created and that value
-becomes its only active key:
+1. Create an account on `/register.html` and wait for approval.
+2. Issue an API key in your profile (`gpu_…`, shown once).
+3. Call the API:
 
 ```bash
-export ADMIN_API_KEY="gpu_$(python3 -c 'import secrets;print(secrets.token_urlsafe(32))')"
-docker compose up -d --build
-
-curl -H "Authorization: Bearer $ADMIN_API_KEY" http://localhost:8765/admin/whoami
-curl -H "Authorization: Bearer $ADMIN_API_KEY" "http://localhost:8765/admin/nodes?status=all"
-curl -H "Authorization: Bearer $ADMIN_API_KEY" http://localhost:8765/admin/overview
+curl https://<portal>/v1/chat/completions \
+  -H "Authorization: Bearer gpu_…" \
+  -H "Content-Type: application/json" \
+  -d '{"model": "qwen2.5-coder:7b",
+       "messages": [{"role": "user", "content": "Hello CoMesh!"}],
+       "stream": false}'
 ```
 
-### Admin console (UI)
+A local install without HTTPS answers on `http://localhost:8765/v1`; there `8765`
+replaces the public hostname and no port is added to the public form. `GET
+/v1/models` with the same key lists the models your account may use; which machine
+served a request shows up in the portal's device list afterwards.
 
-Everything below is available in the web UI as well — no curl needed. Three pages,
-all gated on `role = admin` server-side, every mutation lands in the audit log:
+Runnable example: [examples/client.py](examples/client.py).
 
-| Page | Menu | What it does |
-|---|---|---|
-| `admin-registrations.html` | **Freigaben** | approve / reject sign-ups, status filter, search, paging; per account: role, **set password**, **top up credits**, **issue a new API key** (the old one dies, the new one is shown once), activate / deactivate; **create an account** by hand |
-| `admin-usage.html` | **Verbrauch (alle)** | tokens, requests and credits per account and model over 24h / 7d / 30d / all; quota per account; credits system on/off |
-| `admin-audit.html` | **Protokoll** | every change with timestamp, acting admin, target and a readable diff (`role: both → admin`); filter by action. Passwords and key values are never stored |
+## How it is built
 
-`usage.html` (**Mein Verbrauch**) is the non-admin view of your own consumption.
+![Users call the CoMesh API, providers contribute their machines](docs/images/comesh-setup.png)
 
-What an operator can do via the API:
+- **Portal** (FastAPI + SQLAlchemy): API, pool logic, billing, accounts and the web
+  UI. The only address a client knows.
+- **Node agent** (Python, shipped as one binary): runs on every provider machine,
+  reports GPU, memory and load, and forwards jobs to the local backend — native
+  Ollama or any OpenAI-compatible server (`BACKEND=openai`).
+- **Transport**: the agent connects outbound (`/agent/connect`). The portal never
+  calls a node, so no node needs an open port.
 
-- **Users** — list (including deactivated ones), create, change role/state/model
-  whitelist, top up credits, rotate or revoke API keys. Admins can only be
-  created by another admin; `PUT /v1/me/role` never accepts `admin`.
-- **Nodes** — see **every** node including offline and disabled ones, with owner,
-  WebSocket state, last heartbeat and job/failure counters; pause or resume a
-  node of any owner.
-- **Auditing** — every mutation writes an `admin_audit_log` row. Mutating POSTs
-  accept an `Idempotency-Key` header, so a retried request replays the stored
-  result instead of repeating the effect (raw API keys are never stored).
+More detail: [ARCHITECTURE.md](ARCHITECTURE.md),
+[docs/architecture.md](docs/architecture.md), [docs/node-agent.md](docs/node-agent.md).
 
-### Tests
+## What it is not
 
-```bash
-python3 -m venv .venv && .venv/bin/pip install -r requirements-dev.txt
-.venv/bin/pytest tests -q          # 15 admin tests, in-process TestClient
-bash scripts/smoke_admin.sh http://localhost:8765 "$ADMIN_API_KEY"   # live HTTP smoke check
-```
+- **Not a finished product.** At 0.6.10; interfaces may still change.
+- **No signed binaries.** Neither Apple notarisation nor a Windows signature — hence
+  `curl` instead of a browser download.
+- **No support and no availability guarantee.** The pool is made of private
+  machines; when one goes away you get an error, not a late answer.
+- **Not every platform.** `darwin-x86_64` and `linux-arm64` are missing today.
+- **No confidentiality guarantee.** Input runs on someone else's machine — no
+  passwords, no confidential documents.
+- **No model catalogue sync.** What a node may offer is its list in the portal, not
+  what happens to be installed locally.
 
----
+## License and status
 
-## Anleitung für Einsteiger
+Version **0.6.10**; changes are listed in [CHANGELOG.md](CHANGELOG.md).
 
-Wer CoMesh nicht kennt: die Seite **`/guide.html`** im Portal erklärt in einfacher Sprache,
-was das Werkzeug ist, wofür es gebaut wurde, wie der erste Aufruf aussieht, was Credits sind
-und was die Fehlercodes bedeuten. Sie funktioniert ohne Anmeldung und ist aus dem Menü
-verlinkt („Anleitung"). Sie lässt sich zwischen **Deutsch und Englisch** umschalten. Quelle: `frontend-alpine/guide.html`, Langfassung für die
-Projektarbeit in `docs/guide.md`.
-
-## Eigene API-Schlüssel und Modellfreigabe
-
-Ein Client braucht einen Schlüssel, der mit `gpu_` beginnt. Ausgestellt wird er im Portal
-(Profil → **API-Schlüssel ausstellen**, Passwort bestätigt, einmal sichtbar) oder per
-`POST /v1/me/keys`. Die Browser-Sitzung (`sess_…`) ist **kein** API-Schlüssel.
-
-`GET /v1/models` liefert nur die Modelle, die für das Konto freigegeben sind. Cloud-Modelle sind
-kostenpflichtig und werden über `users.allow_cloud` getrennt zugeschaltet — ohne die Freigabeliste
-anzutasten. Details: [docs/api.md](docs/api.md).
+There is **no licence file** in the repository. Without an explicit licence the
+statutory default applies (all rights reserved) — ask before reusing,
+redistributing or using CoMesh commercially.
 
 ## Documentation
 
-- [ARCHITECTURE.md](ARCHITECTURE.md) — ASCII diagram and data flows
-- [docs/architecture.md](docs/architecture.md) — deep-dive architecture
-- [docs/portal.md](docs/portal.md) — portal setup, config, API
-- [docs/install.md](docs/install.md) — **one-command install** for a provider node (macOS/Linux/Windows binary, checksum, service, removal)
-- [docs/node-agent.md](docs/node-agent.md) — node-agent setup and deployment
-- [docs/agent-api.md](docs/agent-api.md) — **agent account**: full-access account for automation (approvals, reports, usage); what it can and cannot do
-- [docs/guide.md](docs/guide.md) — **user guide**: what CoMesh is, first request, credits, error codes (German long form; the in-portal page `/guide.html` switches between German and English)
-- [docs/api.md](docs/api.md) — full API reference
+- [docs/install.md](docs/install.md) — install a provider node with one command
+- [docs/guide.md](docs/guide.md) — beginner guide: first request, credits, error codes (German)
+- [docs/api.md](docs/api.md) — API reference
+- [docs/node-agent.md](docs/node-agent.md) — the node agent in detail
 - [docs/network.md](docs/network.md) — addressing, DHCP, mDNS, optional mesh VPN
-- [docs/windows.md](docs/windows.md) — running a **provider** on Windows (LM Studio or
-  Ollama, native or Docker, autostart via Task Scheduler)
-- [docs/macos.md](docs/macos.md) — running a **provider** on macOS/Apple Silicon
-  (Ollama with Metal; `NODE_VRAM_GB` is mandatory there)
-
----
-
-## License
-
-POC, internal use. TBD.
-
----
-
-# CoMesh (Deutsch)
-
-> **Your compute, meshed.**
->
-> Stelle GPUs für den Pool bereit und nutze den ganzen Pool über eine einzige OpenAI-kompatible API — kostenlos und von deiner Community getragen.
-
-CoMesh führt lokale und entfernte Ollama- und OpenAI-kompatible
-Instanzen (LM Studio, LiteLLM, vLLM, llama.cpp) zu einer gemeinsamen
-Inference-Schicht zusammenführt. Nutzer schicken ihre Anfragen an ein **Portal**,
-das Portal verteilt sie an den am besten geeigneten **Node-Agent** im Netz.
-
-> **Status:** Proof of Concept (POC). Funktioniert end-to-end mit Portal,
-> Node-Agents, Load-Balancing und Earnings-Tracking. Dieses Repo enthält
-> **Code + Doku**.
-
----
-
-## Quickstart (Deutsch)
-
-### 1. Portal starten
-
-```bash
-cp .env.example .env
-docker compose up -d --build
-# UI:  http://localhost:8767
-# API: http://localhost:8765
-# Setup-Check (ohne API-Key): scripts/check_setup.sh http://localhost:8765
-```
-
-Beide Ports liegen nur auf `127.0.0.1`, eine frische Installation antwortet also
-allein auf diesem Host. Für andere Rechner — Cloudflare-Tunnel, Reverse Proxy oder
-Clients im LAN — in der `.env` **vor** dem ersten Start `COMESH_BIND_ADDRESS=0.0.0.0`
-setzen (oder die Container danach neu erzeugen; was daraus wird, zeigt `docker
-compose config`). Damit ist das Portal auf allen Schnittstellen veröffentlicht, also
-an jedem vorgelagerten Proxy vorbei — siehe [.env.example](.env.example) und
-[docs/network.md](docs/network.md).
-
-### 2. Node-Agent deployen (auf dem Contributor-Host)
-
-```bash
-cd node-agent/
-python3 setup.py          # interaktiv: Backend, Portal-URL, optional eigener Name
-python agent.py --check   # welche Adresse spricht das Portal an?
-docker compose up -d
-```
-
-Nötig ist nur die Adresse des Portals; der Agent registriert sich selbst und
-meldet die Adresse, unter der er erreichbar ist:
-
-```bash
-# node-agent/.env — die komplette Netz-Konfiguration
-PORTAL_URL=http://portal-host:8765   # Name des Portal-Hosts (LAN / mDNS / VPN)
-PORTAL_USER_KEY=gpu_...              # API-Key eines Kontos mit Rolle provider/both
-ADVERTISE_HOST=mein-node.local       # optional; ohne Angabe: automatische Erkennung
-```
-
-Der Agent meldet sich automatisch beim Portal an und ist nach ~5 Sekunden verfügbar.
-Beide Seiten laufen auf DHCP: hier muss nichts eine IP vorher kennen, und ein
-Lease-Wechsel trägt die neue Adresse selbst nach ([docs/network.md](docs/network.md)).
-
-### 3. Erste Anfrage schicken
-
-```bash
-curl -X POST http://localhost:8765/v1/chat/completions \
-  -H "Content-Type: application/json" \
-  -d '{
-    "model": "qwen2.5-coder:14b",
-    "messages": [{"role": "user", "content": "Hallo CoMesh!"}]
-  }'
-```
-
-Das Portal wählt automatisch den billigsten Node mit der niedrigsten aktuellen
-Auslastung. Die Antwort enthält den `x-pool-node`-Header mit der Adresse des
-gewählten Nodes.
-
----
-
-## Adminbereich (Deutsch)
-
-Alles unter `/admin` verlangt einen Schlüssel eines Kontos mit `role = admin`.
-Im Browser gibt es dafür drei Seiten (Menü **Freigaben**, **Verbrauch (alle)**,
-**Protokoll**): Registrierungen freigeben und ablehnen, Rollen vergeben, Passwörter
-setzen, Credits buchen, Schlüssel ausstellen, Konten deaktivieren und anlegen — jede
-Änderung landet im Protokoll. Screenshots oben im Abschnitt *Screenshots*.
-
-Der erste Admin entsteht beim Start aus `ADMIN_API_KEY` / `ADMIN_EMAIL` (siehe
-`.env.example`); weitere Admins ernennt ein bestehender Admin. Die API schützt sich
-selbst: ein Admin kann sich weder degradieren noch deaktivieren.
-
-## Wer braucht was (Deutsch)
-
-| Rolle | Was nötig ist |
-|---|---|
-| **Nutzer** | **nichts.** Browser auf `http://<portal>:8767` oder ein OpenAI-kompatibler
-Client auf `http://<portal>:8767/v1` mit einem API-Schlüssel (die API antwortet auch
-auf `:8765/v1`, wenn der Betreiber diesen Port veröffentlicht hat). |
-| **Provider** | ein lokales Backend (Ollama, LM Studio, vLLM …) **und** der Node-Agent
-davor. Das Portal ruft ausschließlich den Agenten an (`node_url` → Port `11435`). |
-| **Betreiber** | Docker Compose oder Python nativ. |
-
-Ein Provider installiert den Agenten mit **einem Befehl** — kein Python, kein Docker,
-kein Repo, kein offener Port:
-
-```bash
-curl -fsSL https://<portal>/downloads/install.sh | sh     # macOS, Linux
-```
-
-```powershell
-irm https://<portal>/downloads/install.ps1 | iex          # Windows
-```
-
-Das Skript prüft eine SHA-256-Summe, fragt den Account-Schlüssel verdeckt ab,
-schreibt die Konfiguration und richtet den Dienst ein (launchd / systemd --user /
-Aufgabenplanung). Der Transport ist ein **ausgehender WebSocket** — von außen muss
-nichts erreichbar sein. Einzelheiten, Entfernen und Fehlersuche:
-[docs/install.md](docs/install.md). LM Studio allein macht noch keinen Node; die
-Streaming-Grenze bei `BACKEND=openai` steht in [docs/windows.md](docs/windows.md).
-
-## Dokumentation (Deutsch)
-
-- [ARCHITECTURE.md](ARCHITECTURE.md) — ASCII-Diagramm und Datenflüsse
-- [docs/architecture.md](docs/architecture.md) — tiefer Architektur-Einblick
-- [docs/portal.md](docs/portal.md) — Portal-Setup, Konfiguration, API
-- [docs/install.md](docs/install.md) — **Installation mit einem Befehl** für eine Provider-Node (Binary für macOS/Linux/Windows, Prüfsumme, Dienst, Entfernen)
-- [docs/node-agent.md](docs/node-agent.md) — Node-Agent-Setup und Deployment
-- [docs/api.md](docs/api.md) — komplette API-Referenz
-- [docs/network.md](docs/network.md) — Adressierung, DHCP, mDNS, optionales Mesh-VPN
-- [docs/macos.md](docs/macos.md) — ein **Provider** auf macOS/Apple Silicon
-  (Ollama mit Metal; `NODE_VRAM_GB` ist dort Pflicht)
-
-## Lizenz
-
-POC, interne Nutzung. TBD.
-
-## Own API keys and model permissions
-
-A client needs a key starting with `gpu_`. Issue one in the portal (profile → **Issue API key**,
-password confirmed, shown once) or via `POST /v1/me/keys`. The browser session (`sess_…`) is **not**
-an API key.
-
-`GET /v1/models` returns only the models released for the account. Cloud models cost money and are
-enabled separately via `users.allow_cloud`, leaving the release list untouched. Details:
-[docs/api.md](docs/api.md).
+- [docs/windows.md](docs/windows.md) · [docs/macos.md](docs/macos.md) — providers on Windows and macOS
+- [docs/agent-api.md](docs/agent-api.md) — full-access account for automation
+- [docs/portal.md](docs/portal.md) — portal setup and configuration
