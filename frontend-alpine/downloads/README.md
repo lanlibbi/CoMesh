@@ -15,11 +15,47 @@ Der Installer lädt von hier:
 |---|---|---|
 | `install.sh` | macOS/Linux-Installer (aus `node-agent/install.sh`) | **vorhanden** |
 | `install.ps1` | Windows-Installer (aus `node-agent/install.ps1`) | **vorhanden** |
-| `comesh-agent-darwin-arm64` + `.sha256` | Apple Silicon | **vorhanden** — 0.6.10, 14,0 MB, in GitHub Actions gebaut (04.11.2026), `--version` und Prüfsumme geprüft |
+| `comesh-agent-darwin-arm64` + `.sha256` | Apple Silicon | **vorhanden** — 0.6.10, 14.044.992 B, in GitHub Actions gebaut (04.11.2026), `--version` und Prüfsumme geprüft, `3881a74dece1…` |
 | `comesh-agent-darwin-x86_64` + `.sha256` | Intel-Mac | **fehlt** — `macos-latest` ist arm64; bräuchte einen Lauf auf `macos-13` |
 | `comesh-agent-linux-arm64` + `.sha256` | Linux ARM64 | **fehlt** — nur auf einem ARM-Linux zu bauen, PyInstaller baut nicht über Architekturen |
-| `comesh-agent-linux-x86_64` + `.sha256` | Linux x86_64 | **vorhanden** — 0.6.10, 14,6 MB |
-| `comesh-agent-windows-x86_64.exe` + `.sha256` | Windows x64 | **vorhanden** — 0.6.10, 14,1 MB |
+| `comesh-agent-linux-x86_64` + `.sha256` | Linux x86_64 | **vorhanden** — 0.6.10, 14.609.000 B, `8879d46c494f…` |
+| `comesh-agent-windows-x86_64.exe` + `.sha256` | Windows x64 | **vorhanden** — 0.6.10, 14.058.581 B, `--version` geprüft (`comesh-agent 0.6.10`), `e601a962e82e…` |
+
+Die Größen sind am 04.11.2026 über HTTPS gegen die Dateien hier nachgemessen
+(SHA-256 der geladenen Datei == `.sha256` daneben == Datei in diesem Ordner).
+
+### Cloudflare liefert `.exe` aus dem Edge-Cache
+
+Dateien mit der Endung `.exe` cached Cloudflare von sich aus am Rand
+(`cache-control: max-age=14400`, also 4 h) — `.sh`, `.ps1` und `.sha256` nicht
+(`cf-cache-status: DYNAMIC`). Am 04.11.2026 stand deshalb nach dem Austausch des
+Windows-Binaries über HTTPS weiter die alte 0.6.9er Datei (`cf-cache-status:
+HIT`, `age: 6508`), während die `.sha256` schon die neue Summe trug: der
+Windows-Installer brach an der Prüfsumme ab, obwohl am Ursprung alles stimmte.
+Zwei Gegenmaßnahmen, beide im Repo:
+
+* `install.sh`/`install.ps1` hängen die Prüfsumme als Query an die
+  Binary-Adresse (`…exe?sha=<erste 12 Zeichen>`). Der Query ändert sich mit dem
+  Inhalt, eine alte Cache-Kopie kann nicht mehr greifen — das wirkt auch auf
+  einen Edge, der die Datei schon hält. **Das ist der belastbare Teil.**
+* `frontend-alpine/nginx.conf` schickt für `/downloads/`
+  `Cache-Control: no-cache`. Gemessen hilft das am Cloudflare-Edge **nicht**
+  (er ersetzte den Header durch `max-age=14400` und antwortete wieder HIT) —
+  es bleibt für Browser und eigene Proxys, die rückfragen sollen.
+  `.sh`, `.ps1` und `.sha256` sind ohnehin nicht betroffen (`DYNAMIC`).
+
+Nach einem Release deshalb **über den öffentlichen Namen** prüfen, nicht nur am
+Container:
+
+```bash
+SHA=$(curl -fsS https://<portal>/downloads/comesh-agent-windows-x86_64.exe.sha256 | cut -d' ' -f1)
+curl -fsS -o /tmp/a.exe -w '%{http_code} %{size_download}\n' \
+  "https://<portal>/downloads/comesh-agent-windows-x86_64.exe?sha=${SHA:0:12}"
+sha256sum /tmp/a.exe    # muss $SHA sein
+```
+
+(Die letzte Prüfung gehört auf den Zielrechner: `& $env:TEMP\a.exe --version`
+muss die neue Version melden — die Größe allein beweist keine Version.)
 
 Nur die Zeilen mit **vorhanden** lassen sich installieren. Der Installer bricht
 bei einem fehlenden Binary mit klarer Meldung ab, statt etwas Falsches

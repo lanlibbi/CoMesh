@@ -140,6 +140,18 @@ Wer die Dateien selbst hostet (`--base-url https://…`), muss **beide** Dateien
 zusammen ausliefern. `build.sh`/`build.ps1` erzeugen sie; sie gehören in dasselbe
 Verzeichnis.
 
+**Die Prüfsumme steht seit 04.11.2026 auch in der Download-Adresse.** Cloudflare
+liefert Dateien mit der Endung `.exe` aus dem eigenen Edge-Cache und hielt nach
+einem Release weiter die alte Datei: gemessen `cf-cache-status: HIT`, `age:
+6508`, `cache-control: max-age=14400` (4 h), während die `.sha256` daneben
+schon die neue Summe trug — die Installation brach dann an der Prüfsumme ab,
+obwohl am Ursprung alles stimmte. Deshalb holt der Installer **zuerst** die
+`.sha256` und lädt das Binary unter
+`<base>/<binary>?sha=<erste 12 Zeichen der Summe>`. Der Query ändert sich mit
+dem Inhalt, eine Cache-Kopie kann also nicht mehr greifen. Wer von Hand lädt,
+nimmt denselben Query — oder lädt ohne Query und rechnet die Summe nach; beides
+führt zum selben Ergebnis, nur der erste Weg ist schnell.
+
 ---
 
 ## Warum `curl` und nicht der Browser (macOS)
@@ -188,11 +200,21 @@ comesh-agent-windows-x86_64.exe    comesh-agent-windows-x86_64.exe.sha256
 | Datei | Zustand |
 |---|---|
 | `install.sh`, `install.ps1` | **vorhanden** (versioniert) |
-| `comesh-agent-linux-x86_64` + `.sha256` | **vorhanden** — 0.6.10, 14,6 MB, `--version` geprüft (`comesh-agent 0.6.10`), Prüfsumme gegengeprüft |
-| `comesh-agent-windows-x86_64.exe` + `.sha256` | **vorhanden** — 0.6.10, 14,1 MB, `--version` geprüft (`comesh-agent 0.6.10`), Prüfsumme gegengeprüft (gebaut mit `build.ps1` auf Windows Server 2019 / x64, Python 3.12) |
-| `comesh-agent-darwin-arm64` + `.sha256` | **vorhanden** — 0.6.10, 14,0 MB, in GitHub Actions auf `macos-latest` gebaut (04.11.2026), `file` meldet `Mach-O 64-bit arm64`, `--version` geprüft (`comesh-agent 0.6.10`), Prüfsumme gegengeprüft |
+| `comesh-agent-linux-x86_64` + `.sha256` | **vorhanden** — 0.6.10, 14.609.000 B, `--version` geprüft (`comesh-agent 0.6.10`), Prüfsumme gegengeprüft |
+| `comesh-agent-windows-x86_64.exe` + `.sha256` | **vorhanden** — 0.6.10, 14.058.581 B, `--version` geprüft (`comesh-agent 0.6.10`), Prüfsumme gegengeprüft (gebaut mit `build.ps1` auf Windows Server 2019 / x64, Python 3.12) |
+| `comesh-agent-darwin-arm64` + `.sha256` | **vorhanden** — 0.6.10, 14.044.992 B, in GitHub Actions auf `macos-latest` gebaut (04.11.2026), `file` meldet `Mach-O 64-bit arm64`, `--version` geprüft (`comesh-agent 0.6.10`), Prüfsumme gegengeprüft |
 | `comesh-agent-darwin-x86_64` | **fehlt** — `macos-latest` ist Apple Silicon; ein Intel-Binary bräuchte einen Lauf auf `macos-13` |
 | `comesh-agent-linux-arm64` | **fehlt** — PyInstaller baut nur für die Architektur, auf der es läuft; ein x86_64-Host kann kein ARM-Binary einfrieren |
+
+Die drei Zahlen sind am 04.11.2026 **über HTTPS nachgemessen** (Größe des
+Downloads == Größe der Datei im Deploy-Baum, SHA-256 der geladenen Datei ==
+`.sha256`-Datei daneben):
+
+| Binary | Bytes | SHA-256 (Stand 04.11.2026) |
+|---|---|---|
+| `comesh-agent-linux-x86_64` | 14.609.000 | `8879d46c494f16d4a5dccb2e6b547aa393005e82322c5bf76ad786b782e47b1c` |
+| `comesh-agent-windows-x86_64.exe` | 14.058.581 | `e601a962e82ea201821bbd31f1d6b43763be30024bc579063b86d63c746f048d` |
+| `comesh-agent-darwin-arm64` | 14.044.992 | `3881a74dece11fe11c297f0abaa4e44fea96c573ba5358ff4bfead0303c95eb1` |
 
 Fehlt die Datei zu einer Systemkombination, antwortet `/downloads/` mit **404**
 (bewusst kein SPA-Fallback, sonst käme HTML mit 200 zurück) und der Installer
