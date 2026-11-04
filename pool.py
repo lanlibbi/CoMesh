@@ -3,9 +3,10 @@ Community GPU-Pool load-balancing + revenue distribution.
 
 Two layers:
 
-  * `PoolRouter` (class) — picks the best node for a given request.
-    Scoring weights: online > enough free VRAM > low utilization > low rate
-    > reachability (a registered node is expected to be dialable).
+  * `find_best_node` (+ the in-flight counter in this module) — picks the
+    node for a request: fewest running requests first, then the cheapest /
+    least utilized node, and round-robin among exact ties. Without the
+    counter every identical request landed on the same node forever.
   * `distribute_revenue` (function) — splits a job's revenue 70/20/10
     (owner / platform / treasury) and writes a NodeEarning row +
     bumps GpuNode.earnings_total. The platform/treasury side is
@@ -22,9 +23,11 @@ import asyncio
 import json
 import logging
 import os
+import threading
 import time
 from datetime import datetime
-from typing import List, Optional
+from itertools import count as _count
+from typing import Dict, List, Optional
 
 import httpx
 from fastapi import APIRouter, Depends, HTTPException
@@ -74,6 +77,80 @@ def _is_online(node: GpuNode) -> bool:
     if node.last_seen is None or node.status not in ("online", "busy"):
         return False
     return (datetime.utcnow() - node.last_seen).total_seconds() < 90
+
+
+# ---------------------------------------------------------------------------
+# Laufende Anfragen je Node (Lastverteilung)
+# ---------------------------------------------------------------------------
+# Ohne diesen Zähler war die Auswahl deterministisch: gleicher Score, gleiche
+# Sortierreihenfolge -> dieselbe Node bei jeder Anfrage, auch wenn zwei
+# identische Nodes dasselbe Modell anbieten. Der Zähler lebt nur im Speicher
+# (er ist ein Lastmaß, kein Bestand) und wird in `route_request` um jede
+# Weiterleitung herum erhöht und **in jedem Fall** wieder verringert — Erfolg,
+# Fehler, Timeout, Abbruch.
+_INFLIGHT: Dict[int, int] = {}
+_INFLIGHT_LOCK = threading.Lock()
+_RR_SEQ = _count()
+_RR_LOCK = threading.Lock()
+
+
+def node_inflight(node_id: Optional[int]) -> int:
+    """Number of requests currently being served by this node."""
+    if node_id is None:
+        return 0
+    with _INFLIGHT_LOCK:
+        return int(_INFLIGHT.get(int(node_id), 0))
+
+
+def _inflight_add(node_id: int, delta: int) -> int:
+    with _INFLIGHT_LOCK:
+        value = int(_INFLIGHT.get(int(node_id), 0)) + delta
+        if value <= 0:
+            # Der Eintrag verschwindet bei 0: sonst wächst das Dict mit jeder
+            # jemals benutzten Node und ein Zählerstand kann nicht "lecken".
+            _INFLIGHT.pop(int(node_id), None)
+            return 0
+        _INFLIGHT[int(node_id)] = value
+        return value
+
+
+class _InFlight:
+    """Context manager: counts a request against a node for its whole lifetime."""
+
+    __slots__ = ("node_id",)
+
+    def __init__(self, node_id: int):
+        self.node_id = int(node_id)
+
+    def __enter__(self) -> int:
+        return _inflight_add(self.node_id, +1)
+
+    def __exit__(self, exc_type, exc, tb) -> bool:
+        _inflight_add(self.node_id, -1)
+        return False  # never swallow the exception
+
+
+def inflight_snapshot() -> Dict[int, int]:
+    """Kopie des Zählers — für Protokoll, Tests und Diagnose."""
+    with _INFLIGHT_LOCK:
+        return dict(_INFLIGHT)
+
+
+def reset_inflight() -> None:
+    """Nur für Tests: Zähler und Round-Robin-Position zurücksetzen."""
+    with _INFLIGHT_LOCK:
+        _INFLIGHT.clear()
+    global _RR_SEQ
+    with _RR_LOCK:
+        _RR_SEQ = _count()
+
+
+def _round_robin(group: List["NodeCandidate"]) -> "NodeCandidate":
+    """Nächste Node aus einer Gruppe Gleichwertiger — reihum, nicht immer die erste."""
+    with _RR_LOCK:
+        index = next(_RR_SEQ) % len(group)
+    return group[index]
+
 
 
 def node_request_headers() -> dict:
@@ -138,7 +215,17 @@ def find_best_node(
       2. Node must be online (last_seen < 90s ago, status online/busy)
       3. Node's whitelist must admit the model.
       4. Node must have enough free VRAM to plausibly host the model.
-      5. Score: lower utilization + lower hourly_rate is better.
+
+    Auswahl unter den verbleibenden Kandidaten:
+      5. wenigste **laufende Anfragen** zuerst (`node_inflight`) — das ist die
+         eigentliche Lastverteilung,
+      6. dann der Score (Stundensatz + Auslastung + Busy-Zuschlag),
+      7. bei vollständigem Gleichstand **reihum** (`_round_robin`).
+
+    Vorher war die Auswahl rein score-basiert und damit deterministisch: zwei
+    identische Nodes mit demselben Modell bekamen nie beide Arbeit, der erste
+    Eintrag gewann jede Anfrage. Preise entscheiden weiterhin — aber nur unter
+    gleich belasteten Nodes.
     """
     exclude = set(exclude_node_ids or [])
     nodes = db.query(GpuNode).filter(GpuNode.is_enabled == True).all()
@@ -177,7 +264,19 @@ def find_best_node(
     if not candidates:
         return None
     candidates.sort(key=lambda c: c.score)
-    return candidates[0].node
+    # (laufende Anfragen, Score) — stabil sortiert, damit die Reihenfolge bei
+    # Gleichstand die der Score-Sortierung bleibt (und damit reproduzierbar ist).
+    candidates.sort(key=lambda c: (node_inflight(c.node.id), c.score))
+
+    best = candidates[0]
+    tied = [
+        c for c in candidates
+        if node_inflight(c.node.id) == node_inflight(best.node.id)
+        and abs(c.score - best.score) < 1e-9
+    ]
+    if len(tied) > 1:
+        return _round_robin(tied).node
+    return best.node
 
 
 def _estimate_model_vram_gb(model: str) -> float:
@@ -576,44 +675,49 @@ async def route_request(
         if node is None:
             break
         attempted.add(node.id)
-        # Per-node transport decision. Whitelist order is preserved by
-        # find_best_node's score sort; we do NOT re-sort here.
-        if _ws_connected(node):
-            transport = "ws"
-            try:
-                ollama_resp = await _forward_to_node_ws(node, ollama_payload, on_delta=on_delta)
-            except (NodeOfflineError, JobTimeoutError) as e:
-                # Node went offline mid-call, or timed out. Fall back to
-                # HTTP for THIS node, then continue to the next.
-                log.warning(f"WS to node {node.id} ({node.name}) failed: {e}; trying HTTP fallback")
+        # Ab hier laeuft die Anfrage wirklich auf dieser Node: Zaehler hoch,
+        # und in jedem Fall wieder runter (finally), damit ein Fehler oder
+        # Abbruch keine Last stehen laesst.
+        with _InFlight(node.id):
+            log.debug(f"pool: node {node.id} in-flight={node_inflight(node.id)}")
+            # Per-node transport decision. Whitelist order is preserved by
+            # find_best_node's score sort; we do NOT re-sort here.
+            if _ws_connected(node):
+                transport = "ws"
                 try:
-                    ollama_resp = await _forward_to_node(node, ollama_payload)
-                    transport = "http"
-                except Exception as e2:
-                    log.warning(f"HTTP fallback to node {node.id} ({node.name}) also failed: {e2}")
-                    continue
-            except _WSError as e:
-                # Agent reported an error (e.g. Ollama down). Try the
-                # HTTP fallback in case the legacy agent path still works.
-                log.warning(f"WS agent error on node {node.id}: {e}; trying HTTP fallback")
+                    ollama_resp = await _forward_to_node_ws(node, ollama_payload, on_delta=on_delta)
+                except (NodeOfflineError, JobTimeoutError) as e:
+                    # Node went offline mid-call, or timed out. Fall back to
+                    # HTTP for THIS node, then continue to the next.
+                    log.warning(f"WS to node {node.id} ({node.name}) failed: {e}; trying HTTP fallback")
+                    try:
+                        ollama_resp = await _forward_to_node(node, ollama_payload)
+                        transport = "http"
+                    except Exception as e2:
+                        log.warning(f"HTTP fallback to node {node.id} ({node.name}) also failed: {e2}")
+                        continue
+                except _WSError as e:
+                    # Agent reported an error (e.g. Ollama down). Try the
+                    # HTTP fallback in case the legacy agent path still works.
+                    log.warning(f"WS agent error on node {node.id}: {e}; trying HTTP fallback")
+                    try:
+                        ollama_resp = await _forward_to_node(node, ollama_payload)
+                        transport = "http"
+                    except Exception as e2:
+                        log.warning(f"HTTP fallback to node {node.id} ({node.name}) also failed: {e2}")
+                        continue
+            else:
+                transport = "http"
                 try:
-                    ollama_resp = await _forward_to_node(node, ollama_payload)
-                    transport = "http"
-                except Exception as e2:
-                    log.warning(f"HTTP fallback to node {node.id} ({node.name}) also failed: {e2}")
+                    if on_delta is not None and ollama_payload.get("stream"):
+                        # Phase 4: streamend zum Agenten, Deltas sofort weiterreichen
+                        ollama_resp = await _forward_to_node_stream(node, ollama_payload, on_delta)
+                        transport = "http+stream"
+                    else:
+                        ollama_resp = await _forward_to_node(node, ollama_payload)
+                except Exception as e:
+                    log.warning(f"Community node {node.id} ({node.name}) failed: {e}")
                     continue
-        else:
-            transport = "http"
-            try:
-                if on_delta is not None and ollama_payload.get("stream"):
-                    # Phase 4: streamend zum Agenten, Deltas sofort weiterreichen
-                    ollama_resp = await _forward_to_node_stream(node, ollama_payload, on_delta)
-                    transport = "http+stream"
-                else:
-                    ollama_resp = await _forward_to_node(node, ollama_payload)
-            except Exception as e:
-                log.warning(f"Community node {node.id} ({node.name}) failed: {e}")
-                continue
         # PoolJob bookkeeping happens in main.py; here we just attach transport.
         result_payload = _ollama_to_openai_shape(ollama_resp, model)
         log.info(
