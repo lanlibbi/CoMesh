@@ -97,7 +97,7 @@
         <div class="panel-head">
           <div>
             <div class="eyebrow" data-i18n="verbrauch">Verbrauch</div>
-            <h3 x-text="'Letzte ' + (usage && usage.window === '30d' ? I18n.t('range.30d') : usage && usage.window === '24h' ? I18n.t('range.24h') : I18n.t('range.7d'))"></h3>
+            <h3 x-text="I18n.t('range.last') + (usage && usage.window === '30d' ? I18n.t('range.30d') : usage && usage.window === '24h' ? I18n.t('range.24h') : I18n.t('range.7d'))"></h3>
             <p data-i18n="pro-tag-verbrauchte-token">Pro Tag verbrauchte Token.</p>
           </div>
           <div class="right">

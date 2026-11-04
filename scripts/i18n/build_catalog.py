@@ -68,6 +68,32 @@ def used_keys():
     return used
 
 
+# A literal argument to I18n.t(...) in either quote style. Double quotes were
+# the only ones counted until 04.11.2026; single-quoted calls are the house
+# style in the Alpine markup (x-text="I18n.t('verbergen')"), so their keys
+# looked unreferenced and were pruned — the page then rendered the raw key in
+# every locale. Both styles are the same call and must count the same.
+I18N_CALL = re.compile(r"""I18n\.t\(\s*(["'])([^"'\n]+)\1""")
+
+
+def code_refs_from(pages):
+    """Literal keys the JS/HTML asks for, split into exact keys and prefixes.
+
+    `I18n.t("admin.quota." + mode)` ends on a separator: it references a whole
+    family, not one key. Those are checked separately so a missing family is
+    reported instead of silently rendering raw keys.
+    """
+    exact, prefixes = set(), set()
+    for p in pages:
+        for m in I18N_CALL.finditer(p.read_text()):
+            key = m.group(2)
+            if key.endswith(".") or key.endswith("_"):
+                prefixes.add((key, p.name))
+            else:
+                exact.add(key)
+    return exact, prefixes
+
+
 def main():
     cat = load_parts()
     used = used_keys()
@@ -79,10 +105,18 @@ def main():
         errs.append(f"{len(missing)} markup keys without a translation: {missing}")
 
     # keys referenced only from code
-    code_refs = set()
-    for p in list(FE.glob("*.js")) + list(FE.glob("*.html")):
-        for m in re.finditer(r'I18n\.t\(\s*"([^"]+)"', p.read_text()):
-            code_refs.add(m.group(1))
+    code_refs, dynamic_prefixes = code_refs_from(list(FE.glob("*.js")) + list(FE.glob("*.html")))
+    # A key the code asks for but the catalog does not carry renders as the raw
+    # key name in every locale — that is just as broken as missing markup text.
+    unlit = sorted(k for k in code_refs if k not in cat)
+    if unlit:
+        errs.append(f"{len(unlit)} code keys without a translation: {unlit}")
+    for pref, page in sorted(dynamic_prefixes):
+        family = [k for k in cat if k.startswith(pref)]
+        if not family:
+            errs.append(f'{page}: I18n.t("{pref}" + …) matches no catalog key')
+        # The family is reachable through the prefix; keep it through pruning.
+        code_refs |= set(family)
     # keys the code applies through a variable (window.titleKey, nav items, ...)
     code_refs |= set(json.loads((BASE / "keys.json").read_text()).keys())
     # Unreferenced entries are pruned rather than kept as dead weight: a key that

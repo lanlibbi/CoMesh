@@ -64,4 +64,54 @@ KEYS = {
     "admin.include_inactive": {"en": "incl. inactive", "de": "inkl. inaktive", "es": "incl. inactivos", "fr": "y compris inactifs"},
     "admin.only_active": {"en": "active only", "de": "nur aktive", "es": "solo activos", "fr": "actifs seulement"},
     "admin.with_usage": {"en": "with usage in period", "de": "mit Verbrauch im Zeitraum", "es": "con consumo en el periodo", "fr": "avec usage sur la période"},
+
+    # --- Nachzügler vom 04.11.2026 -------------------------------------
+    # Diese Schlüssel wurden über I18n.t('…') mit EINZELNEN Anführungszeichen
+    # aufgerufen. build_catalog.py zählte nur doppelte, hielt sie deshalb für
+    # unbenutzt und strich sie — in jeder Sprache stand danach der rohe
+    # Schlüssel in der Oberfläche. Der Generator liest jetzt beide Stile und
+    # bricht ab, wenn ein Aufruf keinen Eintrag hat.
+    "common.models": {"en": "Models", "de": "Modelle", "es": "Modelos", "fr": "Modèles"},
+    "chat.choose_model": {"en": "Choose a model", "de": "Modell wählen", "es": "Elegir un modelo", "fr": "Choisir un modèle"},
+    "fmt.range_suffix": {"en": " calls", "de": " Aufrufe", "es": " llamadas", "fr": " appels"},
+    "range.last": {"en": "Last ", "de": "Letzte ", "es": "Últimos ", "fr": "Derniers "},
+    "range.24h": {"en": "24 hours", "de": "24 Stunden", "es": "24 horas", "fr": "24 heures"},
+    "range.7d": {"en": "7 days", "de": "7 Tage", "es": "7 días", "fr": "7 jours"},
+    "range.30d": {"en": "30 days", "de": "30 Tage", "es": "30 días", "fr": "30 jours"},
+
+    "admin.credits_on": {"en": "Credits on", "de": "Credits an", "es": "Créditos on", "fr": "Crédits on"},
+    "admin.credits_off": {"en": "Credits off", "de": "Credits aus", "es": "Créditos off", "fr": "Crédits off"},
+    "admin.credits_on_hint": {
+        "en": "Usage is billed in credits. Accounts without balance cannot call models.",
+        "de": "Nutzung wird in Credits abgerechnet. Konten ohne Guthaben können keine Modelle aufrufen.",
+        "es": "El uso se factura en créditos. Las cuentas sin saldo no pueden llamar a los modelos.",
+        "fr": "L’usage est facturé en crédits. Les comptes sans solde ne peuvent pas appeler de modèles.",
+    },
+    "admin.credits_off_hint": {
+        "en": "Credits are not charged; usage is counted in tokens only.",
+        "de": "Es werden keine Credits abgerechnet; gezählt werden nur Token.",
+        "es": "No se cobran créditos; solo se cuentan los tokens.",
+        "fr": "Aucun crédit n’est facturé ; seuls les tokens sont comptés.",
+    },
+    "admin.credits_confirm_on": {
+        "en": "Switch the credits system on? Usage will be billed from now on.",
+        "de": "Credits-System einschalten? Ab jetzt wird Nutzung abgerechnet.",
+        "es": "¿Activar el sistema de créditos? A partir de ahora se facturará el uso.",
+        "fr": "Activer le système de crédits ? L’usage sera facturé dès maintenant.",
+    },
+    "admin.credits_confirm_off": {
+        "en": "Switch the credits system off? Usage will no longer be billed.",
+        "de": "Credits-System ausschalten? Nutzung wird dann nicht mehr abgerechnet.",
+        "es": "¿Desactivar el sistema de créditos? El uso ya no se facturará.",
+        "fr": "Désactiver le système de crédits ? L’usage ne sera plus facturé.",
+    },
+    "admin.quota.unlimited": {"en": "Unlimited", "de": "Unbegrenzt", "es": "Ilimitado", "fr": "Illimité"},
+    "admin.quota.balance": {"en": "Balance", "de": "Guthaben", "es": "Saldo", "fr": "Solde"},
+    "admin.quota.blocked": {"en": "Blocked", "de": "Gesperrt", "es": "Bloqueado", "fr": "Bloqué"},
+    "admin.quota.change_hint": {
+        "en": "Click to switch the quota: unlimited → balance → blocked.",
+        "de": "Klicken schaltet die Quota weiter: unbegrenzt → Guthaben → gesperrt.",
+        "es": "Haz clic para cambiar la cuota: ilimitado → saldo → bloqueado.",
+        "fr": "Cliquer fait passer la quota : illimité → solde → bloqué.",
+    },
 }

@@ -691,20 +691,38 @@ def issue_my_key(
 
 @app.get("/v1/me/keys")
 def list_my_keys(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    """Nur Praefixe und Datum — der Schluessel selbst ist nicht rekonstruierbar."""
+    """Nur Praefixe und Datum — der Schluessel selbst ist nicht rekonstruierbar.
+
+    Gespeichert wird ausschliesslich ein SHA-256-Hash; der volle Wert verlaesst
+    den Server genau einmal, in der Antwort auf POST /v1/me/keys. Diese Liste
+    ist deshalb bewusst die einzige dauerhafte Ansicht und enthaelt nur, was zur
+    Orientierung reicht: Praefix, Label, Zustand, Erstellungs- und Nutzungsdatum
+    sowie die Anzahl. Sitzungsmarken (`sess_...`) bleiben aussen vor — sie sind
+    keine API-Schluessel und waeren hier nur irrefuehrend.
+    """
+    rows = (
+        db.query(ApiKey)
+        .filter(
+            ApiKey.user_id == user.id,
+            ApiKey.key_prefix.like("gpu_%"),
+        )
+        .order_by(ApiKey.id.desc())
+        .all()
+    )
+    keys = [
+        {
+            "prefix": k.key_prefix,
+            "label": k.label,
+            "is_active": bool(k.is_active),
+            "created_at": k.created_at.isoformat() if k.created_at else None,
+            "last_used_at": k.last_used_at.isoformat() if k.last_used_at else None,
+        }
+        for k in rows
+    ]
     return {
-        "keys": [
-            {
-                "prefix": k.key_prefix,
-                "label": k.label,
-                "is_active": bool(k.is_active),
-                "created_at": k.created_at.isoformat() if k.created_at else None,
-            }
-            for k in db.query(ApiKey).filter(
-                ApiKey.user_id == user.id,
-                ApiKey.key_prefix.like("gpu_%"),
-            ).order_by(ApiKey.id.desc()).all()
-        ]
+        "keys": keys,
+        "count": len(keys),
+        "active": sum(1 for k in keys if k["is_active"]),
     }
 
 @app.get("/v1/me")

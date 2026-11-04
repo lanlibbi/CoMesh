@@ -719,6 +719,18 @@ window.GP_I18N = {
    "es": "Emitir nueva",
    "fr": "Émettre une nouvelle"
   },
+  "anzeigen": {
+   "en": "Show",
+   "de": "Anzeigen",
+   "es": "Mostrar",
+   "fr": "Afficher"
+  },
+  "verbergen": {
+   "en": "Hide",
+   "de": "Verbergen",
+   "es": "Ocultar",
+   "fr": "Masquer"
+  },
   "kopieren": {
    "en": "Copy",
    "de": "Kopieren",
@@ -1378,6 +1390,150 @@ window.GP_I18N = {
    "en": "Registration submitted — an administrator will release the account.",
    "es": "Registro enviado — un administrador liberará la cuenta.",
    "fr": "Inscription envoyée — un administrateur libérera le compte."
+  },
+  "profile.key.title": {
+   "en": "API keys",
+   "de": "API-Schlüssel",
+   "es": "API keys",
+   "fr": "API keys"
+  },
+  "profile.key.hint": {
+   "en": "These keys belong to the account signed in here. A key is shown in full exactly once, when it is issued — afterwards only the prefix remains, because the portal stores a hash.",
+   "de": "Diese Schlüssel gehören zu dem hier angemeldeten Konto. Ein Schlüssel wird genau einmal vollständig angezeigt — beim Ausstellen; danach bleibt nur das Präfix, weil das Portal nur einen Hash speichert.",
+   "es": "Estas claves pertenecen a la cuenta conectada aquí. Una clave se muestra completa exactamente una vez, al emitirla; después solo queda el prefijo, porque el portal guarda un hash.",
+   "fr": "Ces clés appartiennent au compte connecté ici. Une clé n’est affichée en entier qu’une seule fois, à son émission ; ensuite seul le préfixe reste, le portail ne conservant qu’un hash."
+  },
+  "profile.key.list.title": {
+   "en": "Issued keys",
+   "de": "Ausgestellte Schlüssel",
+   "es": "Claves emitidas",
+   "fr": "Clés émises"
+  },
+  "profile.key.col.prefix": {
+   "en": "Prefix",
+   "de": "Präfix",
+   "es": "Prefijo",
+   "fr": "Préfixe"
+  },
+  "profile.key.col.created": {
+   "en": "Created",
+   "de": "Erstellt",
+   "es": "Creada",
+   "fr": "Créée"
+  },
+  "profile.key.col.status": {
+   "en": "Status",
+   "de": "Status",
+   "es": "Estado",
+   "fr": "Statut"
+  },
+  "profile.key.status.active": {
+   "en": "active",
+   "de": "aktiv",
+   "es": "activa",
+   "fr": "active"
+  },
+  "profile.key.status.replaced": {
+   "en": "replaced",
+   "de": "ersetzt",
+   "es": "reemplazada",
+   "fr": "remplacée"
+  },
+  "profile.key.empty": {
+   "en": "No key issued yet. The browser works with a session; create a key here as soon as a program, an SDK or the node installer needs one.",
+   "de": "Noch kein Schlüssel ausgestellt. Der Browser arbeitet mit einer Sitzung; einen Schlüssel brauchst du, sobald ein Programm, ein SDK oder der Node-Installer einen verlangt.",
+   "es": "Todavía no hay ninguna clave emitida. El navegador trabaja con una sesión; necesitas una clave en cuanto un programa, un SDK o el instalador del node la pida.",
+   "fr": "Aucune clé émise pour l’instant. Le navigateur travaille avec une session ; une clé devient nécessaire dès qu’un programme, un SDK ou l’installeur du node en demande une."
+  },
+  "profile.key.new.title": {
+   "en": "Create a new key",
+   "de": "Neuen Schlüssel erzeugen",
+   "es": "Crear una clave nueva",
+   "fr": "Créer une nouvelle clé"
+  },
+  "profile.key.new.hint": {
+   "en": "A new key replaces the previous one: the old key stops working immediately. Confirm with your password — no key is issued without it.",
+   "de": "Ein neuer Schlüssel ersetzt den bisherigen: der alte funktioniert sofort nicht mehr. Bestätige mit deinem Passwort — ohne Passwort wird kein Schlüssel ausgestellt.",
+   "es": "Una clave nueva sustituye a la anterior: la antigua deja de funcionar de inmediato. Confirma con tu contraseña; sin ella no se emite ninguna clave.",
+   "fr": "Une nouvelle clé remplace la précédente : l’ancienne cesse immédiatement de fonctionner. Confirmez avec votre mot de passe — sans lui, aucune clé n’est émise."
+  },
+  "profile.key.password": {
+   "en": "Password to confirm",
+   "de": "Passwort zur Bestätigung",
+   "es": "Contraseña para confirmar",
+   "fr": "Mot de passe pour confirmer"
+  },
+  "profile.key.create": {
+   "en": "Create key",
+   "de": "Schlüssel erzeugen",
+   "es": "Crear clave",
+   "fr": "Créer la clé"
+  },
+  "profile.key.creating": {
+   "en": "Creating…",
+   "de": "Erzeuge…",
+   "es": "Creando…",
+   "fr": "Création…"
+  },
+  "profile.key.once.title": {
+   "en": "This key is shown only now",
+   "de": "Dieser Schlüssel wird nur jetzt angezeigt",
+   "es": "Esta clave solo se muestra ahora",
+   "fr": "Cette clé n’est affichée que maintenant"
+  },
+  "profile.key.once.body": {
+   "en": "Copy it now and keep it somewhere safe. It cannot be displayed again — if you lose it, create a new one. Do not pass it on: it gives full access to this account, including its credits.",
+   "de": "Kopiere ihn jetzt und lege ihn sicher ab. Er lässt sich nicht erneut anzeigen — ist er weg, erzeugst du einen neuen. Gib ihn nicht weiter: er öffnet den vollen Zugang zu diesem Konto, einschließlich der Credits.",
+   "es": "Cópiala ahora y guárdala en un lugar seguro. No se puede volver a mostrar; si la pierdes, crea otra. No la compartas: da acceso completo a esta cuenta, incluidos sus Credits.",
+   "fr": "Copiez-la maintenant et conservez-la en lieu sûr. Elle ne peut plus être réaffichée ; si vous la perdez, créez-en une nouvelle. Ne la transmettez pas : elle ouvre l’accès complet à ce compte, y compris ses Credits."
+  },
+  "profile.key.copy": {
+   "en": "Copy key",
+   "de": "Schlüssel kopieren",
+   "es": "Copiar clave",
+   "fr": "Copier la clé"
+  },
+  "profile.key.copied": {
+   "en": "Key copied",
+   "de": "Schlüssel kopiert",
+   "es": "Clave copiada",
+   "fr": "Clé copiée"
+  },
+  "profile.key.dismiss": {
+   "en": "I have saved it — hide",
+   "de": "Ich habe ihn gesichert — ausblenden",
+   "es": "La he guardado — ocultar",
+   "fr": "Je l’ai enregistrée — masquer"
+  },
+  "profile.key.for.node": {
+   "en": "This is the value the node installer asks for as PORTAL_USER_KEY.",
+   "de": "Das ist der Wert, den der Node-Installer als PORTAL_USER_KEY abfragt.",
+   "es": "Este es el valor que el instalador del node pide como PORTAL_USER_KEY.",
+   "fr": "C’est la valeur que l’installeur du node demande comme PORTAL_USER_KEY."
+  },
+  "profile.key.load_failed": {
+   "en": "Keys could not be loaded:",
+   "de": "Schlüssel konnten nicht geladen werden:",
+   "es": "No se pudieron cargar las claves:",
+   "fr": "Impossible de charger les clés :"
+  },
+  "profile.key.password_wrong": {
+   "en": "Password incorrect — no key was issued.",
+   "de": "Passwort falsch — es wurde kein Schlüssel ausgestellt.",
+   "es": "Contraseña incorrecta: no se emitió ninguna clave.",
+   "fr": "Mot de passe incorrect — aucune clé n’a été émise."
+  },
+  "profile.key.needs_password": {
+   "en": "Enter your password to create a key.",
+   "de": "Gib dein Passwort ein, um einen Schlüssel zu erzeugen.",
+   "es": "Introduce tu contraseña para crear una clave.",
+   "fr": "Saisissez votre mot de passe pour créer une clé."
+  },
+  "profile.key.issued": {
+   "en": "New key created — the previous one is invalid.",
+   "de": "Neuer Schlüssel erzeugt — der bisherige ist ungültig.",
+   "es": "Clave nueva creada: la anterior ya no es válida.",
+   "fr": "Nouvelle clé créée — la précédente est invalide."
   },
   "gpu-bereitstellen": {
    "en": "Contribute a GPU",
@@ -2285,6 +2441,108 @@ window.GP_I18N = {
    "es": "con consumo en el periodo",
    "fr": "avec usage sur la période"
   },
+  "common.models": {
+   "en": "Models",
+   "de": "Modelle",
+   "es": "Modelos",
+   "fr": "Modèles"
+  },
+  "chat.choose_model": {
+   "en": "Choose a model",
+   "de": "Modell wählen",
+   "es": "Elegir un modelo",
+   "fr": "Choisir un modèle"
+  },
+  "fmt.range_suffix": {
+   "en": " calls",
+   "de": " Aufrufe",
+   "es": " llamadas",
+   "fr": " appels"
+  },
+  "range.last": {
+   "en": "Last ",
+   "de": "Letzte ",
+   "es": "Últimos ",
+   "fr": "Derniers "
+  },
+  "range.24h": {
+   "en": "24 hours",
+   "de": "24 Stunden",
+   "es": "24 horas",
+   "fr": "24 heures"
+  },
+  "range.7d": {
+   "en": "7 days",
+   "de": "7 Tage",
+   "es": "7 días",
+   "fr": "7 jours"
+  },
+  "range.30d": {
+   "en": "30 days",
+   "de": "30 Tage",
+   "es": "30 días",
+   "fr": "30 jours"
+  },
+  "admin.credits_on": {
+   "en": "Credits on",
+   "de": "Credits an",
+   "es": "Créditos on",
+   "fr": "Crédits on"
+  },
+  "admin.credits_off": {
+   "en": "Credits off",
+   "de": "Credits aus",
+   "es": "Créditos off",
+   "fr": "Crédits off"
+  },
+  "admin.credits_on_hint": {
+   "en": "Usage is billed in credits. Accounts without balance cannot call models.",
+   "de": "Nutzung wird in Credits abgerechnet. Konten ohne Guthaben können keine Modelle aufrufen.",
+   "es": "El uso se factura en créditos. Las cuentas sin saldo no pueden llamar a los modelos.",
+   "fr": "L’usage est facturé en crédits. Les comptes sans solde ne peuvent pas appeler de modèles."
+  },
+  "admin.credits_off_hint": {
+   "en": "Credits are not charged; usage is counted in tokens only.",
+   "de": "Es werden keine Credits abgerechnet; gezählt werden nur Token.",
+   "es": "No se cobran créditos; solo se cuentan los tokens.",
+   "fr": "Aucun crédit n’est facturé ; seuls les tokens sont comptés."
+  },
+  "admin.credits_confirm_on": {
+   "en": "Switch the credits system on? Usage will be billed from now on.",
+   "de": "Credits-System einschalten? Ab jetzt wird Nutzung abgerechnet.",
+   "es": "¿Activar el sistema de créditos? A partir de ahora se facturará el uso.",
+   "fr": "Activer le système de crédits ? L’usage sera facturé dès maintenant."
+  },
+  "admin.credits_confirm_off": {
+   "en": "Switch the credits system off? Usage will no longer be billed.",
+   "de": "Credits-System ausschalten? Nutzung wird dann nicht mehr abgerechnet.",
+   "es": "¿Desactivar el sistema de créditos? El uso ya no se facturará.",
+   "fr": "Désactiver le système de crédits ? L’usage ne sera plus facturé."
+  },
+  "admin.quota.unlimited": {
+   "en": "Unlimited",
+   "de": "Unbegrenzt",
+   "es": "Ilimitado",
+   "fr": "Illimité"
+  },
+  "admin.quota.balance": {
+   "en": "Balance",
+   "de": "Guthaben",
+   "es": "Saldo",
+   "fr": "Solde"
+  },
+  "admin.quota.blocked": {
+   "en": "Blocked",
+   "de": "Gesperrt",
+   "es": "Bloqueado",
+   "fr": "Bloqué"
+  },
+  "admin.quota.change_hint": {
+   "en": "Click to switch the quota: unlimited → balance → blocked.",
+   "de": "Klicken schaltet die Quota weiter: unbegrenzt → Guthaben → gesperrt.",
+   "es": "Haz clic para cambiar la cuota: ilimitado → saldo → bloqueado.",
+   "fr": "Cliquer fait passer la quota : illimité → solde → bloqué."
+  },
   "fmt.range_now": {
    "en": "{since} – now",
    "de": "{since} – jetzt",
@@ -2472,10 +2730,10 @@ window.GP_I18N = {
    "fr": "Account key"
   },
   "node.contribute.key.body": {
-   "en": "The installer writes it to the configuration as <code class=\"inline\">PORTAL_USER_KEY</code>. It is the API key of your account — the same one this portal signs you in with. It is issued once at sign-in and cannot be shown again in the <a href=\"profile.html\" class=\"link\">account settings</a> today; if it is gone, an admin issues a new one.",
-   "de": "Der Installer schreibt ihn als <code class=\"inline\">PORTAL_USER_KEY</code> in die Konfiguration. Das ist der API-Schlüssel deines Kontos — derselbe, mit dem dich dieses Portal anmeldet. Er wird beim Anmelden einmalig ausgegeben und lässt sich in den <a href=\"profile.html\" class=\"link\">Kontoeinstellungen</a> derzeit nicht erneut anzeigen; ist er weg, stellt dir der Admin einen neuen aus.",
-   "es": "El instalador lo escribe en la configuración como <code class=\"inline\">PORTAL_USER_KEY</code>. Es la API key de tu cuenta — la misma con la que este portal te autentica. Se entrega una sola vez al iniciar sesión y hoy no puede volver a mostrarse en los <a href=\"profile.html\" class=\"link\">ajustes de cuenta</a>; si se ha perdido, un admin emite una nueva.",
-   "fr": "L’installateur l’écrit dans la configuration sous <code class=\"inline\">PORTAL_USER_KEY</code>. C’est l’API key de votre compte — celle avec laquelle ce portail vous authentifie. Elle est délivrée une seule fois à la connexion et ne peut plus être réaffichée aujourd’hui dans les <a href=\"profile.html\" class=\"link\">paramètres du compte</a> ; si elle est perdue, un admin en émet une nouvelle."
+   "en": "The installer writes it to the configuration as <code class=\"inline\">PORTAL_USER_KEY</code>. It is the API key of your account — the same one this portal signs you in with. It is shown in full once, when it is issued; in the <a href=\"profile.html#schluessel\" class=\"link\">account settings</a> you see prefix and date and can create a new one with your password at any time. A new key invalidates the previous one.",
+   "de": "Der Installer schreibt ihn als <code class=\"inline\">PORTAL_USER_KEY</code> in die Konfiguration. Das ist der API-Schlüssel deines Kontos — derselbe, mit dem dich dieses Portal anmeldet. Er wird beim Ausstellen einmalig vollständig angezeigt; in den <a href=\"profile.html#schluessel\" class=\"link\">Kontoeinstellungen</a> siehst du Präfix und Datum und erzeugst mit deinem Passwort jederzeit einen neuen. Ein neuer Schlüssel macht den bisherigen ungültig.",
+   "es": "El instalador lo escribe en la configuración como <code class=\"inline\">PORTAL_USER_KEY</code>. Es la API key de tu cuenta — la misma con la que este portal te autentica. Se muestra completa una sola vez, al emitirla; en los <a href=\"profile.html#schluessel\" class=\"link\">ajustes de cuenta</a> ves el prefijo y la fecha y puedes crear una nueva con tu contraseña cuando quieras. Una clave nueva invalida la anterior.",
+   "fr": "L’installateur l’écrit dans la configuration sous <code class=\"inline\">PORTAL_USER_KEY</code>. C’est l’API key de votre compte — celle avec laquelle ce portail vous authentifie. Elle n’est affichée en entier qu’une seule fois, à son émission ; dans les <a href=\"profile.html#schluessel\" class=\"link\">paramètres du compte</a> vous voyez le préfixe et la date et pouvez en créer une nouvelle avec votre mot de passe à tout moment. Une nouvelle clé invalide la précédente."
   },
   "node.contribute.after.title": {
    "en": "What happens next",

@@ -1431,6 +1431,125 @@
    "pages": [
     "usage.html"
    ]
+  },
+  "profile.key.title": {
+   "src": "API-Schlüssel",
+   "where": "markup",
+   "pages": [
+    "profile.html"
+   ]
+  },
+  "profile.key.hint": {
+   "src": "Diese Schlüssel gehören zu dem hier angemeldeten Konto. Ein Schlüssel wird genau einmal vollständig angezeigt — beim Ausstellen; danach bleibt nur das Präfix, weil das Portal nur einen Hash speichert.",
+   "where": "markup",
+   "pages": [
+    "profile.html"
+   ]
+  },
+  "profile.key.list.title": {
+   "src": "Ausgestellte Schlüssel",
+   "where": "markup",
+   "pages": [
+    "profile.html"
+   ]
+  },
+  "profile.key.empty": {
+   "src": "Noch kein Schlüssel ausgestellt. Der Browser arbeitet mit einer Sitzung; einen Schlüssel brauchst du, sobald ein Programm, ein SDK oder der Node-Installer einen verlangt.",
+   "where": "markup",
+   "pages": [
+    "profile.html"
+   ]
+  },
+  "profile.key.col.prefix": {
+   "src": "Präfix",
+   "where": "markup",
+   "pages": [
+    "profile.html"
+   ]
+  },
+  "profile.key.col.created": {
+   "src": "Erstellt",
+   "where": "markup",
+   "pages": [
+    "profile.html"
+   ]
+  },
+  "profile.key.col.status": {
+   "src": "Status",
+   "where": "markup",
+   "pages": [
+    "profile.html"
+   ]
+  },
+  "profile.key.new.title": {
+   "src": "Neuen Schlüssel erzeugen",
+   "where": "markup",
+   "pages": [
+    "profile.html"
+   ]
+  },
+  "profile.key.new.hint": {
+   "src": "Ein neuer Schlüssel ersetzt den bisherigen: der alte funktioniert sofort nicht mehr. Bestätige mit deinem Passwort — ohne Passwort wird kein Schlüssel ausgestellt.",
+   "where": "markup",
+   "pages": [
+    "profile.html"
+   ]
+  },
+  "profile.key.once.title": {
+   "src": "Dieser Schlüssel wird nur jetzt angezeigt",
+   "where": "markup",
+   "pages": [
+    "profile.html"
+   ]
+  },
+  "profile.key.once.body": {
+   "src": "Kopiere ihn jetzt und lege ihn sicher ab. Er lässt sich nicht erneut anzeigen — ist er weg, erzeugst du einen neuen. Gib ihn nicht weiter: er öffnet den vollen Zugang zu diesem Konto, einschließlich der Credits.",
+   "where": "markup",
+   "pages": [
+    "profile.html"
+   ]
+  },
+  "profile.key.copy": {
+   "src": "Schlüssel kopieren",
+   "where": "markup",
+   "pages": [
+    "profile.html"
+   ]
+  },
+  "profile.key.dismiss": {
+   "src": "Ich habe ihn gesichert — ausblenden",
+   "where": "markup",
+   "pages": [
+    "profile.html"
+   ]
+  },
+  "profile.key.for.node": {
+   "src": "Das ist der Wert, den der Node-Installer als PORTAL_USER_KEY abfragt.",
+   "where": "markup",
+   "pages": [
+    "profile.html"
+   ]
+  },
+  "profile.key.password": {
+   "src": "Passwort zur Bestätigung",
+   "where": "markup",
+   "pages": [
+    "profile.html"
+   ]
+  },
+  "profile.key.create": {
+   "src": "Schlüssel erzeugen",
+   "where": "markup",
+   "pages": [
+    "profile.html"
+   ]
+  },
+  "profile.key.creating": {
+   "src": "Erzeuge…",
+   "where": "markup",
+   "pages": [
+    "profile.html"
+   ]
   }
  },
  "findings": {

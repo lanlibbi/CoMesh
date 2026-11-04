@@ -102,6 +102,89 @@
       </div>
     </section>
 
+    <!-- API-Schlüssel — der Wert, den der Node-Installer als PORTAL_USER_KEY
+         verlangt. Dauerhaft stehen hier nur Präfix und Datum; der volle Wert
+         erscheint genau einmal direkt nach dem Ausstellen (der Server speichert
+         nur einen Hash, er könnte ihn gar nicht erneut liefern). -->
+    <section class="card mb-4" id="schluessel">
+      <div class="panel-head">
+        <div>
+          <div class="eyebrow" data-i18n="zugang">Zugang</div>
+          <h3 data-i18n="profile.key.title">API-Schlüssel</h3>
+          <p class="hint">
+            <span data-i18n="profile.key.hint">Diese Schlüssel gehören zu dem hier angemeldeten Konto. Ein Schlüssel wird genau einmal vollständig angezeigt — beim Ausstellen; danach bleibt nur das Präfix, weil das Portal nur einen Hash speichert.</span>
+            <b class="mono" x-text="meEmail"></b>
+          </p>
+        </div>
+      </div>
+
+      <h4 class="mb-2" data-i18n="profile.key.list.title">Ausgestellte Schlüssel</h4>
+
+      <div x-show="!keysLoaded" class="t-sm text-mute" data-i18n="laedt">Lädt…</div>
+      <p x-show="keysLoaded && keys.length === 0" class="t-sm text-dim"
+         data-i18n="profile.key.empty">Noch kein Schlüssel ausgestellt. Der Browser arbeitet mit einer Sitzung; einen Schlüssel brauchst du, sobald ein Programm, ein SDK oder der Node-Installer einen verlangt.</p>
+
+      <div class="table-wrap" x-show="keys.length > 0">
+        <table class="tbl">
+          <thead>
+            <tr>
+              <th data-i18n="profile.key.col.prefix">Präfix</th>
+              <th data-i18n="profile.key.col.created">Erstellt</th>
+              <th data-i18n="profile.key.col.status">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <template x-for="k in keys" :key="k.prefix + '|' + (k.created_at || '')">
+              <tr>
+                <td class="mono" x-text="k.prefix + '…'"></td>
+                <td class="t-sm text-dim nowrap" x-text="keyDate(k.created_at)"></td>
+                <td>
+                  <span class="pill pill-flat" :class="k.is_active ? 'pill-online' : 'pill-offline'"
+                        x-text="keyStatus(k)"></span>
+                </td>
+              </tr>
+            </template>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="divider inset"></div>
+
+      <h4 class="mb-2" data-i18n="profile.key.new.title">Neuen Schlüssel erzeugen</h4>
+      <p class="hint" data-i18n="profile.key.new.hint">Ein neuer Schlüssel ersetzt den bisherigen: der alte funktioniert sofort nicht mehr. Bestätige mit deinem Passwort — ohne Passwort wird kein Schlüssel ausgestellt.</p>
+
+      <template x-if="newKey">
+        <div class="notice mt-3" style="border-color:var(--warn-bd);background:var(--warn-bg)">
+          <span class="notice-icon" style="color:var(--warn)" aria-hidden="true">!</span>
+          <div class="grow">
+            <div class="semibold" data-i18n="profile.key.once.title">Dieser Schlüssel wird nur jetzt angezeigt</div>
+            <p class="t-sm text-dim mt-1" data-i18n="profile.key.once.body">Kopiere ihn jetzt und lege ihn sicher ab. Er lässt sich nicht erneut anzeigen — ist er weg, erzeugst du einen neuen. Gib ihn nicht weiter: er öffnet den vollen Zugang zu diesem Konto, einschließlich der Credits.</p>
+            <pre class="code mono mt-2" x-text="newKey"></pre>
+            <div class="row wrap mt-2" style="gap:8px">
+              <button type="button" class="btn-primary btn-sm" @click="copyNewKey($event)"
+                      data-i18n="profile.key.copy">Schlüssel kopieren</button>
+              <button type="button" class="btn-ghost btn-sm" @click="dismissKey()"
+                      data-i18n="profile.key.dismiss">Ich habe ihn gesichert — ausblenden</button>
+            </div>
+            <p class="hint mt-2" data-i18n="profile.key.for.node">Das ist der Wert, den der Node-Installer als PORTAL_USER_KEY abfragt.</p>
+          </div>
+        </div>
+      </template>
+
+      <div class="row wrap mt-3" style="gap:10px;align-items:flex-end">
+        <div class="grow" style="min-width:220px">
+          <label class="label" for="keyPassword" data-i18n="profile.key.password">Passwort zur Bestätigung</label>
+          <input class="input" id="keyPassword" type="password" autocomplete="current-password"
+                 x-model="keyPassword" @keydown.enter.prevent="createKey()" />
+        </div>
+        <button type="button" class="btn-primary btn-sm" @click="createKey()" :disabled="creatingKey">
+          <span x-show="!creatingKey" data-i18n="profile.key.create">Schlüssel erzeugen</span>
+          <span x-show="creatingKey" data-i18n="profile.key.creating">Erzeuge…</span>
+        </button>
+      </div>
+      <div x-show="keyError" class="t-sm text-err mt-2" x-text="keyError"></div>
+    </section>
+
     <!-- Model whitelist -->
     <section class="card">
       <div class="panel-head">
