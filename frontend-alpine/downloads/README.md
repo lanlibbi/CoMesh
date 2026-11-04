@@ -39,10 +39,13 @@ Zwei Gegenmaßnahmen, beide im Repo:
   Inhalt, eine alte Cache-Kopie kann nicht mehr greifen — das wirkt auch auf
   einen Edge, der die Datei schon hält. **Das ist der belastbare Teil.**
 * `frontend-alpine/nginx.conf` schickt für `/downloads/`
-  `Cache-Control: no-cache`. Gemessen hilft das am Cloudflare-Edge **nicht**
-  (er ersetzte den Header durch `max-age=14400` und antwortete wieder HIT) —
-  es bleibt für Browser und eigene Proxys, die rückfragen sollen.
-  `.sh`, `.ps1` und `.sha256` sind ohnehin nicht betroffen (`DYNAMIC`).
+  `Cache-Control: no-cache`. Gemessen: solange die gespeicherte Kopie frisch
+  war, hat der Edge den Header ignoriert (`max-age=14400`, HIT); nach Ablauf
+  der TTL fragt er den Ursprung und antwortet danach
+  `cf-cache-status: REVALIDATED` — mit dem Header bleibt es beim Rückfragen,
+  statt wieder vier Stunden eine Kopie zu halten. Er verkürzt also die
+  Frischezeit einer **schon** gespeicherten Datei nicht; dafür ist der Query
+  da. `.sh`, `.ps1` und `.sha256` sind ohnehin nicht betroffen (`DYNAMIC`).
 
 Nach einem Release deshalb **über den öffentlichen Namen** prüfen, nicht nur am
 Container:
