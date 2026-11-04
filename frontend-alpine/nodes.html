@@ -39,8 +39,27 @@
       </p>
     </div>
 
+      <!-- Rolle: der Installationsweg unten ist für jedes Konto da;
+           Registrieren und die Massenaktionen brauchen die Rolle `provider`.
+           Ein Consumer stellt sie selbst im Profil um (PUT /v1/me/role) —
+           dafür ist kein Administrator nötig. -->
+      <div class="notice mb-4" x-show="!isProvider" x-cloak data-role-gate>
+        <span class="notice-icon" aria-hidden="true">i</span>
+        <div class="grow">
+          <div class="semibold" data-i18n="node.role_gate.title">Noch kein Provider-Konto</div>
+          <p class="t-sm text-dim mt-1" data-i18n-html="node.role_gate.body">
+            Die Installationsbefehle unten gelten für jedes Konto. Der Agent meldet die Node aber
+            mit deinem Account-Schlüssel an, und dafür muss dein Konto die Rolle
+            <b>provider</b> (oder <b>both</b>) tragen. Das stellst du selbst im
+            <a href="profile.html#rolle" class="link">Profil</a> um — ein Administrator ist dafür
+            nicht nötig. Danach erscheint deine Node in der Liste dieser Seite.
+          </p>
+          <a class="btn-ghost btn-sm mt-3" href="profile.html#rolle" data-i18n="node.role_gate.cta">Rolle im Profil ändern</a>
+        </div>
+      </div>
+
       <!-- Bulk Actions (LANA-47) — page-level toolbar for the node list below -->
-      <div class="row wrap mb-3" style="justify-content:space-between;align-items:center">
+      <div class="row wrap mb-3" x-show="isProvider" x-cloak style="justify-content:space-between;align-items:center">
         <label class="check">
           <input type="checkbox" id="select-all-nodes" aria-label="Alle Nodes auswählen"
                  :checked="allSelected" x-effect="$el.indeterminate = someSelected"
@@ -62,7 +81,7 @@
 
     <div class="grid mb-5">
       <!-- Registration form -->
-      <div class="card span-7 col">
+      <div class="card span-7 col" x-show="isProvider" x-cloak>
         <div class="panel-head">
           <div>
             <div class="eyebrow" data-i18n="neu">Neu</div>
@@ -161,7 +180,7 @@
       </div>
 
       <!-- Explanation -->
-      <div class="card span-5">
+      <div :class="isProvider ? 'card span-5' : 'card span-12'">
         <div class="panel-head">
           <div>
             <div class="eyebrow" data-i18n="ablauf">Ablauf</div>
@@ -171,7 +190,7 @@
         <ul class="stack" style="list-style:none;padding:0;margin:0">
           <li class="row top" style="gap:12px">
             <span class="pill pill-flat mono" style="color:var(--brass);border-color:var(--brass-line)">01</span>
-            <span class="t-sm text-dim grow">
+            <span class="t-sm text-dim grow" data-i18n-html="node.explain.key">
               Du erhältst einen <code class="inline">agent_api_key</code> — einmalig sichtbar, sicher speichern.
             </span>
           </li>
@@ -474,7 +493,8 @@
               <rect x="3" y="4" width="18" height="7" rx="2"/><rect x="3" y="13" width="18" height="7" rx="2"/>
             </svg>
           </span>
-          <p data-i18n="noch-keine-node-registriert-das-formular">Noch keine Node registriert — das Formular oben ist der erste Schritt.</p>
+          <p data-i18n="noch-keine-node-registriert-das-formular" x-show="isProvider">Noch keine Node registriert — das Formular oben ist der erste Schritt.</p>
+          <p data-i18n="node.list.empty_consumer" x-show="!isProvider" x-cloak>Sobald der Agent auf deiner Maschine läuft, erscheint die Node hier — die Befehle stehen oben unter „Eigene Node beitragen“.</p>
         </div>
       </div>
     </div>

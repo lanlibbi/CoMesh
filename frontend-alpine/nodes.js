@@ -33,6 +33,12 @@ const COPY_TIMERS = {};
 document.addEventListener("alpine:init", () => {
   Alpine.data("nodesPage", () => ({
   myNodes: [],
+  // Provider-Funktionen (Registrieren, Massenaktionen) hängen an der Rolle.
+  // Die Seite selbst ist für jedes Konto offen — der Abschnitt „Eigene Node
+  // beitragen" ist der Weg, über den ein Konto Provider wird. Vorbelegt aus
+  // dem gespeicherten Konto, damit beim ersten Aufbau nichts aufblitzt;
+  // `init()` liest die Rolle danach erneut.
+  isProvider: Auth.canProvide(),
   // Mirrors the backend credits flag: hides credit rates / earnings labelling.
   billing: Credits.enabled(),
   availableModels: [],
@@ -62,11 +68,16 @@ document.addEventListener("alpine:init", () => {
   copyState: { unix: "", windows: "" },
 
     async init() {
-      if (!Auth.requireProviderOrRedirect()) return;
+      // Kein Rollen-Riegel für die ganze Seite: ein Consumer muss den
+      // Installationsweg sehen können, sonst findet er nie zum Provider.
+      // Ausgeblendet werden nur die Provider-Funktionen (Markup über
+      // `isProvider`), und das Server-Gate in nodes.py bleibt bestehen.
+      if (!Auth.requireLogin()) return;
+      this.isProvider = Auth.canProvide();
       this.billing = Credits.enabled();
       this.initContribute();
-      await this.loadAvailableModels();
       await this.load();
+      if (this.isProvider) await this.loadAvailableModels();
       this.billing = Credits.enabled();
     },
 
@@ -271,7 +282,7 @@ document.addEventListener("alpine:init", () => {
     // Knopf an der Einzelzeile). Teilfehler werden gesammelt und gemeldet.
     async bulkToggleStatus() {
       const targets = this.selectedNodes();
-      if (targets.length === 0) return;
+      if (!this.isProvider || targets.length === 0) return;
 
       this.bulkBusy = true;
       this.bulkError = "";
@@ -305,7 +316,7 @@ document.addEventListener("alpine:init", () => {
 
     // ---- Bulk: Modell-Whitelist ----------------------------------------
     openBulkWhitelist() {
-      if (this.selectedCount === 0) return;
+      if (!this.isProvider || this.selectedCount === 0) return;
       this.bulkWhitelistSelection = [];
       this.bulkWhitelistError = "";
       this.bulkWhitelistOpen = true;
@@ -397,6 +408,7 @@ document.addEventListener("alpine:init", () => {
     },
 
     async submit() {
+      if (!this.isProvider) return;
       this.msg = "Registriere...";
       try {
         const body = {

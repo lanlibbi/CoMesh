@@ -75,6 +75,16 @@ const Auth = {
     if (r === "both") return true;
     return r === role;
   },
+  /**
+   * Darf dieses Konto Node-Funktionen benutzen (registrieren, Massenaktionen)?
+   * `hasRole("provider")` ist hier zu eng: es kennt nur `provider` und `both`,
+   * ein `admin` fiele durch — und stand damit vor dem Rollen-Hinweis, obwohl
+   * `POST /nodes/register` nur `consumer` abweist.
+   */
+  canProvide() {
+    const r = ((this.currentUser() || {}).role || "both").toString().toLowerCase();
+    return r === "provider" || r === "both" || r === "admin";
+  },
   /** Convenience: consumer-only users get bounced away from provider pages. */
   requireProviderOrRedirect(target = "chat.html") {
     if (!this.isLoggedIn()) { window.location.href = "login.html"; return false; }
@@ -156,6 +166,11 @@ function mountBackground() {
 const NAV_ITEMS = [
   { key: "dashboard", href: "index.html", labelKey: "nav.dashboard" },
   { key: "chat", href: "chat.html", labelKey: "nav.chat" },
+  // nodes.html hängt bewusst an keiner Rolle mehr: der Abschnitt „Eigene Node
+  // beitragen" ist der Weg, über den ein Konto überhaupt Provider wird. Die
+  // Provider-Funktionen der Seite (Registrierungsformular, Massenaktionen)
+  // blendet nodes.html selbst aus; das Server-Gate bleibt in nodes.py.
+  { key: "nodes", href: "nodes.html", labelKey: "nav.nodes" },
   { key: "usage", href: "usage.html", labelKey: "nav.usage" },
   // Admin-only view of every user's consumption; the server gates /admin/usage too.
   { key: "admin-usage", href: "admin-usage.html", labelKey: "nav.admin.usage", adminOnly: true },
@@ -163,7 +178,6 @@ const NAV_ITEMS = [
   { key: "admin-audit", href: "admin-audit.html", labelKey: "nav.admin.audit", adminOnly: true },
   { key: "admin-nodes", href: "admin-nodes.html", labelKey: "nav.admin.nodes", adminOnly: true },
   { key: "pool", href: "pool.html", labelKey: "nav.pool" },
-  { key: "nodes", href: "nodes.html", labelKey: "nav.nodes", providerOnly: true },
   { key: "agent", href: "agent.html", labelKey: "nav.agent" },
   { key: "profile", href: "profile.html", labelKey: "nav.profile" },
 ];

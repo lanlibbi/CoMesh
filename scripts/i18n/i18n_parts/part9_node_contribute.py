@@ -203,4 +203,105 @@ KEYS = {
         "es": "sin archivo de suma",
         "fr": "pas de fichier de somme",
     },
+
+    # ------------------------------------------- nodes.html — Rollen-Hinweis
+    # Die Seite ist für jedes Konto offen. Registrieren und Massenaktionen
+    # brauchen `provider`; ein Consumer stellt die Rolle selbst im Profil um
+    # (PUT /v1/me/role) — der Hinweis verlinkt genau dorthin, statt zu
+    # behaupten, ein Administrator müsse eingreifen.
+    # html — Schritt 01 der Ablauf-Liste; stand als einziger Schritt ohne
+    # Schlüssel da und blieb deshalb in jeder Sprache deutsch.
+    "node.explain.key": {
+        "en": "You receive an <code class=\"inline\">agent_api_key</code> — shown once, store it safely.",
+        "de": "Du erhältst einen <code class=\"inline\">agent_api_key</code> — einmalig sichtbar, sicher speichern.",
+        "es": "Recibes una <code class=\"inline\">agent_api_key</code> — visible una sola vez, guárdala de forma segura.",
+        "fr": "Vous recevez une <code class=\"inline\">agent_api_key</code> — affichée une seule fois, à conserver en lieu sûr.",
+    },
+    "node.role_gate.title": {
+        "en": "No provider account yet",
+        "de": "Noch kein Provider-Konto",
+        "es": "Todavía no es una cuenta provider",
+        "fr": "Pas encore de compte provider",
+    },
+    # html
+    "node.role_gate.body": {
+        "en": "The installation commands below work for every account. The agent registers the node with your account key, though, and for that your account needs the role <b>provider</b> (or <b>both</b>). You change that yourself in the <a href=\"profile.html#rolle\" class=\"link\">profile</a> — no administrator needed. Your node then appears in the list on this page.",
+        "de": "Die Installationsbefehle unten gelten für jedes Konto. Der Agent meldet die Node aber mit deinem Account-Schlüssel an, und dafür muss dein Konto die Rolle <b>provider</b> (oder <b>both</b>) tragen. Das stellst du selbst im <a href=\"profile.html#rolle\" class=\"link\">Profil</a> um — ein Administrator ist dafür nicht nötig. Danach erscheint deine Node in der Liste dieser Seite.",
+        "es": "Los comandos de instalación de abajo sirven para cualquier cuenta. Pero el agente registra el node con la clave de tu cuenta y para eso tu cuenta necesita el rol <b>provider</b> (o <b>both</b>). Eso lo cambias tú mismo en el <a href=\"profile.html#rolle\" class=\"link\">perfil</a> — no hace falta un administrador. Después tu node aparece en la lista de esta página.",
+        "fr": "Les commandes d’installation ci-dessous valent pour tout compte. Mais l’agent enregistre le node avec la clé de votre compte, et pour cela votre compte doit avoir le rôle <b>provider</b> (ou <b>both</b>). Vous le changez vous-même dans le <a href=\"profile.html#rolle\" class=\"link\">profil</a> — aucun administrateur n’est nécessaire. Votre node apparaît ensuite dans la liste de cette page.",
+    },
+    "node.role_gate.cta": {
+        "en": "Change role in profile",
+        "de": "Rolle im Profil ändern",
+        "es": "Cambiar el rol en el perfil",
+        "fr": "Changer le rôle dans le profil",
+    },
+    "node.list.empty_consumer": {
+        "en": "As soon as the agent runs on your machine, the node appears here — the commands are above under “Contribute your own node”.",
+        "de": "Sobald der Agent auf deiner Maschine läuft, erscheint die Node hier — die Befehle stehen oben unter „Eigene Node beitragen“.",
+        "es": "En cuanto el agente corra en tu máquina, el node aparece aquí — los comandos están arriba en «Aporta tu propio node».",
+        "fr": "Dès que l’agent tourne sur votre machine, le node apparaît ici — les commandes sont plus haut sous « Contribuer votre propre node ».",
+    },
+
+    # ------------------------------------------------ index.html — Node-Karte
+    "dash.node.eyebrow": {
+        "en": "Node",
+        "de": "Node",
+        "es": "Node",
+        "fr": "Node",
+    },
+    "dash.node.title_none": {
+        "en": "Share your GPU",
+        "de": "Teile deine GPU",
+        "es": "Comparte tu GPU",
+        "fr": "Partagez votre GPU",
+    },
+    "dash.node.title_has": {
+        "en": "Your node",
+        "de": "Deine Node",
+        "es": "Tu node",
+        "fr": "Votre node",
+    },
+    "dash.node.lede_none": {
+        "en": "One machine with a GPU is enough: the installer sets up the agent, the node signs in with your account key and takes jobs. 70 % of the job cost is credited to you.",
+        "de": "Ein Rechner mit GPU genügt: der Installer richtet den Agenten ein, die Node meldet sich mit deinem Account-Schlüssel an und nimmt Aufträge an. 70 % der Job-Kosten gehen als Credits an dich.",
+        "es": "Basta una máquina con GPU: el instalador prepara el agente, el node se registra con la clave de tu cuenta y acepta trabajos. El 70 % del coste del trabajo se te abona en credits.",
+        "fr": "Une machine avec GPU suffit : l’installateur installe l’agent, le node s’authentifie avec la clé de votre compte et prend des tâches. 70 % du coût de la tâche vous sont crédités.",
+    },
+    "dash.node.lede_has": {
+        "en": "These machines are linked to your account. Status and models are managed on the node page.",
+        "de": "Diese Maschinen sind mit deinem Konto verbunden. Status und Modelle pflegst du auf der Node-Seite.",
+        "es": "Estas máquinas están vinculadas a tu cuenta. El estado y los modelos se gestionan en la página de nodes.",
+        "fr": "Ces machines sont liées à votre compte. L’état et les modèles se gèrent sur la page des nodes.",
+    },
+    "dash.node.cta": {
+        "en": "To the installation guide",
+        "de": "Zum Installationsweg",
+        "es": "A la guía de instalación",
+        "fr": "Vers l’installation",
+    },
+    "dash.node.cmd_label": {
+        "en": "Install — Linux and macOS",
+        "de": "Installation — Linux und macOS",
+        "es": "Instalación — Linux y macOS",
+        "fr": "Installation — Linux et macOS",
+    },
+    "dash.node.cmd_hint": {
+        "en": "Paste into a terminal. The installer asks for the account key without echoing it, verifies the checksum and sets up the service — no sudo. For Windows the PowerShell command is on the node page.",
+        "de": "In ein Terminal einfügen. Der Installer fragt den Account-Schlüssel verdeckt ab, prüft die Prüfsumme und richtet den Dienst ein — ohne sudo. Für Windows steht der PowerShell-Befehl auf der Node-Seite.",
+        "es": "Pega en un terminal. El instalador pide la clave sin mostrarla, comprueba la suma y prepara el servicio — sin sudo. Para Windows el comando de PowerShell está en la página de nodes.",
+        "fr": "À coller dans un terminal. L’installateur demande la clé sans l’afficher, vérifie la somme et installe le service — sans sudo. Pour Windows, la commande PowerShell se trouve sur la page des nodes.",
+    },
+    "dash.node.role_hint": {
+        "en": "— the agent registers the node with your account key; the account therefore needs the role provider (or both).",
+        "de": "— der Agent meldet die Node mit deinem Account-Schlüssel an; dafür muss das Konto die Rolle provider (oder both) tragen.",
+        "es": "— el agente registra el node con la clave de tu cuenta; por eso la cuenta necesita el rol provider (o both).",
+        "fr": "— l’agent enregistre le node avec la clé de votre compte ; le compte doit donc avoir le rôle provider (ou both).",
+    },
+    "dash.node.manage": {
+        "en": "Manage nodes",
+        "de": "Nodes verwalten",
+        "es": "Gestionar nodes",
+        "fr": "Gérer les nodes",
+    },
 }

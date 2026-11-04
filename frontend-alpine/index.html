@@ -91,6 +91,54 @@
       </div>
     </div>
 
+    <!-- Node: der Weg vom Konto zur eigenen Maschine. Ein Konto ohne Node
+         sieht hier den fertigen Befehl, ein Konto mit Node den Status.
+         /nodes/my ist für jede Rolle erlaubt (ein Consumer bekommt []). -->
+    <div class="card mb-4" x-show="nodesLoaded" x-cloak data-node-card>
+      <div class="panel-head">
+        <div>
+          <div class="eyebrow" data-i18n="dash.node.eyebrow">Node</div>
+          <h3 x-text="nodes.length === 0 ? I18n.t('dash.node.title_none') : I18n.t('dash.node.title_has')"></h3>
+          <p x-text="nodes.length === 0 ? I18n.t('dash.node.lede_none') : I18n.t('dash.node.lede_has')"></p>
+        </div>
+        <a class="btn-ghost btn-sm" href="nodes.html#beitragen" data-i18n="dash.node.cta">Zum Installationsweg</a>
+      </div>
+
+      <template x-if="nodes.length === 0">
+        <div>
+          <div class="row between" style="align-items:center;gap:10px;margin-bottom:6px">
+            <span class="label" style="margin:0" x-text="I18n.t('dash.node.cmd_label')"></span>
+            <button type="button" class="btn-ghost btn-sm" @click="copyNodeCmd($event)" x-text="I18n.t('kopieren')"></button>
+          </div>
+          <pre class="term mono" x-text="nodeCommand"></pre>
+          <p class="hint" x-text="I18n.t('dash.node.cmd_hint')"></p>
+          <p class="t-sm text-dim mt-3" x-show="!isProvider" x-cloak>
+            <a class="link" href="profile.html#rolle" x-text="I18n.t('node.role_gate.cta')"></a>
+            <span x-text="I18n.t('dash.node.role_hint')"></span>
+          </p>
+        </div>
+      </template>
+
+      <template x-if="nodes.length > 0">
+        <div class="stack tight">
+          <template x-for="n in nodes" :key="n.id">
+            <div class="row between wrap" style="gap:10px;align-items:center">
+              <div class="row wrap" style="gap:10px;align-items:center">
+                <span class="semibold" x-text="n.name"></span>
+                <span class="pill" :class="'pill-' + n.status" x-text="n.status"></span>
+                <span x-show="!n.is_enabled" class="pill pill-paused" x-text="I18n.t('pausiert')"></span>
+                <span class="t-xs text-mute" x-text="n.gpu_type + ' · ' + n.vram_gb + ' GB VRAM'"></span>
+              </div>
+              <span class="t-xs text-mute" x-text="n.last_seen ? fmtDate(n.last_seen) : ''"></span>
+            </div>
+          </template>
+          <div class="row mt-2">
+            <a class="link" href="nodes.html" x-text="I18n.t('dash.node.manage')"></a>
+          </div>
+        </div>
+      </template>
+    </div>
+
     <!-- Usage -->
     <div class="grid mb-4">
       <div class="card span-8">
@@ -240,6 +288,15 @@
         loading: true,
         usage: null,
         recent: [],
+        // Eigene Node(s): /nodes/my ist für jede Rolle erlaubt und liefert
+        // einem Consumer eine leere Liste — genau daraus entsteht die Karte
+        // „Teile deine GPU".
+        nodes: [],
+        nodesLoaded: false,
+        isProvider: Auth.canProvide(),
+        get nodeCommand() {
+          return `curl -fsSL ${location.origin}/downloads/install.sh | sh`;
+        },
         exampleCurl: `curl ${location.origin}/v1/chat/completions \\
   -H "Authorization: Bearer $GPU_POOL_KEY" \\
   -H "Content-Type: application/json" \\
@@ -272,10 +329,19 @@
           this.loading = true;
           try {
             this.me = await refreshUser();
+            this.isProvider = Auth.canProvide();
             this.apiKey = LS.get("api_key");
             // Server-side aggregation: which models, how many tokens, this week.
             this.usage = await api("/v1/me/usage?window=7d", { auth: true });
             this.recent = this.usage.recent || [];
+            // Eigene Nodes — eigener Aufruf, damit ein Fehler hier nicht die
+            // ganze Übersicht kostet.
+            try {
+              this.nodes = await api("/nodes/my", { auth: true });
+            } catch (e) {
+              this.nodes = [];
+            }
+            this.nodesLoaded = true;
             renderUsageChart(
               "usageChart",
               (this.usage.series || []).map((b) => ({ label: b.label, value: b.total_tokens }))
@@ -314,6 +380,34 @@
             toast("API-Key kopiert");
             this.flashButton(ev);
           });
+        },
+
+        copyNodeCmd(ev) {
+          const text = this.nodeCommand;
+          const done = () => { toast(I18n.t("node.contribute.copied")); this.flashButton(ev); };
+          const fallback = () => {
+            try {
+              const ta = document.createElement("textarea");
+              ta.value = text;
+              ta.setAttribute("readonly", "");
+              ta.style.position = "fixed";
+              ta.style.top = "-1000px";
+              ta.style.opacity = "0";
+              document.body.appendChild(ta);
+              ta.select();
+              ta.setSelectionRange(0, text.length);
+              const ok = document.execCommand("copy");
+              ta.remove();
+              if (ok) done(); else toast(I18n.t("node.contribute.copy_failed"), "err");
+            } catch (e) {
+              toast(I18n.t("node.contribute.copy_failed"), "err");
+            }
+          };
+          if (navigator.clipboard && window.isSecureContext) {
+            navigator.clipboard.writeText(text).then(done).catch(fallback);
+          } else {
+            fallback();
+          }
         },
 
         copyNewKey(ev) {
