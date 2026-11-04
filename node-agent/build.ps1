@@ -27,6 +27,18 @@ param(
 $ErrorActionPreference = "Stop"
 Set-Location -LiteralPath $PSScriptRoot
 
+# pip und PyInstaller schreiben ihren Fortschritt nach stderr. PowerShell 5.1
+# macht daraus bei $ErrorActionPreference = "Stop" einen terminierenden Fehler
+# ("NativeCommandError"), der Bau stirbt also an der ersten INFO-Zeile, bevor
+# PyInstaller arbeitet. Externe Programme laufen deshalb mit "Continue", und
+# was sie geleistet haben, sagt der Exitcode.
+function Invoke-Native {
+    param([scriptblock]$Block, [string]$What)
+    $ErrorActionPreference = "Continue"
+    & $Block
+    if ($LASTEXITCODE -ne 0) { throw "$What ist mit Exitcode $LASTEXITCODE gescheitert." }
+}
+
 $Version = "0.0.0"
 $versionFile = Join-Path (Split-Path -Parent $PSScriptRoot) "VERSION"
 if (Test-Path -LiteralPath $versionFile) {
@@ -47,15 +59,16 @@ if (-not $NoVenv) {
     if (-not (Test-Path -LiteralPath $venvPython)) {
         Write-Host "==> Baust-venv anlegen (.venv-build, nicht systemweit)"
         $bootstrap = Get-Command py -ErrorAction SilentlyContinue
-        if ($bootstrap) { & py -3 -m venv .venv-build } else { & python -m venv .venv-build }
+        if ($bootstrap) { Invoke-Native { & py -3 -m venv .venv-build } "venv anlegen" }
+        else { Invoke-Native { & python -m venv .venv-build } "venv anlegen" }
         if (-not (Test-Path -LiteralPath $venvPython)) {
             throw "Konnte kein venv anlegen. Python 3.10+ installieren: winget install --id Python.Python.3.12 -e"
         }
     }
     $Python = $venvPython
     Write-Host "==> Abhaengigkeiten installieren (requirements-build.txt)"
-    & $Python -m pip install --quiet --upgrade pip
-    & $Python -m pip install --quiet -r requirements-build.txt
+    Invoke-Native { & $Python -m pip install --quiet --upgrade pip } "pip-Aktualisierung"
+    Invoke-Native { & $Python -m pip install --quiet -r requirements-build.txt } "pip install -r requirements-build.txt"
 } else {
     $Python = "python"
     if (-not (Get-Command pyinstaller -ErrorAction SilentlyContinue)) {
@@ -64,8 +77,7 @@ if (-not $NoVenv) {
 }
 
 Write-Host "==> Einfrieren (PyInstaller, onefile)"
-& $Python -m PyInstaller --clean --noconfirm --distpath dist --workpath build comesh-agent.spec
-if ($LASTEXITCODE -ne 0) { throw "PyInstaller ist mit Exitcode $LASTEXITCODE gescheitert." }
+Invoke-Native { & $Python -m PyInstaller --clean --noconfirm --distpath dist --workpath build comesh-agent.spec } "PyInstaller"
 
 $raw = Join-Path "dist" "comesh-agent.exe"
 if (-not (Test-Path -LiteralPath $raw)) { throw "Build hat kein dist\comesh-agent.exe erzeugt." }
