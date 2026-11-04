@@ -1,5 +1,64 @@
 # Changelog
 
+## 0.6.11 — 2026-11-04
+
+**Konten löschen, Sprachauswahl reparieren, Modellfreigabe zum Provider, echte
+Lastverteilung**
+
+1. **`DELETE /admin/users/{id}`** — bisher mussten Testkonten direkt in der DB
+   entfernt werden. Der Endpunkt entscheidet **je Tabelle**, statt eine Kaskade
+   laufen zu lassen: `api_keys` (auch `sess_…`) werden gelöscht, `node_earnings`,
+   `pool_jobs`, `usages`, `credit_transactions` und `payments` auf ein
+   Platzhalterkonto umgehängt (die **Einnahmen der Node bleiben**), eine Node
+   **mit** Umsatz wird stillgelegt (`is_enabled=false`, Agent-Schlüssel weg) und
+   behalten, eine Node **ohne** Umsatz verschwindet mit. `db.delete(user)` wäre
+   hier falsch: `User.nodes` hat `cascade="all, delete-orphan"` und nähme die
+   Einnahmen mit — und die Datenbank erzwingt keine Fremdschlüssel, verwaiste
+   Zeilen fielen also still auf. Sperren: eigenes Konto und letzter Admin (409).
+   In der Kontenliste ein Knopf mit zwei Rückfragen, die den Bestand nennen
+   („1 Schlüssel entfernt", „Nodes mit Einnahmen behalten: 7").
+
+2. **Sprachauswahl war unlesbar.** Das Menü öffnet nach unten in die
+   Navigationszeile; beide Kopfzeilen sind `.shell` mit `z-index: 1`, also
+   gewann die **spätere** Zeile — die ersten beiden Einträge (EN, **DE**) lagen
+   unter den Navigationslinks, waren nicht anklickbar und sahen „transparent"
+   aus. `elementFromPoint` traf dort `NAV.nav` statt des Menüpunkts. Die obere
+   Zeile liegt jetzt davor (`z-index: 3`). Dazu `option`-Farben explizit in
+   beiden Designs (`color-scheme` je Theme, `background-color: var(--bg-deep)`,
+   `color: var(--text)`; 16,4:1 dunkel, 15,5:1 hell) — die ausgeklappte Liste
+   eines `<select>` ist ein Fenster des Betriebssystems und erbt nicht
+   zuverlässig. Gilt für alle sechs `<select>` im Projekt.
+
+   **Zweiter Fehler im selben Bild:** die Navigation trug ihren Text als
+   Literal (`label: "Mein Verbrauch"`) und überschrieb damit `I18n.t(labelKey)`
+   — sie blieb in jeder Sprache deutsch, der Gruß im Dashboard ebenfalls. Jetzt
+   eigene Schlüssel je Eintrag, und `I18n.set()` baut die Seite neu auf, weil
+   JS-gebaute Texte von `data-i18n` nicht erfasst werden.
+
+3. **Modellfreigabe gehört dem Provider.** `PUT /nodes/{id}` ist für den
+   Eigentümer **und** die Administration offen (vorher kam der Admin mit 404
+   nicht durch, der Besitzer schon). Neu an der Geräteseite: ein Freitextfeld
+   für die Modelle der eigenen Maschine (Komma oder Zeile), `clear_allowed_models`
+   für „alle lokalen" (`NULL`), und der Hinweis, dass die Kästchenliste darunter
+   der Katalog des **Portal-Hosts** ist. `[]` = nichts, `NULL` = alle lokalen.
+   Rechte bleiben auf die eine Node beschränkt: `owner_id` ist kein Feld der
+   Anfrage, Freischalten/Löschen/Schlüssel haben eigene Endpunkte.
+
+4. **Lastverteilung — vorher gab es keine.** `find_best_node` sortierte nur nach
+   Score (`hourly_rate + 0,5·utilization`); bei zwei gleichwertigen Nodes mit
+   demselben Modell gewann immer dieselbe. Gemessen an zwei Wegwerf-Agenten:
+   alt 6/6 Anfragen auf Node 1, zwei gleichzeitige ebenfalls beide auf Node 1.
+   Jetzt zählt `pool.node_inflight` die laufenden Anfragen je Node (Erhöhen vor
+   der Weiterleitung, `finally` verringert — Erfolg, Fehler, Timeout, Abbruch),
+   die Auswahl nimmt **wenigste laufende Anfragen → Score → reihum**. Neu
+   gemessen: 3/3 abwechselnd, zwei gleichzeitige je eine Node. Der Zähler lebt
+   im Prozess (passend zu `--workers 1`) und hinterlässt bei Fehlern nichts.
+
+5. **`HEARTBEAT_INTERVAL_SECONDS` entfernt.** Die Variable stand nur in
+   `docs/portal.md` und in einem Beispiel-Compose; kein Code liest sie. Das
+   Intervall setzt der Agent (`HEARTBEAT_SEC` 30 s, `WS_HEARTBEAT_SEC` 15 s),
+   das Portal zählt nur die Gegenrichtung (90 s ohne Lebenszeichen → offline).
+
 ## 0.6.10 — 2026-11-04
 
 **Node-Agent: Zugangssperre, WebSocket-Betrieb, ein Befehl zur Installation**
