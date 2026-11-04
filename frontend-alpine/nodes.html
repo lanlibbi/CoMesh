@@ -198,6 +198,160 @@
       </div>
     </div>
 
+    <!-- Eigene Node beitragen — der Weg vom Portal auf die eigene Maschine.
+         Befehle, Größen und Prüfsummen stehen hier, damit niemand die
+         Download-Adressen raten muss. Größe (HEAD) und SHA-256 (die .sha256-
+         Datei daneben) werden beim Laden aus der ausgelieferten Datei gelesen
+         statt eingetragen: eine abgetippte Summe wäre nach dem nächsten Release
+         falsch, ohne dass es jemand merkt. -->
+    <section class="card mt-5" id="beitragen" data-contribute>
+      <div class="panel-head">
+        <div>
+          <div class="eyebrow" data-i18n="node.contribute.eyebrow">Beitragen</div>
+          <h3 data-i18n="node.contribute.title">Eigene Node beitragen</h3>
+        </div>
+      </div>
+
+      <p class="t-sm text-dim mb-4" style="max-width:80ch" data-i18n="node.contribute.lede">
+        Ein Befehl auf der eigenen Maschine genügt: der Agent lädt sich selbst, fragt den
+        Account-Schlüssel ab und meldet die Node im Pool an. Kein Repository, kein Python,
+        keine Registrierung im Voraus.
+      </p>
+
+      <div class="row wrap mb-3" style="gap:8px;align-items:center"
+           x-show="hasTwoOrigins" data-origin-picker>
+        <span class="t-xs text-mute" data-i18n="node.contribute.addr.choose">Adresse im Befehl</span>
+        <button type="button" class="btn-ghost btn-sm" data-origin="current"
+                :aria-pressed="originChoice === 'current' ? 'true' : 'false'"
+                @click="originChoice = 'current'" data-i18n="node.contribute.addr.current">Diese Adresse</button>
+        <button type="button" class="btn-ghost btn-sm" data-origin="public"
+                :aria-pressed="originChoice === 'public' ? 'true' : 'false'"
+                @click="originChoice = 'public'" data-i18n="node.contribute.addr.public">Öffentliche Adresse</button>
+      </div>
+
+      <div class="grid g2">
+        <div data-cmd-block="unix">
+          <div class="row between" style="align-items:center;gap:10px;margin-bottom:6px">
+            <span class="label" style="margin:0" data-i18n="node.contribute.cmd.unix">Linux und macOS</span>
+            <button type="button" class="btn-ghost btn-sm" data-copy="unix"
+                    @click="copyCommand('unix')" x-text="copyLabelUnix"></button>
+          </div>
+          <pre class="term mono" data-cmd="unix" x-text="commandUnix"></pre>
+          <p class="hint" data-i18n="node.contribute.cmd.unix.hint">In ein Terminal einfügen und ausführen. Braucht nur curl und ein SHA-256-Werkzeug.</p>
+        </div>
+
+        <div data-cmd-block="windows">
+          <div class="row between" style="align-items:center;gap:10px;margin-bottom:6px">
+            <span class="label" style="margin:0" data-i18n="node.contribute.cmd.windows">Windows</span>
+            <button type="button" class="btn-ghost btn-sm" data-copy="windows"
+                    @click="copyCommand('windows')" x-text="copyLabelWindows"></button>
+          </div>
+          <pre class="term mono" data-cmd="windows" x-text="commandWindows"></pre>
+          <p class="hint" data-i18n="node.contribute.cmd.windows.hint">In PowerShell einfügen und ausführen — nicht in der Eingabeaufforderung.</p>
+        </div>
+      </div>
+
+      <div class="divider inset"></div>
+
+      <div class="row between" style="align-items:baseline;gap:10px;margin-bottom:6px">
+        <h4 data-i18n="node.contribute.downloads.title">Downloads</h4>
+        <span class="chip mono t-xs">/downloads/</span>
+      </div>
+      <p class="hint mb-3" data-i18n-html="node.contribute.downloads.hint">
+        Zu jedem Binary liegt eine <code class="inline">.sha256</code>-Datei. Die Installer prüfen sie,
+        bevor etwas installiert wird — ohne passende Prüfsumme bricht die Installation ab. Größe und
+        Prüfsumme hier werden aus der tatsächlich ausgelieferten Datei gelesen, nicht aus einer Liste.
+      </p>
+
+      <div class="table-wrap">
+        <table class="tbl" data-downloads>
+          <thead>
+            <tr>
+              <th data-i18n="node.contribute.col.file">Datei</th>
+              <th data-i18n="node.contribute.col.size">Größe</th>
+              <th data-i18n="node.contribute.col.sha">SHA-256</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <template x-for="a in artifacts" :key="a.file">
+              <tr :data-file="a.file">
+                <td>
+                  <div class="mono t-sm" x-text="a.file"></div>
+                  <div class="t-xs text-mute" x-text="a.platform"></div>
+                </td>
+                <td class="num t-xs nowrap" x-text="sizeText(a)"></td>
+                <td>
+                  <span class="mono" style="font-size:0.68rem;line-height:1.45;word-break:break-all"
+                        x-text="shaText(a)" :title="a.sha || ''"></span>
+                </td>
+                <td class="right">
+                  <a class="btn-ghost btn-sm" :href="artifactHref(a)" :download="a.file"
+                     x-text="downloadLabel"></a>
+                </td>
+              </tr>
+            </template>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="divider inset"></div>
+
+      <div class="grid g2">
+        <div data-key-note>
+          <h4 class="mb-3" data-i18n="node.contribute.key.title">Account-Schlüssel</h4>
+          <p class="t-sm text-dim" data-i18n-html="node.contribute.key.body">
+            Der Installer schreibt ihn als <code class="inline">PORTAL_USER_KEY</code> in die
+            Konfiguration. Das ist der API-Schlüssel deines Kontos — derselbe, mit dem dich dieses
+            Portal anmeldet. Er wird beim Anmelden einmalig ausgegeben und lässt sich in den
+            <a href="profile.html" class="link">Kontoeinstellungen</a> derzeit nicht erneut anzeigen;
+            ist er weg, stellt dir der Admin einen neuen aus.
+          </p>
+        </div>
+
+        <div data-after-note>
+          <h4 class="mb-3" data-i18n="node.contribute.after.title">Was danach passiert</h4>
+          <ul class="stack tight" style="list-style:none;padding:0;margin:0">
+            <li class="row top" style="gap:10px">
+              <span class="pill pill-flat mono" style="color:var(--brass);border-color:var(--brass-line)">01</span>
+              <span class="t-sm text-dim grow" data-i18n="node.contribute.after.1">Die Node erscheint in der Liste oben — ohne Registrierung im Voraus, der Agent meldet sich mit dem Account-Schlüssel selbst an.</span>
+            </li>
+            <li class="row top" style="gap:10px">
+              <span class="pill pill-flat mono" style="color:var(--brass);border-color:var(--brass-line)">02</span>
+              <span class="t-sm text-dim grow" data-i18n="node.contribute.after.2">Die Verbindung läuft ausgehend über WebSocket. Es muss kein Port geöffnet und keine Adresse im Router freigegeben werden.</span>
+            </li>
+            <li class="row top" style="gap:10px">
+              <span class="pill pill-flat mono" style="color:var(--brass);border-color:var(--brass-line)">03</span>
+              <span class="t-sm text-dim grow" data-i18n="node.contribute.after.3">Der Agent läuft als Dienst (systemd --user unter Linux, launchd unter macOS) und ist nach einem Neustart wieder da. Kein sudo.</span>
+            </li>
+            <li class="row top" style="gap:10px">
+              <span class="pill pill-flat mono" style="color:var(--brass);border-color:var(--brass-line)">04</span>
+              <span class="t-sm text-dim grow" data-i18n-html="node.contribute.after.4">Ohne erkannte NVIDIA-GPU fragt der Installer nach dem VRAM und schreibt <code class="inline">NODE_VRAM_GB</code> in die Konfiguration. Fehlt der Wert, schickt der Pool dieser Node keinen Auftrag.</span>
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="notice mt-4" data-limits
+           style="border-color:var(--line-strong);background:rgb(var(--tint-rgb) / 0.03)">
+        <span class="notice-icon" aria-hidden="true" style="color:var(--text-mute)">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1v4h1"/>
+          </svg>
+        </span>
+        <div class="grow">
+          <div class="semibold" data-i18n="node.contribute.limits.title">Nicht verfügbar</div>
+          <p class="t-sm text-dim mt-1" data-i18n-html="node.contribute.limits.body">
+            Es gibt kein <code class="inline">darwin-x86_64</code> (Intel-Mac) und kein
+            <code class="inline">linux-arm64</code>: beides wird derzeit nicht gebaut. Auf so einem
+            Rechner bricht der Installer mit einer Meldung zur Architektur ab, statt etwas Falsches
+            einzurichten.
+          </p>
+        </div>
+      </div>
+    </section>
+
     <!-- My nodes -->
     <div class="panel-head">
       <div>
@@ -358,19 +512,6 @@
         </div>
       </div>
     </template>
-            <div x-show="availableModels.length === 0" class="t-xs text-dim" data-i18n="lade-modelle">
-              Lade Modelle…
-            </div>
-          </div>
-          <p class="t-xs mt-2 text-err" x-show="bulkWhitelistError" x-text="bulkWhitelistError"></p>
-          <div class="row mt-3" style="gap:8px;align-items:center">
-            <button class="btn-primary btn-sm" data-bulk-whitelist-apply @click="applyBulkWhitelist()" :disabled="bulkWhitelistBusy"
-                    x-text="bulkWhitelistBusy ? (I18n.t('nodes.bulk.setting') + bulkWhitelistProgress) : I18n.t('nodes.bulk.whitelist_apply')"></button>
-            <button class="btn-ghost btn-sm" data-bulk-whitelist-cancel @click="closeBulkWhitelist()" :disabled="bulkWhitelistBusy" data-i18n="abbrechen">Abbrechen</button>
-          </div>
-        </div>
-      </div>
-    </template>
   </main>
 
       <script defer src="https://unpkg.com/alpinejs@3.5.1/dist/cdn.min.js"></script>
@@ -378,7 +519,7 @@
 <script src="i18n-catalog.js"></script>
 <script src="i18n.js"></script>
 <script src="app.js"></script>
-  <script src="nodes.js?v=lana47"></script>
+  <script src="nodes.js?v=beitragen"></script>
 <script src="brand-mesh.js"></script>
 </body>
 </html>

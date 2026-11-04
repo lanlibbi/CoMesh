@@ -1,4 +1,35 @@
 // CoMesh — /nodes page (alpine frontend). Register a node + list mine.
+
+// Der Abschnitt „Eigene Node beitragen" (nodes.html) braucht drei Dinge, die
+// nicht im Markup stehen können:
+//
+//   * die Adresse, unter der das Portal gerade benutzt wird (window.location)
+//     und — falls abweichend — die öffentliche; beide sollen im Befehl stehen,
+//     damit niemand eine URL raten muss,
+//   * die Dateiliste mit Größe und SHA-256. Beides wird beim Laden aus der
+//     ausgelieferten Datei gelesen (HEAD für die Größe, die `.sha256`-Datei
+//     daneben für die Summe) statt hier eingetragen: eine abgetippte Summe ist
+//     nach dem nächsten Release falsch, ohne dass es jemand merkt.
+//
+// Die öffentliche Adresse ist die einzige feste Adresse im Frontend; sie lässt
+// sich über `window.COMESH_PUBLIC_ORIGIN` (config.js) überschreiben, damit ein
+// anderer Aufbau nicht am Quelltext hängt.
+const CONTRIBUTE_PUBLIC_ORIGIN = "https://comesh.lanlibbilab.me";
+
+// `hasSum: false` — für die beiden Installer gibt es keine .sha256-Datei; sie
+// prüfen die Summe des Binaries, das sie laden. Die Spalte sagt das dann auch.
+const CONTRIBUTE_FILES = [
+  { file: "install.sh", platform: "macOS / Linux", hasSum: false },
+  { file: "install.ps1", platform: "Windows", hasSum: false },
+  { file: "comesh-agent-linux-x86_64", platform: "Linux x86_64", hasSum: true },
+  { file: "comesh-agent-windows-x86_64.exe", platform: "Windows x86_64", hasSum: true },
+  { file: "comesh-agent-darwin-arm64", platform: "macOS arm64", hasSum: true },
+];
+
+// Kopier-Rückmeldung je Knopf; außerhalb der Alpine-Daten, damit ein Timer die
+// Ansicht nicht neu zeichnet.
+const COPY_TIMERS = {};
+
 document.addEventListener("alpine:init", () => {
   Alpine.data("nodesPage", () => ({
   myNodes: [],
@@ -21,12 +52,185 @@ document.addEventListener("alpine:init", () => {
   msg: "",
   lastKey: null,
 
+  // ---- Eigene Node beitragen -----------------------------------------
+  originChoice: "current",   // "current" | "public"
+  artifacts: [],             // Größe/Summe kommen aus loadArtifacts()
+  copyState: { unix: "", windows: "" },
+
     async init() {
       if (!Auth.requireProviderOrRedirect()) return;
       this.billing = Credits.enabled();
+      this.initContribute();
       await this.loadAvailableModels();
       await this.load();
       this.billing = Credits.enabled();
+    },
+
+    // ---- Eigene Node beitragen -----------------------------------------
+    // Die Dateiliste steht im Markup zur Verfügung, bevor die Größen da sind;
+    // sie werden nachgeladen und erscheinen dann von selbst (Alpine).
+    initContribute() {
+      this.artifacts = CONTRIBUTE_FILES.map((a) => ({
+        file: a.file,
+        platform: a.platform,
+        hasSum: a.hasSum,
+        bytes: null,
+        sizeState: "pending",
+        sha: null,
+        sumState: a.hasSum ? "pending" : "none",
+      }));
+      this.loadArtifacts();
+    },
+
+    /** Nur der Pfad ist fest — der Host kommt aus der Adresswahl. */
+    downloadsBase(origin) {
+      return `${String(origin).replace(/\/+$/, "")}/downloads`;
+    },
+
+    get currentOrigin() { return window.location.origin; },
+    get publicOrigin() {
+      return String(window.COMESH_PUBLIC_ORIGIN || CONTRIBUTE_PUBLIC_ORIGIN).replace(/\/+$/, "");
+    },
+    /** Die Adresswahl erscheint nur, wenn sich die beiden wirklich unterscheiden. */
+    get hasTwoOrigins() { return this.publicOrigin !== this.currentOrigin; },
+    get chosenOrigin() {
+      return (this.originChoice === "public" && this.hasTwoOrigins)
+        ? this.publicOrigin
+        : this.currentOrigin;
+    },
+
+    get commandUnix() {
+      return `curl -fsSL ${this.downloadsBase(this.chosenOrigin)}/install.sh | sh`;
+    },
+    get commandWindows() {
+      return `irm ${this.downloadsBase(this.chosenOrigin)}/install.ps1 | iex`;
+    },
+
+    /**
+     * Download-Adresse. Bei Binaries mit Prüfsumme hängt die Summe als Query
+     * dran — wie in install.sh: der Query ändert sich mit dem Inhalt, eine alte
+     * Cloudflare-Kopie der .exe kann dann nicht mehr greifen.
+     */
+    artifactHref(a) {
+      const pin = (a.hasSum && a.sha) ? `?sha=${a.sha.slice(0, 12)}` : "";
+      return `${this.downloadsBase(this.chosenOrigin)}/${a.file}${pin}`;
+    },
+
+    async loadArtifacts() {
+      const base = this.downloadsBase(this.currentOrigin);
+      await Promise.all(this.artifacts.map((a) => this.loadArtifact(a, base)));
+    },
+
+    /** Größe über HEAD (kein 14-MB-Download), Summe aus der .sha256 daneben. */
+    async loadArtifact(a, base) {
+      const url = `${base}/${a.file}`;
+      try {
+        const head = await fetch(url, { method: "HEAD", cache: "no-store" });
+        const len = Number(head.headers.get("content-length"));
+        if (head.ok && Number.isFinite(len) && len > 0) {
+          a.bytes = len;
+          a.sizeState = "ok";
+        } else {
+          a.sizeState = "error";
+        }
+      } catch (e) {
+        a.sizeState = "error";
+      }
+      if (!a.hasSum) return;
+      try {
+        const res = await fetch(`${url}.sha256`, { cache: "no-store" });
+        const text = res.ok ? await res.text() : "";
+        const first = (text.trim().split(/\s+/)[0] || "").toLowerCase();
+        if (/^[0-9a-f]{64}$/.test(first)) {
+          a.sha = first;
+          a.sumState = "ok";
+        } else {
+          a.sumState = "error";
+        }
+      } catch (e) {
+        a.sumState = "error";
+      }
+    },
+
+    /**
+     * Der Lesezugriff auf den Sprach-Store ist der Grund für diese Methode: ohne
+     * ihn zeichnet Alpine die per x-text gesetzten Beschriftungen bei einem
+     * Sprachwechsel nicht neu (das Markup mit data-i18n erledigt I18n.apply()).
+     *
+     * Über `Alpine.store("lang")` statt `this.$store`: die Magie `$store` gibt es
+     * nur im Ausdrucks-Scope, nicht in einer Methode — dort ist sie undefined,
+     * der Lesezugriff fiele aus und die Beschriftungen blieben in der alten
+     * Sprache stehen (gemessen: „Laden"/„Kopieren" unter EN/ES/FR).
+     */
+    touchLang() {
+      try {
+        const store = (window.Alpine && window.Alpine.store) ? window.Alpine.store("lang") : null;
+        if (store) void store.code;
+      } catch (e) { /* außerhalb von Alpine */ }
+    },
+    sizeText(a) {
+      this.touchLang();
+      if (a.sizeState === "pending") return I18n.t("node.contribute.pending");
+      if (a.sizeState !== "ok" || !a.bytes) return I18n.t("node.contribute.unavailable");
+      return `${a.bytes.toLocaleString(localeTag())} B`;
+    },
+    shaText(a) {
+      this.touchLang();
+      if (a.sumState === "pending") return I18n.t("node.contribute.pending");
+      if (a.sumState === "none") return I18n.t("node.contribute.no_checksum");
+      if (a.sumState !== "ok" || !a.sha) return I18n.t("node.contribute.unavailable");
+      return a.sha;
+    },
+    copyLabel(which) {
+      this.touchLang();
+      const state = this.copyState[which];
+      if (state === "ok") return I18n.t("node.contribute.copied");
+      if (state === "err") return I18n.t("node.contribute.copy_failed");
+      return I18n.t("node.contribute.copy");
+    },
+    get copyLabelUnix() { return this.copyLabel("unix"); },
+    get copyLabelWindows() { return this.copyLabel("windows"); },
+    get downloadLabel() {
+      this.touchLang();
+      return I18n.t("node.contribute.download");
+    },
+
+    async copyCommand(which) {
+      const text = which === "windows" ? this.commandWindows : this.commandUnix;
+      const ok = await this.copyToClipboard(text);
+      this.copyState[which] = ok ? "ok" : "err";
+      clearTimeout(COPY_TIMERS[which]);
+      COPY_TIMERS[which] = setTimeout(() => { this.copyState[which] = ""; }, 2600);
+    },
+
+    /**
+     * navigator.clipboard gibt es nur im secure context. Das Portal läuft auch
+     * über http im LAN (192.168.x.y:8767) — dort ist der textarea-Weg der
+     * Normalfall, nicht die Ausnahme.
+     */
+    async copyToClipboard(text) {
+      try {
+        if (navigator.clipboard && window.isSecureContext) {
+          await navigator.clipboard.writeText(text);
+          return true;
+        }
+      } catch (e) { /* weiter mit dem Fallback */ }
+      try {
+        const ta = document.createElement("textarea");
+        ta.value = text;
+        ta.setAttribute("readonly", "");
+        ta.style.position = "fixed";
+        ta.style.top = "-1000px";
+        ta.style.opacity = "0";
+        document.body.appendChild(ta);
+        ta.select();
+        ta.setSelectionRange(0, text.length);
+        const ok = document.execCommand("copy");
+        ta.remove();
+        return ok;
+      } catch (e) {
+        return false;
+      }
     },
 
     // ---- Auswahl -------------------------------------------------------
