@@ -259,7 +259,7 @@ class GpuNode(Base):
     # True when `node_url` was derived automatically from the heartbeat source
     # address (DHCP-friendly) rather than configured explicitly.
     node_url_auto = Column(Boolean, default=False, nullable=False)
-    port = Column(Integer, default=11434, nullable=False)
+    port = Column(Integer, default=11435, nullable=False)  # Agent-Port; 11434 ist Ollama selbst
     # Inference backend this node exposes. "ollama" (default) talks Ollama's
     # /api/chat; "openai" talks any OpenAI-compatible server (LM Studio, LiteLLM, vLLM…).
     backend = Column(String, default="ollama", nullable=False)

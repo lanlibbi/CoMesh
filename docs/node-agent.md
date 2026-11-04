@@ -12,7 +12,7 @@ Der Node-Agent ist der leichte Worker, der auf jedem Contributor-Host läuft. Er
 │     - Hardware erkennen (GPU)    │
 │     - Beim Portal registrieren   │
 │                                  │
-│  2. Heartbeat-Loop (alle 5s):    │
+│  2. Heartbeat-Loop (alle 30 s):  │
 │     - CPU/RAM/GPU/VRAM messen    │
 │     - An Portal senden           │
 │                                  │

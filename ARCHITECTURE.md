@@ -23,7 +23,9 @@ Web-Oberfläche. Das Portal ist die einzige Adresse, die ein Client kennt.
 läuft auf jedem Provider-Rechner neben dem lokalen Backend, meldet GPU, VRAM und
 Auslastung und reicht Aufträge an Ollama (`/api/chat`) oder einen
 OpenAI-kompatiblen Server weiter (`BACKEND=openai`). Er lauscht auf **11435**
-(`node-agent/agent.py:274`), nicht auf 8080.
+(`node-agent/agent.py:274`; `AGENT_PORT`, Vorgabe aus `netinfo.DEFAULT_AGENT_PORT`).
+Die früher dokumentierten **8080** gehören nicht hierher — das ist der Port von
+Open WebUI auf demselben Host, nicht der des Agenten.
 
 **Nutzer und Provider** — beides sind Konten (`users`). Ein Provider besitzt eine
 oder mehrere Nodes (`gpu_nodes.owner_id`); registrieren darf nur, wer die Rolle
