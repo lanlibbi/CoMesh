@@ -219,3 +219,23 @@ aufgebraucht, antwortet der Dienst mit einer Fehlermeldung statt still weiterzur
 * **Keine Verfügbarkeitsgarantie.** Der Pool besteht aus privaten Rechnern; fällt einer aus, gibt es
   einen Fehler, keine späte Antwort.
 * **Modelle bleiben kontrollierbar** — pro Rechner und pro Konto als Liste.
+
+## Node-local models
+
+A node reports the models of its own backend in every heartbeat (Ollama: `/api/tags`,
+OpenAI-compatible: `/v1/models`). The portal stores that list per node and offers those
+models in `GET /v1/models` as well — so an operator does **not** have to pull every model
+into the central catalogue first.
+
+Three conditions still apply, and they are checked in this order:
+
+1. **Account** — `can_use_model()`; the same check the request path uses, so the picker
+   never shows a model that would be refused afterwards.
+2. **Node allow list** — `allowed_models` on the node (empty means: all local models).
+3. **Routing** — a request for a node-local model only goes to a node that reported it.
+   A node that reports nothing is treated as "models unknown" and stays usable as before,
+   so an agent from an older version does not silently drop out of the pool.
+
+The reported list is a **snapshot from the last heartbeat** — not a live probe. If you pull
+a model on the node, it shows up within one heartbeat interval. A node that is offline keeps
+its last list but is not routable, and its models disappear from the picker.
