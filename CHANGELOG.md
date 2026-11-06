@@ -1,5 +1,33 @@
 # Changelog
 
+## 0.6.13 — 2026-11-06
+
+**Windows-Installation ohne Adminrechte, stabile Streams, Node-Adresse korrigierbar**
+
+1. **Der Windows-Installer bricht nicht mehr ab, wenn die Aufgabenplanung sperrt.** Auf
+   unternehmensverwalteten Rechnern antwortet `schtasks /Create` mit *Zugriff verweigert*;
+   die Installation endete dort, obwohl der Agent einwandfrei lief. Der Autostart läuft
+   jetzt als Kette ohne Adminrechte: Aufgabenplanung, sonst der `Run`-Schlüssel des
+   Benutzers (`HKCU`), sonst eine Verknüpfung im Autostart-Ordner. Der gewählte Weg steht
+   im Abschlussbericht, die Deinstallation räumt alle drei ab.
+2. **Der Ein-Zeilen-Befehl umgeht die Skriptrichtlinie.** `powershell -ExecutionPolicy
+   Bypass -Command "irm … | iex"` statt `irm … | iex` — der Bypass gilt nur für diesen
+   Aufruf, die Rechnerrichtlinie bleibt unangetastet. Vorher scheiterte die Installation
+   mit `PSSecurityException`.
+3. **Streaming hält die Verbindung, auch wenn das Modell rechnet.** Im streamenden Weg
+   wurde zwischen den Teilstücken nichts gesendet; hinter Cloudflare gilt das als tote
+   Verbindung und wird gekappt („Streaming-Verbindung wurde vor einer vollständigen Antwort
+   beendet"). Jetzt geht alle 15 s eine SSE-Kommentarzeile (`: keepalive`) — gültig,
+   für Clients unsichtbar und abschaltbar über `COMESH_SSE_KEEPALIVE_S=0`.
+   **Der nicht-streamende Weg bleibt davon unberührt:** er wartet auf die ganze Antwort und
+   läuft hinter Cloudflare nach rund 100 s in einen `524`. Lange Läufe gehören auf Streaming.
+4. **Adresse und Port einer Node lassen sich bearbeiten, ohne den Konto-Schlüssel neu
+   einzutragen.** Ein falsch eingetragener Port war im Portal nicht korrigierbar; der
+   Server konnte es längst (`PUT /nodes/{id}`). Das Bearbeiten-Fenster hat jetzt Felder für
+   Adresse und Port. Der Agent kennt seinen Schlüssel selbst — das Portal speichert nur
+   dessen Hash —, deshalb ist die Korrektur gefahrlos. Leer lassen heißt weiterhin: der
+   Agent meldet seine Adresse beim Heartbeat selbst.
+
 ## 0.6.12 — 2026-11-04
 
 **Der Provider-Weg steht im Portal, und er ist benannt wie eine Einladung**

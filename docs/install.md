@@ -8,7 +8,7 @@ das als Dienst läuft und sich beim Portal meldet.
 | System | Befehl |
 |---|---|
 | macOS, Linux | `curl -fsSL https://<portal>/downloads/install.sh \| sh` |
-| Windows | `irm https://<portal>/downloads/install.ps1 \| iex` |
+| Windows | `powershell -ExecutionPolicy Bypass -Command "irm https://<portal>/downloads/install.ps1 \| iex"` |
 
 `<portal>` ist der Name, unter dem das Portal erreichbar ist (Beispiel:
 `comesh.lanlibbilab.me`). Beide Skripte fragen den Account-Schlüssel **verdeckt**

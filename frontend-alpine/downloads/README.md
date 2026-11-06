@@ -6,7 +6,7 @@ Dieser Ordner wird vom Frontend-Container mit ausgeliefert
 
 ```bash
 curl -fsSL https://<portal>/downloads/install.sh | sh
-irm https://<portal>/downloads/install.ps1 | iex
+powershell -ExecutionPolicy Bypass -Command "irm https://<portal>/downloads/install.ps1 | iex"
 ```
 
 Der Installer lädt von hier:

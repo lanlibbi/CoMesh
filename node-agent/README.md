@@ -22,7 +22,7 @@ curl -fsSL https://<portal>/downloads/install.sh | sh     # macOS, Linux
 ```
 
 ```powershell
-irm https://<portal>/downloads/install.ps1 | iex          # Windows
+powershell -ExecutionPolicy Bypass -Command "irm https://<portal>/downloads/install.ps1 | iex"          # Windows
 ```
 
 Both scripts download a **PyInstaller single binary**, verify its SHA-256 from a

@@ -70,6 +70,14 @@ $Exe      = Join-Path $Root "comesh-agent.exe"
 $EnvFile  = Join-Path $Root "agent.env"
 $StateFile = Join-Path $Root "node-state.json"
 $LogFile  = Join-Path $Root "agent.log"
+# Ausweichwege fuer den Autostart (verwaltete Rechner verweigern schtasks):
+# Run-Schluessel des angemeldeten Benutzers und Autostart-Ordner brauchen nie Adminrechte.
+$RunKeyPath = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run"
+try { $StartupDir = [Environment]::GetFolderPath("Startup") } catch { $StartupDir = "" }
+if (-not $StartupDir) {
+    $StartupDir = Join-Path $env:APPDATA "Microsoft\Windows\Start Menu\Programs\Startup"
+}
+$StartupLnk = Join-Path $StartupDir "CoMesh Agent.lnk"
 
 if ($Transport -notin @("ws", "http")) { throw "Transport muss 'ws' oder 'http' sein, nicht '$Transport'." }
 if ($Backend   -notin @("ollama", "openai")) { throw "Backend muss 'ollama' oder 'openai' sein." }
@@ -112,6 +120,9 @@ if ($Uninstall) {
     Write-Step "CoMesh-Agent entfernen"
     Get-Process -Name "comesh-agent" -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
     & schtasks.exe /Delete /F /TN $TaskName 2>$null | Out-Null
+    # Je nach Rechte lage wurde einer der Ausweichwege benutzt - alle abraeumen.
+    try { Remove-ItemProperty -Path $RunKeyPath -Name $TaskName -ErrorAction SilentlyContinue } catch { }
+    try { if (Test-Path -LiteralPath $StartupLnk) { Remove-Item -LiteralPath $StartupLnk -Force } } catch { }
     foreach ($f in @($Exe, $EnvFile, $LogFile, "$LogFile.1", "$LogFile.2", $StateFile)) {
         if (Test-Path -LiteralPath $f) { Remove-Item -LiteralPath $f -Force; Write-Ok "entfernt: $f" }
     }
@@ -302,15 +313,52 @@ Write-Step "Autostart"
 # keine Administratorrechte. Der Pfad steht in Anfuehrungszeichen, weil
 # "C:\Users\Vorname Nachname\..." Leerzeichen enthalten kann.
 $taskRun = '"{0}"' -f $Exe
+$autostart = ""
 & schtasks.exe /Create /F /SC ONLOGON /TN $TaskName /TR $taskRun 2>&1 | Out-Null
-if ($LASTEXITCODE -ne 0) {
-    Fail "Die Aufgabe '$TaskName' liess sich nicht anlegen (schtasks Exitcode $LASTEXITCODE)."
+if ($LASTEXITCODE -eq 0) {
+    $autostart = "Aufgabenplanung ($TaskName)"
+    & schtasks.exe /Run /TN $TaskName 2>&1 | Out-Null
+    if ($LASTEXITCODE -ne 0) {
+        Write-Warn "Die Aufgabe wurde angelegt, startet aber nicht auf Anhieb. Start von Hand: schtasks /Run /TN `"$TaskName`""
+    }
+} else {
+    # Gemessen auf einem unternehmensverwalteten Rechner: "FEHLER: Zugriff verweigert".
+    # Der Agent laeuft dort einwandfrei - nur die Aufgabe ist gesperrt. Also weiter mit
+    # einem Weg, der keine Rechte braucht, statt die Installation zu beenden.
+    Write-Warn "Die Aufgabenplanung verweigert die Aufgabe '$TaskName' (schtasks Exitcode $LASTEXITCODE)."
+    Write-Warn "Auf verwalteten Rechnern ist das normal - ich nehme den Run-Schluessel des Benutzers."
+    try {
+        New-ItemProperty -Path $RunKeyPath -Name $TaskName -Value $taskRun -PropertyType String -Force -ErrorAction Stop | Out-Null
+        $autostart = "Run-Schluessel des Benutzers (HKCU)"
+    } catch {
+        Write-Warn "Der Run-Schluessel liess sich nicht schreiben: $($_.Exception.Message)"
+        try {
+            $ws = New-Object -ComObject WScript.Shell
+            $lnk = $ws.CreateShortcut($StartupLnk)
+            $lnk.TargetPath = $Exe
+            $lnk.WorkingDirectory = $Root
+            $lnk.Description = "CoMesh Agent"
+            $lnk.Save()
+            $autostart = "Verknuepfung im Autostart-Ordner"
+        } catch {
+            Write-Warn "Kein Autostart moeglich: $($_.Exception.Message)"
+            $autostart = "keiner"
+        }
+    }
+    # Ohne Aufgabe startet nichts von selbst - den Agenten jetzt von Hand hochziehen,
+    # sonst steht die Node nach der Installation offline da.
+    if (-not (Get-Process -Name "comesh-agent" -ErrorAction SilentlyContinue)) {
+        try { Start-Process -FilePath $Exe -WorkingDirectory $Root -WindowStyle Hidden } catch {
+            Write-Warn "Start von Hand fehlgeschlagen: $($_.Exception.Message)"
+            Write-Warn "Bitte '$Exe' selbst starten."
+        }
+    }
 }
-& schtasks.exe /Run /TN $TaskName 2>&1 | Out-Null
-if ($LASTEXITCODE -ne 0) {
-    Write-Warn "Die Aufgabe wurde angelegt, startet aber nicht auf Anhieb. Start von Hand: schtasks /Run /TN `"$TaskName`""
+if ($autostart -eq "keiner") {
+    Write-Warn "Autostart: keiner - der Agent muss nach jeder Anmeldung von Hand gestartet werden."
+} else {
+    Write-Ok "Autostart: $autostart (bei Anmeldung, ohne Adminrechte)"
 }
-Write-Ok "Aufgabe '$TaskName': bei Anmeldung, ohne Adminrechte"
 
 # ---------------------------------------------------------------------------
 # 6. Status
@@ -336,7 +384,7 @@ try {
 
 $wsState = if ((Test-Path -LiteralPath $LogFile) -and (Select-String -LiteralPath $LogFile -Pattern "WS welcome received" -Quiet -ErrorAction SilentlyContinue)) { "verbunden" } else { "nicht verbunden" }
 
-Write-Host "  Aufgabe       : $TaskName"
+Write-Host "  Autostart     : $autostart"
 Write-Host "  Prozess       : $svc"
 if ($Transport -eq "ws") { Write-Host "  Transport     : ws (WebSocket $wsState)" } else { Write-Host "  Transport     : http" }
 Write-Host "  Portal        : $PortalUrl/health -> HTTP $health"
@@ -353,7 +401,10 @@ if ("$backendCode" -ne "200") {
 Write-Host "  Node im Portal: $appears"
 Write-Host ""
 Write-Host "  Protokoll     : $LogFile"
-Write-Host "  Aufgabe       : schtasks /Query /TN `"$TaskName`" /V /FO LIST"
+Write-Host "  Autostart     : $autostart"
+if ($autostart -like "Aufgabenplanung*") {
+    Write-Host "  Nachsehen     : schtasks /Query /TN `"$TaskName`" /V /FO LIST"
+}
 
 if (-not $proc -or $appears -eq "noch nicht") {
     Write-Host ""

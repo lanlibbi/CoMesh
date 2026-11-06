@@ -72,7 +72,7 @@ curl -fsSL https://<portal>/downloads/install.sh | sh     # macOS, Linux
 ```
 
 ```powershell
-irm https://<portal>/downloads/install.ps1 | iex          # Windows
+powershell -ExecutionPolicy Bypass -Command "irm https://<portal>/downloads/install.ps1 | iex"          # Windows
 ```
 
 The installer verifies the SHA-256 checksum, asks for the account key without
@@ -222,7 +222,7 @@ curl -fsSL https://<portal>/downloads/install.sh | sh     # macOS, Linux
 ```
 
 ```powershell
-irm https://<portal>/downloads/install.ps1 | iex          # Windows
+powershell -ExecutionPolicy Bypass -Command "irm https://<portal>/downloads/install.ps1 | iex"          # Windows
 ```
 
 Der Installer prüft die SHA-256-Summe, fragt den Account-Schlüssel verdeckt ab und

@@ -166,7 +166,7 @@ OpenAI-kompatibler Server wie LM Studio auf `127.0.0.1:1234`.
 | System | Befehl |
 |---|---|
 | macOS, Linux | `curl -fsSL https://<portal>/downloads/install.sh \| sh` |
-| Windows (PowerShell) | `irm https://<portal>/downloads/install.ps1 \| iex` |
+| Windows (PowerShell) | `powershell -ExecutionPolicy Bypass -Command "irm https://<portal>/downloads/install.ps1 \| iex"` |
 
 Beide prüfen die SHA-256 des Binaries (ohne Prüfsumme keine Installation), fragen den Schlüssel
 verdeckt ab und richten den Dienst ein — launchd, `systemd --user` oder eine Aufgabe in der

@@ -48,6 +48,10 @@ document.addEventListener("alpine:init", () => {
   // Katalog unten kommt vom Portal-Host und ist fuer einen Provider oft der
   // falsche — deshalb ist das Feld die fuehrende Eingabe.
   editModelsText: "",
+  // Adresse und Port werden getrennt bearbeitet: nach einem Umzug oder einem
+  // falsch eingetragenen Port ist das die einzige Korrektur, die man braucht.
+  editUrl: "",
+  editPort: 11435,
   selectedIds: [],          // Node-IDs der Auswahl (Bulk-Aktionen)
   bulkBusy: false,
   bulkProgress: "",
@@ -118,7 +122,9 @@ document.addEventListener("alpine:init", () => {
       return `curl -fsSL ${this.downloadsBase(this.chosenOrigin)}/install.sh | sh`;
     },
     get commandWindows() {
-      return `irm ${this.downloadsBase(this.chosenOrigin)}/install.ps1 | iex`;
+      // -ExecutionPolicy Bypass: auf verwalteten Rechnern ist die Skriptausfuehrung
+      // gesperrt (PSSecurityException). Der Bypass gilt nur fuer diesen Aufruf.
+      return `powershell -ExecutionPolicy Bypass -Command "irm ${this.downloadsBase(this.chosenOrigin)}/install.ps1 | iex"`;
     },
 
     /**
@@ -438,8 +444,16 @@ document.addEventListener("alpine:init", () => {
       this.editingId = n.id;
       this.editAllowed = Array.isArray(n.allowed_models) ? [...n.allowed_models] : [];
       this.editModelsText = this.editAllowed.join(", ");
+      this.editUrl = n.node_url || "";
+      this.editPort = n.port || 11435;
     },
-    cancelEdit() { this.editingId = null; this.editAllowed = []; this.editModelsText = ""; },
+    cancelEdit() {
+      this.editingId = null;
+      this.editAllowed = [];
+      this.editModelsText = "";
+      this.editUrl = "";
+      this.editPort = 11435;
+    },
     toggleEditModel(name) {
       const i = this.editAllowed.indexOf(name);
       if (i >= 0) this.editAllowed.splice(i, 1);
@@ -492,8 +506,18 @@ document.addEventListener("alpine:init", () => {
         const body = liste.length > 0
           ? { allowed_models: liste }
           : { clear_allowed_models: true };
+        // Adresse und Port nur mitschicken, wenn sie sich geaendert haben. Ein leeres Feld
+        // heisst "nichts anfassen": der Agent meldet seine Adresse beim Heartbeat selbst.
+        const url = String(this.editUrl || "").trim();
+        if (url && url !== String(n.node_url || "").trim()) body.node_url = url;
+        const port = Number(this.editPort);
+        if (Number.isFinite(port) && port >= 1 && port <= 65535 && port !== Number(n.port)) {
+          body.port = port;
+        }
         await api(`/nodes/${n.id}`, { method: "PUT", auth: true, body });
-        toast(I18n.t("nodes.whitelist_updated"), "ok");
+        toast(body.node_url || body.port ? "Adresse gespeichert — die Node meldet sich"
+                                          + " beim naechsten Heartbeat mit der neuen Adresse."
+                                        : I18n.t("nodes.whitelist_updated"), "ok");
         this.editingId = null;
         await this.load();
       } catch (e) { toast(I18n.t("nodes.update_failed") + " " + e.message, "err"); }

@@ -899,6 +899,10 @@ async def list_available_models(_user: User = Depends(get_current_user)):
 
 # ---------------------------------------------------------------------------
 # SSE (Phase 4) — /v1/chat/completions mit stream=true
+# Wie lange darf im streamenden Weg Stille herrschen, bevor eine Kommentarzeile
+# geschickt wird? Cloudflare kappt stille Verbindungen; 15 s sind reichlich
+# Abstand und kosten nichts. 0 schaltet das Keepalive ab.
+KEEPALIVE_S = float(os.environ.get("COMESH_SSE_KEEPALIVE_S", "15") or 15)
 #
 # Ohne Streaming ist eine lange Antwort ein einziger HTTP-Request; ein
 # Cloudflare-Tunnel kappt den bei rund 100 s mit 524. Mit SSE fliessen sofort
@@ -965,7 +969,17 @@ async def _stream_chat_completion(db, user, model, ollama_payload, balance, bill
         try:
             while True:
                 getter = _asyncio.create_task(queue.get())
-                fertig, _ = await _asyncio.wait({getter, task}, return_when=_asyncio.FIRST_COMPLETED)
+                fertig, _ = await _asyncio.wait(
+                    {getter, task},
+                    timeout=(KEEPALIVE_S if KEEPALIVE_S > 0 else None),
+                    return_when=_asyncio.FIRST_COMPLETED)
+                if not fertig:
+                    # Nichts fertig und die Frist ist um: das Modell rechnet noch, der
+                    # Auftrag wartet, oder die Node meldet sich spaet. Eine Kommentarzeile
+                    # haelt die Verbindung offen, ohne den Datenstrom zu veraendern.
+                    getter.cancel()
+                    yield ": keepalive\n\n"
+                    continue
                 if getter in fertig:
                     yield _sse_chunk(model, delta=getter.result())
                     continue

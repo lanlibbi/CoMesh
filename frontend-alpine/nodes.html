@@ -446,6 +446,24 @@
 
           <div x-show="editingId === n.id" x-cloak class="mt-3">
             <div class="divider inset"></div>
+            <p class="label">Adresse und Port dieser Node</p>
+            <div class="row" style="gap:8px;align-items:flex-end;flex-wrap:wrap">
+              <div class="grow" style="min-width:220px">
+                <label class="label" for="node-edit-url">Adresse</label>
+                <input class="input mono" id="node-edit-url" type="text" x-model="editUrl"
+                       placeholder="http://mein-rechner:11435" />
+              </div>
+              <div style="width:130px">
+                <label class="label" for="node-edit-port">Port</label>
+                <input class="input" id="node-edit-port" type="number" min="1" max="65535"
+                       x-model.number="editPort" />
+              </div>
+            </div>
+            <p class="hint">
+              Leer lassen heißt: der Agent meldet seine Adresse selbst beim Heartbeat.
+              Der <b>Konto-Schlüssel wird hier nie gebraucht</b> — der Agent hat ihn, das Portal
+              kennt nur seinen Hash. Adresse oder Port korrigieren ist also gefahrlos möglich.
+            </p>
             <label class="label" for="node-models-text" data-i18n="node.models.free_label">Modelle dieser Node</label>
             <textarea id="node-models-text" class="input mono" rows="3" x-model="editModelsText"
                       data-i18n-placeholder="node.models.free_placeholder"

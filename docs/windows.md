@@ -56,7 +56,7 @@ Der Agent liegt als fertiges Einzelbinary vor; der Rechner braucht **kein Python
 kein Docker, kein Repo und **keinen offenen Port**:
 
 ```powershell
-irm https://<portal>/downloads/install.ps1 | iex
+powershell -ExecutionPolicy Bypass -Command "irm https://<portal>/downloads/install.ps1 | iex"
 ```
 
 Das Skript erkennt die Architektur (nur `x86_64` wird ausgeliefert), lädt
@@ -83,7 +83,7 @@ schtasks /Query /TN "CoMesh Agent" /V /FO LIST
 Get-Content "$env:LOCALAPPDATA\CoMesh\agent.log" -Tail 30 -Wait
 ```
 
-Deinstallieren: `irm https://<portal>/downloads/install.ps1 | iex` mit
+Deinstallieren: `powershell -ExecutionPolicy Bypass -Command "irm https://<portal>/downloads/install.ps1 | iex"` mit
 `$env:COMESH_UNINSTALL = "1"` (oder `\install.ps1 -Uninstall`). Einzelheiten:
 [install.md](install.md).
 
