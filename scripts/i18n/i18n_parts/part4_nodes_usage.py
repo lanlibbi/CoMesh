@@ -124,7 +124,12 @@ KEYS = {
 
     # ====================================================== admin-usage.html
     "verbrauch-aller-nutzer": {"en": "Consumption of all users", "de": "Verbrauch aller Nutzer", "es": "Consumo de todos los usuarios", "fr": "Consommation de tous les utilisateurs"},
-    "token-und-credits-pro-nutzer-und-modell-die": {"en": "Token and Credits per user and model — the admin view of", "de": "Token und Credits pro Nutzer und Modell — die Admin-Sicht auf", "es": "Token y Credits por usuario y modelo — la vista de admin de", "fr": "Token et Credits par utilisateur et modèle — la vue admin de"},
+    "token-und-credits-pro-nutzer-und-modell-die": {
+        "en": "Token and Credits per user and model — the admin view of <code class=\"inline\">GET /admin/usage</code>. Heaviest users first.",
+        "de": "Token und Credits pro Nutzer und Modell — die Admin-Sicht auf <code class=\"inline\">GET /admin/usage</code>. Schwerste Nutzer zuerst.",
+        "es": "Token y Credits por usuario y modelo — la vista de admin de <code class=\"inline\">GET /admin/usage</code>. Usuarios más pesados primero.",
+        "fr": "Token et Credits par utilisateur et modèle — la vue admin de <code class=\"inline\">GET /admin/usage</code>. Utilisateurs les plus lourds d'abord.",
+    },
     "admin-rolle-erforderlich": {"en": "Admin role required", "de": "Admin-Rolle erforderlich", "es": "Se requiere rol de admin", "fr": "Rôle admin requis"},
     "dieser-bereich-listet-die-nutzung-aller": {
         "en": "This area lists the usage of all accounts and is limited to <code class=\"inline\">role = admin</code>. Your role: <span class=\"mono\" x-text=\"(Auth.currentUser() || {}).role || 'both'\"></span>. Your own usage is under <a href=\"usage.html\" class=\"link\">Usage</a>.",

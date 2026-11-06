@@ -33,7 +33,7 @@
     <div class="page-head">
       <div class="eyebrow">Admin</div>
       <h1 data-i18n="verbrauch-aller-nutzer">Verbrauch aller Nutzer</h1>
-      <p class="lede">
+      <p class="lede" data-i18n-html="token-und-credits-pro-nutzer-und-modell-die">
         Token und Credits pro Nutzer und Modell — die Admin-Sicht auf
         <code class="inline">GET /admin/usage</code>. Schwerste Nutzer zuerst.
       </p>
@@ -49,7 +49,7 @@
       </span>
       <div class="grow">
         <div class="semibold" data-i18n="admin-rolle-erforderlich">Admin-Rolle erforderlich</div>
-        <p class="t-sm text-dim mt-1">
+        <p class="t-sm text-dim mt-1" data-i18n-html="dieser-bereich-listet-die-nutzung-aller">
           Dieser Bereich listet die Nutzung aller Konten und ist auf <code class="inline">role = admin</code>
           beschränkt. Deine Rolle:
           <span class="mono" x-text="(Auth.currentUser() || {}).role || 'both'"></span>.

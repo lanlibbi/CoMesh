@@ -33,7 +33,7 @@
     <div class="page-head">
       <div class="eyebrow" data-i18n="inference">Inference</div>
       <h1>Chat</h1>
-      <p class="lede">
+      <p class="lede" data-i18n-html="direkter-testlauf-gegen-den-pool">
         Direkter Testlauf gegen den Pool. Abgerechnet wird pro Token über dein Guthaben —
         aktuell <span class="text-brand num" x-text="fmtCredits(me?.credits)"></span> Credits.
       </p>
@@ -47,7 +47,7 @@
           <span class="titel" x-text="c.title"></span>
           <span class="punkt" x-show="busyIds.includes(c.id)" title="antwortet gerade"></span>
           <button type="button" class="zu" @click="schliesseChat(c.id, $event)"
-                  :aria-label="'Unterhaltung schließen'">×</button>
+                  :aria-label="I18n.t('chat.close_conv')">×</button>
         </div>
       </template>
       <button type="button" class="btn-ghost btn-sm" @click="neuerChat()"
@@ -124,7 +124,7 @@
 
     <label class="check t-xs text-mute mt-2" style="cursor:pointer">
       <input type="checkbox" x-model="enterSend" @change="enterSendMerken()">
-      <span>Enter sendet (aus: Strg+Enter sendet, Enter macht eine neue Zeile)</span>
+      <span data-i18n="chat.enter_hint">Enter sendet (aus: Strg+Enter sendet, Enter macht eine neue Zeile)</span>
     </label>
 
     <div class="row between mt-2">

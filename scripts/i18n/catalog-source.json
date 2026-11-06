@@ -192,7 +192,7 @@
    ]
   },
   "sobald-die-node-im-a-href-pool-html-class": {
-   "src": "Sobald die Node im <a href=\"pool.html\" class=\"link\">Community-Pool</a> auftaucht, ist sie live. Anfragen werden automatisch dorthin geroutet; 70 % der Job-Kosten landen als Credits auf deinem Konto.",
+   "src": "Sobald die Node im <a href=\"pool.html\" class=\"link\">Community-Pool</a> auftaucht, ist sie live. Anfragen werden automatisch dorthin geroutet.",
    "pages": [
     "agent.html"
    ]
@@ -1555,6 +1555,379 @@
    "src": "Deine Node",
    "pages": [
     "nodes.html"
+   ]
+  },
+  "audit.lede": {
+   "src": "Jede Änderung an Konten, Rollen, Credits und Geräten — mit Zeitpunkt und ausführendem Admin. Passwörter und Schlüsselwerte werden nicht protokolliert.",
+   "pages": [
+    "admin-audit.html"
+   ]
+  },
+  "audit.changes": {
+   "src": "Änderungen",
+   "pages": [
+    "admin-audit.html"
+   ]
+  },
+  "audit.no_entries": {
+   "src": "Keine Einträge.",
+   "pages": [
+    "admin-audit.html"
+   ]
+  },
+  "audit.no_entries_hint": {
+   "src": "Andere Aktion wählen oder warten, bis etwas geändert wird.",
+   "pages": [
+    "admin-audit.html"
+   ]
+  },
+  "audit.col_change": {
+   "src": "Änderung",
+   "pages": [
+    "admin-audit.html"
+   ]
+  },
+  "common.back": {
+   "src": "Zurück",
+   "pages": [
+    "admin-audit.html",
+    "admin-registrations.html"
+   ]
+  },
+  "common.your_role_html": {
+   "src": "Deine Rolle: <span class=\"mono\" x-text=\"(Auth.currentUser() || {}).role || 'both'\"></span>.",
+   "pages": [
+    "admin-audit.html",
+    "admin-registrations.html"
+   ]
+  },
+  "admin_nodes.title": {
+   "src": "Geräte im Pool",
+   "pages": [
+    "admin-nodes.html"
+   ]
+  },
+  "admin_nodes.lede": {
+   "src": "Alle Rechner, auch die abgeschalteten — die Admin-Sicht auf <code class=\"inline\">GET /admin/nodes</code>. Ob ein Gerät lebt, sagt nicht die Spalte <i>Status</i>, sondern der letzte Herzschlag.",
+   "pages": [
+    "admin-nodes.html"
+   ]
+  },
+  "admin_nodes.device": {
+   "src": "Gerät",
+   "pages": [
+    "admin-nodes.html"
+   ]
+  },
+  "admin_nodes.paused_by_owner": {
+   "src": "vom Besitzer pausiert",
+   "pages": [
+    "admin-nodes.html"
+   ]
+  },
+  "admin_nodes.vram_assumed": {
+   "src": "angenommen — keine GPU erkannt",
+   "pages": [
+    "admin-nodes.html"
+   ]
+  },
+  "admin_nodes.vram_override": {
+   "src": "aus NODE_VRAM_GB",
+   "pages": [
+    "admin-nodes.html"
+   ]
+  },
+  "admin_nodes.empty_filter": {
+   "src": "Kein Gerät gefunden. Der Filter steht auf <b x-text=\"status\"></b>.",
+   "pages": [
+    "admin-nodes.html"
+   ]
+  },
+  "admin_nodes.agent_address": {
+   "src": "Adresse, unter der das Portal den Agenten erreicht",
+   "pages": [
+    "admin-nodes.html"
+   ]
+  },
+  "admin_nodes.heartbeats": {
+   "src": "Herzschläge (24 h)",
+   "pages": [
+    "admin-nodes.html"
+   ]
+  },
+  "admin_nodes.jobs": {
+   "src": "Aufträge (gesamt / fehlgeschlagen)",
+   "pages": [
+    "admin-nodes.html"
+   ]
+  },
+  "admin_nodes.filter_placeholder": {
+   "src": "Name, GPU oder Adresse",
+   "pages": [
+    "admin-nodes.html"
+   ]
+  },
+  "admin_nodes.vram_assumed_title": {
+   "src": "Keine GPU erkannt, NODE_VRAM_GB nicht gesetzt: der Wert ist angenommen. Der Router schickt dieser Node keinen Auftrag, bis der Betreiber den VRAM setzt.",
+   "pages": [
+    "admin-nodes.html"
+   ]
+  },
+  "admin_nodes.vram_override_title": {
+   "src": "Wert stammt aus NODE_VRAM_GB des Agenten",
+   "pages": [
+    "admin-nodes.html"
+   ]
+  },
+  "admin_nodes.models_title": {
+   "src": "Modellfreigabe dieser Node ändern. Der Besitzer darf das selbst; hier ist der Weg der Administration.",
+   "pages": [
+    "admin-nodes.html"
+   ]
+  },
+  "admin_reg.title": {
+   "src": "Konten und Freigaben",
+   "pages": [
+    "admin-registrations.html",
+    "profile.html"
+   ]
+  },
+  "admin_reg.lede": {
+   "src": "Registrierungen freigeben oder ablehnen, Rollen vergeben, Passwörter setzen, Credits buchen, Schlüssel ausstellen und Konten deaktivieren. Serverseitig auf <code class=\"inline\">role = admin</code> beschränkt und protokolliert.",
+   "pages": [
+    "admin-registrations.html"
+   ]
+  },
+  "admin_reg.new_key_title": {
+   "src": "Neuer API-Schlüssel — nur jetzt sichtbar",
+   "pages": [
+    "admin-registrations.html"
+   ]
+  },
+  "admin_reg.new_key_hint": {
+   "src": "Jetzt kopieren. Nach dem Verlassen der Seite ist er nicht mehr abrufbar.",
+   "pages": [
+    "admin-registrations.html"
+   ]
+  },
+  "admin_reg.stat_pending": {
+   "src": "warten auf Freigabe",
+   "pages": [
+    "admin-registrations.html"
+   ]
+  },
+  "admin_reg.stat_admins": {
+   "src": "dürfen verwalten",
+   "pages": [
+    "admin-registrations.html"
+   ]
+  },
+  "admin_reg.create_title": {
+   "src": "Konto von Hand erstellen",
+   "pages": [
+    "admin-registrations.html"
+   ]
+  },
+  "admin_reg.create_hint": {
+   "src": "Für Konten, die sich nicht selbst registrieren sollen. Der Schlüssel wird einmal angezeigt.",
+   "pages": [
+    "admin-registrations.html"
+   ]
+  },
+  "admin_reg.empty_selection": {
+   "src": "Keine Einträge in dieser Auswahl.",
+   "pages": [
+    "admin-registrations.html"
+   ]
+  },
+  "admin_reg.empty_hint": {
+   "src": "Anderen Status wählen oder Suche leeren.",
+   "pages": [
+    "admin-registrations.html"
+   ]
+  },
+  "admin_reg.key_button": {
+   "src": "Schlüssel",
+   "pages": [
+    "admin-registrations.html"
+   ]
+  },
+  "admin_reg.last_admin_hint": {
+   "src": "Der letzte Admin kann sich weder degradieren noch deaktivieren — das prüft die API selbst. Alle Änderungen stehen im <a href=\"admin-audit.html\" class=\"link\">Protokoll</a>. Ein neuer Schlüssel macht den bisherigen sofort ungültig.",
+   "pages": [
+    "admin-registrations.html"
+   ]
+  },
+  "admin_reg.models_scope_hint": {
+   "src": "Diese Modelle darf das Konto <b>nutzen</b>. Was ein Node <b>anbietet</b>, stellt der Betreiber in seiner Geräteliste ein. Cloud-Modelle sind kostenpflichtig.",
+   "pages": [
+    "admin-registrations.html"
+   ]
+  },
+  "admin_reg.no_list": {
+   "src": "Keine Liste hinterlegen",
+   "pages": [
+    "admin-registrations.html"
+   ]
+  },
+  "admin_reg.no_list_hint": {
+   "src": "Für Provider und „beides\" heißt das: alle lokalen Modelle. Bei einem Consumer heißt es: <b>nichts</b> freigegeben — nimm dort „Alle lokalen freigeben\".",
+   "pages": [
+    "admin-registrations.html"
+   ]
+  },
+  "admin_reg.cloud_cost_hint": {
+   "src": "Kostenpflichtig — das Konto braucht dafür gegebenenfalls Credits.",
+   "pages": [
+    "admin-registrations.html"
+   ]
+  },
+  "admin_reg.save_approval": {
+   "src": "Freigabe speichern",
+   "pages": [
+    "admin-registrations.html"
+   ]
+  },
+  "admin_reg.allow_all_local": {
+   "src": "Alle lokalen freigeben",
+   "pages": [
+    "admin-registrations.html"
+   ]
+  },
+  "admin_reg.reset_default": {
+   "src": "Auf Standard",
+   "pages": [
+    "admin-registrations.html"
+   ]
+  },
+  "admin_reg.mail_title": {
+   "src": "E-Mail bei ausstehender Freigabe",
+   "pages": [
+    "admin-registrations.html"
+   ]
+  },
+  "admin_reg.mail_hint": {
+   "src": "Sobald sich jemand anmeldet, geht eine Nachricht an die hier eingetragene Adresse. Die Einstellungen liegen in der Datenbank, du brauchst also keinen Zugriff auf den Server.",
+   "pages": [
+    "admin-registrations.html"
+   ]
+  },
+  "admin_reg.mail_none": {
+   "src": "ohne (nur lokaler Relay)",
+   "pages": [
+    "admin-registrations.html"
+   ]
+  },
+  "admin_reg.mail_checkbox": {
+   "src": "bei ausstehender Freigabe mailen",
+   "pages": [
+    "admin-registrations.html"
+   ]
+  },
+  "admin_reg.mail_test_hint": {
+   "src": "Die Testmail geht an „Benachrichtigung an\". Ein Fehler beim Versand steht daneben im Klartext — typisch sind ein falscher Port oder ein Anbieter, der App-Kennwörter verlangt.",
+   "pages": [
+    "admin-registrations.html"
+   ]
+  },
+  "admin_reg.mail_pw_set": {
+   "src": "gesetzt — leer lassen zum Behalten",
+   "pages": []
+  },
+  "admin_reg.mail_pw_unset": {
+   "src": "nicht gesetzt",
+   "pages": []
+  },
+  "agent.my_nodes": {
+   "src": "Meine Nodes",
+   "pages": [
+    "agent.html"
+   ]
+  },
+  "chat.enter_hint": {
+   "src": "Enter sendet (aus: Strg+Enter sendet, Enter macht eine neue Zeile)",
+   "pages": [
+    "chat.html"
+   ]
+  },
+  "chat.close_conv": {
+   "src": "Unterhaltung schließen",
+   "pages": []
+  },
+  "login.point.hardware_short": {
+   "src": "Eigene Hardware einbringen.",
+   "pages": [
+    "login.html"
+   ]
+  },
+  "login.point.models_short": {
+   "src": "Modelle bleiben kontrollierbar.",
+   "pages": [
+    "login.html"
+   ]
+  },
+  "nodes.reported_on_machine": {
+   "src": "Auf dieser Maschine gemeldet:",
+   "pages": [
+    "nodes.html"
+   ]
+  },
+  "nodes.reported_none": {
+   "src": "Auf dieser Maschine gemeldet: noch keine Meldung — der Agent schickt sie mit dem nächsten Heartbeat.",
+   "pages": [
+    "nodes.html"
+   ]
+  },
+  "nodes.addr_and_port": {
+   "src": "Adresse und Port dieser Node",
+   "pages": [
+    "nodes.html"
+   ]
+  },
+  "nodes.addr_hint": {
+   "src": "Leer lassen heißt: der Agent meldet seine Adresse selbst beim Heartbeat. Der <b>Konto-Schlüssel wird hier nie gebraucht</b> — der Agent hat ihn, das Portal kennt nur seinen Hash. Adresse oder Port korrigieren ist also gefahrlos möglich.",
+   "pages": [
+    "nodes.html"
+   ]
+  },
+  "nodes.addr_hint_key": {
+   "src": "Konto-Schlüssel wird hier nie gebraucht",
+   "pages": [
+    "nodes.html"
+   ]
+  },
+  "nodes.adopt_reported": {
+   "src": "Gemeldete Modelle eintragen",
+   "pages": [
+    "nodes.html"
+   ]
+  },
+  "nodes.desc_placeholder": {
+   "src": "Standort, Besonderheiten, Verfügbarkeitsfenster…",
+   "pages": [
+    "nodes.html"
+   ]
+  },
+  "nodes.select_node": {
+   "src": "Node {name} auswählen",
+   "pages": []
+  },
+  "nodes.availability_title": {
+   "src": "Dauerbetrieb heißt: die Maschine läuft rund um die Uhr. Zeitweise heißt: nur wenn sie an ist.",
+   "pages": [
+    "nodes.html"
+   ]
+  },
+  "pool.register_gpu_link": {
+   "src": "registriere deine eigene GPU",
+   "pages": [
+    "pool.html"
+   ]
+  },
+  "profile.admin_role_hint": {
+   "src": "Die Admin-Rolle wird von der Administration verwaltet und kann hier nicht geändert werden. Rollen anderer Konten ändern: <a href=\"admin-registrations.html\" class=\"link\">Konten und Freigaben</a>.",
+   "pages": [
+    "profile.html"
    ]
   }
  },

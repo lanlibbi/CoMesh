@@ -160,10 +160,10 @@ KEYS = {
     "health-check-der-node": {"en": "Health check of the node:", "de": "Health-Check der Node:", "es": "Health check del node:", "fr": "Health check du node :"},
     "verifizieren": {"en": "Verify", "de": "Verifizieren", "es": "Verificar", "fr": "Vérifier"},
     "sobald-die-node-im-a-href-pool-html-class": {
-        "en": "As soon as the node appears in the <a href=\"pool.html\" class=\"link\">community pool</a>, it is live. Requests are routed there automatically; 70 % of job cost lands as Credits on your account.",
-        "de": "Sobald die Node im <a href=\"pool.html\" class=\"link\">Community-Pool</a> auftaucht, ist sie live. Anfragen werden automatisch dorthin geroutet; 70 % der Job-Kosten landen als Credits auf deinem Konto.",
-        "es": "En cuanto el node aparezca en el <a href=\"pool.html\" class=\"link\">pool comunitario</a>, estará activo. Las solicitudes se enrutan allí automáticamente; el 70 % del coste del job llega como Credits a tu cuenta.",
-        "fr": "Dès que le node apparaît dans le <a href=\"pool.html\" class=\"link\">pool communautaire</a>, il est actif. Les requêtes y sont routées automatiquement ; 70 % du coût du job arrivent en Credits sur votre compte.",
+        "en": "As soon as the node appears in the <a href=\"pool.html\" class=\"link\">community pool</a>, it is live. Requests are routed there automatically.",
+        "de": "Sobald die Node im <a href=\"pool.html\" class=\"link\">Community-Pool</a> auftaucht, ist sie live. Anfragen werden automatisch dorthin geroutet.",
+        "es": "En cuanto el node aparezca en el <a href=\"pool.html\" class=\"link\">pool comunitario</a>, estará activo. Las solicitudes se enrutan allí automáticamente.",
+        "fr": "Dès que le node apparaît dans le <a href=\"pool.html\" class=\"link\">pool communautaire</a>, il est actif. Les requêtes y sont routées automatiquement.",
         },
     "pool-ansehen": {"en": "View pool", "de": "Pool ansehen", "es": "Ver el pool", "fr": "Voir le pool"},
     "profile.models_available_title": {

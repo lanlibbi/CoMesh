@@ -1,5 +1,42 @@
 # Changelog
 
+## 0.6.15 — 2026-11-06
+
+**Alle Oberflächentexte sind übersetzt — der Abnahmeprüfer steht auf PASS**
+
+1. **75 deutsche Textstellen im Markup hatten keinen Übersetzungsschlüssel** und
+   blieben bei jedem Sprachwechsel deutsch: Überschriften und Hinweise auf den
+   Admin-Seiten (Protokoll, Geräte, Konten und Freigaben), die
+   Konto-von-Hand-Maske, der E-Mail-Abschnitt samt Testmail-Hinweis, die
+   Node-Formulare (Adresse/Port, gemeldete Modelle), Anmeldung, Chat-Hinweiszeile,
+   Pool-Leerzustand und die Rück-Links. Sie tragen jetzt Schlüssel aus
+   `scripts/i18n/i18n_parts/part11_rest.py` (63 neue Schlüssel, Katalog 494 → 557).
+2. **Neun Attribute waren unübersetzt** — `placeholder`, `title` und
+   `aria-label` in Suche, VRAM-Spalte, Modellfreigabe, Beschreibungsfeld und
+   Betriebsauswahl. Sie haben `data-i18n-placeholder` / `-title` / `-aria-label`;
+   drei Alpine-Bindungen (`:placeholder`, zweimal `:aria-label`) lösen ihre Texte
+   jetzt über `I18n.t(...)` auf, weil ein statisches Attribut die Bindung sofort
+   wieder überschreiben würde.
+3. **Der Prüfer selbst war die halbe Ursache.** `audit_coverage.py` suchte nach
+   `placeholder-i18n` — eine Schreibweise, die im Frontend nirgends vorkommt und
+   die `i18n.js` nicht auswertet. Bereits übersetzte Attribute galten damit als
+   offen. Er prüft jetzt `data-i18n-<attr>` und führt die statische Anleitung
+   (`guide.html`) in einem eigenen Abschnitt: dort zählt nicht ein Schlüssel,
+   sondern dass **jeder** Text in einem `<div lang="…">`-Block steht.
+4. **Inhalte aus `<template>` wurden nie übersetzt.** `x-if`/`x-for` halten ihren
+   Inhalt in einem eigenen DocumentFragment; ein Selektor auf dem Dokument
+   erreicht ihn nicht, Alpine klont ihn erst beim Rendern. Die Tabellenzeilen der
+   Admin-Seiten und das Whitelist-Fenster blieben deshalb in jeder Sprache
+   deutsch. `I18n.apply()` läuft jetzt auch durch die Vorlagen.
+5. **Zwei alte Katalogeinträge passten nicht mehr zum Markup:** die Admin-Usage-
+   Einleitung war nach „die Admin-Sicht auf“ abgeschnitten (der Code-Teil fehlte
+   in allen vier Sprachen), und der Agent-Hinweis trug noch einen Satz über die
+   70-%-Gutschrift, den das Markup nicht mehr hat. Beide sind auf den
+   Markup-Text gebracht — Prüfung 4 des Katalogs vergleicht zeichengleich.
+6. **Abnahme:** `audit_coverage.py` meldet `GATE: PASS` (0 Fundstellen in allen
+   Abschnitten), `build_catalog.py` läuft ohne Beanstandung durch, die
+   Testsuite bleibt grün.
+
 ## 0.6.14 — 2026-11-06
 
 **Modelle, die nur auf einer Node liegen, sind im Portal sichtbar und nutzbar**

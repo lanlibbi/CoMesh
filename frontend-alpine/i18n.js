@@ -132,6 +132,15 @@ const I18n = {
       el.textContent = this.t(el.getAttribute("data-i18n"));
     });
 
+    // Inhalte von <template> (x-if / x-for) liegen in einem eigenen
+    // DocumentFragment: ein Selektor auf dem Dokument erreicht sie nicht, und
+    // Alpine klont sie erst beim Rendern. Ohne diesen Durchlauf bliebe jede
+    // Zeile aus einer Vorlage in der Ausgangssprache stehen — bisher der Fall
+    // für die Tabellenzeilen der Admin-Seiten und das Whitelist-Fenster.
+    scope.querySelectorAll("template").forEach((tpl) => {
+      if (tpl.content) this.apply(tpl.content);
+    });
+
     document.documentElement.setAttribute("lang", this.lang);
     const title = document.querySelector("title[data-i18n]");
     if (title) document.title = this.t(title.getAttribute("data-i18n"));

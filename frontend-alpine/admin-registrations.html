@@ -26,8 +26,8 @@
   <main class="shell">
     <div class="page-head">
       <div class="eyebrow">Admin</div>
-      <h1>Konten und Freigaben</h1>
-      <p class="lede">
+      <h1 data-i18n="admin_reg.title">Konten und Freigaben</h1>
+      <p class="lede" data-i18n-html="admin_reg.lede">
         Registrierungen freigeben oder ablehnen, Rollen vergeben, Passwörter setzen,
         Credits buchen, Schlüssel ausstellen und Konten deaktivieren. Serverseitig auf
         <code class="inline">role = admin</code> beschränkt und protokolliert.
@@ -37,7 +37,7 @@
     <div x-show="denied" x-cloak class="notice mb-4">
       <div class="grow">
         <div class="semibold">Admin-Rolle erforderlich</div>
-        <p class="t-sm text-dim mt-1">
+        <p class="t-sm text-dim mt-1" data-i18n-html="common.your_role_html">
           Deine Rolle: <span class="mono" x-text="(Auth.currentUser() || {}).role || 'both'"></span>.
         </p>
       </div>
@@ -56,9 +56,9 @@
     </div>
     <div x-show="neuerSchluessel" x-cloak class="notice mb-4">
       <div class="grow">
-        <div class="semibold">Neuer API-Schlüssel — nur jetzt sichtbar</div>
+        <div class="semibold" data-i18n="admin_reg.new_key_title">Neuer API-Schlüssel — nur jetzt sichtbar</div>
         <p class="mono t-sm mt-1" style="word-break:break-all" x-text="neuerSchluessel"></p>
-        <p class="t-sm text-dim mt-1">Jetzt kopieren. Nach dem Verlassen der Seite ist er nicht mehr abrufbar.</p>
+        <p class="t-sm text-dim mt-1" data-i18n="admin_reg.new_key_hint">Jetzt kopieren. Nach dem Verlassen der Seite ist er nicht mehr abrufbar.</p>
       </div>
     </div>
 
@@ -66,7 +66,7 @@
       <div class="card span-3"><div class="stat">
         <div class="eyebrow">Ausstehend</div>
         <div class="stat-value brass" x-text="counts.pending == null ? '—' : fmtNumber(counts.pending)"></div>
-        <div class="stat-sub">warten auf Freigabe</div>
+        <div class="stat-sub" data-i18n="admin_reg.stat_pending">warten auf Freigabe</div>
       </div></div>
       <div class="card span-3"><div class="stat">
         <div class="eyebrow">Freigegeben</div>
@@ -81,7 +81,7 @@
       <div class="card span-3"><div class="stat">
         <div class="eyebrow">Admins</div>
         <div class="stat-value" x-text="counts.admins == null ? '—' : fmtNumber(counts.admins)"></div>
-        <div class="stat-sub">dürfen verwalten</div>
+        <div class="stat-sub" data-i18n="admin_reg.stat_admins">dürfen verwalten</div>
       </div></div>
     </div>
 
@@ -90,8 +90,8 @@
       <div class="panel-head">
         <div>
           <div class="eyebrow">Anlegen</div>
-          <h3>Konto von Hand erstellen</h3>
-          <p>Für Konten, die sich nicht selbst registrieren sollen. Der Schlüssel wird einmal angezeigt.</p>
+          <h3 data-i18n="admin_reg.create_title">Konto von Hand erstellen</h3>
+          <p data-i18n="admin_reg.create_hint">Für Konten, die sich nicht selbst registrieren sollen. Der Schlüssel wird einmal angezeigt.</p>
         </div>
         <button class="btn-ghost btn-sm" @click="formOffen = !formOffen" x-text="formOffen ? 'Schließen' : 'Konto anlegen'"></button>
       </div>
@@ -131,10 +131,10 @@
         </div>
       </div>
 
-      <div x-show="loading && !items.length" class="t-sm text-mute">Lädt…</div>
+      <div x-show="loading && !items.length" class="t-sm text-mute" data-i18n="laedt">Lädt…</div>
       <div x-show="!loading && !items.length" class="empty">
-        <p>Keine Einträge in dieser Auswahl.</p>
-        <p class="t-sm text-dim mt-2">Anderen Status wählen oder Suche leeren.</p>
+        <p data-i18n="admin_reg.empty_selection">Keine Einträge in dieser Auswahl.</p>
+        <p class="t-sm text-dim mt-2" data-i18n="admin_reg.empty_hint">Anderen Status wählen oder Suche leeren.</p>
       </div>
 
       <div x-show="items.length" class="table-wrap">
@@ -178,7 +178,7 @@
                     <button class="btn-ghost btn-sm" :disabled="busyId === r.id" @click="setPasswort(r)">Passwort</button>
                     <button class="btn-ghost btn-sm" :disabled="busyId === r.id" @click="modelle(r)">Modelle</button>
                     <button class="btn-ghost btn-sm" :disabled="busyId === r.id" @click="credits(r)">Credits</button>
-                    <button class="btn-ghost btn-sm" :disabled="busyId === r.id" @click="schluessel(r)">Schlüssel</button>
+                    <button class="btn-ghost btn-sm" :disabled="busyId === r.id" @click="schluessel(r)" data-i18n="admin_reg.key_button">Schlüssel</button>
                     <button class="btn-ghost btn-sm" :disabled="busyId === r.id" @click="toggleActive(r)"
                             x-text="r.is_active ? 'Deaktivieren' : 'Aktivieren'"></button>
                     <button class="btn-ghost btn-sm btn-danger" :disabled="busyId === r.id" @click="loeschen(r)"
@@ -192,11 +192,11 @@
       </div>
 
       <div class="row wrap mt-3" style="gap:8px" x-show="total > limit">
-        <button class="btn-ghost btn-sm" :disabled="offset === 0" @click="prev()">Zurück</button>
+        <button class="btn-ghost btn-sm" :disabled="offset === 0" @click="prev()" data-i18n="common.back">Zurück</button>
         <button class="btn-ghost btn-sm" :disabled="offset + limit >= total" @click="next()">Weiter</button>
       </div>
 
-      <p class="hint mt-3">
+      <p class="hint mt-3" data-i18n-html="admin_reg.last_admin_hint">
         Der letzte Admin kann sich weder degradieren noch deaktivieren — das prüft die API selbst.
         Alle Änderungen stehen im <a href="admin-audit.html" class="link">Protokoll</a>.
         Ein neuer Schlüssel macht den bisherigen sofort ungültig.
@@ -209,19 +209,19 @@
           <div>
             <div class="eyebrow">Freigabe</div>
             <h3 x-text="modellKonto ? modellKonto.email : ''"></h3>
-            <p class="t-sm text-dim">
+            <p class="t-sm text-dim" data-i18n-html="admin_reg.models_scope_hint">
               Diese Modelle darf das Konto <b>nutzen</b>. Was ein Node <b>anbietet</b>, stellt der
               Betreiber in seiner Geräteliste ein. Cloud-Modelle sind kostenpflichtig.
             </p>
           </div>
-          <button class="btn-ghost btn-sm" @click="modellKonto = null">Schließen</button>
+          <button class="btn-ghost btn-sm" @click="modellKonto = null" data-i18n="schliessen">Schließen</button>
         </div>
 
         <label class="check">
           <input type="checkbox" x-model="modellAlle" />
           <span class="check-body">
-            <span class="check-title">Keine Liste hinterlegen</span>
-            <span class="check-sub">Für Provider und „beides" heißt das: alle lokalen Modelle. Bei einem
+            <span class="check-title" data-i18n="admin_reg.no_list">Keine Liste hinterlegen</span>
+            <span class="check-sub" data-i18n-html="admin_reg.no_list_hint">Für Provider und „beides" heißt das: alle lokalen Modelle. Bei einem
               Consumer heißt es: <b>nichts</b> freigegeben — nimm dort „Alle lokalen freigeben".</span>
           </span>
         </label>
@@ -237,7 +237,7 @@
               </span>
             </label>
           </template>
-          <div class="t-xs text-mute" style="padding:8px 10px" x-show="modellListe.length === 0">
+          <div class="t-xs text-mute" style="padding:8px 10px" x-show="modellListe.length === 0" data-i18n="modelle-werden-geladen">
             Modelle werden geladen…
           </div>
         </div>
@@ -245,29 +245,29 @@
         <label class="check mt-2">
           <input type="checkbox" x-model="modellCloud" />
           <span class="check-body">
-            <span class="check-title">Cloud-Modelle erlauben</span>
-            <span class="check-sub">Kostenpflichtig — das Konto braucht dafür gegebenenfalls Credits.</span>
+            <span class="check-title" data-i18n="cloud-modelle-erlauben">Cloud-Modelle erlauben</span>
+            <span class="check-sub" data-i18n="admin_reg.cloud_cost_hint">Kostenpflichtig — das Konto braucht dafür gegebenenfalls Credits.</span>
           </span>
         </label>
 
         <div class="row wrap mt-3" style="gap:10px">
           <button class="btn-primary btn-sm" @click="modellSpeichern()" :disabled="modellBusy">
-            <span x-show="!modellBusy">Freigabe speichern</span>
+            <span x-show="!modellBusy" data-i18n="admin_reg.save_approval">Freigabe speichern</span>
             <span x-show="modellBusy">Speichere…</span>
           </button>
-          <button class="btn-ghost btn-sm" @click="modellAlleLokalen()">Alle lokalen freigeben</button>
-          <button class="btn-ghost btn-sm" @click="modellStandard()">Auf Standard</button>
+          <button class="btn-ghost btn-sm" @click="modellAlleLokalen()" data-i18n="admin_reg.allow_all_local">Alle lokalen freigeben</button>
+          <button class="btn-ghost btn-sm" @click="modellStandard()" data-i18n="admin_reg.reset_default">Auf Standard</button>
         </div>
         <div class="t-sm text-err mt-2" x-show="modellHinweis" x-text="modellHinweis"></div>
       </section>
     <!-- E-Mail-Benachrichtigung: SMTP in der Datenbank, damit sie ohne Serverzugriff pflegbar ist -->
     <section class="card mt-3" x-show="!denied" x-cloak>
       <div class="row between">
-        <h2 style="margin:0">E-Mail bei ausstehender Freigabe</h2>
+        <h2 style="margin:0" data-i18n="admin_reg.mail_title">E-Mail bei ausstehender Freigabe</h2>
         <button type="button" class="btn-ghost btn-sm" @click="mailOffen = !mailOffen"
                 x-text="mailOffen ? 'schließen' : 'einrichten'"></button>
       </div>
-      <p class="hint mt-2">
+      <p class="hint mt-2" data-i18n="admin_reg.mail_hint">
         Sobald sich jemand anmeldet, geht eine Nachricht an die hier eingetragene Adresse.
         Die Einstellungen liegen in der Datenbank, du brauchst also keinen Zugriff auf den Server.
       </p>
@@ -287,7 +287,7 @@
             <select class="input" x-model="mail.security">
               <option value="starttls">STARTTLS (meist 587)</option>
               <option value="ssl">SSL/TLS (meist 465)</option>
-              <option value="none">ohne (nur lokaler Relay)</option>
+              <option value="none" data-i18n="admin_reg.mail_none">ohne (nur lokaler Relay)</option>
             </select>
           </label>
           <label class="field">
@@ -297,7 +297,7 @@
           <label class="field">
             <span class="label">Kennwort</span>
             <input class="input" type="password" x-model="mail.password" autocomplete="new-password"
-                   :placeholder="mail.password_set ? 'gesetzt — leer lassen zum Behalten' : 'nicht gesetzt'" />
+                   :placeholder="mail.password_set ? I18n.t('admin_reg.mail_pw_set') : I18n.t('admin_reg.mail_pw_unset')" />
           </label>
           <label class="field">
             <span class="label">Absenderadresse</span>
@@ -320,7 +320,7 @@
           </label>
           <label class="check">
             <input type="checkbox" x-model="mail.notify_pending" />
-            <span>bei ausstehender Freigabe mailen</span>
+            <span data-i18n="admin_reg.mail_checkbox">bei ausstehender Freigabe mailen</span>
           </label>
         </div>
 
@@ -329,7 +329,7 @@
           <button type="button" class="btn-ghost btn-sm" @click="testMail()" :disabled="mailBusy">Testmail senden</button>
           <span class="t-xs text-mute" x-show="mailMeldung" x-text="mailMeldung"></span>
         </div>
-        <p class="hint mt-2">
+        <p class="hint mt-2" data-i18n="admin_reg.mail_test_hint">
           Die Testmail geht an „Benachrichtigung an". Ein Fehler beim Versand steht daneben im Klartext —
           typisch sind ein falscher Port oder ein Anbieter, der App-Kennwörter verlangt.
         </p>

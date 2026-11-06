@@ -27,7 +27,7 @@
     <div class="page-head">
       <div class="eyebrow">Admin</div>
       <h1>Protokoll</h1>
-      <p class="lede">
+      <p class="lede" data-i18n="audit.lede">
         Jede Änderung an Konten, Rollen, Credits und Geräten — mit Zeitpunkt und
         ausführendem Admin. Passwörter und Schlüsselwerte werden nicht protokolliert.
       </p>
@@ -36,7 +36,7 @@
     <div x-show="denied" x-cloak class="notice mb-4">
       <div class="grow">
         <div class="semibold">Admin-Rolle erforderlich</div>
-        <p class="t-sm text-dim mt-1">
+        <p class="t-sm text-dim mt-1" data-i18n-html="common.your_role_html">
           Deine Rolle: <span class="mono" x-text="(Auth.currentUser() || {}).role || 'both'"></span>.
         </p>
       </div>
@@ -52,7 +52,7 @@
       <div class="panel-head">
         <div>
           <div class="eyebrow">Aktionen</div>
-          <h3>Änderungen</h3>
+          <h3 data-i18n="audit.changes">Änderungen</h3>
           <p x-text="loading ? 'Lädt…' : (total + ' Einträge, neueste zuerst')"></p>
         </div>
         <div class="row wrap" style="gap:8px">
@@ -65,10 +65,10 @@
         </div>
       </div>
 
-      <div x-show="loading && !events.length" class="t-sm text-mute">Lädt…</div>
+      <div x-show="loading && !events.length" class="t-sm text-mute" data-i18n="laedt">Lädt…</div>
       <div x-show="!loading && !events.length" class="empty">
-        <p>Keine Einträge.</p>
-        <p class="t-sm text-dim mt-2">Andere Aktion wählen oder warten, bis etwas geändert wird.</p>
+        <p data-i18n="audit.no_entries">Keine Einträge.</p>
+        <p class="t-sm text-dim mt-2" data-i18n="audit.no_entries_hint">Andere Aktion wählen oder warten, bis etwas geändert wird.</p>
       </div>
 
       <div x-show="events.length" class="table-wrap">
@@ -79,7 +79,7 @@
               <th>Admin</th>
               <th>Aktion</th>
               <th>Ziel</th>
-              <th>Änderung</th>
+              <th data-i18n="audit.col_change">Änderung</th>
             </tr>
           </thead>
           <tbody>
@@ -100,7 +100,7 @@
       </div>
 
       <div class="row wrap mt-3" style="gap:8px" x-show="total > limit">
-        <button class="btn-ghost btn-sm" :disabled="offset === 0" @click="prev()">Zurück</button>
+        <button class="btn-ghost btn-sm" :disabled="offset === 0" @click="prev()" data-i18n="common.back">Zurück</button>
         <button class="btn-ghost btn-sm" :disabled="offset + limit >= total" @click="next()">Weiter</button>
       </div>
 

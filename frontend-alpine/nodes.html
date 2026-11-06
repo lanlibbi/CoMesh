@@ -130,7 +130,7 @@
           <div class="field">
             <label class="label" for="n-desc" data-i18n="beschreibung">Beschreibung</label>
             <textarea class="input" id="n-desc" rows="2" x-model="form.description"
-                      placeholder="Standort, Besonderheiten, Verfügbarkeitsfenster…"></textarea>
+                      placeholder="Standort, Besonderheiten, Verfügbarkeitsfenster…" data-i18n-placeholder="nodes.desc_placeholder"></textarea>
           </div>
 
           <div class="field">
@@ -387,7 +387,7 @@
           <div class="row top" style="gap:12px;align-items:flex-start">
             <input type="checkbox" :id="'node-' + n.id" style="margin-top:4px;flex:none" data-node-select
                    :checked="selectedIds.includes(n.id)" @change="toggleNodeSelection(n.id)"
-                   :aria-label="'Node ' + n.name + ' auswählen'" />
+                   :aria-label="I18n.t('nodes.select_node', { name: n.name })" />
             <div class="grow">
               <div class="row between top">
                 <div class="grow">
@@ -425,7 +425,7 @@
                    der Punkt: erst dadurch sieht ein Provider, ob ein Modell, das nur
                    lokal existiert, überhaupt gemeldet wird. -->
               <div class="t-xs mt-1" x-show="gemeldeteModelle(n).length > 0">
-                <span class="text-dim">Auf dieser Maschine gemeldet: </span>
+                <span class="text-dim" data-i18n="nodes.reported_on_machine">Auf dieser Maschine gemeldet: </span>
                 <template x-for="m in gemeldeteModelle(n)" :key="m">
                   <span class="pill pill-flat t-xs mono" style="margin-right:4px" x-text="m"></span>
                 </template>
@@ -433,7 +433,7 @@
                       x-text="'(' + fmtDate(n.reported_models_at) + ')'"></span>
               </div>
               <div class="t-xs mt-1" x-show="gemeldeteModelle(n).length === 0">
-                <span class="text-mute">Auf dieser Maschine gemeldet: noch keine Meldung — der Agent schickt sie mit dem nächsten Heartbeat.</span>
+                <span class="text-mute" data-i18n="nodes.reported_none">Auf dieser Maschine gemeldet: noch keine Meldung — der Agent schickt sie mit dem nächsten Heartbeat.</span>
               </div>
             </div>
             <div class="row wrap" style="gap:6px;align-items:center">
@@ -442,7 +442,7 @@
                 <select class="input" style="width:auto;padding:4px 8px;font-size:12px"
                         :value="n.availability || 'always'"
                         @change="betriebSetzen(n, $event.target.value)"
-                        title="Dauerbetrieb heißt: die Maschine läuft rund um die Uhr. Zeitweise heißt: nur wenn sie an ist.">
+                        title="Dauerbetrieb heißt: die Maschine läuft rund um die Uhr. Zeitweise heißt: nur wenn sie an ist." data-i18n-title="nodes.availability_title">
                   <option value="always">Dauerbetrieb</option>
                   <option value="partial">zeitweise</option>
                 </select>
@@ -462,7 +462,7 @@
 
           <div x-show="editingId === n.id" x-cloak class="mt-3">
             <div class="divider inset"></div>
-            <p class="label">Adresse und Port dieser Node</p>
+            <p class="label" data-i18n="nodes.addr_and_port">Adresse und Port dieser Node</p>
             <div class="row" style="gap:8px;align-items:flex-end;flex-wrap:wrap">
               <div class="grow" style="min-width:220px">
                 <label class="label" for="node-edit-url">Adresse</label>
@@ -475,9 +475,9 @@
                        x-model.number="editPort" />
               </div>
             </div>
-            <p class="hint">
+            <p class="hint" data-i18n-html="nodes.addr_hint">
               Leer lassen heißt: der Agent meldet seine Adresse selbst beim Heartbeat.
-              Der <b>Konto-Schlüssel wird hier nie gebraucht</b> — der Agent hat ihn, das Portal
+              Der <b data-i18n="nodes.addr_hint_key">Konto-Schlüssel wird hier nie gebraucht</b> — der Agent hat ihn, das Portal
               kennt nur seinen Hash. Adresse oder Port korrigieren ist also gefahrlos möglich.
             </p>
             <label class="label" for="node-models-text" data-i18n="node.models.free_label">Modelle dieser Node</label>
@@ -516,7 +516,7 @@
               <!-- Nur eine Hilfe beim Ausfüllen: die gemeldeten Modelle in das
                    Freitextfeld schreiben. Gespeichert wird erst mit „Speichern",
                    die Freigabe bleibt also eine bewusste Entscheidung. -->
-              <button class="btn-ghost btn-sm" x-show="gemeldeteModelle(n).length > 0"
+              <button class="btn-ghost btn-sm" data-i18n="nodes.adopt_reported" x-show="gemeldeteModelle(n).length > 0"
                       @click="uebernehmeGemeldete(n)">Gemeldete Modelle eintragen</button>
               <button class="btn-ghost btn-sm" @click="cancelEdit()" data-i18n="abbrechen">Abbrechen</button>
             </div>
@@ -545,7 +545,7 @@
           <div class="panel-head">
             <div>
               <div class="eyebrow" data-i18n="bulk">Bulk</div>
-              <h3>Modell-Whitelist für <span x-text="selectedCount"></span> Node(s)</h3>
+              <h3 data-i18n-html="modell-whitelist-fuer-span-x-text">Modell-Whitelist für <span x-text="selectedCount"></span> Node(s)</h3>
             </div>
             <button class="btn-ghost btn-sm" @click="closeBulkWhitelist()" :disabled="bulkWhitelistBusy"
                     aria-label="Schließen" data-i18n-aria-label="schliessen">✕</button>

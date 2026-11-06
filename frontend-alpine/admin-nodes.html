@@ -29,8 +29,8 @@
   <main class="shell">
     <div class="page-head">
       <div class="eyebrow">Admin</div>
-      <h1>Geräte im Pool</h1>
-      <p class="lede">
+      <h1 data-i18n="admin_nodes.title">Geräte im Pool</h1>
+      <p class="lede" data-i18n-html="admin_nodes.lede">
         Alle Rechner, auch die abgeschalteten — die Admin-Sicht auf
         <code class="inline">GET /admin/nodes</code>. Ob ein Gerät lebt, sagt nicht die Spalte
         <i>Status</i>, sondern der letzte Herzschlag.
@@ -50,7 +50,7 @@
       <div class="row wrap" style="gap:10px;align-items:flex-end">
         <div class="field grow">
           <label class="label" for="q">Suche</label>
-          <input class="input" id="q" x-model="q" @keydown.enter="load()" placeholder="Name, GPU oder Adresse" />
+          <input class="input" id="q" x-model="q" @keydown.enter="load()" placeholder="Name, GPU oder Adresse" data-i18n-placeholder="admin_nodes.filter_placeholder" />
         </div>
         <div class="field">
           <label class="label" for="st">Status</label>
@@ -80,7 +80,7 @@
         <table class="table">
           <thead>
             <tr>
-              <th>Gerät</th>
+              <th data-i18n="admin_nodes.device">Gerät</th>
               <th>Besitzer</th>
               <th>Zustand</th>
               <th>VRAM</th>
@@ -103,7 +103,7 @@
                   <span :class="zustandsKlasse(n)" x-text="n.effective_status || n.status"></span>
                   <span class="pill pill-flat t-xs" x-show="n.availability === 'partial'"
                         title="Läuft nur zeitweise, nicht im Dauerbetrieb">zeitweise</span>
-                  <div class="t-xs text-mute" x-show="!n.is_enabled">vom Besitzer pausiert</div>
+                  <div class="t-xs text-mute" x-show="!n.is_enabled" data-i18n="admin_nodes.paused_by_owner">vom Besitzer pausiert</div>
                 </td>
                 <td class="num">
                   <span x-text="(n.vram_gb || 0) + ' GB'"></span>
@@ -111,18 +111,18 @@
                        nicht gesetzt; das VRAM-Gate laesst die Node dann nie
                        an die Reihe kommen. Sichtbar machen statt still 1 GB. -->
                   <div class="t-xs text-warn" x-show="n.vram_source === 'assumed'"
-                       title="Keine GPU erkannt, NODE_VRAM_GB nicht gesetzt: der Wert ist angenommen. Der Router schickt dieser Node keinen Auftrag, bis der Betreiber den VRAM setzt.">
+                       title="Keine GPU erkannt, NODE_VRAM_GB nicht gesetzt: der Wert ist angenommen. Der Router schickt dieser Node keinen Auftrag, bis der Betreiber den VRAM setzt." data-i18n="admin_nodes.vram_assumed" data-i18n-title="admin_nodes.vram_assumed_title">
                     angenommen — keine GPU erkannt
                   </div>
                   <div class="t-xs text-mute" x-show="n.vram_source === 'override'"
-                       title="Wert stammt aus NODE_VRAM_GB des Agenten">aus NODE_VRAM_GB</div>
+                       title="Wert stammt aus NODE_VRAM_GB des Agenten" data-i18n="admin_nodes.vram_override" data-i18n-title="admin_nodes.vram_override_title">aus NODE_VRAM_GB</div>
                 </td>
                 <td class="t-xs" x-text="modellKurz(n)"></td>
                 <td>
                   <div class="row wrap" style="gap:6px">
                     <button class="btn-ghost btn-sm" @click="details(n)" :disabled="busyId === n.id">Details</button>
                     <button class="btn-ghost btn-sm" @click="modelle(n)" :disabled="busyId === n.id"
-                            title="Modellfreigabe dieser Node ändern. Der Besitzer darf das selbst; hier ist der Weg der Administration.">Modelle</button>
+                            title="Modellfreigabe dieser Node ändern. Der Besitzer darf das selbst; hier ist der Weg der Administration." data-i18n-title="admin_nodes.models_title">Modelle</button>
                     <button class="btn-ghost btn-sm" @click="umschalten(n)" :disabled="busyId === n.id"
                             x-text="n.is_enabled ? 'Pausieren' : 'Aktivieren'"></button>
                   </div>
@@ -131,7 +131,7 @@
             </template>
          </tbody>
         </table>
-        <p class="t-sm text-mute mt-3" x-show="!loading && items.length === 0">
+        <p class="t-sm text-mute mt-3" x-show="!loading && items.length === 0" data-i18n-html="admin_nodes.empty_filter">
           Kein Gerät gefunden. Der Filter steht auf <b x-text="status"></b>.
         </p>
       </div>
@@ -141,23 +141,23 @@
     <section class="card mt-3" x-show="detail" x-cloak>
       <div class="panel-head">
         <div>
-          <div class="eyebrow">Gerät</div>
+          <div class="eyebrow" data-i18n="admin_nodes.device">Gerät</div>
           <h3 x-text="detail ? detail.name : ''"></h3>
           <p class="t-sm text-dim" x-text="detail ? (detail.description || 'ohne Beschreibung') : ''"></p>
         </div>
-        <button class="btn-ghost btn-sm" @click="detail = null">Schließen</button>
+        <button class="btn-ghost btn-sm" @click="detail = null" data-i18n="schliessen">Schließen</button>
       </div>
       <div class="g3" x-show="detail">
         <div>
-          <div class="t-xs text-mute">Adresse, unter der das Portal den Agenten erreicht</div>
+          <div class="t-xs text-mute" data-i18n="admin_nodes.agent_address">Adresse, unter der das Portal den Agenten erreicht</div>
           <div class="mono t-sm" x-text="detail ? (detail.node_url || '—') : ''"></div>
         </div>
         <div>
-          <div class="t-xs text-mute">Herzschläge (24 h)</div>
+          <div class="t-xs text-mute" data-i18n="admin_nodes.heartbeats">Herzschläge (24 h)</div>
           <div class="num" x-text="detail ? detail.heartbeats_24h : '—'"></div>
         </div>
         <div>
-          <div class="t-xs text-mute">Aufträge (gesamt / fehlgeschlagen)</div>
+          <div class="t-xs text-mute" data-i18n="admin_nodes.jobs">Aufträge (gesamt / fehlgeschlagen)</div>
           <div class="num" x-text="detail ? (detail.nodes_jobs_total + ' / ' + detail.nodes_jobs_failed) : '—'"></div>
         </div>
       </div>
