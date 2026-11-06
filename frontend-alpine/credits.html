@@ -34,8 +34,7 @@
       <div class="eyebrow" data-i18n="abrechnung">Abrechnung</div>
       <h1 data-i18n="credits-aufladen">Credits aufladen</h1>
       <p class="lede">
-        Aktuelles Guthaben: <span class="text-brand num semibold" x-text="fmtCredits(me?.credits)"></span> Credits.
-        Abgerechnet wird pro Token — es gibt kein Abo und keine Mindestlaufzeit.
+        <span data-i18n="credits.current_balance">Aktuelles Guthaben:</span> <span class="text-brand num semibold" x-text="fmtCredits(me?.credits)"></span> <span data-i18n="credits.billing_note">Credits. Abgerechnet wird pro Token — es gibt kein Abo und keine Mindestlaufzeit.</span>
       </p>
     </div>
 
@@ -173,15 +172,15 @@
         packs: [
           {
             id: "starter", name: "Starter", price_eur: 10, credits: 10000,
-            features: ["ca. 10 Mio. Token", "alle Modelle", "Standard-Support"],
+            features: [I18n.t("credits.pack.token.10m"), I18n.t("credits.pack.all_models"), I18n.t("credits.pack.support")],
           },
           {
             id: "pro", name: "Pro", price_eur: 45, credits: 50000, featured: true,
-            features: ["ca. 50 Mio. Token", "alle Modelle", "Prioritäts-Queue", "E-Mail-Support"],
+            features: [I18n.t("credits.pack.token.50m"), I18n.t("credits.pack.all_models"), I18n.t("credits.pack.prio"), I18n.t("credits.pack.support_mail")],
           },
           {
             id: "business", name: "Business", price_eur: 160, credits: 200000,
-            features: ["ca. 200 Mio. Token", "alle Modelle", "höchste Priorität", "eigene Limits", "SLA"],
+            features: [I18n.t("credits.pack.token.200m"), I18n.t("credits.pack.all_models"), I18n.t("credits.pack.top_prio"), I18n.t("credits.pack.limits"), "SLA"],
           },
         ],
 
@@ -201,7 +200,7 @@
           try {
             this.me = await refreshUser();
           } catch (e) {
-            toast("Laden fehlgeschlagen: " + e.message, "err");
+            toast(I18n.t("laden-fehlgeschlagen") + ": " + e.message, "err");
           }
         },
 
@@ -209,18 +208,17 @@
           this.busy = pack.id;
           try {
             const ok = confirm(
-              `POC: ${pack.name} für ${pack.price_eur} € (${fmtNumber(pack.credits)} Credits) simulieren.\n\n` +
-              `In Produktion würde hier Stripe Checkout öffnen.\n\n` +
-              `OK legt eine Auflade-Anfrage an, die ein Admin bestätigt.`
+              I18n.t("credits.poc_confirm", { name: pack.name, price: pack.price_eur,
+                                              credits: fmtNumber(pack.credits) })
             );
             if (!ok) return;
             this.pushRequest({
               amount: pack.credits,
               note: `simulierter Kauf:${pack.id} (${pack.price_eur} €)`,
             });
-            toast(`${pack.name} vorgemerkt — Gutschrift erfolgt nach Admin-Freigabe.`, "ok", 5000);
+            toast(I18n.t("credits.pack_reserved", { name: pack.name }), "ok", 5000);
           } catch (e) {
-            toast("Kauf fehlgeschlagen: " + e.message, "err");
+            toast(I18n.t("credits.purchase_failed") + ": " + e.message, "err");
           } finally {
             this.busy = null;
           }
@@ -243,9 +241,9 @@
           this.topupBusy = true;
           this.topupMsg = "";
           try {
-            this.pushRequest({ amount: this.topupAmount, note: this.topupNote || "manuelle Aufladung" });
+            this.pushRequest({ amount: this.topupAmount, note: this.topupNote || I18n.t("credits.topup.manual") });
             this.topupOk = true;
-            this.topupMsg = "Anfrage gespeichert. Der Admin schreibt die Credits gut.";
+            this.topupMsg = I18n.t("credits.topup.saved");
             this.topupNote = "";
           } catch (e) {
             this.topupOk = false;

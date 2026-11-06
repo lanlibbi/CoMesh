@@ -82,7 +82,7 @@ document.addEventListener("alpine:init", () => {
         this.data = await api(`/admin/usage?${qs}`, { auth: true });
         this.denied = false;
       } catch (e) {
-        const msg = e.message || "Laden fehlgeschlagen";
+        const msg = e.message || I18n.t("laden-fehlgeschlagen");
         // 403 = authenticated but not an admin; that is a state, not an error.
         this.denied = /admin role required/i.test(msg) || /403/.test(msg);
         this.error = this.denied ? "" : msg;

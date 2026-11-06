@@ -181,7 +181,7 @@ document.addEventListener("alpine:init", () => {
 
     async saveRole() {
       if (this.isAdminRole()) {
-        this.roleWarning = "Die Admin-Rolle wird von der Administration verwaltet.";
+        this.roleWarning = I18n.t("profile.admin_role_managed");
         return;
       }
       this.savingRole = true;

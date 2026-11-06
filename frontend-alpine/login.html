@@ -46,7 +46,7 @@
       </span>
       <span class="brand-text">
         <strong>CoMesh</strong>
-        <span>Your compute, meshed.</span>
+        <span data-i18n="brand.tagline">Your compute, meshed.</span>
       </span>
     </a>
 
@@ -139,10 +139,10 @@ function loginForm() {
       try {
         const r = await API("/auth/login", { method: "POST", body: { email: this.email, password: this.password } });
         Auth.save({ id: r.user_id, email: r.email, name: r.name, credits: r.credits, role: r.role }, r.api_key);
-        toast("Willkommen zurück, " + r.name);
+        toast(I18n.t("auth.welcome_back", { name: r.name }));
         setTimeout(() => { window.location.href = "index.html"; }, 400);
       } catch (e) {
-        this.error = e.message || "Anmeldung fehlgeschlagen";
+        this.error = e.message || I18n.t("auth.login_failed");
       } finally {
         this.loading = false;
       }

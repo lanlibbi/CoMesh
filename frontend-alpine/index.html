@@ -66,7 +66,7 @@
           <div class="eyebrow" data-i18n="credit-guthaben">Credit-Guthaben</div>
           <div class="stat-value brass" x-text="fmtCredits(me?.credits)">—</div>
           <div class="stat-sub">
-            entspricht ca. <span x-text="fmtNumber(Math.floor((me?.credits || 0) * 1000))"></span> Token
+            <span data-i18n="index.approx">entspricht ca.</span> <span x-text="fmtNumber(Math.floor((me?.credits || 0) * 1000))"></span> Token
           </div>
         </div>
         <div class="row wrap mt-4">
@@ -167,7 +167,7 @@
           <span class="v" x-text="usage ? fmtNumber(usage.totals.total_tokens) : '—'"></span>
         </div>
         <div class="stat-row">
-          <span class="k">Modelle</span>
+          <span class="k" data-i18n="common.models">Modelle</span>
           <span class="v" x-text="usage ? fmtNumber(usage.totals.models_used) : '—'"></span>
         </div>
         <div class="stat-row">
@@ -216,7 +216,7 @@
         <p class="hint" data-i18n-html="api_key_session_only">Im Browser arbeitest du mit einer Sitzung, nicht mit einem API-Schlüssel. Einen Schlüssel für ein Programm, einen Hermes oder ein SDK stellst du in den Kontoeinstellungen aus — er beginnt mit <code class="inline">gpu_</code> und wird genau einmal angezeigt.</p>
       </template>
       <p class="hint">
-        Header: <code class="inline" data-i18n-html="authorization-bearer-lt-api-key-gt">Authorization: Bearer &lt;api-key&gt;</code>
+        <span data-i18n="index.header_label">Header:</span> <code class="inline" data-i18n-html="authorization-bearer-lt-api-key-gt">Authorization: Bearer &lt;api-key&gt;</code>
         <span class="t-sm text-dim" data-i18n="api_key_no_bearer">— in Konfigurationsdateien und SDKs
           nur der Schlüssel, ohne &quot;Bearer&quot;.</span>
       </p>
@@ -252,7 +252,7 @@
           <thead>
             <tr>
               <th data-i18n="wann">Wann</th>
-              <th>Modell</th>
+              <th data-i18n="common.model">Modell</th>
               <th>Token</th>
               <th>Credits</th>
             </tr>
@@ -347,7 +347,7 @@
               (this.usage.series || []).map((b) => ({ label: b.label, value: b.total_tokens }))
             );
           } catch (e) {
-            toast("Laden fehlgeschlagen: " + e.message, "err");
+            toast(I18n.t("laden-fehlgeschlagen") + ": " + e.message, "err");
           } finally {
             this.loading = false;
           }
@@ -370,14 +370,14 @@
           if (btn.dataset.busy) return;
           btn.dataset.busy = "1";
           const before = btn.textContent;
-          btn.textContent = "Kopiert ✓";
+          btn.textContent = I18n.t("app.toast.ok");
           setTimeout(() => { btn.textContent = before; delete btn.dataset.busy; }, 1400);
         },
 
         copyKey(ev) {
           if (!this.apiKey) return;
           navigator.clipboard.writeText(this.apiKey).then(() => {
-            toast("API-Key kopiert");
+            toast(I18n.t("dash.key.copied"));
             this.flashButton(ev);
           });
         },
@@ -413,7 +413,7 @@
         copyNewKey(ev) {
           if (!this.newKey) return;
           navigator.clipboard.writeText(this.newKey).then(() => {
-            toast("API-Key kopiert");
+            toast(I18n.t("dash.key.copied"));
             this.flashButton(ev);
           });
         },

@@ -39,19 +39,19 @@
       </p>
     </div>
 
-    <div class="chat-tabs" role="tablist" aria-label="Unterhaltungen">
+    <div class="chat-tabs" role="tablist" aria-label="Unterhaltungen" data-i18n-aria-label="chat.conversations">
       <template x-for="c in chats" :key="c.id">
         <div class="chat-tab" role="tab" :aria-selected="c.id === activeId ? 'true' : 'false'"
              :class="{ aktiv: c.id === activeId }" @click="wechsleChat(c.id)"
              :title="c.title">
           <span class="titel" x-text="c.title"></span>
-          <span class="punkt" x-show="busyIds.includes(c.id)" title="antwortet gerade"></span>
+          <span class="punkt" x-show="busyIds.includes(c.id)" title="antwortet gerade" data-i18n-title="chat.replying"></span>
           <button type="button" class="zu" @click="schliesseChat(c.id, $event)"
                   :aria-label="I18n.t('chat.close_conv')">×</button>
         </div>
       </template>
       <button type="button" class="btn-ghost btn-sm" @click="neuerChat()"
-              title="Weitere Unterhaltung starten">+ Neu</button>
+              title="Weitere Unterhaltung starten" data-i18n-title="chat.new_conv_hint" data-i18n="chat.new_thread">+ Neu</button>
     </div>
 
     <div class="card">
@@ -61,7 +61,7 @@
           <h3 x-text="model || I18n.t('chat.choose_model')"></h3>
         </div>
         <div class="row">
-          <label class="label" for="model" style="margin:0">Modell</label>
+          <label class="label" for="model" style="margin:0" data-i18n="common.model">Modell</label>
           <select class="input" id="model" x-model="model"
                   style="width:auto;min-width:230px" :disabled="models.length === 0">
             <option value="" disabled x-text="models.length ? I18n.t('chat.choose_model') : I18n.t('common.loading')"></option>
@@ -113,8 +113,8 @@
       <textarea class="input grow" rows="2" x-model="input"
                 @keydown.enter="beiEnter($event)"
                 :placeholder="enterSend
-                  ? 'Nachricht schreiben — Enter sendet, Shift+Enter macht eine neue Zeile'
-                  : 'Nachricht schreiben — Strg+Enter sendet, Enter macht eine neue Zeile'"
+                  ? I18n.t('chat.placeholder_enter')
+                  : I18n.t('chat.placeholder_ctrl')"
                 :disabled="loading"></textarea>
       <button type="submit" class="btn-primary" :disabled="loading || !input.trim() || !model">
         <span x-show="!loading" data-i18n="senden">Senden</span>
@@ -129,10 +129,10 @@
 
     <div class="row between mt-2">
       <span class="t-xs text-mute mono" x-show="lastUsage">
-        Letzte Antwort: <span x-text="fmtNumber(lastUsage?.total_tokens)"></span> Token ·
+        <span data-i18n="chat.last_answer">Letzte Antwort:</span> <span x-text="fmtNumber(lastUsage?.total_tokens)"></span> Token ·
         <span x-text="fmtCredits(lastUsage?.credits_used)"></span> Credits
       </span>
-      <span class="t-xs text-mute mono" x-show="messages.length">
+      <span class="t-xs text-mute mono" x-show="messages.length" data-i18n="nachrichten-im-verlauf">
         <span x-text="messages.length"></span> Nachrichten im Verlauf
       </span>
     </div>
@@ -160,9 +160,9 @@
         chats: [],
         activeId: null,
         prompts: [
-          { label: "Quantencomputing erklären", text: "Erkläre Quantencomputing in drei Sätzen." },
-          { label: "Python Hello-World", text: "Schreibe ein Python Hello-World mit Type Hints." },
-          { label: "Ideen für ein Nebenprojekt", text: "Gib mir drei Ideen für ein Nebenprojekt." },
+          { label: I18n.t("chat.prompt1_label"), text: I18n.t("chat.prompt1_text") },
+          { label: I18n.t("chat.prompt2_label"), text: I18n.t("chat.prompt2_text") },
+          { label: I18n.t("chat.prompt3_label"), text: I18n.t("chat.prompt3_text") },
         ],
 
         get loading() { return this.busyIds.includes(this.activeId); },
@@ -190,8 +190,8 @@
             chat.messages = this.messages.slice(-MAX_NACHRICHTEN);
             chat.model = this.model;
             const ersteFrage = chat.messages.find((m) => m.role === "user");
-            if (ersteFrage && (!chat.title || chat.title === "Neue Unterhaltung")) {
-              chat.title = ersteFrage.content.trim().slice(0, 40) || "Unterhaltung";
+            if (ersteFrage && (!chat.title || chat.title === I18n.t("chat.new_chat_title"))) {
+              chat.title = ersteFrage.content.trim().slice(0, 40) || I18n.t("chat.chat_word");
             }
           }
           this.chatsMerken();
@@ -214,12 +214,12 @@
             .filter((c) => c && typeof c === "object" && Array.isArray(c.messages))
             .map((c) => ({
               id: c.id || this.neueId(),
-              title: c.title || "Neue Unterhaltung",
+              title: c.title || I18n.t("chat.new_chat_title"),
               model: c.model || "",
               messages: c.messages,
             }));
           if (this.chats.length === 0) {
-            this.chats = [{ id: this.neueId(), title: "Neue Unterhaltung", model: "", messages: [] }];
+            this.chats = [{ id: this.neueId(), title: I18n.t("chat.new_chat_title"), model: "", messages: [] }];
           }
           const gemerkt = localStorage.getItem("comesh_chat_aktiv");
           const ziel = this.chats.find((c) => c.id === gemerkt) || this.chats[this.chats.length - 1];
@@ -230,7 +230,7 @@
 
         neuerChat() {
           this.sichern();
-          const chat = { id: this.neueId(), title: "Neue Unterhaltung", model: this.model, messages: [] };
+          const chat = { id: this.neueId(), title: I18n.t("chat.new_chat_title"), model: this.model, messages: [] };
           this.chats.push(chat);
           if (this.chats.length > MAX_CHATS) {
             // Älteste ohne laufende Anfrage zuerst wegwerfen.
@@ -262,7 +262,7 @@
           if (i < 0) return;
           this.chats.splice(i, 1);
           if (this.chats.length === 0) {
-            this.chats.push({ id: this.neueId(), title: "Neue Unterhaltung", model: this.model, messages: [] });
+            this.chats.push({ id: this.neueId(), title: I18n.t("chat.new_chat_title"), model: this.model, messages: [] });
           }
           if (this.activeId === id) this.aktiviere(this.chats[Math.max(0, i - 1)]);
           else this.chatsMerken();
@@ -294,7 +294,7 @@
             this.models = r.models || [];
             if (this.models.length > 0 && !this.model) this.model = this.models[0].name;
           } catch (e) {
-            toast("Modelle konnten nicht geladen werden: " + e.message, "err");
+            toast(I18n.t("chat.models_load_failed") + e.message, "err");
           }
         },
 
@@ -324,7 +324,7 @@
 
           if (this.me && this.me.credits != null && this.me.credits < 0.01) {
             this.busyIds = this.busyIds.filter((x) => x !== chatId);
-            toast("Guthaben reicht nicht — bitte Credits aufladen.", "err", 5000);
+            toast(I18n.t("chat.no_credits"), "err", 5000);
             return;
           }
 
@@ -358,7 +358,7 @@
               ...payload,
               onChunk: (d) => this.appendStreaming(d, chatId),
             });
-            const reply = r.choices?.[0]?.message?.content || "(keine Antwort)";
+            const reply = r.choices?.[0]?.message?.content || I18n.t("chat.no_reply");
             const total = r.usage?.total_tokens || 0;
             beenden(reply);
             if (chatId === this.activeId) this.lastUsage = { total_tokens: total, credits_used: total / 1000 * 0.001 };
@@ -367,13 +367,13 @@
             // HTTP fallback (e.g. strikte Proxies ohne WS)
             try {
               const r = await API("/v1/chat/completions", { method: "POST", auth: true, body: payload });
-              const reply = r.choices?.[0]?.message?.content || "(keine Antwort)";
+              const reply = r.choices?.[0]?.message?.content || I18n.t("chat.no_reply");
               const total = r.usage?.total_tokens || 0;
               beenden(reply);
               if (chatId === this.activeId) this.lastUsage = { total_tokens: total, credits_used: total / 1000 * 0.001 };
               this.me = await refreshUser();
             } catch (e) {
-              beenden("(Fehler: " + e.message + ")");
+              beenden(I18n.t("chat.error_wrapped", { msg: e.message }));
               toast("Chat-Fehler: " + e.message, "err", 5000);
             }
           }

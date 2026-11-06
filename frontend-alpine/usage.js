@@ -30,7 +30,7 @@ document.addEventListener("alpine:init", () => {
       try {
         this.data = await api(`/v1/me/usage?window=${encodeURIComponent(this.window)}`, { auth: true });
       } catch (e) {
-        this.error = e.message || "Laden fehlgeschlagen";
+        this.error = e.message || I18n.t("laden-fehlgeschlagen");
         this.data = null;
       } finally {
         this.loading = false;

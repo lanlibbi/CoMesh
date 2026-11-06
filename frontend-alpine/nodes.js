@@ -351,7 +351,7 @@ document.addEventListener("alpine:init", () => {
       const models = [...this.bulkWhitelistSelection];
       if (models.length === 0) {
         const names = targets.map(n => n.name).join(", ");
-        if (!confirm(`Keine Modelle ausgewählt — setzt die Whitelist auf I18n.t("nodes.none_allowed") für: ${names}. Fortfahren?`)) return;
+        if (!confirm(I18n.t("nodes.none_selected_confirm", { none: I18n.t("nodes.none_allowed"), names }))) return;
       }
 
       this.bulkWhitelistBusy = true;
@@ -489,8 +489,8 @@ document.addEventListener("alpine:init", () => {
       this.editModelsText = [...vorhanden, ...neu].join(", ");
       toast(
         neu.length
-          ? `${neu.length} gemeldete Modelle übernommen — noch speichern.`
-          : "Alle gemeldeten Modelle stehen schon im Feld.",
+          ? I18n.t("nodes.reported_taken", { n: neu.length })
+          : I18n.t("nodes.reported_all_present"),
         "ok",
       );
     },
@@ -499,7 +499,7 @@ document.addEventListener("alpine:init", () => {
       try {
         await api(`/nodes/${n.id}`, { method: "PUT", auth: true, body: { availability: wert } });
         n.availability = wert;
-        toast(wert === "always" ? "Dauerbetrieb gespeichert" : "Zeitweise Verfügbarkeit gespeichert", "ok");
+        toast(wert === "always" ? I18n.t("nodes.saved_always") : I18n.t("nodes.saved_partial"), "ok");
       } catch (e) {
         toast(e.message, "err");
         await this.load();
@@ -511,7 +511,7 @@ document.addEventListener("alpine:init", () => {
       try {
         await api(`/nodes/${n.id}`, { method: "PUT", auth: true, body: { hide_owner: !!wert } });
         n.hide_owner = !!wert;
-        toast(wert ? "Besitzer erscheint im Adminbereich als anonym" : "Besitzer wird wieder genannt", "ok");
+        toast(wert ? I18n.t("nodes.owner_hidden_on") : I18n.t("nodes.owner_hidden_off"), "ok");
       } catch (e) {
         toast(e.message, "err");
         await this.load();
@@ -535,8 +535,7 @@ document.addEventListener("alpine:init", () => {
           body.port = port;
         }
         await api(`/nodes/${n.id}`, { method: "PUT", auth: true, body });
-        toast(body.node_url || body.port ? "Adresse gespeichert — die Node meldet sich"
-                                          + " beim naechsten Heartbeat mit der neuen Adresse."
+        toast(body.node_url || body.port ? I18n.t("nodes.address_saved")
                                         : I18n.t("nodes.whitelist_updated"), "ok");
         this.editingId = null;
         await this.load();

@@ -118,10 +118,13 @@ function fmtNumber(n) {
   if (n == null) return "—";
   return Number(n).toLocaleString("de-DE");
 }
+/** Datums-/Zeitformat folgt der Oberflächensprache, nicht fest de-DE. */
+const LOCALE_TAG = { en: "en-GB", de: "de-DE", es: "es-ES", fr: "fr-FR" };
+
 function fmtDate(s) {
   if (!s) return "—";
   try {
-    return new Date(s).toLocaleString("de-DE", {
+    return new Date(s).toLocaleString(LOCALE_TAG[I18n.lang] || "en-GB", {
       day: "2-digit", month: "2-digit", year: "numeric",
       hour: "2-digit", minute: "2-digit",
     });
@@ -130,10 +133,10 @@ function fmtDate(s) {
 function timeAgo(s) {
   if (!s) return "—";
   const diff = (Date.now() - new Date(s).getTime()) / 1000;
-  if (diff < 60) return `vor ${Math.floor(diff)}s`;
-  if (diff < 3600) return `vor ${Math.floor(diff / 60)}m`;
-  if (diff < 86400) return `vor ${Math.floor(diff / 3600)}h`;
-  return `vor ${Math.floor(diff / 86400)}d`;
+  if (diff < 60) return I18n.t("app.ago_s", { n: Math.floor(diff) });
+  if (diff < 3600) return I18n.t("app.ago_min", { n: Math.floor(diff / 60) });
+  if (diff < 86400) return I18n.t("app.ago_h", { n: Math.floor(diff / 3600) });
+  return I18n.t("app.ago_d", { n: Math.floor(diff / 86400) });
 }
 
 // ---------- App-wide background field ----------
@@ -483,7 +486,7 @@ async function apiChatCompletion({ model, messages, stream = false, onChunk = nu
           case "error":
             clearTimeout(timer);
             ws.close();
-            reject(new Error(`Upstream-Fehler (WS ${f.status})`));
+            reject(new Error(I18n.t("app.upstream_error", { status: f.status })));
             break;
           case "final":
             clearTimeout(timer);

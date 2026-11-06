@@ -64,9 +64,9 @@
       </div>
       <div class="card span-3">
         <div class="stat">
-          <div class="eyebrow">Ø Auslastung</div>
+          <div class="eyebrow" data-i18n="auslastung-2">Ø Auslastung</div>
           <div class="stat-value" x-text="stats ? (stats.avg_utilization * 100).toFixed(0) + '%' : '–'"></div>
-          <div class="stat-sub">Stundensatz <span x-text="rateRange()"></span></div>
+          <div class="stat-sub"><span data-i18n="pool.hourly_rate">Stundensatz</span> <span x-text="rateRange()"></span></div>
         </div>
       </div>
     </div>

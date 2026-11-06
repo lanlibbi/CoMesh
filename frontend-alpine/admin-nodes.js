@@ -34,11 +34,11 @@ document.addEventListener("alpine:init", () => {
     q: "",
     status: "all",
     statuses: [
-      { key: "all", label: "Alle" },
-      { key: "online", label: "Online" },
-      { key: "offline", label: "Offline" },
-      { key: "busy", label: "Beschäftigt" },
-      { key: "disabled", label: "Pausiert" },
+      { key: "all", label: I18n.t("common.all") },
+      { key: "online", label: I18n.t("common.online") },
+      { key: "offline", label: I18n.t("common.offline") },
+      { key: "busy", label: I18n.t("common.busy") },
+      { key: "disabled", label: I18n.t("common.paused") },
     ],
     items: [],
     summary: null,
@@ -66,7 +66,7 @@ document.addEventListener("alpine:init", () => {
         this.items = (d && (d.nodes || d.items)) || [];
         this.summary = (d && d.summary) || null;
       } catch (e) {
-        this.error = (e && e.message) || "Geräte konnten nicht geladen werden";
+        this.error = (e && e.message) || I18n.t("admin_nodes.load_failed");
         this.items = [];
         this.summary = null;
       } finally {
@@ -80,7 +80,7 @@ document.addEventListener("alpine:init", () => {
       try {
         this.detail = await api("/admin/nodes/" + n.id, { auth: true });
       } catch (e) {
-        this.actionError = (e && e.message) || "Detail konnte nicht geladen werden";
+        this.actionError = (e && e.message) || I18n.t("admin_nodes.detail_failed");
       } finally {
         this.busyId = null;
       }
@@ -89,18 +89,19 @@ document.addEventListener("alpine:init", () => {
     async umschalten(n) {
       const ziel = !n.is_enabled;
       if (!confirm(ziel
-        ? `Gerät "${n.name}" wieder aktivieren?`
-        : `Gerät "${n.name}" pausieren? Der Besitzer kann es selbst wieder einschalten.`)) return;
+        ? I18n.t("admin_nodes.confirm_enable", { name: n.name })
+        : I18n.t("admin_nodes.confirm_pause", { name: n.name }))) return;
       this.busyId = n.id;
       this.actionError = "";
       try {
         await api(`/admin/users/${n.owner_id}/nodes/${n.id}/enable?enabled=${ziel}`,
                   { method: "POST", auth: true });
         n.is_enabled = ziel;
-        this.actionOk = `${n.name}: ${ziel ? "aktiviert" : "pausiert"}.`;
+        this.actionOk = I18n.t("admin_nodes.toggle_ok", { name: n.name,
+          state: ziel ? I18n.t("admin_nodes.toggle_on") : I18n.t("admin_nodes.toggle_off") });
         if (this.detail && this.detail.id === n.id) this.detail.is_enabled = ziel;
       } catch (e) {
-        this.actionError = (e && e.message) || "Umschalten fehlgeschlagen";
+        this.actionError = (e && e.message) || I18n.t("admin_nodes.toggle_failed");
       } finally {
         this.busyId = null;
       }
@@ -116,8 +117,7 @@ document.addEventListener("alpine:init", () => {
     async modelle(n) {
       const aktuell = Array.isArray(n.allowed_models) ? n.allowed_models.join(", ") : "";
       const eingabe = prompt(
-        `Modelle, die "${n.name}" anbietet (durch Komma getrennt).\n` +
-        `Leer = alle lokalen Modelle dieser Maschine, keine Cloud-Modelle.`,
+        I18n.t("admin_nodes.models_prompt", { name: n.name }),
         aktuell
       );
       if (eingabe === null) return;  // abgebrochen
@@ -131,7 +131,7 @@ document.addEventListener("alpine:init", () => {
         if (this.detail && this.detail.id === n.id) this.detail.allowed_models = r.allowed_models;
         this.actionOk = `${n.name}: ${this.modellKurz(n)}.`;
       } catch (e) {
-        this.actionError = (e && e.message) || "Modelle konnten nicht gespeichert werden";
+        this.actionError = (e && e.message) || I18n.t("admin_nodes.models_save_failed");
       } finally {
         this.busyId = null;
       }
@@ -149,8 +149,8 @@ document.addEventListener("alpine:init", () => {
     /** Was das Gerät anbietet: leer = alle lokalen, sonst die Liste. */
     modellKurz(n) {
       const liste = n.allowed_models;
-      if (liste === null || liste === undefined) return "alle lokalen";
-      if (liste.length === 0) return "nichts freigegeben";
+      if (liste === null || liste === undefined) return I18n.t("admin_nodes.all_local");
+      if (liste.length === 0) return I18n.t("admin_nodes.none_released");
       return liste.join(", ");
     },
 
@@ -161,9 +161,9 @@ document.addEventListener("alpine:init", () => {
       if (!wann) return JSON.stringify(hb).slice(0, 60);
       const sekunden = Math.max(0, (Date.now() - new Date(wann.replace(" ", "T")).getTime()) / 1000);
       if (!isFinite(sekunden)) return String(wann);
-      if (sekunden < 90) return `vor ${Math.round(sekunden)} s`;
-      if (sekunden < 5400) return `vor ${Math.round(sekunden / 60)} min`;
-      return `vor ${Math.round(sekunden / 3600)} h (veraltet)`;
+      if (sekunden < 90) return I18n.t("admin_nodes.ago_s", { n: Math.round(sekunden) });
+      if (sekunden < 5400) return I18n.t("admin_nodes.ago_min", { n: Math.round(sekunden / 60) });
+      return I18n.t("admin_nodes.ago_h_stale", { n: Math.round(sekunden / 3600) });
     },
   }));
 });

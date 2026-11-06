@@ -36,7 +36,7 @@
 
     <div x-show="denied" x-cloak class="notice mb-4">
       <div class="grow">
-        <div class="semibold">Admin-Rolle erforderlich</div>
+        <div class="semibold" data-i18n="admin-rolle-erforderlich">Admin-Rolle erforderlich</div>
         <p class="t-sm text-dim mt-1" data-i18n-html="common.your_role_html">
           Deine Rolle: <span class="mono" x-text="(Auth.currentUser() || {}).role || 'both'"></span>.
         </p>
@@ -44,7 +44,7 @@
     </div>
     <div x-show="error" x-cloak class="notice mb-4">
       <div class="grow">
-        <div class="semibold">Laden fehlgeschlagen</div>
+        <div class="semibold" data-i18n="laden-fehlgeschlagen">Laden fehlgeschlagen</div>
         <p class="t-sm text-dim mt-1" x-text="error"></p>
       </div>
     </div>
@@ -64,19 +64,19 @@
 
     <div class="grid mb-4" x-show="!denied">
       <div class="card span-3"><div class="stat">
-        <div class="eyebrow">Ausstehend</div>
+        <div class="eyebrow" data-i18n="ausstehend">Ausstehend</div>
         <div class="stat-value brass" x-text="counts.pending == null ? '—' : fmtNumber(counts.pending)"></div>
         <div class="stat-sub" data-i18n="admin_reg.stat_pending">warten auf Freigabe</div>
       </div></div>
       <div class="card span-3"><div class="stat">
-        <div class="eyebrow">Freigegeben</div>
+        <div class="eyebrow" data-i18n="freigegeben">Freigegeben</div>
         <div class="stat-value" x-text="counts.approved == null ? '—' : fmtNumber(counts.approved)"></div>
-        <div class="stat-sub">aktive Konten</div>
+        <div class="stat-sub" data-i18n="aktive-konten">aktive Konten</div>
       </div></div>
       <div class="card span-3"><div class="stat">
-        <div class="eyebrow">Abgelehnt</div>
+        <div class="eyebrow" data-i18n="abgelehnt">Abgelehnt</div>
         <div class="stat-value" x-text="counts.rejected == null ? '—' : fmtNumber(counts.rejected)"></div>
-        <div class="stat-sub">gesperrt</div>
+        <div class="stat-sub" data-i18n="gesperrt">gesperrt</div>
       </div></div>
       <div class="card span-3"><div class="stat">
         <div class="eyebrow">Admins</div>
@@ -89,17 +89,17 @@
     <div class="card mb-4" x-show="!denied">
       <div class="panel-head">
         <div>
-          <div class="eyebrow">Anlegen</div>
+          <div class="eyebrow" data-i18n="anlegen">Anlegen</div>
           <h3 data-i18n="admin_reg.create_title">Konto von Hand erstellen</h3>
           <p data-i18n="admin_reg.create_hint">Für Konten, die sich nicht selbst registrieren sollen. Der Schlüssel wird einmal angezeigt.</p>
         </div>
-        <button class="btn-ghost btn-sm" @click="formOffen = !formOffen" x-text="formOffen ? 'Schließen' : 'Konto anlegen'"></button>
+        <button class="btn-ghost btn-sm" @click="formOffen = !formOffen" x-text="formOffen ? I18n.t('schliessen') : I18n.t('konto-anlegen')"></button>
       </div>
       <div x-show="formOffen" x-cloak class="stack" style="gap:12px">
         <div class="row wrap" style="gap:10px">
           <input class="input" style="max-width:260px" placeholder="E-Mail" x-model="form.email" />
           <input class="input" style="max-width:220px" placeholder="Name" x-model="form.name" />
-          <input class="input" style="max-width:220px" type="password" placeholder="Startpasswort (optional)" x-model="form.password" />
+          <input class="input" style="max-width:220px" type="password" placeholder="Startpasswort (optional)" data-i18n-placeholder="admin_reg.start_password_placeholder" x-model="form.password" />
         </div>
         <div class="row wrap" style="gap:10px">
           <select class="input" style="max-width:260px" x-model="form.role">
@@ -107,8 +107,8 @@
               <option :value="r.key" x-text="r.label" :selected="r.key === form.role"></option>
             </template>
           </select>
-          <input class="input" style="max-width:170px" type="number" placeholder="Start-Credits" x-model="form.initial_credits" />
-          <button class="btn-primary btn-sm" @click="anlegen()" :disabled="busyId === -1">Anlegen</button>
+          <input class="input" style="max-width:170px" type="number" placeholder="Start-Credits" data-i18n-placeholder="admin_reg.start_credits_placeholder" x-model="form.initial_credits" />
+          <button class="btn-primary btn-sm" @click="anlegen()" :disabled="busyId === -1" data-i18n="anlegen">Anlegen</button>
         </div>
       </div>
     </div>
@@ -116,18 +116,18 @@
     <div x-show="!denied" class="card">
       <div class="panel-head">
         <div>
-          <div class="eyebrow">Konten</div>
-          <h3 x-text="(statuses.find(s => s.key === status) || {}).label || 'Alle'"></h3>
-          <p x-text="loading ? 'Lädt…' : (total + ' Einträge' + (items.length < total ? ' — ' + items.length + ' angezeigt' : ''))"></p>
+          <div class="eyebrow" data-i18n="nav.admin.accounts">Konten</div>
+          <h3 x-text="(statuses.find(s => s.key === status) || {}).label || I18n.t('common.all')"></h3>
+          <p x-text="loading ? I18n.t('laedt') : I18n.t('admin_reg.count_entries', { n: total }) + (items.length < total ? ' — ' + I18n.t('admin_reg.showing', { n: items.length }) : '')"></p>
         </div>
         <div class="row wrap" style="gap:8px">
-          <input class="input" style="max-width:240px" placeholder="Suche E-Mail/Name" x-model="q" @keyup.enter="search()" />
+          <input class="input" style="max-width:240px" placeholder="Suche E-Mail/Name" data-i18n-placeholder="admin_reg.search_placeholder" x-model="q" @keyup.enter="search()" />
           <select class="input" style="max-width:190px" x-model="status" @change="search()">
             <template x-for="s in statuses" :key="s.key">
               <option :value="s.key" x-text="s.label"></option>
             </template>
           </select>
-          <button class="btn-ghost btn-sm" @click="search()">Suchen</button>
+          <button class="btn-ghost btn-sm" @click="search()" data-i18n="suchen">Suchen</button>
         </div>
       </div>
 
@@ -141,12 +141,12 @@
         <table class="tbl">
           <thead>
             <tr>
-              <th>Konto</th>
-              <th>Rolle</th>
+              <th data-i18n="konto">Konto</th>
+              <th data-i18n="rolle">Rolle</th>
               <th>Status</th>
               <th>Credits</th>
-              <th>Registriert</th>
-              <th>Werkzeuge</th>
+              <th data-i18n="registriert">Registriert</th>
+              <th data-i18n="werkzeuge">Werkzeuge</th>
             </tr>
           </thead>
           <tbody>
@@ -156,7 +156,7 @@
                   <div class="semibold" x-text="r.name || r.email"></div>
                   <div class="t-xs text-mute">
                     <span x-text="r.email"></span>
-                    <span x-show="!r.is_active" class="pill pill-paused" style="margin-left:6px">inaktiv</span>
+                    <span x-show="!r.is_active" class="pill pill-paused" style="margin-left:6px" data-i18n="inaktiv">inaktiv</span>
                   </div>
                   <div class="t-xs text-dim" x-text="freigabeKurz(r)"></div>
                 </td>
@@ -173,14 +173,14 @@
                 <td class="t-xs text-dim nowrap" x-text="r.created_at ? fmtDate(r.created_at) : '—'"></td>
                 <td>
                   <div class="row wrap" style="gap:6px">
-                    <button class="btn-ghost btn-sm" x-show="r.status === 'pending'" :disabled="busyId === r.id" @click="approve(r.id)">Freigeben</button>
-                    <button class="btn-ghost btn-sm" x-show="r.status === 'pending'" :disabled="busyId === r.id" @click="reject(r.id)">Ablehnen</button>
-                    <button class="btn-ghost btn-sm" :disabled="busyId === r.id" @click="setPasswort(r)">Passwort</button>
-                    <button class="btn-ghost btn-sm" :disabled="busyId === r.id" @click="modelle(r)">Modelle</button>
+                    <button class="btn-ghost btn-sm" x-show="r.status === 'pending'" :disabled="busyId === r.id" @click="approve(r.id)" data-i18n="freigeben">Freigeben</button>
+                    <button class="btn-ghost btn-sm" x-show="r.status === 'pending'" :disabled="busyId === r.id" @click="reject(r.id)" data-i18n="ablehnen">Ablehnen</button>
+                    <button class="btn-ghost btn-sm" :disabled="busyId === r.id" @click="setPasswort(r)" data-i18n="passwort">Passwort</button>
+                    <button class="btn-ghost btn-sm" :disabled="busyId === r.id" @click="modelle(r)" data-i18n="common.models">Modelle</button>
                     <button class="btn-ghost btn-sm" :disabled="busyId === r.id" @click="credits(r)">Credits</button>
                     <button class="btn-ghost btn-sm" :disabled="busyId === r.id" @click="schluessel(r)" data-i18n="admin_reg.key_button">Schlüssel</button>
                     <button class="btn-ghost btn-sm" :disabled="busyId === r.id" @click="toggleActive(r)"
-                            x-text="r.is_active ? 'Deaktivieren' : 'Aktivieren'"></button>
+                            x-text="r.is_active ? I18n.t('common.disable') : I18n.t('common.enable')"></button>
                     <button class="btn-ghost btn-sm btn-danger" :disabled="busyId === r.id" @click="loeschen(r)"
                             data-i18n="loeschen">Löschen</button>
                   </div>
@@ -193,7 +193,7 @@
 
       <div class="row wrap mt-3" style="gap:8px" x-show="total > limit">
         <button class="btn-ghost btn-sm" :disabled="offset === 0" @click="prev()" data-i18n="common.back">Zurück</button>
-        <button class="btn-ghost btn-sm" :disabled="offset + limit >= total" @click="next()">Weiter</button>
+        <button class="btn-ghost btn-sm" :disabled="offset + limit >= total" @click="next()" data-i18n="weiter">Weiter</button>
       </div>
 
       <p class="hint mt-3" data-i18n-html="admin_reg.last_admin_hint">
@@ -207,7 +207,7 @@
       <section class="card mt-3" x-show="modellKonto" x-cloak>
         <div class="panel-head">
           <div>
-            <div class="eyebrow">Freigabe</div>
+            <div class="eyebrow" data-i18n="freigabe">Freigabe</div>
             <h3 x-text="modellKonto ? modellKonto.email : ''"></h3>
             <p class="t-sm text-dim" data-i18n-html="admin_reg.models_scope_hint">
               Diese Modelle darf das Konto <b>nutzen</b>. Was ein Node <b>anbietet</b>, stellt der
@@ -232,7 +232,7 @@
               <input type="checkbox" :checked="modellAuswahl.includes(m.name)" @change="modellUmschalten(m.name)" />
               <span class="check-body row" style="gap:8px">
                 <span class="grow mono t-sm" x-text="m.name"></span>
-                <span x-show="m.is_cloud" class="pill pill-busy pill-flat">cloud</span>
+                <span x-show="m.is_cloud" class="pill pill-busy pill-flat" data-i18n="common.cloud_chip">cloud</span>
                 <span class="t-xs text-mute num" x-text="(m.size_gb || 0) + ' GB'"></span>
               </span>
             </label>
@@ -253,7 +253,7 @@
         <div class="row wrap mt-3" style="gap:10px">
           <button class="btn-primary btn-sm" @click="modellSpeichern()" :disabled="modellBusy">
             <span x-show="!modellBusy" data-i18n="admin_reg.save_approval">Freigabe speichern</span>
-            <span x-show="modellBusy">Speichere…</span>
+            <span x-show="modellBusy" data-i18n="speichere">Speichere…</span>
           </button>
           <button class="btn-ghost btn-sm" @click="modellAlleLokalen()" data-i18n="admin_reg.allow_all_local">Alle lokalen freigeben</button>
           <button class="btn-ghost btn-sm" @click="modellStandard()" data-i18n="admin_reg.reset_default">Auf Standard</button>
@@ -265,7 +265,7 @@
       <div class="row between">
         <h2 style="margin:0" data-i18n="admin_reg.mail_title">E-Mail bei ausstehender Freigabe</h2>
         <button type="button" class="btn-ghost btn-sm" @click="mailOffen = !mailOffen"
-                x-text="mailOffen ? 'schließen' : 'einrichten'"></button>
+                x-text="mailOffen ? I18n.t('common.close_inline') : I18n.t('admin_reg.mail_setup')"></button>
       </div>
       <p class="hint mt-2" data-i18n="admin_reg.mail_hint">
         Sobald sich jemand anmeldet, geht eine Nachricht an die hier eingetragene Adresse.
@@ -275,48 +275,48 @@
       <div x-show="mailOffen" x-cloak class="mt-3">
         <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px">
           <label class="field">
-            <span class="label">SMTP-Server</span>
-            <input class="input" x-model="mail.host" placeholder="smtp.beispiel.de" />
+            <span class="label" data-i18n="smtp-server">SMTP-Server</span>
+            <input class="input" x-model="mail.host" placeholder="smtp.beispiel.de" data-i18n-placeholder="admin_reg.mail_host_placeholder" />
           </label>
           <label class="field">
             <span class="label">Port</span>
             <input class="input" type="number" x-model.number="mail.port" placeholder="587" />
           </label>
           <label class="field">
-            <span class="label">Sicherheit</span>
+            <span class="label" data-i18n="sicherheit">Sicherheit</span>
             <select class="input" x-model="mail.security">
-              <option value="starttls">STARTTLS (meist 587)</option>
-              <option value="ssl">SSL/TLS (meist 465)</option>
+              <option value="starttls" data-i18n="starttls-meist-587">STARTTLS (meist 587)</option>
+              <option value="ssl" data-i18n="ssl-tls-meist-465">SSL/TLS (meist 465)</option>
               <option value="none" data-i18n="admin_reg.mail_none">ohne (nur lokaler Relay)</option>
             </select>
           </label>
           <label class="field">
-            <span class="label">Benutzer</span>
+            <span class="label" data-i18n="benutzer">Benutzer</span>
             <input class="input" x-model="mail.username" autocomplete="off" />
           </label>
           <label class="field">
-            <span class="label">Kennwort</span>
+            <span class="label" data-i18n="kennwort">Kennwort</span>
             <input class="input" type="password" x-model="mail.password" autocomplete="new-password"
                    :placeholder="mail.password_set ? I18n.t('admin_reg.mail_pw_set') : I18n.t('admin_reg.mail_pw_unset')" />
           </label>
           <label class="field">
-            <span class="label">Absenderadresse</span>
-            <input class="input" x-model="mail.sender" placeholder="portal@beispiel.de" />
+            <span class="label" data-i18n="absenderadresse">Absenderadresse</span>
+            <input class="input" x-model="mail.sender" placeholder="portal@beispiel.de" data-i18n-placeholder="admin_reg.mail_from_placeholder" />
           </label>
           <label class="field">
-            <span class="label">Absendername</span>
+            <span class="label" data-i18n="absendername">Absendername</span>
             <input class="input" x-model="mail.sender_name" placeholder="CoMesh" />
           </label>
           <label class="field">
-            <span class="label">Benachrichtigung an</span>
-            <input class="input" x-model="mail.notify_to" placeholder="admin@beispiel.de" />
+            <span class="label" data-i18n="benachrichtigung-an">Benachrichtigung an</span>
+            <input class="input" x-model="mail.notify_to" placeholder="admin@beispiel.de" data-i18n-placeholder="admin_reg.mail_notify_placeholder" />
           </label>
         </div>
 
         <div class="row wrap mt-3" style="gap:16px;align-items:center">
           <label class="check">
             <input type="checkbox" x-model="mail.enabled" />
-            <span>Benachrichtigung aktiv</span>
+            <span data-i18n="benachrichtigung-aktiv">Benachrichtigung aktiv</span>
           </label>
           <label class="check">
             <input type="checkbox" x-model="mail.notify_pending" />
@@ -325,8 +325,8 @@
         </div>
 
         <div class="row wrap mt-3" style="gap:8px">
-          <button type="button" class="btn-primary btn-sm" @click="speichereMail()" :disabled="mailBusy">Speichern</button>
-          <button type="button" class="btn-ghost btn-sm" @click="testMail()" :disabled="mailBusy">Testmail senden</button>
+          <button type="button" class="btn-primary btn-sm" @click="speichereMail()" :disabled="mailBusy" data-i18n="speichern">Speichern</button>
+          <button type="button" class="btn-ghost btn-sm" @click="testMail()" :disabled="mailBusy" data-i18n="testmail-senden">Testmail senden</button>
           <span class="t-xs text-mute" x-show="mailMeldung" x-text="mailMeldung"></span>
         </div>
         <p class="hint mt-2" data-i18n="admin_reg.mail_test_hint">

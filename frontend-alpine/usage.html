@@ -32,7 +32,7 @@
   <main class="shell">
     <div class="page-head">
       <div class="eyebrow" data-i18n="verbrauch">Verbrauch</div>
-      <h1>Usage</h1>
+      <h1 data-i18n="usage.title">Usage</h1>
       <p class="lede" data-i18n-html="welche-modelle-du-nutzt-und-wie-viele-token">
         Welche Modelle du nutzt und wie viele Token dabei durchlaufen.
         Aggregiert serverseitig aus jedem <code class="inline">/v1/chat/completions</code>-Aufruf.
@@ -85,7 +85,7 @@
       </div>
       <div class="card span-3">
         <div class="stat">
-          <div class="eyebrow">Modelle</div>
+          <div class="eyebrow" data-i18n="common.models">Modelle</div>
           <div class="stat-value" x-text="fmtNumber(totals.models_used || 0)"></div>
           <div class="stat-sub" data-i18n="verschiedene-modelle-verwendet">verschiedene Modelle verwendet</div>
         </div>
@@ -124,7 +124,7 @@
             </svg>
           </span>
           <p data-i18n="in-diesem-zeitraum-wurde-noch-nichts">In diesem Zeitraum wurde noch nichts verbraucht.</p>
-          <p class="t-sm text-dim mt-2">
+          <p class="t-sm text-dim mt-2" data-i18n="oder-den-zeitraum-auf-gesamt-stellen">
             <a href="chat.html" class="link" data-i18n="chat-oeffnen">Chat öffnen</a> oder den Zeitraum auf „Gesamt“ stellen.
           </p>
         </div>
@@ -156,7 +156,7 @@
         <div class="panel-head">
           <div>
             <div class="eyebrow" data-i18n="verlauf">Verlauf</div>
-            <h3>Token je <span x-text="data && data.granularity === 'hour' ? 'Stunde' : 'Tag'"></span></h3>
+            <h3><span data-i18n="usage.tokens_per">Token je</span> <span x-text="data && data.granularity === 'hour' ? I18n.t('usage.hour') : I18n.t('usage.day')"></span></h3>
             <p data-i18n="leere-abschnitte-heissen-keine-anfrage">Leere Abschnitte heißen: keine Anfrage.</p>
           </div>
         </div>
@@ -197,7 +197,7 @@
           <thead>
             <tr>
               <th data-i18n="wann">Wann</th>
-              <th>Modell</th>
+              <th data-i18n="common.model">Modell</th>
               <th data-i18n="prompt">Prompt</th>
               <th data-i18n="completion">Completion</th>
               <th>Token</th>
@@ -219,7 +219,7 @@
         </table>
       </div>
 
-      <p class="hint mt-3">
+      <p class="hint mt-3" data-i18n-html="usage.source_note">
         Quelle: <code class="inline">GET /v1/me/usage?window=24h|7d|30d|all</code> —
         Aggregation pro Modell, Zeitraum und Request.
       </p>

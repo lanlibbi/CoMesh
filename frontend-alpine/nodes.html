@@ -67,7 +67,7 @@
           <span class="check-body t-sm" data-i18n="alle-auswaehlen">Alle auswählen</span>
         </label>
         <div class="row wrap" style="gap:8px;align-items:center">
-          <span class="t-sm text-dim"><span class="mono" x-text="selectedCount"></span> ausgewählt</span>
+          <span class="t-sm text-dim" data-i18n="ausgewaehlt"><span class="mono" x-text="selectedCount"></span> ausgewählt</span>
           <button class="btn-primary btn-sm" data-bulk-toggle-status @click="bulkToggleStatus()"
                   :disabled="selectedCount === 0 || bulkBusy"
                   x-text="bulkBusy ? (I18n.t('nodes.bulk.status.busy') + bulkProgress) : I18n.t('nodes.bulk.status')"></button>
@@ -144,7 +144,7 @@
                   <input type="checkbox" :checked="formAllowed.includes(m.name)" @change="toggleFormModel(m.name)" />
                   <span class="check-body row" style="gap:8px">
                     <span class="grow mono t-sm" x-text="m.name"></span>
-                    <span x-show="m.is_cloud" class="pill pill-busy pill-flat">cloud</span>
+                    <span x-show="m.is_cloud" class="pill pill-busy pill-flat" data-i18n="common.cloud_chip">cloud</span>
                     <span class="t-xs text-mute num" x-text="(m.size_gb || 0) + ' GB'"></span>
                   </span>
                 </label>
@@ -405,18 +405,17 @@
                 <span x-show="n.node_url_auto" class="pill pill-flat t-xs" data-i18n="automatisch-erkannt">automatisch erkannt</span>
               </div>
               <div class="t-xs text-mute mt-1">
-                <span class="mono" x-text="n.hourly_rate"></span> Credits/h ·
-                zuletzt gesehen <span x-text="fmtDate(n.last_seen)"></span>
+                <span class="mono" x-text="n.hourly_rate"></span> <span data-i18n="nodes.last_seen_label">Credits/h · zuletzt gesehen</span> <span x-text="fmtDate(n.last_seen)"></span>
               </div>
               <div class="t-xs mt-1">
                 <template x-if="!n.allowed_models">
-                  <span class="text-dim">Modelle: <span class="text-ok" data-i18n="standard-alle-lokal-keine-cloud">Standard (alle lokal, keine Cloud)</span></span>
+                  <span class="text-dim"><span data-i18n="nodes.models_label">Modelle:</span> <span class="text-ok" data-i18n="standard-alle-lokal-keine-cloud">Standard (alle lokal, keine Cloud)</span></span>
                 </template>
                 <template x-if="n.allowed_models && n.allowed_models.length === 0">
-                  <span class="text-dim">Modelle: <span class="text-err" data-i18n="nichts-freigegeben">nichts freigegeben</span></span>
+                  <span class="text-dim"><span data-i18n="nodes.models_label">Modelle:</span> <span class="text-err" data-i18n="nichts-freigegeben">nichts freigegeben</span></span>
                 </template>
                 <template x-if="n.allowed_models && n.allowed_models.length > 0">
-                  <span class="text-dim">Modelle: <span x-text="n.allowed_models.length + ' freigegeben'"></span></span>
+                  <span class="text-dim"><span data-i18n="nodes.models_label">Modelle:</span> <span x-text="I18n.t('nodes.released_count', { n: n.allowed_models.length })"></span></span>
                 </template>
               </div>
               <!-- Was die Node selbst als vorhanden meldet (Sicht ihres Agenten).
@@ -438,24 +437,24 @@
             </div>
             <div class="row wrap" style="gap:6px;align-items:center">
               <label class="t-xs text-dim" style="gap:6px;display:flex;align-items:center">
-                Betrieb:
+                <span data-i18n="nodes.operation">Betrieb:</span>
                 <select class="input" style="width:auto;padding:4px 8px;font-size:12px"
                         :value="n.availability || 'always'"
                         @change="betriebSetzen(n, $event.target.value)"
                         title="Dauerbetrieb heißt: die Maschine läuft rund um die Uhr. Zeitweise heißt: nur wenn sie an ist." data-i18n-title="nodes.availability_title">
-                  <option value="always">Dauerbetrieb</option>
-                  <option value="partial">zeitweise</option>
+                  <option value="always" data-i18n="nodes.always">Dauerbetrieb</option>
+                  <option value="partial" data-i18n="zeitweise">zeitweise</option>
                 </select>
               </label>
-              <label class="check t-xs" title="Dein Konto erscheint im Adminbereich als „anonym">
+              <label class="check t-xs" title="Dein Konto erscheint im Adminbereich als „anonym“" data-i18n-title="nodes.hidden_title">
                 <input type="checkbox" :checked="!!n.hide_owner"
                        @change="besitzerVerbergen(n, $event.target.checked)" />
-                <span>Besitzer anonym</span>
+                <span data-i18n="besitzer-anonym">Besitzer anonym</span>
               </label>
               <button class="btn-ghost btn-sm" @click="toggle(n)"
-                      x-text="n.is_enabled ? 'Pausieren' : 'Fortsetzen'"></button>
+                      x-text="n.is_enabled ? I18n.t('common.pause') : I18n.t('common.resume')"></button>
               <button class="btn-ghost btn-sm" @click="editingId === n.id ? cancelEdit() : startEdit(n)"
-                      x-text="editingId === n.id ? 'Abbrechen' : I18n.t('common.models')"></button>
+                      x-text="editingId === n.id ? I18n.t('common.cancel') : I18n.t('common.models')"></button>
               <button class="btn-ghost btn-sm btn-danger" @click="del(n)" data-i18n="loeschen">Löschen</button>
             </div>
           </div>
@@ -465,9 +464,9 @@
             <p class="label" data-i18n="nodes.addr_and_port">Adresse und Port dieser Node</p>
             <div class="row" style="gap:8px;align-items:flex-end;flex-wrap:wrap">
               <div class="grow" style="min-width:220px">
-                <label class="label" for="node-edit-url">Adresse</label>
+                <label class="label" for="node-edit-url" data-i18n="adresse">Adresse</label>
                 <input class="input mono" id="node-edit-url" type="text" x-model="editUrl"
-                       placeholder="http://mein-rechner:11435" />
+                       placeholder="http://mein-rechner:11435" data-i18n-placeholder="nodes.address_placeholder" />
               </div>
               <div style="width:130px">
                 <label class="label" for="node-edit-port">Port</label>
@@ -500,7 +499,7 @@
                   <input type="checkbox" :checked="editAllowed.includes(m.name)" @change="toggleEditModel(m.name)" />
                   <span class="check-body row" style="gap:8px">
                     <span class="grow mono t-sm" x-text="m.name"></span>
-                    <span x-show="m.is_cloud" class="pill pill-busy pill-flat">cloud</span>
+                    <span x-show="m.is_cloud" class="pill pill-busy pill-flat" data-i18n="common.cloud_chip">cloud</span>
                     <span class="t-xs text-mute num" x-text="(m.size_gb || 0) + ' GB'"></span>
                   </span>
                 </label>
@@ -559,7 +558,7 @@
             <button class="btn-ghost btn-sm" data-bulk-preset="local" @click="selectLocalBulkModels()" data-i18n="alle-lokalen">Alle lokalen</button>
             <button class="btn-ghost btn-sm" data-bulk-preset="all" @click="selectAllBulkModels()" data-i18n="alle">Alle</button>
             <button class="btn-ghost btn-sm" data-bulk-preset="none" @click="clearBulkModels()" data-i18n="keine">Keine</button>
-            <span class="t-xs text-dim" style="align-self:center">
+            <span class="t-xs text-dim" style="align-self:center" data-i18n="gewaehlt">
               <span class="mono" x-text="bulkWhitelistSelection.length"></span> gewählt
             </span>
           </div>
@@ -570,7 +569,7 @@
                        @change="toggleBulkWhitelistModel(m.name)" />
                 <span class="check-body row" style="gap:8px">
                   <span class="grow mono t-sm" x-text="m.name"></span>
-                  <span x-show="m.is_cloud" class="pill pill-busy pill-flat">cloud</span>
+                  <span x-show="m.is_cloud" class="pill pill-busy pill-flat" data-i18n="common.cloud_chip">cloud</span>
                   <span class="t-xs text-mute num" x-text="(m.size_gb || 0) + ' GB'"></span>
                 </span>
               </label>

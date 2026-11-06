@@ -1,5 +1,54 @@
 # Changelog
 
+## 0.6.16 — 2026-11-06
+
+**Der Abnahmeprüfer findet jetzt die Stellen, die er vorher übersah — und alle
+sind behoben**
+
+Das Gate aus 0.6.15 war grün und trotzdem nicht ehrlich: der Prüfer hielt
+deutsche Einzelwörter für Bezeichner, sah nur Markup und Katalog an und griff
+kein einziges der deutschen Literale in `admin-audit.js`, `admin-registrations.js`,
+`admin-nodes.js`, `app.js`, `nodes.js` oder in den inline-`<script>`-Blöcken der
+Seiten auf.
+
+1. **Der Prüfer prüft drei Klassen mehr.** `audit_coverage.py` arbeitet im
+   Markup jetzt mit einer geschlossenen Welt: ungedeckter sichtbarer Text darf
+   nur aus freigegebenen Wörtern bestehen (Fachbegriffe der Produktregel,
+   Marke, Zahlen, Symbole) — damit fallen auch Einzelwörter wie
+   `Aktualisieren`, `Registrieren`, `Anmelden`, `Protokoll` und `Wann` auf, die
+   ein Umlaut- oder Funktionswort-Filter nicht sieht. Dazu: sichtbare Attribute
+   (`placeholder`, `title`, `aria-label`, `alt`) auf **jedem** Element statt nur
+   auf fünf Tag-Typen, und deutsche String-Literale in Anwendungs-JS — Dateien
+   *und* inline-`<script>`, einschließlich der Alpine-Ausdrücke in Attributen.
+   Kommentare, Schlüsselnamen in `I18n.t(...)` und Code-Literale (URLs, Pfade,
+   Dateinamen, Selektoren) sind ausgenommen, Fachbegriffe stehen als
+   ausdrückliche Ausnahmeliste im Prüfer.
+2. **Mit der erweiterten Prüfung: 271 Fundstellen vorher, 0 nachher**
+   (96 Markuptext, 15 Attribute, 160 JS-Literale im Stand 0.6.15).
+3. **Rund 150 neue Schlüssel** in `scripts/i18n/i18n_parts/part12_js_and_words.py`
+   (Katalog 557 → 767), vollständig in EN/DE/ES/FR: Tabellenköpfe und
+   Chip-Beschriftungen der Admin-Seiten, die ganze Einrichtungs- und
+   Freigabemaske, Sortier-Titel, Dialoge und Toasts (Bestätigungen, Fehler,
+   Prompts), Chatformulierungen samt Startvorschlägen, Preisstaffel und
+   Kauf-Dialog der Credits-Seite. Wo eine ganze Zeile mit `<code>`-Elementen
+   steht, trägt sie `data-i18n-html`; wo der Text zwischen Kindelementen stand,
+   sitzt er in einem eigenen `<span>` mit Schlüssel.
+4. **Schlüssel werden nicht mehr weggespart.** `build_catalog.py` verwirft
+   unbenutzte Einträge; ein Schlüssel in `I18n.t(cond ? "a" : "b")` galt dabei
+   als unbenutzt und verschwand. Die betroffenen Stellen rufen `I18n.t(...)`
+   jetzt je Zweig auf.
+5. **Datum und relative Zeit folgen der Sprache.** `app.js` formatierte fest
+   mit `de-DE` und zeigte „vor 5 min" in jeder Sprache; beides läuft über
+   `LOCALE_TAG` bzw. `I18n.t(...)`.
+6. Nebenbei: ein kaputter `title` (fehlendes schließendes Anführungszeichen im
+   deutschen Text) und ein versehentlich zerstörter `I18n.t`-Aufruf in
+   `nodes.js` sind repariert.
+
+Nicht übersetzt bleiben bewusst: `guide.html` (eigener `<div lang>`-Mechanismus,
+muss ohne JS lesbar sein — dort bleibt auch der `<title>` in der
+Ausgangssprache), die Downloads, die Installer-Skripte, das als Nutzlast an die
+API gehende `reason: "manuell (admin)"` und die CSS-Klasse `is-online`.
+
 ## 0.6.15 — 2026-11-06
 
 **Alle Oberflächentexte sind übersetzt — der Abnahmeprüfer steht auf PASS**

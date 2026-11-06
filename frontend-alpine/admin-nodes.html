@@ -38,18 +38,18 @@
     </div>
 
     <div class="row wrap mb-3" style="gap:8px">
-      <span class="chip">Alle: <b x-text="summary ? summary.total : '—'"></b></span>
-      <span class="chip">Online: <b x-text="summary ? summary.online : '—'"></b></span>
-      <span class="chip">Offline: <b x-text="summary ? summary.offline : '—'"></b></span>
-      <span class="chip">Pausiert: <b x-text="summary ? (summary.disabled || 0) : '—'"></b></span>
+      <span class="chip"><span data-i18n="admin_nodes.chip_all">Alle:</span> <b x-text="summary ? summary.total : '—'"></b></span>
+      <span class="chip"><span data-i18n="admin_nodes.chip_online">Online:</span> <b x-text="summary ? summary.online : '—'"></b></span>
+      <span class="chip"><span data-i18n="admin_nodes.chip_offline">Offline:</span> <b x-text="summary ? summary.offline : '—'"></b></span>
+      <span class="chip"><span data-i18n="admin_nodes.chip_paused">Pausiert:</span> <b x-text="summary ? (summary.disabled || 0) : '—'"></b></span>
             <button type="button" class="btn-ghost btn-sm" @click="zeigeAdressen = !zeigeAdressen"
-                    x-text="zeigeAdressen ? 'Adressen verbergen' : 'Adressen anzeigen'"></button>
+                    x-text="zeigeAdressen ? I18n.t('admin_nodes.addresses_hide') : I18n.t('admin_nodes.addresses_show')"></button>
     </div>
 
     <div class="card mb-4">
       <div class="row wrap" style="gap:10px;align-items:flex-end">
         <div class="field grow">
-          <label class="label" for="q">Suche</label>
+          <label class="label" for="q" data-i18n="suche">Suche</label>
           <input class="input" id="q" x-model="q" @keydown.enter="load()" placeholder="Name, GPU oder Adresse" data-i18n-placeholder="admin_nodes.filter_placeholder" />
         </div>
         <div class="field">
@@ -60,7 +60,7 @@
             </template>
           </select>
         </div>
-        <button class="btn-ghost btn-sm" @click="load()" :disabled="loading">Aktualisieren</button>
+        <button class="btn-ghost btn-sm" @click="load()" :disabled="loading" data-i18n="common.refresh">Aktualisieren</button>
       </div>
       <p class="t-sm text-err mt-2" x-show="error" x-text="error"></p>
       <p class="t-sm text-ok mt-2" x-show="actionOk" x-text="actionOk"></p>
@@ -70,10 +70,10 @@
     <div class="card">
       <div class="panel-head">
         <div>
-          <div class="eyebrow">Bestand</div>
-          <h3>Rechner</h3>
+          <div class="eyebrow" data-i18n="bestand">Bestand</div>
+          <h3 data-i18n="rechner">Rechner</h3>
         </div>
-        <span class="t-xs text-mute" x-show="loading">Lade…</span>
+        <span class="t-xs text-mute" x-show="loading" data-i18n="lade">Lade…</span>
       </div>
 
       <div style="overflow-x:auto">
@@ -81,10 +81,10 @@
           <thead>
             <tr>
               <th data-i18n="admin_nodes.device">Gerät</th>
-              <th>Besitzer</th>
-              <th>Zustand</th>
+              <th data-i18n="besitzer">Besitzer</th>
+              <th data-i18n="zustand">Zustand</th>
               <th>VRAM</th>
-              <th>Modelle</th>
+              <th data-i18n="common.models">Modelle</th>
               <th></th>
             </tr>
           </thead>
@@ -97,12 +97,12 @@
                                        x-text="(n.node_url && !zeigeAdressen) ? maskiere(n.node_url)
                                                : (n.node_url || (n.gpu_type + ' · Port ' + n.port))"></div>
                 </td>
-                <td class="t-sm" x-text="n.owner_hidden ? 'anonym' : (n.owner_email || ('Konto ' + n.owner_id))"
-                    :title="n.owner_hidden ? 'Der Besitzer hat sich im Profil anonymisieren lassen' : ''"></td>
+                <td class="t-sm" x-text="n.owner_hidden ? I18n.t('admin_nodes.owner_anon') : (n.owner_email || I18n.t('admin_nodes.account_no', { id: n.owner_id }))"
+                    :title="n.owner_hidden ? I18n.t('admin_nodes.owner_hidden_hint') : ''"></td>
                 <td>
                   <span :class="zustandsKlasse(n)" x-text="n.effective_status || n.status"></span>
                   <span class="pill pill-flat t-xs" x-show="n.availability === 'partial'"
-                        title="Läuft nur zeitweise, nicht im Dauerbetrieb">zeitweise</span>
+                        title="Läuft nur zeitweise, nicht im Dauerbetrieb" data-i18n-title="admin_nodes.part_time_hint" data-i18n="zeitweise">zeitweise</span>
                   <div class="t-xs text-mute" x-show="!n.is_enabled" data-i18n="admin_nodes.paused_by_owner">vom Besitzer pausiert</div>
                 </td>
                 <td class="num">
@@ -120,11 +120,11 @@
                 <td class="t-xs" x-text="modellKurz(n)"></td>
                 <td>
                   <div class="row wrap" style="gap:6px">
-                    <button class="btn-ghost btn-sm" @click="details(n)" :disabled="busyId === n.id">Details</button>
+                    <button class="btn-ghost btn-sm" @click="details(n)" :disabled="busyId === n.id" data-i18n="details">Details</button>
                     <button class="btn-ghost btn-sm" @click="modelle(n)" :disabled="busyId === n.id"
-                            title="Modellfreigabe dieser Node ändern. Der Besitzer darf das selbst; hier ist der Weg der Administration." data-i18n-title="admin_nodes.models_title">Modelle</button>
+                            title="Modellfreigabe dieser Node ändern. Der Besitzer darf das selbst; hier ist der Weg der Administration." data-i18n-title="admin_nodes.models_title" data-i18n="common.models">Modelle</button>
                     <button class="btn-ghost btn-sm" @click="umschalten(n)" :disabled="busyId === n.id"
-                            x-text="n.is_enabled ? 'Pausieren' : 'Aktivieren'"></button>
+                            x-text="n.is_enabled ? I18n.t('common.pause') : I18n.t('common.enable')"></button>
                   </div>
                 </td>
               </tr>
@@ -143,7 +143,7 @@
         <div>
           <div class="eyebrow" data-i18n="admin_nodes.device">Gerät</div>
           <h3 x-text="detail ? detail.name : ''"></h3>
-          <p class="t-sm text-dim" x-text="detail ? (detail.description || 'ohne Beschreibung') : ''"></p>
+          <p class="t-sm text-dim" x-text="detail ? (detail.description || I18n.t('admin_nodes.no_description')) : ''"></p>
         </div>
         <button class="btn-ghost btn-sm" @click="detail = null" data-i18n="schliessen">Schließen</button>
       </div>
@@ -162,7 +162,7 @@
         </div>
       </div>
       <p class="t-sm text-dim mt-3" x-show="detail && detail.last_heartbeat">
-        Letzter Herzschlag: <b x-text="detail ? herzschlagText(detail) : ''"></b>
+        <span data-i18n="admin_nodes.last_heartbeat">Letzter Herzschlag:</span> <b x-text="detail ? herzschlagText(detail) : ''"></b>
       </p>
     </section>
   </main>

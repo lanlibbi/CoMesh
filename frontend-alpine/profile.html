@@ -32,7 +32,7 @@
   <main class="shell" style="max-width:900px">
     <div class="page-head">
       <div class="eyebrow" data-i18n="konto">Konto</div>
-      <h1>Profil</h1>
+      <h1 data-i18n="nav.profile">Profil</h1>
       <p class="lede" data-i18n="rolle-und-modell-whitelist-aenderungen">Rolle und Modell-Whitelist. Änderungen greifen sofort, ohne erneute Anmeldung.</p>
     </div>
 
@@ -48,7 +48,7 @@
           <div class="eyebrow" data-i18n="berechtigungen">Berechtigungen</div>
           <h3 data-i18n="rolle">Rolle</h3>
           <p>
-            Aktuell: <span class="mono text-brand" x-text="currentRole"></span> —
+            <span data-i18n="profile.current">Aktuell:</span> <span class="mono text-brand" x-text="currentRole"></span> —
             <span x-show="currentRole === 'consumer'" data-i18n="api-nutzbar-keine-node-registrierung">API nutzbar, keine Node-Registrierung.</span>
             <span x-show="currentRole === 'provider'" data-i18n="nodes-registrierbar-keine-eigenen-api-calls">Nodes registrierbar, keine eigenen API-Calls.</span>
             <span x-show="currentRole === 'both'" data-i18n="voller-zugriff">Voller Zugriff.</span>
@@ -58,7 +58,7 @@
 
       <div x-show="isAdminRole()" x-cloak class="notice">
         <div class="grow">
-          <div class="semibold">Admin-Konto</div>
+          <div class="semibold" data-i18n="admin-konto">Admin-Konto</div>
           <p class="t-sm text-dim mt-1" data-i18n-html="profile.admin_role_hint">
             Die Admin-Rolle wird von der Administration verwaltet und kann hier nicht
             geändert werden. Rollen anderer Konten ändern:
@@ -189,7 +189,7 @@
     <section class="card">
       <div class="panel-head">
         <div>
-          <div class="eyebrow">Modelle</div>
+          <div class="eyebrow" data-i18n="common.models">Modelle</div>
           <h3 x-show="currentRole !== 'consumer'" data-i18n="freigegebene-modelle">Freigegebene Modelle</h3>
           <h3 x-show="currentRole === 'consumer'" data-i18n="profile.models_available_title">Verfügbare Modelle</h3>
           <p x-show="currentRole !== 'consumer'" data-i18n="leer-bedeutet-alle-lokalen-modelle-keine">Leer bedeutet: alle lokalen Modelle, keine Cloud. Explizit wählen, um einzuschränken oder Cloud freizuschalten.</p>
@@ -205,7 +205,7 @@
             <input type="checkbox" :checked="selectedModels.includes(m.name)" @change="toggleModel(m.name)" />
             <span class="check-body row" style="gap:8px">
               <span class="grow mono t-sm" x-text="m.name"></span>
-              <span x-show="m.is_cloud" class="pill pill-busy pill-flat">cloud</span>
+              <span x-show="m.is_cloud" class="pill pill-busy pill-flat" data-i18n="common.cloud_chip">cloud</span>
               <span class="t-xs text-mute num" x-text="(m.size_gb || 0) + ' GB'"></span>
             </span>
           </label>
@@ -242,7 +242,7 @@
             <li class="check" style="cursor:default">
               <span class="check-body row" style="gap:8px">
                 <span class="grow mono t-sm" x-text="m.name"></span>
-                <span x-show="m.is_cloud" class="pill pill-busy pill-flat">cloud</span>
+                <span x-show="m.is_cloud" class="pill pill-busy pill-flat" data-i18n="common.cloud_chip">cloud</span>
                 <span class="t-xs text-mute num" x-text="(m.size_gb || 0) + ' GB'"></span>
               </span>
             </li>

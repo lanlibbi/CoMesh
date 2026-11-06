@@ -26,7 +26,7 @@
   <main class="shell">
     <div class="page-head">
       <div class="eyebrow">Admin</div>
-      <h1>Protokoll</h1>
+      <h1 data-i18n="nav.admin.audit">Protokoll</h1>
       <p class="lede" data-i18n="audit.lede">
         Jede Änderung an Konten, Rollen, Credits und Geräten — mit Zeitpunkt und
         ausführendem Admin. Passwörter und Schlüsselwerte werden nicht protokolliert.
@@ -35,7 +35,7 @@
 
     <div x-show="denied" x-cloak class="notice mb-4">
       <div class="grow">
-        <div class="semibold">Admin-Rolle erforderlich</div>
+        <div class="semibold" data-i18n="admin-rolle-erforderlich">Admin-Rolle erforderlich</div>
         <p class="t-sm text-dim mt-1" data-i18n-html="common.your_role_html">
           Deine Rolle: <span class="mono" x-text="(Auth.currentUser() || {}).role || 'both'"></span>.
         </p>
@@ -43,7 +43,7 @@
     </div>
     <div x-show="error" x-cloak class="notice mb-4">
       <div class="grow">
-        <div class="semibold">Laden fehlgeschlagen</div>
+        <div class="semibold" data-i18n="laden-fehlgeschlagen">Laden fehlgeschlagen</div>
         <p class="t-sm text-dim mt-1" x-text="error"></p>
       </div>
     </div>
@@ -51,9 +51,9 @@
     <div x-show="!denied" class="card">
       <div class="panel-head">
         <div>
-          <div class="eyebrow">Aktionen</div>
+          <div class="eyebrow" data-i18n="aktionen">Aktionen</div>
           <h3 data-i18n="audit.changes">Änderungen</h3>
-          <p x-text="loading ? 'Lädt…' : (total + ' Einträge, neueste zuerst')"></p>
+          <p x-text="loading ? I18n.t('laedt') : I18n.t('audit.count_entries', { n: total })"></p>
         </div>
         <div class="row wrap" style="gap:8px">
           <select class="input" style="max-width:230px" x-model="aktion" @change="filter()">
@@ -61,7 +61,7 @@
               <option :value="a.key" x-text="a.label"></option>
             </template>
           </select>
-          <button class="btn-ghost btn-sm" @click="filter()">Aktualisieren</button>
+          <button class="btn-ghost btn-sm" @click="filter()" data-i18n="common.refresh">Aktualisieren</button>
         </div>
       </div>
 
@@ -75,10 +75,10 @@
         <table class="tbl">
           <thead>
             <tr>
-              <th>Zeit</th>
+              <th data-i18n="zeit">Zeit</th>
               <th>Admin</th>
-              <th>Aktion</th>
-              <th>Ziel</th>
+              <th data-i18n="aktion">Aktion</th>
+              <th data-i18n="ziel">Ziel</th>
               <th data-i18n="audit.col_change">Änderung</th>
             </tr>
           </thead>
@@ -101,10 +101,10 @@
 
       <div class="row wrap mt-3" style="gap:8px" x-show="total > limit">
         <button class="btn-ghost btn-sm" :disabled="offset === 0" @click="prev()" data-i18n="common.back">Zurück</button>
-        <button class="btn-ghost btn-sm" :disabled="offset + limit >= total" @click="next()">Weiter</button>
+        <button class="btn-ghost btn-sm" :disabled="offset + limit >= total" @click="next()" data-i18n="weiter">Weiter</button>
       </div>
 
-      <p class="hint mt-3">
+      <p class="hint mt-3" data-i18n-html="audit.source_note">
         Quelle: <code class="inline">GET /admin/audit?action=&amp;limit=50</code> — Tabelle
         <code class="inline">admin_audit_log</code>, wird bei jeder Änderung geschrieben.
       </p>

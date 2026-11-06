@@ -497,6 +497,1272 @@ window.GP_I18N = {
    "es": "El rol de admin lo gestiona la administración y no se puede cambiar aquí. Para cambiar los roles de otras cuentas: <a href=\"admin-registrations.html\" class=\"link\">Cuentas y aprobaciones</a>.",
    "fr": "Le rôle admin est géré par l'administration et ne peut pas être modifié ici. Pour changer les rôles d'autres comptes : <a href=\"admin-registrations.html\" class=\"link\">Comptes et autorisations</a>."
   },
+  "laden-fehlgeschlagen": {
+   "en": "Loading failed",
+   "de": "Laden fehlgeschlagen",
+   "es": "Error al cargar",
+   "fr": "Échec du chargement"
+  },
+  "aktionen": {
+   "en": "Actions",
+   "de": "Aktionen",
+   "es": "Acciones",
+   "fr": "Actions"
+  },
+  "zeit": {
+   "en": "Time",
+   "de": "Zeit",
+   "es": "Hora",
+   "fr": "Heure"
+  },
+  "aktion": {
+   "en": "Action",
+   "de": "Aktion",
+   "es": "Acción",
+   "fr": "Action"
+  },
+  "ziel": {
+   "en": "Target",
+   "de": "Ziel",
+   "es": "Destino",
+   "fr": "Cible"
+  },
+  "weiter": {
+   "en": "Next",
+   "de": "Weiter",
+   "es": "Siguiente",
+   "fr": "Suivant"
+  },
+  "suche": {
+   "en": "Search",
+   "de": "Suche",
+   "es": "Búsqueda",
+   "fr": "Recherche"
+  },
+  "suchen": {
+   "en": "Search",
+   "de": "Suchen",
+   "es": "Buscar",
+   "fr": "Rechercher"
+  },
+  "anlegen": {
+   "en": "Create",
+   "de": "Anlegen",
+   "es": "Crear",
+   "fr": "Créer"
+  },
+  "details": {
+   "en": "Details",
+   "de": "Details",
+   "es": "Detalles",
+   "fr": "Détails"
+  },
+  "lade": {
+   "en": "Loading…",
+   "de": "Lade…",
+   "es": "Cargando…",
+   "fr": "Chargement…"
+  },
+  "rechner": {
+   "en": "Machines",
+   "de": "Rechner",
+   "es": "Equipos",
+   "fr": "Machines"
+  },
+  "besitzer": {
+   "en": "Owner",
+   "de": "Besitzer",
+   "es": "Propietario",
+   "fr": "Propriétaire"
+  },
+  "zustand": {
+   "en": "State",
+   "de": "Zustand",
+   "es": "Estado",
+   "fr": "État"
+  },
+  "zeitweise": {
+   "en": "part-time",
+   "de": "zeitweise",
+   "es": "a tiempo parcial",
+   "fr": "à temps partiel"
+  },
+  "ausstehend": {
+   "en": "Pending",
+   "de": "Ausstehend",
+   "es": "Pendiente",
+   "fr": "En attente"
+  },
+  "freigegeben": {
+   "en": "Approved",
+   "de": "Freigegeben",
+   "es": "Aprobado",
+   "fr": "Approuvé"
+  },
+  "abgelehnt": {
+   "en": "Rejected",
+   "de": "Abgelehnt",
+   "es": "Rechazado",
+   "fr": "Refusé"
+  },
+  "gesperrt": {
+   "en": "locked",
+   "de": "gesperrt",
+   "es": "bloqueado",
+   "fr": "verrouillé"
+  },
+  "aktive-konten": {
+   "en": "active accounts",
+   "de": "aktive Konten",
+   "es": "cuentas activas",
+   "fr": "comptes actifs"
+  },
+  "werkzeuge": {
+   "en": "Tools",
+   "de": "Werkzeuge",
+   "es": "Herramientas",
+   "fr": "Outils"
+  },
+  "freigeben": {
+   "en": "Approve",
+   "de": "Freigeben",
+   "es": "Aprobar",
+   "fr": "Approuver"
+  },
+  "ablehnen": {
+   "en": "Reject",
+   "de": "Ablehnen",
+   "es": "Rechazar",
+   "fr": "Refuser"
+  },
+  "freigabe": {
+   "en": "Approval",
+   "de": "Freigabe",
+   "es": "Aprobación",
+   "fr": "Approbation"
+  },
+  "benutzer": {
+   "en": "User",
+   "de": "Benutzer",
+   "es": "Usuario",
+   "fr": "Utilisateur"
+  },
+  "kennwort": {
+   "en": "Password",
+   "de": "Kennwort",
+   "es": "Contraseña",
+   "fr": "Mot de passe"
+  },
+  "absenderadresse": {
+   "en": "Sender address",
+   "de": "Absenderadresse",
+   "es": "Dirección del remitente",
+   "fr": "Adresse de l'expéditeur"
+  },
+  "absendername": {
+   "en": "Sender name",
+   "de": "Absendername",
+   "es": "Nombre del remitente",
+   "fr": "Nom de l'expéditeur"
+  },
+  "benachrichtigung-an": {
+   "en": "Notifications to",
+   "de": "Benachrichtigung an",
+   "es": "Notificaciones a",
+   "fr": "Notifications à"
+  },
+  "benachrichtigung-aktiv": {
+   "en": "Notifications active",
+   "de": "Benachrichtigung aktiv",
+   "es": "Notificaciones activas",
+   "fr": "Notifications actives"
+  },
+  "testmail-senden": {
+   "en": "Send test mail",
+   "de": "Testmail senden",
+   "es": "Enviar correo de prueba",
+   "fr": "Envoyer un e-mail de test"
+  },
+  "smtp-server": {
+   "en": "SMTP server",
+   "de": "SMTP-Server",
+   "es": "Servidor SMTP",
+   "fr": "Serveur SMTP"
+  },
+  "sicherheit": {
+   "en": "Security",
+   "de": "Sicherheit",
+   "es": "Seguridad",
+   "fr": "Sécurité"
+  },
+  "starttls-meist-587": {
+   "en": "STARTTLS (usually 587)",
+   "de": "STARTTLS (meist 587)",
+   "es": "STARTTLS (normalmente 587)",
+   "fr": "STARTTLS (généralement 587)"
+  },
+  "ssl-tls-meist-465": {
+   "en": "SSL/TLS (usually 465)",
+   "de": "SSL/TLS (meist 465)",
+   "es": "SSL/TLS (normalmente 465)",
+   "fr": "SSL/TLS (généralement 465)"
+  },
+  "adresse": {
+   "en": "Address",
+   "de": "Adresse",
+   "es": "Dirección",
+   "fr": "Adresse"
+  },
+  "besitzer-anonym": {
+   "en": "Owner anonymous",
+   "de": "Besitzer anonym",
+   "es": "Propietario anónimo",
+   "fr": "Propriétaire anonyme"
+  },
+  "admin-konto": {
+   "en": "Admin account",
+   "de": "Admin-Konto",
+   "es": "Cuenta de admin",
+   "fr": "Compte admin"
+  },
+  "gewaehlt": {
+   "en": "chosen",
+   "de": "gewählt",
+   "es": "elegido",
+   "fr": "choisi"
+  },
+  "auslastung-2": {
+   "en": "Ø Utilization",
+   "de": "Ø Auslastung",
+   "es": "Ø Utilización",
+   "fr": "Ø Utilisation"
+  },
+  "usage.title": {
+   "en": "Usage",
+   "de": "Usage",
+   "es": "Uso",
+   "fr": "Utilisation"
+  },
+  "oder-den-zeitraum-auf-gesamt-stellen": {
+   "en": "or set the period to “All”.",
+   "de": "oder den Zeitraum auf „Gesamt“ stellen.",
+   "es": "o ajusta el periodo a «Todo».",
+   "fr": "ou réglez la période sur « Tout »."
+  },
+  "usage.tokens_per": {
+   "en": "Tokens per",
+   "de": "Token je",
+   "es": "Tokens por",
+   "fr": "Tokens par"
+  },
+  "usage.hour": {
+   "en": "hour",
+   "de": "Stunde",
+   "es": "hora",
+   "fr": "heure"
+  },
+  "usage.day": {
+   "en": "day",
+   "de": "Tag",
+   "es": "día",
+   "fr": "jour"
+  },
+  "pool.hourly_rate": {
+   "en": "Hourly rate",
+   "de": "Stundensatz",
+   "es": "Tarifa por hora",
+   "fr": "Tarif horaire"
+  },
+  "profile.current": {
+   "en": "Current:",
+   "de": "Aktuell:",
+   "es": "Actual:",
+   "fr": "Actuel :"
+  },
+  "nodes.models_label": {
+   "en": "Models:",
+   "de": "Modelle:",
+   "es": "Modelos:",
+   "fr": "Modèles :"
+  },
+  "nodes.last_seen_label": {
+   "en": "Credits/h · last seen",
+   "de": "Credits/h · zuletzt gesehen",
+   "es": "Credits/h · visto por última vez",
+   "fr": "Credits/h · vu pour la dernière fois"
+  },
+  "nodes.always": {
+   "en": "Continuous",
+   "de": "Dauerbetrieb",
+   "es": "Continuo",
+   "fr": "Continu"
+  },
+  "nodes.operation": {
+   "en": "Operation:",
+   "de": "Betrieb:",
+   "es": "Funcionamiento:",
+   "fr": "Exploitation :"
+  },
+  "common.model": {
+   "en": "Model",
+   "de": "Modell",
+   "es": "Modelo",
+   "fr": "Modèle"
+  },
+  "common.cloud_chip": {
+   "en": "cloud",
+   "de": "cloud",
+   "es": "nube",
+   "fr": "cloud"
+  },
+  "common.online": {
+   "en": "Online",
+   "de": "Online",
+   "es": "En línea",
+   "fr": "En ligne"
+  },
+  "common.offline": {
+   "en": "Offline",
+   "de": "Offline",
+   "es": "Desconectado",
+   "fr": "Hors ligne"
+  },
+  "common.state_active": {
+   "en": "active",
+   "de": "aktiv",
+   "es": "activo",
+   "fr": "actif"
+  },
+  "common.busy": {
+   "en": "Busy",
+   "de": "Beschäftigt",
+   "es": "Ocupado",
+   "fr": "Occupé"
+  },
+  "common.paused": {
+   "en": "Paused",
+   "de": "Pausiert",
+   "es": "Pausado",
+   "fr": "En pause"
+  },
+  "common.pause": {
+   "en": "Pause",
+   "de": "Pausieren",
+   "es": "Pausar",
+   "fr": "Mettre en pause"
+  },
+  "common.resume": {
+   "en": "Resume",
+   "de": "Fortsetzen",
+   "es": "Reanudar",
+   "fr": "Reprendre"
+  },
+  "common.enable": {
+   "en": "Enable",
+   "de": "Aktivieren",
+   "es": "Activar",
+   "fr": "Activer"
+  },
+  "common.disable": {
+   "en": "Disable",
+   "de": "Deaktivieren",
+   "es": "Desactivar",
+   "fr": "Désactiver"
+  },
+  "common.close_inline": {
+   "en": "close",
+   "de": "schließen",
+   "es": "cerrar",
+   "fr": "fermer"
+  },
+  "common.saved": {
+   "en": "Saved.",
+   "de": "Gespeichert.",
+   "es": "Guardado.",
+   "fr": "Enregistré."
+  },
+  "common.error_prefix": {
+   "en": "Error: ",
+   "de": "Fehler: ",
+   "es": "Error: ",
+   "fr": "Erreur : "
+  },
+  "index.approx": {
+   "en": "approx.",
+   "de": "entspricht ca.",
+   "es": "equivale aprox.",
+   "fr": "correspond à env."
+  },
+  "index.header_label": {
+   "en": "Header:",
+   "de": "Header:",
+   "es": "Cabecera:",
+   "fr": "En-tête :"
+  },
+  "chat.new_thread": {
+   "en": "+ New",
+   "de": "+ Neu",
+   "es": "+ Nuevo",
+   "fr": "+ Nouveau"
+  },
+  "chat.last_answer": {
+   "en": "Last answer:",
+   "de": "Letzte Antwort:",
+   "es": "Última respuesta:",
+   "fr": "Dernière réponse :"
+  },
+  "nachrichten-im-verlauf": {
+   "en": "messages in the history",
+   "de": "Nachrichten im Verlauf",
+   "es": "mensajes en el historial",
+   "fr": "messages dans l'historique"
+  },
+  "credits.current_balance": {
+   "en": "Current balance:",
+   "de": "Aktuelles Guthaben:",
+   "es": "Saldo actual:",
+   "fr": "Solde actuel :"
+  },
+  "credits.billing_note": {
+   "en": "Credits. Billing is per token — there is no subscription and no minimum term.",
+   "de": "Credits. Abgerechnet wird pro Token — es gibt kein Abo und keine Mindestlaufzeit.",
+   "es": "Credits. La facturación es por token — no hay suscripción ni plazo mínimo.",
+   "fr": "Credits. La facturation se fait par token — pas d'abonnement, pas de durée minimale."
+  },
+  "audit.source_note": {
+   "en": "Source: <code class=\"inline\">GET /admin/audit?action=&amp;limit=50</code> — table <code class=\"inline\">admin_audit_log</code>, written on every change.",
+   "de": "Quelle: <code class=\"inline\">GET /admin/audit?action=&amp;limit=50</code> — Tabelle <code class=\"inline\">admin_audit_log</code>, wird bei jeder Änderung geschrieben.",
+   "es": "Origen: <code class=\"inline\">GET /admin/audit?action=&amp;limit=50</code> — tabla <code class=\"inline\">admin_audit_log</code>, se escribe en cada cambio.",
+   "fr": "Source : <code class=\"inline\">GET /admin/audit?action=&amp;limit=50</code> — table <code class=\"inline\">admin_audit_log</code>, écrite à chaque modification."
+  },
+  "admin_usage.source_note": {
+   "en": "Source: <code class=\"inline\">GET /admin/usage?window=24h|7d|30d|all&amp;limit=50&amp;include_inactive=true</code> — the same aggregation as <code class=\"inline\">/v1/me/usage</code>, without the user filter.",
+   "de": "Quelle: <code class=\"inline\">GET /admin/usage?window=24h|7d|30d|all&amp;limit=50&amp;include_inactive=true</code> — dieselbe Aggregation wie <code class=\"inline\">/v1/me/usage</code>, ohne Nutzerfilter.",
+   "es": "Origen: <code class=\"inline\">GET /admin/usage?window=24h|7d|30d|all&amp;limit=50&amp;include_inactive=true</code> — la misma agregación que <code class=\"inline\">/v1/me/usage</code>, sin filtro de usuario.",
+   "fr": "Source : <code class=\"inline\">GET /admin/usage?window=24h|7d|30d|all&amp;limit=50&amp;include_inactive=true</code> — la même agrégation que <code class=\"inline\">/v1/me/usage</code>, sans filtre d'utilisateur."
+  },
+  "usage.source_note": {
+   "en": "Source: <code class=\"inline\">GET /v1/me/usage?window=24h|7d|30d|all</code> — aggregation per model, period and request.",
+   "de": "Quelle: <code class=\"inline\">GET /v1/me/usage?window=24h|7d|30d|all</code> — Aggregation pro Modell, Zeitraum und Request.",
+   "es": "Origen: <code class=\"inline\">GET /v1/me/usage?window=24h|7d|30d|all</code> — agregación por modelo, periodo y request.",
+   "fr": "Source : <code class=\"inline\">GET /v1/me/usage?window=24h|7d|30d|all</code> — agrégation par modèle, période et requête."
+  },
+  "agent.step1_body": {
+   "en": "Fill it in on <a href=\"nodes.html\" class=\"link\">My nodes</a>. The answer contains the <code class=\"inline\">agent_api_key</code> — visible once.",
+   "de": "Auf <a href=\"nodes.html\" class=\"link\">Meine Nodes</a> ausfüllen. Die Antwort enthält den <code class=\"inline\">agent_api_key</code> — einmalig sichtbar.",
+   "es": "Rellénalo en <a href=\"nodes.html\" class=\"link\">Mis nodos</a>. La respuesta contiene el <code class=\"inline\">agent_api_key</code> — visible una sola vez.",
+   "fr": "À remplir sur <a href=\"nodes.html\" class=\"link\">Mes nodes</a>. La réponse contient le <code class=\"inline\">agent_api_key</code> — visible une seule fois."
+  },
+  "agent.step3_body": {
+   "en": "Replace <code class=\"inline\">NODE_ID</code> and <code class=\"inline\">NODE_API_KEY</code> with the values from step 1:",
+   "de": "<code class=\"inline\">NODE_ID</code> und <code class=\"inline\">NODE_API_KEY</code> durch die Werte aus Schritt 1 ersetzen:",
+   "es": "Sustituye <code class=\"inline\">NODE_ID</code> y <code class=\"inline\">NODE_API_KEY</code> por los valores del paso 1:",
+   "fr": "Remplacez <code class=\"inline\">NODE_ID</code> et <code class=\"inline\">NODE_API_KEY</code> par les valeurs de l'étape 1 :"
+  },
+  "admin_nodes.part_time_hint": {
+   "en": "Runs only part-time, not continuously",
+   "de": "Läuft nur zeitweise, nicht im Dauerbetrieb",
+   "es": "Funciona solo a tiempo parcial, no de forma continua",
+   "fr": "Ne fonctionne qu'à temps partiel, pas en continu"
+  },
+  "admin_nodes.owner_hidden_hint": {
+   "en": "The owner has chosen to appear anonymously in their profile",
+   "de": "Der Besitzer hat sich im Profil anonymisieren lassen",
+   "es": "El propietario ha elegido aparecer de forma anónima en su perfil",
+   "fr": "Le propriétaire a choisi d'apparaître de façon anonyme dans son profil"
+  },
+  "admin_nodes.owner_anon": {
+   "en": "anonymous",
+   "de": "anonym",
+   "es": "anónimo",
+   "fr": "anonyme"
+  },
+  "admin_nodes.account_no": {
+   "en": "Account {id}",
+   "de": "Konto {id}",
+   "es": "Cuenta {id}",
+   "fr": "Compte {id}"
+  },
+  "admin_nodes.no_description": {
+   "en": "no description",
+   "de": "ohne Beschreibung",
+   "es": "sin descripción",
+   "fr": "sans description"
+  },
+  "chat.conversations": {
+   "en": "Conversations",
+   "de": "Unterhaltungen",
+   "es": "Conversaciones",
+   "fr": "Conversations"
+  },
+  "chat.replying": {
+   "en": "replying right now",
+   "de": "antwortet gerade",
+   "es": "respondiendo ahora",
+   "fr": "répond en ce moment"
+  },
+  "chat.new_conv_hint": {
+   "en": "Start another conversation",
+   "de": "Weitere Unterhaltung starten",
+   "es": "Iniciar otra conversación",
+   "fr": "Démarrer une autre conversation"
+  },
+  "admin_reg.start_password_placeholder": {
+   "en": "Initial password (optional)",
+   "de": "Startpasswort (optional)",
+   "es": "Contraseña inicial (opcional)",
+   "fr": "Mot de passe initial (facultatif)"
+  },
+  "admin_reg.start_credits_placeholder": {
+   "en": "Initial credits",
+   "de": "Start-Credits",
+   "es": "Credits iniciales",
+   "fr": "Credits initiaux"
+  },
+  "admin_reg.search_placeholder": {
+   "en": "Search e-mail/name",
+   "de": "Suche E-Mail/Name",
+   "es": "Buscar correo/nombre",
+   "fr": "Rechercher e-mail/nom"
+  },
+  "admin_reg.mail_host_placeholder": {
+   "en": "smtp.example.com",
+   "de": "smtp.beispiel.de",
+   "es": "smtp.ejemplo.es",
+   "fr": "smtp.exemple.fr"
+  },
+  "admin_reg.mail_from_placeholder": {
+   "en": "portal@example.com",
+   "de": "portal@beispiel.de",
+   "es": "portal@ejemplo.es",
+   "fr": "portal@exemple.fr"
+  },
+  "admin_reg.mail_notify_placeholder": {
+   "en": "admin@example.com",
+   "de": "admin@beispiel.de",
+   "es": "admin@ejemplo.es",
+   "fr": "admin@exemple.fr"
+  },
+  "nodes.hidden_title": {
+   "en": "Your account appears in the admin area as “anonymous”",
+   "de": "Dein Konto erscheint im Adminbereich als „anonym“",
+   "es": "Tu cuenta aparece en el área de admin como «anónimo»",
+   "fr": "Votre compte apparaît dans la zone admin comme « anonyme »"
+  },
+  "nodes.address_placeholder": {
+   "en": "http://my-machine:11435",
+   "de": "http://mein-rechner:11435",
+   "es": "http://mi-equipo:11435",
+   "fr": "http://mon-ordi:11435"
+  },
+  "admin_usage.sort_by_account": {
+   "en": "sort by account",
+   "de": "nach Konto sortieren",
+   "es": "ordenar por cuenta",
+   "fr": "trier par compte"
+  },
+  "admin_usage.sort_by_role": {
+   "en": "sort by role",
+   "de": "nach Rolle sortieren",
+   "es": "ordenar por rol",
+   "fr": "trier par rôle"
+  },
+  "admin_usage.sort_by_token": {
+   "en": "sort by token",
+   "de": "nach Token sortieren",
+   "es": "ordenar por token",
+   "fr": "trier par token"
+  },
+  "admin_usage.sort_by_requests": {
+   "en": "sort by requests",
+   "de": "nach Requests sortieren",
+   "es": "ordenar por requests",
+   "fr": "trier par requêtes"
+  },
+  "admin_usage.sort_by_models": {
+   "en": "sort by number of models",
+   "de": "nach Modellzahl sortieren",
+   "es": "ordenar por número de modelos",
+   "fr": "trier par nombre de modèles"
+  },
+  "admin_usage.sort_by_credits": {
+   "en": "sort by credits",
+   "de": "nach Credits sortieren",
+   "es": "ordenar por credits",
+   "fr": "trier par credits"
+  },
+  "admin_usage.sort_by_quota": {
+   "en": "sort by quota",
+   "de": "nach Quota sortieren",
+   "es": "ordenar por cuota",
+   "fr": "trier par quota"
+  },
+  "admin_usage.sort_by_last_used": {
+   "en": "sort by last use",
+   "de": "nach letzter Nutzung sortieren",
+   "es": "ordenar por último uso",
+   "fr": "trier par dernière utilisation"
+  },
+  "admin_nodes.chip_all": {
+   "en": "All:",
+   "de": "Alle:",
+   "es": "Todos:",
+   "fr": "Tous :"
+  },
+  "admin_nodes.chip_online": {
+   "en": "Online:",
+   "de": "Online:",
+   "es": "En línea:",
+   "fr": "En ligne :"
+  },
+  "admin_nodes.chip_offline": {
+   "en": "Offline:",
+   "de": "Offline:",
+   "es": "Desconectados:",
+   "fr": "Hors ligne :"
+  },
+  "admin_nodes.chip_paused": {
+   "en": "Paused:",
+   "de": "Pausiert:",
+   "es": "Pausados:",
+   "fr": "En pause :"
+  },
+  "admin_nodes.last_heartbeat": {
+   "en": "Last heartbeat:",
+   "de": "Letzter Herzschlag:",
+   "es": "Último latido:",
+   "fr": "Dernier battement :"
+  },
+  "admin_nodes.addresses_hide": {
+   "en": "Hide addresses",
+   "de": "Adressen verbergen",
+   "es": "Ocultar direcciones",
+   "fr": "Masquer les adresses"
+  },
+  "admin_nodes.addresses_show": {
+   "en": "Show addresses",
+   "de": "Adressen anzeigen",
+   "es": "Mostrar direcciones",
+   "fr": "Afficher les adresses"
+  },
+  "admin_nodes.load_failed": {
+   "en": "Devices could not be loaded",
+   "de": "Geräte konnten nicht geladen werden",
+   "es": "No se pudieron cargar los equipos",
+   "fr": "Impossible de charger les appareils"
+  },
+  "admin_nodes.detail_failed": {
+   "en": "Detail could not be loaded",
+   "de": "Detail konnte nicht geladen werden",
+   "es": "No se pudo cargar el detalle",
+   "fr": "Impossible de charger le détail"
+  },
+  "admin_nodes.confirm_enable": {
+   "en": "Re-enable device \"{name}\"?",
+   "de": "Gerät \"{name}\" wieder aktivieren?",
+   "es": "¿Reactivar el dispositivo \"{name}\"?",
+   "fr": "Réactiver l'appareil « {name} » ?"
+  },
+  "admin_nodes.confirm_pause": {
+   "en": "Pause device \"{name}\"? The owner can switch it back on themselves.",
+   "de": "Gerät \"{name}\" pausieren? Der Besitzer kann es selbst wieder einschalten.",
+   "es": "¿Pausar el dispositivo \"{name}\"? El propietario puede volver a activarlo.",
+   "fr": "Mettre l'appareil « {name} » en pause ? Le propriétaire peut le réactiver lui-même."
+  },
+  "admin_nodes.toggle_ok": {
+   "en": "{name}: {state}.",
+   "de": "{name}: {state}.",
+   "es": "{name}: {state}.",
+   "fr": "{name} : {state}."
+  },
+  "admin_nodes.toggle_on": {
+   "en": "activated",
+   "de": "aktiviert",
+   "es": "activado",
+   "fr": "activé"
+  },
+  "admin_nodes.toggle_off": {
+   "en": "paused",
+   "de": "pausiert",
+   "es": "en pausa",
+   "fr": "en pause"
+  },
+  "admin_nodes.toggle_failed": {
+   "en": "Switching failed",
+   "de": "Umschalten fehlgeschlagen",
+   "es": "Error al cambiar",
+   "fr": "Échec du basculement"
+  },
+  "admin_nodes.models_prompt": {
+   "en": "Models \"{name}\" offers (comma separated).\nEmpty = all local models of this machine, no cloud models.",
+   "de": "Modelle, die \"{name}\" anbietet (durch Komma getrennt).\nLeer = alle lokalen Modelle dieser Maschine, keine Cloud-Modelle.",
+   "es": "Modelos que ofrece \"{name}\" (separados por comas).\nVacío = todos los modelos locales de esta máquina, sin modelos cloud.",
+   "fr": "Modèles proposés par « {name} » (séparés par des virgules).\nVide = tous les modèles locaux de cette machine, aucun modèle cloud."
+  },
+  "admin_nodes.models_save_failed": {
+   "en": "Models could not be saved",
+   "de": "Modelle konnten nicht gespeichert werden",
+   "es": "No se pudieron guardar los modelos",
+   "fr": "Impossible d'enregistrer les modèles"
+  },
+  "admin_nodes.all_local": {
+   "en": "all local",
+   "de": "alle lokalen",
+   "es": "todos los locales",
+   "fr": "tous les locaux"
+  },
+  "admin_nodes.none_released": {
+   "en": "nothing released",
+   "de": "nichts freigegeben",
+   "es": "nada liberado",
+   "fr": "rien de libéré"
+  },
+  "admin_nodes.ago_s": {
+   "en": "{n} s ago",
+   "de": "vor {n} s",
+   "es": "hace {n} s",
+   "fr": "il y a {n} s"
+  },
+  "admin_nodes.ago_min": {
+   "en": "{n} min ago",
+   "de": "vor {n} min",
+   "es": "hace {n} min",
+   "fr": "il y a {n} min"
+  },
+  "admin_nodes.ago_h_stale": {
+   "en": "{n} h ago (stale)",
+   "de": "vor {n} h (veraltet)",
+   "es": "hace {n} h (obsoleto)",
+   "fr": "il y a {n} h (obsolète)"
+  },
+  "admin_reg.role_both": {
+   "en": "both — consumer + provider",
+   "de": "both — Consumer + Provider",
+   "es": "both — consumer + provider",
+   "fr": "both — consumer + provider"
+  },
+  "admin_reg.role_admin": {
+   "en": "admin — may administer",
+   "de": "admin — darf verwalten",
+   "es": "admin — puede administrar",
+   "fr": "admin — peut administrer"
+  },
+  "admin_reg.mail_unreadable": {
+   "en": "Settings not readable:",
+   "de": "Einstellungen nicht lesbar:",
+   "es": "Ajustes ilegibles:",
+   "fr": "Réglages illisibles :"
+  },
+  "admin_reg.mail_sending": {
+   "en": "sending …",
+   "de": "sende …",
+   "es": "enviando …",
+   "fr": "envoi …"
+  },
+  "admin_reg.mail_test_ok": {
+   "en": "Test mail: ",
+   "de": "Testmail: ",
+   "es": "Correo de prueba: ",
+   "fr": "E-mail de test : "
+  },
+  "admin_reg.mail_setup": {
+   "en": "set up",
+   "de": "einrichten",
+   "es": "configurar",
+   "fr": "configurer"
+  },
+  "admin_reg.count_entries": {
+   "en": "{n} entries",
+   "de": "{n} Einträge",
+   "es": "{n} entradas",
+   "fr": "{n} entrées"
+  },
+  "admin_reg.showing": {
+   "en": "{n} shown",
+   "de": "{n} angezeigt",
+   "es": "{n} mostradas",
+   "fr": "{n} affichées"
+  },
+  "admin_reg.ok_approved": {
+   "en": "Approved.",
+   "de": "Freigegeben.",
+   "es": "Aprobado.",
+   "fr": "Approuvé."
+  },
+  "admin_reg.ok_rejected": {
+   "en": "Rejected.",
+   "de": "Abgelehnt.",
+   "es": "Rechazado.",
+   "fr": "Refusé."
+  },
+  "admin_reg.approve_failed": {
+   "en": "Approval failed",
+   "de": "Freigabe fehlgeschlagen",
+   "es": "Error al aprobar",
+   "fr": "Échec de l'approbation"
+  },
+  "admin_reg.reject_failed": {
+   "en": "Rejection failed",
+   "de": "Ablehnung fehlgeschlagen",
+   "es": "Error al rechazar",
+   "fr": "Échec du refus"
+  },
+  "admin_reg.confirm_reject": {
+   "en": "Reject this registration? The account's keys will be deactivated.",
+   "de": "Diese Registrierung ablehnen? Die Schlüssel des Kontos werden deaktiviert.",
+   "es": "¿Rechazar esta solicitud? Las claves de la cuenta se desactivarán.",
+   "fr": "Refuser cette inscription ? Les clés du compte seront désactivées."
+  },
+  "admin_reg.confirm_make_admin": {
+   "en": "{email} made an admin? Admins see all accounts and can change permissions.",
+   "de": "{email} zum Admin machen? Admins sehen alle Konten und können Rechte ändern.",
+   "es": "¿Hacer admin a {email}? Los admins ven todas las cuentas y pueden cambiar permisos.",
+   "fr": "Faire de {email} un admin ? Les admins voient tous les comptes et peuvent modifier les droits."
+  },
+  "admin_reg.last_admin": {
+   "en": "This is the last admin. Make another account an admin first, then remove the role.",
+   "de": "Das ist der letzte Admin. Erst ein weiteres Konto zum Admin machen, dann entziehen.",
+   "es": "Este es el último admin. Haz admin a otra cuenta primero y luego retira el rol.",
+   "fr": "C'est le dernier admin. Nommez d'abord un autre compte admin, puis retirez le rôle."
+  },
+  "admin_reg.confirm_demote": {
+   "en": "Remove the admin role from {email}?",
+   "de": "{email} die Admin-Rolle entziehen?",
+   "es": "¿Retirar el rol de admin a {email}?",
+   "fr": "Retirer le rôle admin à {email} ?"
+  },
+  "admin_reg.role_changed": {
+   "en": "{email}: role is now {role}.",
+   "de": "{email}: Rolle jetzt {role}.",
+   "es": "{email}: rol ahora {role}.",
+   "fr": "{email} : rôle désormais {role}."
+  },
+  "admin_reg.role_failed": {
+   "en": "Role change failed",
+   "de": "Rollenwechsel fehlgeschlagen",
+   "es": "Error al cambiar el rol",
+   "fr": "Échec du changement de rôle"
+  },
+  "admin_reg.confirm_deactivate": {
+   "en": "Deactivate {email}? The API keys become invalid.",
+   "de": "{email} deaktivieren? Die API-Schlüssel werden ungültig.",
+   "es": "¿Desactivar {email}? Las claves de API quedarán inválidas.",
+   "fr": "Désactiver {email} ? Les clés d'API deviendront invalides."
+  },
+  "admin_reg.active_state": {
+   "en": "{email} is now {state}.",
+   "de": "{email} ist jetzt {state}.",
+   "es": "{email} ahora está {state}.",
+   "fr": "{email} est désormais {state}."
+  },
+  "admin_reg.activation_failed": {
+   "en": "Activation failed",
+   "de": "Aktivierung fehlgeschlagen",
+   "es": "Error al activar",
+   "fr": "Échec de l'activation"
+  },
+  "admin_reg.prompt_password": {
+   "en": "New password for {email}:",
+   "de": "Neues Passwort für {email}:",
+   "es": "Nueva contraseña para {email}:",
+   "fr": "Nouveau mot de passe pour {email} :"
+  },
+  "admin_reg.confirm_short_password": {
+   "en": "Shorter than 8 characters. Set it anyway?",
+   "de": "Kürzer als 8 Zeichen. Trotzdem setzen?",
+   "es": "Menos de 8 caracteres. ¿Establecerla igualmente?",
+   "fr": "Moins de 8 caractères. Le définir quand même ?"
+  },
+  "admin_reg.ok_password_set": {
+   "en": "Password set for {email}.",
+   "de": "Passwort für {email} gesetzt.",
+   "es": "Contraseña establecida para {email}.",
+   "fr": "Mot de passe défini pour {email}."
+  },
+  "admin_reg.password_failed": {
+   "en": "Password could not be set",
+   "de": "Passwort konnte nicht gesetzt werden",
+   "es": "No se pudo establecer la contraseña",
+   "fr": "Impossible de définir le mot de passe"
+  },
+  "admin_reg.models_load_failed": {
+   "en": "Model list could not be loaded",
+   "de": "Modellliste konnte nicht geladen werden",
+   "es": "No se pudo cargar la lista de modelos",
+   "fr": "Impossible de charger la liste des modèles"
+  },
+  "admin_reg.local_models_selected": {
+   "en": "{n} local models selected — save now.",
+   "de": "{n} lokale Modelle ausgewählt — jetzt speichern.",
+   "es": "{n} modelos locales seleccionados — guarda ahora.",
+   "fr": "{n} modèles locaux sélectionnés — enregistrez maintenant."
+  },
+  "admin_reg.no_local_models": {
+   "en": "No local models found.",
+   "de": "Keine lokalen Modelle gefunden.",
+   "es": "No se encontraron modelos locales.",
+   "fr": "Aucun modèle local trouvé."
+  },
+  "admin_reg.nothing_selected": {
+   "en": "Without a selection and without cloud the account may use nothing. Tick the box above for \"all local\".",
+   "de": "Ohne Auswahl und ohne Cloud darf das Konto nichts nutzen. Für \"alle lokalen\" den Haken oben setzen.",
+   "es": "Sin selección y sin cloud la cuenta no puede usar nada. Marca arriba la casilla \"todos los locales\".",
+   "fr": "Sans sélection et sans cloud, le compte ne peut rien utiliser. Cochez la case « tous les locaux » ci-dessus."
+  },
+  "admin_reg.ok_approval_saved": {
+   "en": "{email}: approval saved.",
+   "de": "{email}: Freigabe gespeichert.",
+   "es": "{email}: aprobación guardada.",
+   "fr": "{email} : approbation enregistrée."
+  },
+  "admin_reg.approval_save_failed": {
+   "en": "Approval could not be saved",
+   "de": "Freigabe konnte nicht gespeichert werden",
+   "es": "No se pudo guardar la aprobación",
+   "fr": "Impossible d'enregistrer l'approbation"
+  },
+  "admin_reg.nothing": {
+   "en": "nothing",
+   "de": "nichts",
+   "es": "nada",
+   "fr": "rien"
+  },
+  "admin_reg.one_model": {
+   "en": "{n} model",
+   "de": "{n} Modell",
+   "es": "{n} modelo",
+   "fr": "{n} modèle"
+  },
+  "admin_reg.n_models": {
+   "en": "{n} models",
+   "de": "{n} Modelle",
+   "es": "{n} modelos",
+   "fr": "{n} modèles"
+  },
+  "admin_reg.prompt_credits": {
+   "en": "Credits for {email} (negative = deduct):",
+   "de": "Credits für {email} (negativ = abziehen):",
+   "es": "Credits para {email} (negativo = deducir):",
+   "fr": "Credits pour {email} (négatif = déduire) :"
+  },
+  "admin_reg.credits_need_number": {
+   "en": "Please enter a number other than 0.",
+   "de": "Bitte eine Zahl ungleich 0 angeben.",
+   "es": "Introduce un número distinto de 0.",
+   "fr": "Saisissez un nombre différent de 0."
+  },
+  "admin_reg.credits_failed": {
+   "en": "Credits could not be booked",
+   "de": "Credits konnten nicht gebucht werden",
+   "es": "No se pudieron contabilizar los credits",
+   "fr": "Impossible de comptabiliser les credits"
+  },
+  "admin_reg.ok_credits": {
+   "en": "{email}: {amount} Credits, balance {balance}.",
+   "de": "{email}: {amount} Credits, Stand {balance}.",
+   "es": "{email}: {amount} Credits, saldo {balance}.",
+   "fr": "{email} : {amount} Credits, solde {balance}."
+  },
+  "admin_reg.confirm_new_key": {
+   "en": "Issue a new key for {email}? The previous one becomes invalid immediately.",
+   "de": "Neuen Schlüssel für {email} ausstellen? Der bisherige wird sofort ungültig.",
+   "es": "¿Emitir una clave nueva para {email}? La anterior queda inválida de inmediato.",
+   "fr": "Émettre une nouvelle clé pour {email} ? L'ancienne devient invalide immédiatement."
+  },
+  "admin_reg.ok_key_created": {
+   "en": "New key issued — it is shown only now.",
+   "de": "Neuer Schlüssel ausgestellt — er wird nur jetzt angezeigt.",
+   "es": "Clave nueva emitida — solo se muestra ahora.",
+   "fr": "Nouvelle clé émise — elle n'est affichée que maintenant."
+  },
+  "admin_reg.ok_key_unchanged": {
+   "en": "Key unchanged (repeat).",
+   "de": "Schlüssel unverändert (Wiederholung).",
+   "es": "Clave sin cambios (repetición).",
+   "fr": "Clé inchangée (répétition)."
+  },
+  "admin_reg.key_failed": {
+   "en": "Key could not be issued",
+   "de": "Schlüssel konnte nicht ausgestellt werden",
+   "es": "No se pudo emitir la clave",
+   "fr": "Impossible d'émettre la clé"
+  },
+  "admin_reg.email_name_required": {
+   "en": "E-mail and name are required.",
+   "de": "E-Mail und Name sind Pflicht.",
+   "es": "El correo y el nombre son obligatorios.",
+   "fr": "L'e-mail et le nom sont obligatoires."
+  },
+  "admin_reg.ok_account_created": {
+   "en": "Account {email} created (id {id}).",
+   "de": "Konto {email} angelegt (id {id}).",
+   "es": "Cuenta {email} creada (id {id}).",
+   "fr": "Compte {email} créé (id {id})."
+  },
+  "admin_reg.account_failed": {
+   "en": "Account could not be created",
+   "de": "Konto konnte nicht angelegt werden",
+   "es": "No se pudo crear la cuenta",
+   "fr": "Impossible de créer le compte"
+  },
+  "audit.action_all": {
+   "en": "All actions",
+   "de": "Alle Aktionen",
+   "es": "Todas las acciones",
+   "fr": "Toutes les actions"
+  },
+  "audit.action_user_create": {
+   "en": "Account created",
+   "de": "Konto angelegt",
+   "es": "Cuenta creada",
+   "fr": "Compte créé"
+  },
+  "audit.action_user_update": {
+   "en": "Account changed",
+   "de": "Konto geändert",
+   "es": "Cuenta modificada",
+   "fr": "Compte modifié"
+  },
+  "audit.action_user_topup": {
+   "en": "Credits booked",
+   "de": "Credits gebucht",
+   "es": "Credits contabilizados",
+   "fr": "Credits comptabilisés"
+  },
+  "audit.action_node_enable": {
+   "en": "Device released",
+   "de": "Gerät freigegeben",
+   "es": "Dispositivo liberado",
+   "fr": "Appareil libéré"
+  },
+  "audit.action_node_disable": {
+   "en": "Device locked",
+   "de": "Gerät gesperrt",
+   "es": "Dispositivo bloqueado",
+   "fr": "Appareil verrouillé"
+  },
+  "audit.action_key_rotate": {
+   "en": "Key renewed",
+   "de": "Schlüssel erneuert",
+   "es": "Clave renovada",
+   "fr": "Clé renouvelée"
+  },
+  "audit.action_key_revoke": {
+   "en": "Key revoked",
+   "de": "Schlüssel entzogen",
+   "es": "Clave revocada",
+   "fr": "Clé révoquée"
+  },
+  "audit.field_changed": {
+   "en": "{field}: changed",
+   "de": "{field}: geändert",
+   "es": "{field}: cambiado",
+   "fr": "{field} : modifié"
+  },
+  "audit.count_entries": {
+   "en": "{n} entries, newest first",
+   "de": "{n} Einträge, neueste zuerst",
+   "es": "{n} entradas, las más recientes primero",
+   "fr": "{n} entrées, les plus récentes d'abord"
+  },
+  "app.ago_s": {
+   "en": "{n} s ago",
+   "de": "vor {n} s",
+   "es": "hace {n} s",
+   "fr": "il y a {n} s"
+  },
+  "app.ago_min": {
+   "en": "{n} min ago",
+   "de": "vor {n} min",
+   "es": "hace {n} min",
+   "fr": "il y a {n} min"
+  },
+  "app.ago_h": {
+   "en": "{n} h ago",
+   "de": "vor {n} h",
+   "es": "hace {n} h",
+   "fr": "il y a {n} h"
+  },
+  "app.ago_d": {
+   "en": "{n} d ago",
+   "de": "vor {n} d",
+   "es": "hace {n} d",
+   "fr": "il y a {n} j"
+  },
+  "app.upstream_error": {
+   "en": "Upstream error (WS {status})",
+   "de": "Upstream-Fehler (WS {status})",
+   "es": "Error del upstream (WS {status})",
+   "fr": "Erreur upstream (WS {status})"
+  },
+  "auth.welcome_back": {
+   "en": "Welcome back, {name}",
+   "de": "Willkommen zurück, {name}",
+   "es": "Bienvenido de nuevo, {name}",
+   "fr": "Bon retour, {name}"
+  },
+  "auth.account_created": {
+   "en": "Account created.",
+   "de": "Konto angelegt.",
+   "es": "Cuenta creada.",
+   "fr": "Compte créé."
+  },
+  "profile.admin_role_managed": {
+   "en": "The admin role is managed by the administration.",
+   "de": "Die Admin-Rolle wird von der Administration verwaltet.",
+   "es": "El rol de admin lo gestiona la administración.",
+   "fr": "Le rôle admin est géré par l'administration."
+  },
+  "chat.placeholder_enter": {
+   "en": "Write a message — Enter sends, Shift+Enter starts a new line",
+   "de": "Nachricht schreiben — Enter sendet, Shift+Enter macht eine neue Zeile",
+   "es": "Escribe un mensaje — Enter envía, Mayús+Enter crea una línea nueva",
+   "fr": "Écrire un message — Entrée envoie, Maj+Entrée crée une ligne"
+  },
+  "chat.placeholder_ctrl": {
+   "en": "Write a message — Ctrl+Enter sends, Enter starts a new line",
+   "de": "Nachricht schreiben — Strg+Enter sendet, Enter macht eine neue Zeile",
+   "es": "Escribe un mensaje — Ctrl+Enter envía, Enter crea una línea nueva",
+   "fr": "Écrire un message — Ctrl+Entrée envoie, Entrée crée une ligne"
+  },
+  "chat.prompt1_label": {
+   "en": "Explain quantum computing",
+   "de": "Quantencomputing erklären",
+   "es": "Explicar computación cuántica",
+   "fr": "Expliquer l'informatique quantique"
+  },
+  "chat.prompt1_text": {
+   "en": "Explain quantum computing in three sentences.",
+   "de": "Erkläre Quantencomputing in drei Sätzen.",
+   "es": "Explica la computación cuántica en tres frases.",
+   "fr": "Explique l'informatique quantique en trois phrases."
+  },
+  "chat.prompt2_label": {
+   "en": "Python Hello World",
+   "de": "Python Hello-World",
+   "es": "Python Hello-World",
+   "fr": "Python Hello-World"
+  },
+  "chat.prompt2_text": {
+   "en": "Write a Python Hello World with type hints.",
+   "de": "Schreibe ein Python Hello-World mit Type Hints.",
+   "es": "Escribe un Hello-World en Python con type hints.",
+   "fr": "Écris un Hello-World en Python avec des type hints."
+  },
+  "chat.prompt3_label": {
+   "en": "Ideas for a side project",
+   "de": "Ideen für ein Nebenprojekt",
+   "es": "Ideas para un proyecto paralelo",
+   "fr": "Idées de projet annexe"
+  },
+  "chat.prompt3_text": {
+   "en": "Give me three ideas for a side project.",
+   "de": "Gib mir drei Ideen für ein Nebenprojekt.",
+   "es": "Dame tres ideas para un proyecto paralelo.",
+   "fr": "Donne-moi trois idées de projet annexe."
+  },
+  "chat.new_chat_title": {
+   "en": "New chat",
+   "de": "Neue Unterhaltung",
+   "es": "Conversación nueva",
+   "fr": "Nouvelle conversation"
+  },
+  "chat.chat_word": {
+   "en": "Conversation",
+   "de": "Unterhaltung",
+   "es": "Conversación",
+   "fr": "Conversation"
+  },
+  "chat.models_load_failed": {
+   "en": "Models could not be loaded: ",
+   "de": "Modelle konnten nicht geladen werden: ",
+   "es": "No se pudieron cargar los modelos: ",
+   "fr": "Impossible de charger les modèles : "
+  },
+  "chat.error_wrapped": {
+   "en": "(Error: {msg})",
+   "de": "(Fehler: {msg})",
+   "es": "(Error: {msg})",
+   "fr": "(Erreur : {msg})"
+  },
+  "credits.pack.support_mail": {
+   "en": "E-mail support",
+   "de": "E-Mail-Support",
+   "es": "Soporte por correo",
+   "fr": "Support par e-mail"
+  },
+  "credits.poc_confirm": {
+   "en": "POC: simulate {name} for {price} € ({credits} Credits).\n\nIn production Stripe Checkout would open here.\n\nOK creates a top-up request that an admin confirms.",
+   "de": "POC: {name} für {price} € ({credits} Credits) simulieren.\n\nIn Produktion würde hier Stripe Checkout öffnen.\n\nOK legt eine Auflade-Anfrage an, die ein Admin bestätigt.",
+   "es": "POC: simular {name} por {price} € ({credits} Credits).\n\nEn producción se abriría aquí Stripe Checkout.\n\nOK crea una solicitud de recarga que un admin confirma.",
+   "fr": "POC : simuler {name} pour {price} € ({credits} Credits).\n\nEn production, Stripe Checkout s'ouvrirait ici.\n\nOK crée une demande de recharge qu'un admin confirme."
+  },
+  "credits.pack_reserved": {
+   "en": "{name} reserved — credited after admin approval.",
+   "de": "{name} vorgemerkt — Gutschrift erfolgt nach Admin-Freigabe.",
+   "es": "{name} reservado — se abona tras la aprobación del admin.",
+   "fr": "{name} réservé — crédité après approbation de l'admin."
+  },
+  "credits.purchase_failed": {
+   "en": "Purchase failed",
+   "de": "Kauf fehlgeschlagen",
+   "es": "Compra fallida",
+   "fr": "Achat échoué"
+  },
+  "nodes.released_count": {
+   "en": "{n} released",
+   "de": "{n} freigegeben",
+   "es": "{n} liberados",
+   "fr": "{n} libérés"
+  },
+  "nodes.none_selected_confirm": {
+   "en": "No models selected — sets the whitelist to {none} for: {names}. Continue?",
+   "de": "Keine Modelle ausgewählt — setzt die Whitelist auf \"{none}\" für: {names}. Fortfahren?",
+   "es": "Ningún modelo seleccionado — pone la whitelist en {none} para: {names}. ¿Continuar?",
+   "fr": "Aucun modèle sélectionné — met la whitelist sur {none} pour : {names}. Continuer ?"
+  },
+  "nodes.reported_taken": {
+   "en": "{n} reported models taken over — still to save.",
+   "de": "{n} gemeldete Modelle übernommen — noch speichern.",
+   "es": "{n} modelos informados incorporados — aún por guardar.",
+   "fr": "{n} modèles signalés repris — reste à enregistrer."
+  },
+  "nodes.reported_all_present": {
+   "en": "All reported models are already in the field.",
+   "de": "Alle gemeldeten Modelle stehen schon im Feld.",
+   "es": "Todos los modelos informados ya están en el campo.",
+   "fr": "Tous les modèles signalés sont déjà dans le champ."
+  },
+  "nodes.saved_always": {
+   "en": "Continuous operation saved",
+   "de": "Dauerbetrieb gespeichert",
+   "es": "Funcionamiento continuo guardado",
+   "fr": "Fonctionnement continu enregistré"
+  },
+  "nodes.saved_partial": {
+   "en": "Part-time availability saved",
+   "de": "Zeitweise Verfügbarkeit gespeichert",
+   "es": "Disponibilidad parcial guardada",
+   "fr": "Disponibilité partielle enregistrée"
+  },
+  "nodes.owner_hidden_on": {
+   "en": "Owner appears anonymously in the admin area",
+   "de": "Besitzer erscheint im Adminbereich als anonym",
+   "es": "El propietario aparece como anónimo en el área de admin",
+   "fr": "Le propriétaire apparaît anonymement dans la zone admin"
+  },
+  "nodes.owner_hidden_off": {
+   "en": "Owner is named again",
+   "de": "Besitzer wird wieder genannt",
+   "es": "El propietario vuelve a aparecer",
+   "fr": "Le propriétaire est de nouveau nommé"
+  },
+  "nodes.address_saved": {
+   "en": "Address saved — the node reports in with the new address at the next heartbeat.",
+   "de": "Adresse gespeichert — die Node meldet sich beim naechsten Heartbeat mit der neuen Adresse.",
+   "es": "Dirección guardada — la node se reportará con la nueva dirección en el próximo heartbeat.",
+   "fr": "Adresse enregistrée — la node se signale avec la nouvelle adresse au prochain heartbeat."
+  },
   "chrome.theme": {
    "en": "Theme",
    "de": "Design",
@@ -2044,6 +3310,12 @@ window.GP_I18N = {
    "de": "Auswahl aufheben",
    "es": "Anular selección",
    "fr": "Désélectionner"
+  },
+  "ausgewaehlt": {
+   "en": "selected",
+   "de": "ausgewählt",
+   "es": "seleccionados",
+   "fr": "sélectionnés"
   },
   "z-b-wohnzimmer-rtx-4090": {
    "en": "e.g. living room RTX 4090",

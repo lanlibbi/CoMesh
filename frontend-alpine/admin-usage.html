@@ -162,14 +162,14 @@
           <table class="tbl">
             <thead>
               <tr>
-                <th class="sortierbar" @click="sortiere('name')" title="nach Konto sortieren"><span data-i18n="nutzer">Nutzer</span><span class="pfeil" x-text="pfeil('name')"></span></th>
-                <th class="sortierbar" @click="sortiere('role')" title="nach Rolle sortieren"><span data-i18n="rolle">Rolle</span><span class="pfeil" x-text="pfeil('role')"></span></th>
-                <th class="sortierbar" style="min-width:180px" @click="sortiere('total_tokens')" title="nach Token sortieren">Token<span class="pfeil" x-text="pfeil('total_tokens')"></span></th>
-                <th class="sortierbar" @click="sortiere('requests')" title="nach Requests sortieren">Requests<span class="pfeil" x-text="pfeil('requests')"></span></th>
-                <th class="sortierbar" @click="sortiere('models_used')" title="nach Modellzahl sortieren">Modelle<span class="pfeil" x-text="pfeil('models_used')"></span></th>
-                <th class="sortierbar" @click="sortiere('credits')" title="nach Credits sortieren">Credits<span class="pfeil" x-text="pfeil('credits')"></span></th>
-                <th class="sortierbar" @click="sortiere('quota_mode')" title="nach Quota sortieren"><span data-i18n="admin.quota">Quota</span><span class="pfeil" x-text="pfeil('quota_mode')"></span></th>
-                <th class="sortierbar" @click="sortiere('last_used')" title="nach letzter Nutzung sortieren"><span data-i18n="zuletzt">Zuletzt</span><span class="pfeil" x-text="pfeil('last_used')"></span></th>
+                <th class="sortierbar" @click="sortiere('name')" title="nach Konto sortieren" data-i18n-title="admin_usage.sort_by_account"><span data-i18n="nutzer">Nutzer</span><span class="pfeil" x-text="pfeil('name')"></span></th>
+                <th class="sortierbar" @click="sortiere('role')" title="nach Rolle sortieren" data-i18n-title="admin_usage.sort_by_role"><span data-i18n="rolle">Rolle</span><span class="pfeil" x-text="pfeil('role')"></span></th>
+                <th class="sortierbar" style="min-width:180px" @click="sortiere('total_tokens')" title="nach Token sortieren" data-i18n-title="admin_usage.sort_by_token">Token<span class="pfeil" x-text="pfeil('total_tokens')"></span></th>
+                <th class="sortierbar" @click="sortiere('requests')" title="nach Requests sortieren" data-i18n-title="admin_usage.sort_by_requests">Requests<span class="pfeil" x-text="pfeil('requests')"></span></th>
+                <th class="sortierbar" @click="sortiere('models_used')" title="nach Modellzahl sortieren" data-i18n-title="admin_usage.sort_by_models"><span data-i18n="common.models">Modelle</span><span class="pfeil" x-text="pfeil('models_used')"></span></th>
+                <th class="sortierbar" @click="sortiere('credits')" title="nach Credits sortieren" data-i18n-title="admin_usage.sort_by_credits">Credits<span class="pfeil" x-text="pfeil('credits')"></span></th>
+                <th class="sortierbar" @click="sortiere('quota_mode')" title="nach Quota sortieren" data-i18n-title="admin_usage.sort_by_quota"><span data-i18n="admin.quota">Quota</span><span class="pfeil" x-text="pfeil('quota_mode')"></span></th>
+                <th class="sortierbar" @click="sortiere('last_used')" title="nach letzter Nutzung sortieren" data-i18n-title="admin_usage.sort_by_last_used"><span data-i18n="zuletzt">Zuletzt</span><span class="pfeil" x-text="pfeil('last_used')"></span></th>
               </tr>
             </thead>
             <tbody>
@@ -207,7 +207,7 @@
           </table>
         </div>
 
-        <p class="hint mt-3">
+        <p class="hint mt-3" data-i18n-html="admin_usage.source_note">
           Quelle: <code class="inline">GET /admin/usage?window=24h|7d|30d|all&amp;limit=50&amp;include_inactive=true</code> —
           dieselbe Aggregation wie <code class="inline">/v1/me/usage</code>, ohne Nutzerfilter.
         </p>

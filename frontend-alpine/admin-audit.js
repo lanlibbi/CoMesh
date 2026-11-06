@@ -7,11 +7,11 @@ document.addEventListener("alpine:init", () => {
   Alpine.data("auditPage", () => ({
     aktion: "",
     aktionen: [
-      { key: "", label: "Alle Aktionen" },
-      { key: "user.create", label: "Konto angelegt" },
-      { key: "user.update", label: "Konto geändert" },
-      { key: "user.topup", label: "Credits gebucht" },
-      { key: "node.enable", label: "Gerät freigegeben" },
+      { key: "", label: I18n.t("audit.action_all") },
+      { key: "user.create", label: I18n.t("audit.action_user_create") },
+      { key: "user.update", label: I18n.t("audit.action_user_update") },
+      { key: "user.topup", label: I18n.t("audit.action_user_topup") },
+      { key: "node.enable", label: I18n.t("audit.action_node_enable") },
     ],
     limit: 50,
     offset: 0,
@@ -44,7 +44,7 @@ document.addEventListener("alpine:init", () => {
         this.total = (d && d.total) || this.events.length;
         this.denied = false;
       } catch (e) {
-        const msg = e.message || "Laden fehlgeschlagen";
+        const msg = e.message || I18n.t("laden-fehlgeschlagen");
         this.denied = /admin role required/i.test(msg) || /403/.test(msg);
         this.error = this.denied ? "" : msg;
         this.events = [];
@@ -59,13 +59,13 @@ document.addEventListener("alpine:init", () => {
 
     aktionLabel(a) {
       return ({
-        "user.create": "Konto angelegt",
-        "user.update": "Konto geändert",
-        "user.topup": "Credits gebucht",
-        "node.enable": "Gerät freigegeben",
-        "user.key.rotate": "Schlüssel erneuert",
-        "user.key.revoke": "Schlüssel entzogen",
-        "node.disable": "Gerät gesperrt",
+        "user.create": I18n.t("audit.action_user_create"),
+        "user.update": I18n.t("audit.action_user_update"),
+        "user.topup": I18n.t("audit.action_user_topup"),
+        "node.enable": I18n.t("audit.action_node_enable"),
+        "user.key.rotate": I18n.t("audit.action_key_rotate"),
+        "user.key.revoke": I18n.t("audit.action_key_revoke"),
+        "node.disable": I18n.t("audit.action_node_disable"),
       })[a] || a;
     },
 
@@ -75,7 +75,7 @@ document.addEventListener("alpine:init", () => {
       if (!c || typeof c !== "object") return "—";
       return Object.keys(c).map((k) => {
         const v = c[k] || {};
-        if (v.changed === true) return `${k}: geändert`;
+        if (v.changed === true) return I18n.t("audit.field_changed", { field: k });
         if (v.from !== undefined || v.to !== undefined) return `${k}: ${v.from} → ${v.to}`;
         return `${k}: ${JSON.stringify(v)}`;
       }).join(" · ");
