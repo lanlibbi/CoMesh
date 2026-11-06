@@ -120,6 +120,7 @@ async def lifespan(app: FastAPI):
     _ensure_node_address_columns()
     _ensure_node_privacy_columns()
     _ensure_node_vram_source_column()
+    _ensure_node_reported_models()
     await seed_test_user_if_empty()
     await seed_admin_if_configured()
     log.info(f"GPU-Pool POC started. Ollama URL: {OLLAMA_URL}, default model: {DEFAULT_MODEL}")
@@ -449,6 +450,25 @@ def _ensure_node_vram_source_column():
             log.info("Added gpu_nodes.vram_source column")
 
 
+def _ensure_node_reported_models():
+    """gpu_nodes.reported_models / reported_models_at (idempotent).
+
+    Der Agent meldet im Heartbeat, welche Modelle in seinem eigenen Backend liegen.
+    Ohne diese Spalten scheiterte jedes SELECT auf gpu_nodes („no such column") —
+    `create_all` legt Tabellen an, ändert sie aber nie. Beide Spalten sind NULL-fähig:
+    eine bestehende Datenbank startet damit unverändert weiter, alte Nodes gelten
+    schlicht als „Modelle unbekannt".
+    """
+    with engine.begin() as conn:
+        cols = [row[1] for row in conn.exec_driver_sql("PRAGMA table_info(gpu_nodes)").fetchall()]
+        if "reported_models" not in cols:
+            conn.exec_driver_sql("ALTER TABLE gpu_nodes ADD COLUMN reported_models TEXT")
+            log.info("Added gpu_nodes.reported_models column")
+        if "reported_models_at" not in cols:
+            conn.exec_driver_sql("ALTER TABLE gpu_nodes ADD COLUMN reported_models_at DATETIME")
+            log.info("Added gpu_nodes.reported_models_at column")
+
+
 def _ensure_payments_table():
     """Create the payments table if it doesn't exist (idempotent)."""
     Payment.__table__.create(bind=engine, checkfirst=True)
@@ -595,6 +615,14 @@ async def list_models(user: User = Depends(get_current_user),
     Filter zeigt ein Client Modelle zur Auswahl, die beim ersten Aufruf mit 403
     abgelehnt werden — und wer die Freigabe nicht kennt, kann nicht wissen, welche
     Auswahl für ihn gilt.
+
+    Zwei Quellen: der Katalog des zentralen Ollama **und** die Modelle, die aktive
+    Nodes in ihrem eigenen Backend gemeldet haben. Letztere sind der Grund für diese
+    Erweiterung: ein Provider, der auf seiner Maschine ein Modell laufen hat, das der
+    Portal-Host nicht kennt (qwen3:4b auf einem Windows-Rechner), konnte es bisher
+    niemandem anbieten, weil die Auswahl ausschliesslich aus dem zentralen Katalog kam.
+    Cloud-Modelle bleiben wie bisher behandelt: sie muessen zusätzlich von einem
+    Provider freigegeben sein (`angebotene_cloud_modelle`).
     """
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
@@ -615,14 +643,38 @@ async def list_models(user: User = Depends(get_current_user),
     # freigegeben hat. Ohne diese Bedingung schaltet "Cloud erlauben" den ganzen Katalog
     # frei, auch Modelle, die niemand anbietet.
     from models import _is_cloud_model_name
-    from pool import angebotene_cloud_modelle
+    from pool import angebotene_cloud_modelle, gemeldete_node_modelle
+    verfuegbar = angebotene_cloud_modelle(db)
     if any(_is_cloud_model_name(m.get("name") or "") for m in modelle):
-        verfuegbar = angebotene_cloud_modelle(db)
         modelle = [
             m for m in modelle
             if not _is_cloud_model_name(m.get("name") or "")
             or (m.get("name") or "") in verfuegbar
         ]
+
+    # --- Modelle, die Nodes selbst gemeldet haben ---------------------------
+    # Sie stehen hier in derselben Form wie die Einträge aus dem zentralen Katalog
+    # (chat.html liest `name`, OpenAI-Clients `id`). Was der zentrale Katalog schon
+    # führt, wird nicht doppelt gelistet; die Freigabe des Kontos gilt unverändert.
+    bekannt = {m.get("name") or m.get("model") or "" for m in modelle}
+    for eintrag in gemeldete_node_modelle(db):
+        name = eintrag["name"]
+        if not name or name in bekannt:
+            continue
+        if not user.can_use_model(name):
+            continue
+        modelle.append({
+            "name": name,
+            "model": name,
+            "modified_at": None,
+            "size": 0,
+            "digest": "",
+            "details": {},
+            # Kennzeichnet die Herkunft: dieser Eintrag kommt von einer Node, nicht
+            # vom zentralen Ollama. Clients, die das Feld nicht kennen, ignorieren es.
+            "source": "node",
+            "node_ids": eintrag["node_ids"],
+        })
 
     def _erstellt(eintrag: dict) -> int:
         # Ollama liefert modified_at als ISO-Zeit; OpenAI-Clients erwarten eine Zahl.

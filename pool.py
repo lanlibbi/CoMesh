@@ -59,12 +59,17 @@ TREASURY_SHARE = 0.10
 # ----------------------------------------------------------------------------
 class NodeCandidate:
     """Lightweight wrapper used during scoring."""
-    __slots__ = ("node", "score", "free_vram_gb")
+    __slots__ = ("node", "score", "free_vram_gb", "bestaetigt")
 
-    def __init__(self, node: GpuNode, score: float, free_vram_gb: float):
+    def __init__(self, node: GpuNode, score: float, free_vram_gb: float,
+                 bestaetigt: bool = False):
         self.node = node
         self.score = score
         self.free_vram_gb = free_vram_gb
+        # True = diese Node hat das Modell selbst gemeldet (steht in ihrer
+        # Modellliste), False = ihre Modelle sind unbekannt. Bestaetigte Nodes
+        # gewinnen jeden Gleichstand: sie koennen den Auftrag sicher bedienen.
+        self.bestaetigt = bestaetigt
 
 
 def _is_online(node: GpuNode) -> bool:
@@ -200,6 +205,36 @@ def angebotene_cloud_modelle(db: Session) -> set:
     return namen
 
 
+def gemeldete_node_modelle(db: Session) -> List[dict]:
+    """Modelle, die aktive Nodes in ihrem eigenen Backend gemeldet haben.
+
+    Der Katalog des Portals kam bisher ausschliesslich vom zentralen Ollama. Ein
+    Provider, der auf seiner Maschine etwas anderes laufen hat (qwen3:4b auf einem
+    Windows-Rechner, ein Llama-Server hinter `BACKEND=openai`), konnte es deshalb
+    niemandem anbieten — das Modell fehlte einfach in der Auswahl.
+
+    Rueckgabe je Modell: ``{"name": ..., "node_ids": [...]}``. Nur `is_enabled`
+    zaehlt: eine pausierte Node bietet nichts an. Cloud-Modelle sind nicht dabei —
+    die laufen nicht im Backend einer Node (dafuer gibt es `angebotene_cloud_modelle`).
+    """
+    from models import _is_cloud_model_name
+
+    gefunden: Dict[str, List[int]] = {}
+    for node in db.query(GpuNode).filter(GpuNode.is_enabled == True).all():  # noqa: E712
+        for name in (node.get_reported_models() or []):
+            if not name or _is_cloud_model_name(name):
+                continue
+            # Auch die Freigabe des Besitzers gilt: was ein Provider an seiner Node
+            # nicht freigibt, darf nicht in der Auswahl stehen — sonst scheitert der
+            # erste Aufruf, und Auswahl und Ergebnis laufen auseinander.
+            if not node.can_serve_model(name):
+                continue
+            gefunden.setdefault(name, [])
+            if node.id not in gefunden[name]:
+                gefunden[name].append(node.id)
+    return [{"name": n, "node_ids": ids} for n, ids in sorted(gefunden.items())]
+
+
 def find_best_node(
     db: Session,
     model: str,
@@ -217,10 +252,12 @@ def find_best_node(
       4. Node must have enough free VRAM to plausibly host the model.
 
     Auswahl unter den verbleibenden Kandidaten:
-      5. wenigste **laufende Anfragen** zuerst (`node_inflight`) — das ist die
+      5. Nodes, die das Modell **selbst gemeldet** haben, vor Nodes mit unbekannter
+         Modellliste (`gemeldet` in `can_serve_model`),
+      6. dann wenigste **laufende Anfragen** (`node_inflight`) — das ist die
          eigentliche Lastverteilung,
-      6. dann der Score (Stundensatz + Auslastung + Busy-Zuschlag),
-      7. bei vollständigem Gleichstand **reihum** (`_round_robin`).
+      7. dann der Score (Stundensatz + Auslastung + Busy-Zuschlag),
+      8. bei vollständigem Gleichstand **reihum** (`_round_robin`).
 
     Vorher war die Auswahl rein score-basiert und damit deterministisch: zwei
     identische Nodes mit demselben Modell bekamen nie beide Arbeit, der erste
@@ -259,19 +296,18 @@ def find_best_node(
             + n.current_utilization * 0.5
             + (0.0 if n.status == "online" else 0.2)  # busy penalty
         )
-        candidates.append(NodeCandidate(n, score, free_vram))
+        gemeldet = n.get_reported_models() or []
+        candidates.append(NodeCandidate(n, score, free_vram, bestaetigt=model in gemeldet))
 
     if not candidates:
         return None
-    candidates.sort(key=lambda c: c.score)
-    # (laufende Anfragen, Score) — stabil sortiert, damit die Reihenfolge bei
-    # Gleichstand die der Score-Sortierung bleibt (und damit reproduzierbar ist).
-    candidates.sort(key=lambda c: (node_inflight(c.node.id), c.score))
+    candidates.sort(key=lambda c: (0 if c.bestaetigt else 1, node_inflight(c.node.id), c.score))
 
     best = candidates[0]
     tied = [
         c for c in candidates
-        if node_inflight(c.node.id) == node_inflight(best.node.id)
+        if c.bestaetigt == best.bestaetigt
+        and node_inflight(c.node.id) == node_inflight(best.node.id)
         and abs(c.score - best.score) < 1e-9
     ]
     if len(tied) > 1:

@@ -419,6 +419,22 @@
                   <span class="text-dim">Modelle: <span x-text="n.allowed_models.length + ' freigegeben'"></span></span>
                 </template>
               </div>
+              <!-- Was die Node selbst als vorhanden meldet (Sicht ihres Agenten).
+                   Die Freigabe oben sagt, was andere nutzen dürfen; diese Liste sagt,
+                   was auf der Maschine tatsächlich liegt. Beides getrennt zu zeigen ist
+                   der Punkt: erst dadurch sieht ein Provider, ob ein Modell, das nur
+                   lokal existiert, überhaupt gemeldet wird. -->
+              <div class="t-xs mt-1" x-show="gemeldeteModelle(n).length > 0">
+                <span class="text-dim">Auf dieser Maschine gemeldet: </span>
+                <template x-for="m in gemeldeteModelle(n)" :key="m">
+                  <span class="pill pill-flat t-xs mono" style="margin-right:4px" x-text="m"></span>
+                </template>
+                <span class="text-mute" x-show="n.reported_models_at"
+                      x-text="'(' + fmtDate(n.reported_models_at) + ')'"></span>
+              </div>
+              <div class="t-xs mt-1" x-show="gemeldeteModelle(n).length === 0">
+                <span class="text-mute">Auf dieser Maschine gemeldet: noch keine Meldung — der Agent schickt sie mit dem nächsten Heartbeat.</span>
+              </div>
             </div>
             <div class="row wrap" style="gap:6px;align-items:center">
               <label class="t-xs text-dim" style="gap:6px;display:flex;align-items:center">
@@ -497,6 +513,11 @@
             <div class="row mt-3">
               <button class="btn-primary btn-sm" @click="saveEdit(n)" data-i18n="speichern">Speichern</button>
               <button class="btn-ghost btn-sm" @click="uebernehmeFreitext()" data-i18n="node.models.adopt">In die Auswahl übernehmen</button>
+              <!-- Nur eine Hilfe beim Ausfüllen: die gemeldeten Modelle in das
+                   Freitextfeld schreiben. Gespeichert wird erst mit „Speichern",
+                   die Freigabe bleibt also eine bewusste Entscheidung. -->
+              <button class="btn-ghost btn-sm" x-show="gemeldeteModelle(n).length > 0"
+                      @click="uebernehmeGemeldete(n)">Gemeldete Modelle eintragen</button>
               <button class="btn-ghost btn-sm" @click="cancelEdit()" data-i18n="abbrechen">Abbrechen</button>
             </div>
           </div>

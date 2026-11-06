@@ -284,6 +284,40 @@ def backend_chat_url() -> str:
     return f"{INFERENCE_URL}/v1/chat/completions" if BACKEND == "openai" else f"{INFERENCE_URL}/api/chat"
 
 
+async def backend_models(client: httpx.AsyncClient, timeout: float = 10.0):
+    """Modelle, die im lokalen Backend dieser Node liegen.
+
+    Ollama antwortet auf ``/api/tags`` mit ``models[].name``, ein
+    OpenAI-kompatibler Server (LM Studio, vLLM, llama.cpp) auf ``/v1/models`` mit
+    ``data[].id``. Beides wird auf eine Liste von Namen reduziert.
+
+    Rueckgabe:
+      * Liste  — Abfrage hat geklappt (auch leer: Backend erreichbar, kein Modell),
+      * None   — Abfrage fehlgeschlagen. Das Portal laesst die zuletzt gemeldete
+                 Liste dann stehen, statt die Node als "kann nichts" zu fuehren.
+    """
+    try:
+        r = await client.get(backend_list_url(), timeout=timeout)
+        r.raise_for_status()
+        daten = r.json() or {}
+    except Exception as e:  # noqa: BLE001 — Heartbeat darf daran nie scheitern
+        log.debug(f"Modellabfrage am Backend fehlgeschlagen: {e}")
+        return None
+    if BACKEND == "openai":
+        roh = daten.get("data") or []
+        namen = [str((m or {}).get("id") or "") for m in roh]
+    else:
+        roh = daten.get("models") or []
+        namen = [str((m or {}).get("name") or (m or {}).get("model") or "") for m in roh]
+    out = []
+    for name in namen:
+        name = name.strip()
+        if name and name not in out:
+            out.append(name)
+    return out
+
+
+
 async def _infer(payload: dict, timeout: float = 300.0) -> dict:
     """Run one inference against the configured backend and return an OpenAI-shaped response.
 
@@ -1047,6 +1081,9 @@ async def send_heartbeat(client: httpx.AsyncClient):
     # status: busy if there are active jobs OR VRAM > 70% used; else online
     busy = info["active_jobs"] > 0 or (info["utilization"] or 0) > 0.7
     vram_gb, vram_source = vram_report()
+    # Welche Modelle liegen in **diesem** Backend? Ohne diese Meldung erscheinen sie
+    # im Portal nicht in der Auswahl, weil der Katalog dort vom zentralen Ollama kommt.
+    models = await backend_models(client)
     payload = {
         "status": "busy" if busy else "online",
         "gpu_util": info["utilization"],
@@ -1057,6 +1094,8 @@ async def send_heartbeat(client: httpx.AsyncClient):
         "vram_gb": vram_gb,
         "vram_source": vram_source,
         "active_jobs": info["active_jobs"],
+        # null = Abfrage fehlgeschlagen; das Portal behaelt dann die letzte Liste.
+        "models": models,
         # The portal adopts this only while the node has no explicitly configured
         # address. That is how a DHCP node stays dialable without any config.
         "advertise_host": advertised_host(),

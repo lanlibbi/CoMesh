@@ -1,5 +1,36 @@
 # Changelog
 
+## 0.6.14 — 2026-11-06
+
+**Modelle, die nur auf einer Node liegen, sind im Portal sichtbar und nutzbar**
+
+1. **Der Agent meldet seine eigenen Modelle.** Bisher fragte nur das Portal sein
+   zentrales Ollama und bot genau diesen Katalog an. Ein Provider, der auf seiner
+   Maschine etwas anderes laufen hat — qwen3:4b/8b/14b auf einem Windows-Rechner, ein
+   Llama-Server hinter `BACKEND=openai` —, konnte es deshalb niemandem anbieten: das
+   Modell fehlte in der Auswahl, obwohl die Node es bedient. Der Agent liest jetzt bei
+   jedem Heartbeat sein eigenes Backend (`/api/tags` bzw. `/v1/models`) und schickt die
+   Namen mit. Schlägt die Abfrage fehl, bleibt die zuletzt gemeldete Liste stehen —
+   ein stummgeschaltetes Backend löscht also nichts.
+2. **Das Portal speichert die Meldung je Node** (`gpu_nodes.reported_models`,
+   `reported_models_at`) und zeigt sie auf der Node-Seite unter „Auf dieser Maschine
+   gemeldet“. Die Freigabe-Liste bleibt davon getrennt und wird unverändert im
+   Bearbeiten-Fenster gepflegt; ein Knopf trägt die gemeldeten Namen nur ins Feld ein —
+   gespeichert wird weiterhin bewusst mit „Speichern“.
+3. **`GET /v1/models` bietet sie an, auch ohne Eintrag im zentralen Katalog.** Gefiltert
+   wird weiterhin mit `can_use_model`, also nach der Freigabe des Kontos, und nur
+   Modelle aktiver (nicht pausierter) Nodes. Solche Einträge tragen `source: "node"`.
+   Cloud-Modelle bleiben wie bisher: sie müssen zusätzlich von einem Provider
+   freigegeben sein.
+4. **Das Routing nimmt nur noch Nodes, die das Modell wirklich haben.** Eine Node, die
+   ihre Modelle meldet, bedient ausschließlich diese; eine Node ohne Meldung (alter
+   Agent) verhält sich wie bisher. Bei der Auswahl gewinnt die Node, die das Modell
+   bestätigt hat, vor einer mit unbekannter Liste — vorher konnte ein Auftrag an eine
+   Maschine gehen, die das Modell gar nicht geladen hatte.
+5. **Bestehende Datenbanken laufen ohne Eingriff weiter.** Die Migration ergänzt beide
+   Spalten idempotent beim Start (Muster wie bei `vram_source`); alte Nodes gelten als
+   „Modelle unbekannt“ und werden weiter wie bisher behandelt.
+
 ## 0.6.13 — 2026-11-06
 
 **Windows-Installation ohne Adminrechte, stabile Streams, Node-Adresse korrigierbar**

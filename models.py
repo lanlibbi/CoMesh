@@ -273,6 +273,15 @@ class GpuNode(Base):
     is_enabled = Column(Boolean, default=True, nullable=False)        # owner can pause
     description = Column(Text, nullable=True)
     allowed_models = Column(Text, nullable=True)                  # JSON whitelist; NULL = "all local, no cloud"
+    # Modelle, die der Agent auf **dieser** Maschine gefunden hat (Abfrage seines
+    # eigenen Backends: Ollama /api/tags bzw. OpenAI-kompatibel /v1/models).
+    # NULL = noch nie gemeldet, die Modelle der Node sind unbekannt (alte Agenten,
+    # frische Registrierung). Eine nicht-leere Liste heisst: die Node kennt ihre
+    # Modelle — dann bedient sie auch nur diese (siehe can_serve_model), und das
+    # Portal bietet sie in /v1/models an, auch wenn der zentrale Katalog sie nicht
+    # fuehrt.
+    reported_models = Column(Text, nullable=True)
+    reported_models_at = Column(DateTime, nullable=True)
     # Datenschutz am Gerät: Besitzer im Adminbereich als "anonym" zeigen.
     hide_owner = Column(Boolean, default=False, nullable=False)
     # Betriebsart: "always" = Dauerbetrieb, "partial" = nur zeitweise verfügbar.
@@ -328,15 +337,60 @@ class GpuNode(Base):
         else:
             self.allowed_models = json.dumps(list(models))
 
+    # ---------- Selbst gemeldete Modelle (Agent-Heartbeat) ----------
+    def get_reported_models(self) -> Optional[List[str]]:
+        """Modelle, die der Agent zuletzt als lokal vorhanden gemeldet hat.
+
+        `None` heisst: unbekannt (noch nie gemeldet). Eine leere Liste zaehlt
+        ebenfalls als unbekannt — ein Agent, der sein Backend nicht abfragen
+        konnte, darf eine Node nicht auf "kann nichts" setzen.
+        """
+        if self.reported_models is None:
+            return None
+        try:
+            data = json.loads(self.reported_models)
+        except (json.JSONDecodeError, TypeError):
+            return None
+        if not isinstance(data, list):
+            return None
+        return [str(x) for x in data]
+
+    def set_reported_models(self, models: Optional[List[str]]) -> None:
+        if models is None:
+            self.reported_models = None
+        else:
+            self.reported_models = json.dumps(list(models))
+
     def can_serve_model(self, model: str) -> bool:
-        """Authorization check for routing a job to this node."""
+        """Authorization check for routing a job to this node.
+
+        Zwei Bedingungen, beide muessen erfuellt sein:
+
+          * die Freigabe des Besitzers (`allowed_models`) laesst das Modell zu,
+          * wenn die Node ihre Modelle selbst gemeldet hat, muss das Modell in
+            dieser Meldung stehen.
+
+        Die zweite Bedingung ist der Grund, warum ein Auftrag nicht mehr an eine
+        Node geht, die das Modell gar nicht hat: vorher galt "keine Whitelist =
+        alle lokalen Modelle", und das war fuer jede Maschine dieselbe Annahme.
+        Cloud-Modelle sind davon ausgenommen — sie laufen nicht im Backend der
+        Node und tauchen deshalb in keiner Meldung auf.
+        """
         if not model:
             return True
         is_cloud = _is_cloud_model_name(model)
         allowed = self.get_allowed_models()
         if allowed is None:
-            return not is_cloud
-        return model in allowed
+            if is_cloud:
+                return False
+        elif model not in allowed:
+            return False
+        if is_cloud:
+            return True
+        gemeldet = self.get_reported_models()
+        if gemeldet:
+            return model in gemeldet
+        return True
 
 
 class NodeHeartbeat(Base):

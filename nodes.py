@@ -124,6 +124,13 @@ class HeartbeatRequest(BaseModel):
         None, description="Host (name or IP) the agent is reachable under; usually auto-detected."
     )
     agent_port: Optional[int] = Field(None, ge=1, le=65535, description="Port the agent serves on")
+    # Modelle, die der Agent in **seinem** Backend gefunden hat. Damit kann ein
+    # Provider Modelle anbieten, die der zentrale Katalog des Portals nicht kennt.
+    # `null` heisst: Abfrage fehlgeschlagen — dann bleibt die zuletzt gemeldete
+    # Liste stehen, statt eine Node faelschlich auf "kann nichts" zu setzen.
+    models: Optional[List[str]] = Field(
+        None, description="Modelle, die das Backend dieser Node anbietet (Agent-Sicht)."
+    )
     raw: Optional[dict] = None  # arbitrary agent-side stats
 
 
@@ -150,6 +157,9 @@ class NodeOut(BaseModel):
     is_enabled: bool
     description: Optional[str]
     allowed_models: Optional[List[str]] = None
+    # Was die Node selbst als vorhanden gemeldet hat (Agent-Sicht). NULL = unbekannt.
+    reported_models: Optional[List[str]] = None
+    reported_models_at: Optional[str] = None
     hide_owner: bool = False
     availability: str = "always"
     created_at: str
@@ -211,6 +221,11 @@ def node_out_fields(node: GpuNode) -> dict:
     # getattr: alte Zeilen aus der Zeit vor der Migration haben die Spalten noch nicht.
     "hide_owner": bool(getattr(node, "hide_owner", False)),
     "availability": getattr(node, "availability", None) or "always",
+    "reported_models": node.get_reported_models(),
+    "reported_models_at": (
+        node.reported_models_at.isoformat()
+        if getattr(node, "reported_models_at", None) else None
+    ),
     "created_at": node.created_at.isoformat(),
     }
 
@@ -552,6 +567,19 @@ def heartbeat(
     node.current_utilization = req.gpu_util
     node.vram_used_gb = req.vram_used_gb
     node.last_seen = datetime.utcnow()
+
+    # Modelle, die der Agent in seinem eigenen Backend gefunden hat. Sie sind die
+    # einzige Quelle fuer Modelle, die der zentrale Katalog nicht fuehrt. Ein
+    # `null` (Abfrage beim Agenten fehlgeschlagen) laesst die letzte Meldung stehen;
+    # eine leere Liste bedeutet "nichts gefunden" und wird als solche gespeichert.
+    if req.models is not None:
+        sauber: List[str] = []
+        for eintrag in req.models[:200]:
+            name = str(eintrag).strip()[:200]
+            if name and name not in sauber:
+                sauber.append(name)
+        node.set_reported_models(sauber)
+        node.reported_models_at = datetime.utcnow()
 
     # Persist a history row
     import json

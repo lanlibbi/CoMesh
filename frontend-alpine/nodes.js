@@ -474,6 +474,26 @@ document.addEventListener("alpine:init", () => {
       this.editAllowed = [...this.editAllowed, ...fremde];
       toast(I18n.t("nodes.models.adopted", { n: fremde.length }), "ok");
     },
+    /**
+     * Modelle, die der Agent dieser Node selbst gemeldet hat (Sicht seines
+     * Backends). Getrennt von `allowed_models`: die Freigabe sagt, was ANDERE
+     * nutzen dürfen, diese Liste sagt, was auf der Maschine liegt.
+     */
+    gemeldeteModelle(n) {
+      return Array.isArray(n && n.reported_models) ? n.reported_models : [];
+    },
+    /** Gemeldete Modelle ins Freitextfeld übernehmen — gespeichert wird später. */
+    uebernehmeGemeldete(n) {
+      const vorhanden = this.parseModelsText(this.editModelsText);
+      const neu = this.gemeldeteModelle(n).filter((m) => !vorhanden.includes(m));
+      this.editModelsText = [...vorhanden, ...neu].join(", ");
+      toast(
+        neu.length
+          ? `${neu.length} gemeldete Modelle übernommen — noch speichern.`
+          : "Alle gemeldeten Modelle stehen schon im Feld.",
+        "ok",
+      );
+    },
     /** Betriebsart umschalten (always | partial). */
     async betriebSetzen(n, wert) {
       try {
