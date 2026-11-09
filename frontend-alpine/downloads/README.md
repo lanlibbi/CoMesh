@@ -11,17 +11,17 @@ powershell -ExecutionPolicy Bypass -Command "irm https://<portal>/downloads/inst
 
 Der Installer lädt von hier:
 
-| Datei | Ziel | Stand (04.11.2026) |
+| Datei | Ziel | Stand (09.11.2026) |
 |---|---|---|
 | `install.sh` | macOS/Linux-Installer (aus `node-agent/install.sh`) | **vorhanden** |
 | `install.ps1` | Windows-Installer (aus `node-agent/install.ps1`) | **vorhanden** |
 | `comesh-agent-darwin-arm64` + `.sha256` | Apple Silicon | **vorhanden** — 0.6.10, 14.044.992 B, in GitHub Actions gebaut (04.11.2026), `--version` und Prüfsumme geprüft, `3881a74dece1…` |
 | `comesh-agent-darwin-x86_64` + `.sha256` | Intel-Mac | **fehlt** — `macos-latest` ist arm64; bräuchte einen Lauf auf `macos-13` |
 | `comesh-agent-linux-arm64` + `.sha256` | Linux ARM64 | **fehlt** — nur auf einem ARM-Linux zu bauen, PyInstaller baut nicht über Architekturen |
-| `comesh-agent-linux-x86_64` + `.sha256` | Linux x86_64 | **vorhanden** — 0.6.10, 14.609.000 B, `8879d46c494f…` |
-| `comesh-agent-windows-x86_64.exe` + `.sha256` | Windows x64 | **vorhanden** — 0.6.10, 14.058.581 B, `--version` geprüft (`comesh-agent 0.6.10`), `e601a962e82e…` |
+| `comesh-agent-linux-x86_64` + `.sha256` | Linux x86_64 | **vorhanden** — 0.6.16, 14.609.328 B, am 06.11.2026 auf ai-lanlibbi gebaut, `--version` geprüft (`comesh-agent 0.6.16`), `594f48af155f…` |
+| `comesh-agent-windows-x86_64.exe` + `.sha256` | Windows x64 | **vorhanden** — 0.6.16, 14.059.039 B, am 09.11.2026 auf dem Windows-Bauhost gebaut, `--version` geprüft (`comesh-agent 0.6.16`), `de1894d604af…` |
 
-Die Größen sind am 04.11.2026 über HTTPS gegen die Dateien hier nachgemessen
+Die Größen sind am 09.11.2026 gegen die Dateien hier nachgemessen
 (SHA-256 der geladenen Datei == `.sha256` daneben == Datei in diesem Ordner).
 
 ### Cloudflare liefert `.exe` aus dem Edge-Cache
