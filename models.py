@@ -282,6 +282,11 @@ class GpuNode(Base):
     # fuehrt.
     reported_models = Column(Text, nullable=True)
     reported_models_at = Column(DateTime, nullable=True)
+    # Welche Agent-Version die Node im Heartbeat meldet. NULL = unbekannt
+    # (alte Agenten melden sie nicht). Damit ist im Portal sichtbar, ob eine
+    # Node mit einem veralteten Agenten laeuft.
+    agent_version = Column(String, nullable=True)
+    agent_version_at = Column(DateTime, nullable=True)
     # Datenschutz am Gerät: Besitzer im Adminbereich als "anonym" zeigen.
     hide_owner = Column(Boolean, default=False, nullable=False)
     # Betriebsart: "always" = Dauerbetrieb, "partial" = nur zeitweise verfügbar.

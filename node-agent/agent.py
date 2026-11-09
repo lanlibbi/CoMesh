@@ -1100,6 +1100,10 @@ async def send_heartbeat(client: httpx.AsyncClient):
         # address. That is how a DHCP node stays dialable without any config.
         "advertise_host": advertised_host(),
         "agent_port": AGENT_PORT,
+        # Selbstauskunft: welche Agent-Version hier laeuft. Das Portal zeigt sie
+        # an der Node an; ohne diese Meldung sieht niemand, ob dort ein alter
+        # Agent arbeitet (alte Agenten melden z. B. ihre Modelle nicht).
+        "agent_version": AGENT_VERSION,
         "raw": info,
     }
     try:

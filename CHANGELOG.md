@@ -1,5 +1,27 @@
 # Changelog
 
+## 0.6.17 — 2026-11-09
+
+**Das Portal zeigt, welcher Agent auf einer Node läuft — und ob er veraltet ist**
+
+Der Anlass war ein Provider, dessen lokale Modelle im Portal nicht erschienen: auf seiner
+Maschine lief noch ein Agent vom 04.11. (0.6.10), und nirgends war zu sehen, welche Version dort
+tatsächlich arbeitet. `/version` nennt nur die Version, die das Portal *ausliefert*.
+
+1. **Der Agent meldet seine Version.** `send_heartbeat` schickt `agent_version` mit; das Portal
+   speichert sie in `gpu_nodes.agent_version` / `agent_version_at` (Migration beim Start,
+   idempotent, beide Spalten NULL-fähig).
+2. **Die Node-Karte zeigt sie.** Bei jeder eigenen Node steht „Agent-Version:"; weicht sie von der
+   Version ab, die dieses Portal ausliefert, erscheint ein „veraltet"-Kennzeichen mit der
+   erwarteten Nummer. Die erwartete Nummer kommt als `agent_version_expected` in der
+   Node-Antwort — `/version` ist am Frontend-Port nicht erreichbar, ein zweiter Aufruf wäre
+   ohnehin unnötig.
+3. **Alte Agenten bleiben sichtbar, nicht still.** Meldet eine Node nichts, steht dort „noch
+   keine Meldung"; ein zuletzt bekannter Wert wird nicht gelöscht.
+4. **Die Anleitung hat einen Abschnitt „Installation verwalten"** (de/en/es/fr): wo die Dateien
+   liegen, wie man aktualisiert und wie man den Agenten wieder entfernt — samt dem Hinweis, dass
+   die Node im Portal stehen bleibt und dort gelöscht gehört.
+
 ## 0.6.16 — 2026-11-06
 
 **Der Abnahmeprüfer findet jetzt die Stellen, die er vorher übersah — und alle

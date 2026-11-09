@@ -121,6 +121,7 @@ async def lifespan(app: FastAPI):
     _ensure_node_privacy_columns()
     _ensure_node_vram_source_column()
     _ensure_node_reported_models()
+    _ensure_node_agent_version()
     await seed_test_user_if_empty()
     await seed_admin_if_configured()
     log.info(f"GPU-Pool POC started. Ollama URL: {OLLAMA_URL}, default model: {DEFAULT_MODEL}")
@@ -467,6 +468,25 @@ def _ensure_node_reported_models():
         if "reported_models_at" not in cols:
             conn.exec_driver_sql("ALTER TABLE gpu_nodes ADD COLUMN reported_models_at DATETIME")
             log.info("Added gpu_nodes.reported_models_at column")
+
+
+def _ensure_node_agent_version():
+    """gpu_nodes.agent_version / agent_version_at (idempotent).
+
+    Der Agent meldet seit 0.6.17 seine eigene Version im Heartbeat. Ohne diese
+    Spalten scheitert jedes SELECT auf gpu_nodes ("no such column");
+    `create_all` legt Tabellen an, aendert sie aber nie. Beide Spalten sind
+    NULL-faehig, eine bestehende Datenbank laeuft unveraendert weiter und alte
+    Nodes gelten als "Version unbekannt".
+    """
+    with engine.begin() as conn:
+        cols = [row[1] for row in conn.exec_driver_sql("PRAGMA table_info(gpu_nodes)").fetchall()]
+        if "agent_version" not in cols:
+            conn.exec_driver_sql("ALTER TABLE gpu_nodes ADD COLUMN agent_version VARCHAR")
+            log.info("Added gpu_nodes.agent_version column")
+        if "agent_version_at" not in cols:
+            conn.exec_driver_sql("ALTER TABLE gpu_nodes ADD COLUMN agent_version_at DATETIME")
+            log.info("Added gpu_nodes.agent_version_at column")
 
 
 def _ensure_payments_table():

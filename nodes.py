@@ -19,6 +19,7 @@ account key is never exposed to the agent process.
 import logging
 import secrets
 from datetime import datetime, timedelta
+from pathlib import Path
 from typing import Any, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Header, Request, status
@@ -131,6 +132,10 @@ class HeartbeatRequest(BaseModel):
     models: Optional[List[str]] = Field(
         None, description="Modelle, die das Backend dieser Node anbietet (Agent-Sicht)."
     )
+    # Agent-Version, die die Node meldet (Selbstauskunft). Damit laesst sich im
+    # Portal anzeigen, ob dort ein veralteter Agent laeuft.
+    agent_version: Optional[str] = Field(None, max_length=32,
+                                         description="Version des Agenten auf dieser Node")
     raw: Optional[dict] = None  # arbitrary agent-side stats
 
 
@@ -160,6 +165,12 @@ class NodeOut(BaseModel):
     # Was die Node selbst als vorhanden gemeldet hat (Agent-Sicht). NULL = unbekannt.
     reported_models: Optional[List[str]] = None
     reported_models_at: Optional[str] = None
+    # Selbstauskunft der Node und die Version, die dieses Portal ausliefert.
+    # Beides zusammen erlaubt der Oberflaeche ein ehrliches "veraltet", ohne
+    # dass sie /version fragen muss (das ist am Frontend-Port nicht erreichbar).
+    agent_version: Optional[str] = None
+    agent_version_at: Optional[str] = None
+    agent_version_expected: str = ""
     hide_owner: bool = False
     availability: str = "always"
     created_at: str
@@ -185,6 +196,14 @@ class NodePublicOut(BaseModel):
     availability: str = "always"
     created_at: str
 
+
+
+def _erwartete_agent_version() -> str:
+    """Agent-Version, die dieses Portal ausliefert (VERSION-Datei im Repo)."""
+    try:
+        return (Path(__file__).with_name("VERSION")).read_text(encoding="utf-8").strip()
+    except OSError:
+        return ""
 
 
 def node_out_fields(node: GpuNode) -> dict:
@@ -226,6 +245,12 @@ def node_out_fields(node: GpuNode) -> dict:
         node.reported_models_at.isoformat()
         if getattr(node, "reported_models_at", None) else None
     ),
+    "agent_version": getattr(node, "agent_version", None),
+    "agent_version_at": (
+        node.agent_version_at.isoformat()
+        if getattr(node, "agent_version_at", None) else None
+    ),
+    "agent_version_expected": _erwartete_agent_version(),
     "created_at": node.created_at.isoformat(),
     }
 
@@ -580,6 +605,14 @@ def heartbeat(
                 sauber.append(name)
         node.set_reported_models(sauber)
         node.reported_models_at = datetime.utcnow()
+
+    # Agent-Version der Node. Ein alter Agent kennt dieses Feld nicht — dann
+    # bleibt der zuletzt bekannte Wert stehen, statt ihn zu loeschen.
+    if req.agent_version is not None:
+        wert = str(req.agent_version).strip()[:32]
+        if wert:
+            node.agent_version = wert
+            node.agent_version_at = datetime.utcnow()
 
     # Persist a history row
     import json

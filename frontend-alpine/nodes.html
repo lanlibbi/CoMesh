@@ -407,6 +407,19 @@
               <div class="t-xs text-mute mt-1">
                 <span class="mono" x-text="n.hourly_rate"></span> <span data-i18n="nodes.last_seen_label">Credits/h · zuletzt gesehen</span> <span x-text="fmtDate(n.last_seen)"></span>
               </div>
+              <!-- Selbstauskunft des Agenten. Weicht sie von der Version ab, die
+                   dieses Portal ausliefert, ist der Agent alt — dann fehlen zum
+                   Beispiel die von der Node gemeldeten Modelle. -->
+              <div class="t-xs text-mute mt-1">
+                <span data-i18n="nodes.agent_version_label">Agent-Version:</span>
+                <span x-show="!n.agent_version" data-i18n="nodes.agent_unknown">noch keine Meldung</span>
+                <span x-show="n.agent_version" class="mono" x-text="n.agent_version"></span>
+                <span x-show="n.agent_version && n.agent_version_expected && n.agent_version !== n.agent_version_expected"
+                      class="pill pill-flat t-xs" style="color:var(--warn)"
+                      data-i18n="nodes.agent_outdated">veraltet</span>
+                <span x-show="n.agent_version && n.agent_version_expected && n.agent_version !== n.agent_version_expected"
+                      class="mono t-xs" x-text="'→ ' + n.agent_version_expected"></span>
+              </div>
               <div class="t-xs mt-1">
                 <template x-if="!n.allowed_models">
                   <span class="text-dim"><span data-i18n="nodes.models_label">Modelle:</span> <span class="text-ok" data-i18n="standard-alle-lokal-keine-cloud">Standard (alle lokal, keine Cloud)</span></span>

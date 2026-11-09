@@ -791,6 +791,24 @@ window.GP_I18N = {
    "es": "Credits/h · visto por última vez",
    "fr": "Credits/h · vu pour la dernière fois"
   },
+  "nodes.agent_version_label": {
+   "en": "Agent version:",
+   "de": "Agent-Version:",
+   "es": "Versión del agente:",
+   "fr": "Version de l'agent :"
+  },
+  "nodes.agent_unknown": {
+   "en": "not reported yet",
+   "de": "noch keine Meldung",
+   "es": "aún sin datos",
+   "fr": "pas encore signalé"
+  },
+  "nodes.agent_outdated": {
+   "en": "outdated",
+   "de": "veraltet",
+   "es": "obsoleto",
+   "fr": "obsolète"
+  },
   "nodes.always": {
    "en": "Continuous",
    "de": "Dauerbetrieb",
