@@ -58,7 +58,7 @@ from models import (
 )
 from payments import router as payments_router
 from setup_wizard import router as setup_router, ensure_setup_token, setup_completed
-from legal import router as legal_router
+from legal import router as legal_router, admin_router as legal_admin_router
 from frontend import router as frontend_router
 from nodes import router as nodes_router
 from pool import router as pool_router, distribute_revenue
@@ -179,6 +179,7 @@ if _cors_origins:
 # Mount sub-routers
 app.include_router(setup_router)  # Erstinstallation: /setup/status, /setup/admin
 app.include_router(legal_router)  # /legal/impressum, /legal/datenschutz, /legal/agb
+app.include_router(legal_admin_router)  # /admin/legal — Angaben des Betreibers
 app.include_router(payments_router)
 app.include_router(frontend_router)
 app.include_router(nodes_router)
@@ -1593,6 +1594,15 @@ def auth_logout(user: User = Depends(get_current_user), db: Session = Depends(ge
 # Seed: test user on startup
 # ----------------------------------------------------------------------------
 async def seed_test_user_if_empty():
+    """Legt auf einer leeren Datenbank ein Testkonto an — NUR wenn ausdrücklich erlaubt.
+
+    Das Konto hat ein bekanntes Passwort (test@example.com / password123). Auf einer
+    frischen, öffentlich erreichbaren Instanz wäre das eine offene Tür, deshalb ist
+    der Seed standardmäßig aus und muss mit SEED_TEST_USER=1 eingeschaltet werden
+    (Tests und lokale Entwicklung).
+    """
+    if (os.environ.get("SEED_TEST_USER") or "0").strip().lower() not in ("1", "true", "yes", "on"):
+        return
     db = SessionLocal()
     try:
         if db.query(User).count() == 0:

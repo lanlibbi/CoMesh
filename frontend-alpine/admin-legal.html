@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title data-i18n="title.admin_legal">Rechtstexte · CoMesh</title>
+<meta name="color-scheme" content="dark light" />
+<meta name="robots" content="noindex" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<script>
+(function () {
+  try {
+    var stored = localStorage.getItem("gp_theme");
+    var theme = (stored === "light" || stored === "dark") ? stored
+      : (window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
+    document.documentElement.setAttribute("data-theme", theme);
+  } catch (e) {
+    document.documentElement.setAttribute("data-theme", "dark");
+  }
+})();
+</script>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body x-data="legalAdminPage()" x-init="init()">
+  <div x-html="navHTML('admin-legal', $store.lang?.code)"></div>
+
+  <main class="shell">
+    <div class="page-head">
+      <h1 data-i18n="legal_admin.title">Rechtstexte dieser Instanz</h1>
+      <p class="t-sm text-dim" data-i18n="legal_admin.intro">Diese Angaben erscheinen im Impressum, in der Datenschutzerklärung und in den Nutzungsbedingungen. Sie gelten nur für diese Instanz — jeder Betreiber trägt seine eigenen ein.</p>
+    </div>
+
+    <div class="card" x-show="!allowed && !loading">
+      <div class="semibold" data-i18n="admin-rolle-erforderlich">Admin-Rolle erforderlich</div>
+      <p class="t-sm text-dim mt-2" data-i18n="legal_admin.not_admin">Nur Konten mit der Rolle „admin“ dürfen die Rechtstexte ändern.</p>
+    </div>
+
+    <div x-show="allowed">
+      <div class="card" x-show="fehlend.length > 0" style="border-color:var(--warn)">
+        <div class="eyebrow" data-i18n="legal_admin.open_title">Noch offen</div>
+        <p class="hint" data-i18n="legal_admin.open_hint">Solange Pflichtangaben fehlen, zeigen die Seiten einen Hinweis und werden nicht von Suchmaschinen erfasst.</p>
+        <p class="t-sm mono" x-text="fehlend.join(', ')"></p>
+      </div>
+      <div class="card" x-show="fehlend.length === 0" style="border-color:var(--ok)">
+        <div class="eyebrow" data-i18n="legal_admin.done_title">Vollständig</div>
+        <p class="hint" data-i18n="legal_admin.done_hint">Alle Pflichtangaben sind eingetragen. Prüfe die Seiten einmal selbst:</p>
+        <p class="t-sm">
+          <a class="link" href="/impressum" target="_blank" rel="noopener">/impressum</a> ·
+          <a class="link" href="/datenschutz" target="_blank" rel="noopener">/datenschutz</a> ·
+          <a class="link" href="/agb" target="_blank" rel="noopener">/agb</a>
+        </p>
+      </div>
+
+      <form class="card stack tight mt-3" @submit.prevent="save()">
+        <div class="eyebrow" data-i18n="legal_admin.form_title">Angaben des Betreibers</div>
+
+        <div class="field">
+          <label class="label" for="IMPRESSUM_FIRMA" data-i18n="legal_admin.firma">Firma oder Name</label>
+          <input class="input" id="IMPRESSUM_FIRMA" type="text" x-model="werte.IMPRESSUM_FIRMA.wert" autocomplete="organization" />
+        </div>
+        <div class="field">
+          <label class="label" for="IMPRESSUM_STRASSE" data-i18n="legal_admin.strasse">Straße und Hausnummer</label>
+          <input class="input" id="IMPRESSUM_STRASSE" type="text" x-model="werte.IMPRESSUM_STRASSE.wert" autocomplete="street-address" />
+        </div>
+        <div class="field">
+          <label class="label" for="IMPRESSUM_PLZ_ORT" data-i18n="legal_admin.plz_ort">Postleitzahl und Ort</label>
+          <input class="input" id="IMPRESSUM_PLZ_ORT" type="text" x-model="werte.IMPRESSUM_PLZ_ORT.wert" autocomplete="postal-code" />
+        </div>
+        <div class="field">
+          <label class="label" for="IMPRESSUM_LAND" data-i18n="legal_admin.land">Land</label>
+          <input class="input" id="IMPRESSUM_LAND" type="text" x-model="werte.IMPRESSUM_LAND.wert" />
+        </div>
+        <div class="field">
+          <label class="label" for="IMPRESSUM_EMAIL" data-i18n="e-mail">E-Mail</label>
+          <input class="input" id="IMPRESSUM_EMAIL" type="email" x-model="werte.IMPRESSUM_EMAIL.wert" autocomplete="email" />
+        </div>
+        <div class="field">
+          <label class="label" for="IMPRESSUM_TELEFON" data-i18n="legal_admin.telefon">Telefon</label>
+          <input class="input" id="IMPRESSUM_TELEFON" type="text" x-model="werte.IMPRESSUM_TELEFON.wert" autocomplete="tel" />
+        </div>
+        <div class="field">
+          <label class="label" for="IMPRESSUM_VERTRETEN" data-i18n="legal_admin.vertreten">Vertreten durch</label>
+          <input class="input" id="IMPRESSUM_VERTRETEN" type="text" x-model="werte.IMPRESSUM_VERTRETEN.wert" />
+        </div>
+        <div class="field">
+          <label class="label" for="IMPRESSUM_REGISTER" data-i18n="legal_admin.register">Registereintrag</label>
+          <input class="input" id="IMPRESSUM_REGISTER" type="text" x-model="werte.IMPRESSUM_REGISTER.wert" />
+        </div>
+        <div class="field">
+          <label class="label" for="IMPRESSUM_USTID" data-i18n="legal_admin.ustid">Umsatzsteuer-Identifikationsnummer</label>
+          <input class="input" id="IMPRESSUM_USTID" type="text" x-model="werte.IMPRESSUM_USTID.wert" />
+        </div>
+        <div class="field">
+          <label class="label" for="DATENSCHUTZ_EMAIL" data-i18n="legal_admin.ds_email">E-Mail für Datenschutzanfragen</label>
+          <input class="input" id="DATENSCHUTZ_EMAIL" type="email" x-model="werte.DATENSCHUTZ_EMAIL.wert" />
+        </div>
+        <div class="field">
+          <label class="label" for="HOSTING_ANBIETER" data-i18n="legal_admin.hosting">Hosting-Anbieter</label>
+          <input class="input" id="HOSTING_ANBIETER" type="text" x-model="werte.HOSTING_ANBIETER.wert" />
+          <p class="hint" data-i18n="legal_admin.hosting_hint">Erscheint in der Datenschutzerklärung unter „Betrieb und Auftragsverarbeitung“.</p>
+        </div>
+
+        <p class="hint" x-show="ausUmgebung.length > 0"
+           data-i18n="legal_admin.env_hint">Einige Werte stammen aus der Umgebung dieser Instanz. Ein Eintrag hier hat Vorrang.</p>
+
+        <div class="row gap-2 mt-2">
+          <button type="submit" class="btn-primary" :disabled="busy">
+            <span x-show="!busy" data-i18n="speichern">Speichern</span>
+            <span x-show="busy" data-i18n="legal_admin.saving">Wird gespeichert…</span>
+          </button>
+          <a class="btn" href="/impressum" target="_blank" rel="noopener" data-i18n="legal_admin.open_imprint">Impressum ansehen</a>
+        </div>
+        <div x-show="msg" class="t-sm" :class="error ? 'text-err' : 'text-ok'" x-text="msg"></div>
+      </form>
+
+      <p class="t-xs text-mute mt-3" x-text="I18n.t('legal_admin.upstream_hint')"></p>
+    </div>
+  </main>
+
+  <script src="config.js"></script>
+  <script src="i18n-catalog.js"></script>
+  <script src="i18n.js"></script>
+  <script src="app.js"></script>
+  <script src="admin-legal.js"></script>
+</body>
+</html>

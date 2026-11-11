@@ -180,6 +180,7 @@ const NAV_ITEMS = [
   { key: "admin-registrations", href: "admin-registrations.html", labelKey: "nav.admin.accounts", adminOnly: true },
   { key: "admin-audit", href: "admin-audit.html", labelKey: "nav.admin.audit", adminOnly: true },
   { key: "admin-nodes", href: "admin-nodes.html", labelKey: "nav.admin.nodes", adminOnly: true },
+  { key: "admin-legal", href: "admin-legal.html", labelKey: "nav.admin.legal", adminOnly: true },
   { key: "pool", href: "pool.html", labelKey: "nav.pool" },
   { key: "agent", href: "agent.html", labelKey: "nav.agent" },
   { key: "profile", href: "profile.html", labelKey: "nav.profile" },

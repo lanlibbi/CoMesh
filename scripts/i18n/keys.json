@@ -2284,5 +2284,12 @@
   "pages": [
    "nodes.html"
   ]
+ },
+ "nav.admin.legal": {
+  "src": "Rechtstexte",
+  "where": "code",
+  "pages": [
+   "app.js"
+  ]
  }
 }

@@ -131,6 +131,28 @@ More detail: [ARCHITECTURE.md](ARCHITECTURE.md),
 - **No model catalogue sync.** What a node may offer is its list in the portal, not
   what happens to be installed locally.
 
+## Running it publicly: your legal duties
+
+The repository is software. The **operator of an instance** is responsible for that instance:
+whoever puts CoMesh on the internet under their own domain is the imprint and privacy-contact
+party — not the authors of the software (that is the same rule as for Mastodon, Ghost or
+Nextcloud installations).
+
+Before you make an instance publicly reachable:
+
+1. Fill in the operator details in the admin console (**Administration → Legal**, `/admin/legal`)
+   or via `IMPRESSUM_*`, `DATENSCHUTZ_EMAIL` and `HOSTING_ANBIETER` in `.env`. Until then
+   `/impressum` and `/datenschutz` show a red notice and are marked `noindex` — deliberately, so
+   no incomplete imprint looks like a complete one.
+2. Check what your jurisdiction requires: in Germany an imprint (§ 5 DDG) and a privacy policy
+   (Art. 13 GDPR) are standard for a public service that stores accounts.
+3. Decide about registration: `REGISTRATION_OPEN=0` closes self-registration (approval by an
+   admin remains possible).
+4. Keep backups running — `scripts/backup-db.sh` and the timer in `deploy/`.
+
+The legal texts are deliberately **not** shipped with fixed content: they would otherwise be
+delivered to every cloned instance and claim the wrong operator.
+
 ## License and status
 
 Version **0.6.17**; changes are listed in [CHANGELOG.md](CHANGELOG.md). What still
@@ -303,3 +325,25 @@ kommerziell einsetzen will, sollte vorher fragen.
 - [docs/windows.md](docs/windows.md) · [docs/macos.md](docs/macos.md) — Provider unter Windows und macOS
 - [docs/agent-api.md](docs/agent-api.md) — Vollzugangskonto für Automatisierung
 - [docs/portal.md](docs/portal.md) — Portal-Setup und Konfiguration
+
+## Öffentlich betreiben: deine Pflichten
+
+Das Repository ist Software. Für eine **Instanz** ist verantwortlich, wer sie betreibt: wer CoMesh
+unter eigener Domain ins Internet stellt, ist Impressums- und Datenschutz-Ansprechpartner — nicht
+die Autoren der Software (dieselbe Regel wie bei Mastodon-, Ghost- oder Nextcloud-Installationen).
+
+Vor dem öffentlichen Betrieb:
+
+1. Betreiberangaben in der Admin-Konsole eintragen (**Verwaltung → Rechtstexte**, `/admin/legal`)
+   oder über `IMPRESSUM_*`, `DATENSCHUTZ_EMAIL` und `HOSTING_ANBIETER` in der `.env`. Bis dahin
+   zeigen `/impressum` und `/datenschutz` einen roten Hinweis und sind auf `noindex` — absichtlich,
+   damit kein unvollständiges Impressum wie ein vollständiges aussieht.
+2. Prüfen, was die eigene Jurisdiktion verlangt: in Deutschland sind Impressum (§ 5 DDG) und
+   Datenschutzerklärung (Art. 13 DSGVO) für einen Dienst mit Konten Standard.
+3. Über die Registrierung entscheiden: `REGISTRATION_OPEN=0` schließt die Selbstregistrierung
+   (Freigabe durch einen Admin bleibt möglich).
+4. Sicherungen laufen lassen — `scripts/backup-db.sh` und der Timer in `deploy/`.
+
+Die Rechtstexte werden bewusst **ohne** feste Inhalte ausgeliefert: sonst würden sie an jede
+geklonte Instanz mitgeliefert und würden den falschen Betreiber behaupten.
+

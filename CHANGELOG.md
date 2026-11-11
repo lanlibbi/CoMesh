@@ -1,5 +1,29 @@
 # Changelog
 
+## 0.6.20 — 2026-11-11
+
+**Rechtstexte trägt der Betreiber in der Konsole ein**
+
+Die Texte sind Betreibersache, nicht Projektsache: wer eine Instanz öffentlich stellt, ist
+Impressums- und Datenschutz-Ansprechpartner. Bisher ging das nur über `.env`-Variablen — jetzt
+über ein Formular.
+
+1. **Verwaltung → Rechtstexte** (`/admin/legal`): elf Felder, Pflichtangaben markiert, Speichern
+   ohne Neustart. Die Werte liegen in `system_settings` (`legal.*`) und haben Vorrang vor der
+   Umgebung; ein geleertes Feld löscht den Eintrag, dann gilt wieder `.env`.
+2. **Die Seiten lesen beides** — Datenbank zuerst, dann Umgebung. `/impressum`, `/datenschutz`
+   und `/agb` aktualisieren sich sofort nach dem Speichern.
+3. **Ehrlicher Fallback bleibt:** fehlt eine Pflichtangabe, zeigt die Seite einen roten Hinweis
+   mit der Liste der fehlenden Felder, nennt das Upstream-Projekt als Software-Quelle und geht
+   auf `noindex`.
+4. **README-Abschnitt „Öffentlich betreiben: deine Pflichten"** in Englisch und Deutsch, damit
+   beim Klonen klar ist, wer die Texte füllen muss.
+
+**Nebenfund, gleich mitbehoben:** `seed_test_user_if_empty()` legte auf einer leeren Datenbank
+ein Konto `test@example.com` mit dem Passwort `password123` an — auf einer frischen, öffentlich
+erreichbaren Instanz eine offene Tür. Der Seed läuft jetzt nur noch mit `SEED_TEST_USER=1`
+(Tests, lokale Entwicklung).
+
 ## 0.6.19 — 2026-11-11
 
 **Produktionsliste P0 abgearbeitet: Sicherung, Rechtstexte, Köpfe, Healthchecks, Logs**

@@ -16,7 +16,7 @@ name: comesh
 services:
   api:
     build: .
-    image: comesh-api:0.6.19
+    image: comesh-api:0.6.20
     container_name: comesh-api
     restart: unless-stopped
     logging:
@@ -67,6 +67,9 @@ services:
       - ADMIN_API_KEY=${ADMIN_API_KEY:-}
       # Selbstregistrierung: 0 = geschlossen (nur Einladung/Freigabe durch Admin).
       - REGISTRATION_OPEN=${REGISTRATION_OPEN:-1}
+      # Testkonto mit bekanntem Passwort (test@example.com) — nur für lokale
+      # Entwicklung und Tests. Auf einer öffentlichen Instanz aus lassen.
+      - SEED_TEST_USER=${SEED_TEST_USER:-0}
       # CORS: leer = kein CORS (Oberfläche läuft auf derselben Origin).
       - CORS_ORIGINS=${CORS_ORIGINS:-}
       # Rechtstexte (/impressum, /datenschutz, /agb) — fehlende Angaben werden auf
@@ -99,7 +102,7 @@ services:
 
   frontend:
     build: ./frontend-alpine
-    image: comesh-frontend:0.6.19
+    image: comesh-frontend:0.6.20
     container_name: comesh-frontend
     restart: unless-stopped
     logging:
@@ -141,7 +144,7 @@ services:
     build:
       context: .
       dockerfile: node-agent/Dockerfile
-    image: comesh-agent:0.6.19
+    image: comesh-agent:0.6.20
     container_name: comesh-agent
     restart: unless-stopped
     logging:
