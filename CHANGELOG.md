@@ -1,5 +1,26 @@
 # Changelog
 
+## 0.6.18 — 2026-11-11
+
+**Erstinstallation im Browser: Administrator anlegen, dann ist die Tür zu**
+
+Bisher entstand der erste Administrator beim Start des Containers — mit einem
+Passwort, das in `$DATA_DIR/admin_password.txt` stand. Auf einem frischen Rechner liegt dieses
+Verzeichnis in einem Docker-Volume, das man unter Windows nicht sieht; wer es nicht findet, steht
+vor einer Anmeldeseite ohne Konto.
+
+1. **`setup.html`** erscheint bei einer frischen Instanz und leitet dorthin um, solange kein
+   Konto mit der Rolle `admin` existiert. Anmeldung, Name, E-Mail, Passwort — wie bei WordPress,
+   nur mit einer Prüfung davor.
+2. **Das Setup-Token steht im Log** (`docker compose logs api`, Datei `$DATA_DIR/setup_token.txt`).
+   Ohne Token legt sich niemand Administratorrechte an — eine frische Instanz im Internet ist
+   damit nicht für den ersten Fremden übernehmbar. Wer ohne das Web-Formular einrichten will,
+   setzt weiterhin `ADMIN_API_KEY`/`ADMIN_EMAIL`; dann meldet `/setup/status` kein offenes Setup.
+3. **Nach dem Abschluss ist der Endpunkt dauerhaft zu** (`410 Gone`), Token und die generierten
+   Notfall-Dateien sind gelöscht. Der Bootstrap fasst das Konto nicht mehr an — sonst hätte der
+   nächste Neustart das eben gewählte Passwort überschrieben.
+4. **Die Seite gibt es in vier Sprachen**, Katalog jetzt 795 Schlüssel.
+
 ## 0.6.17 — 2026-11-09
 
 **Das Portal zeigt, welcher Agent auf einer Node läuft — und ob er veraltet ist**

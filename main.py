@@ -57,6 +57,7 @@ from models import (
     _is_cloud_model_name,
 )
 from payments import router as payments_router
+from setup_wizard import router as setup_router, ensure_setup_token, setup_completed
 from frontend import router as frontend_router
 from nodes import router as nodes_router
 from pool import router as pool_router, distribute_revenue
@@ -122,6 +123,9 @@ async def lifespan(app: FastAPI):
     _ensure_node_vram_source_column()
     _ensure_node_reported_models()
     _ensure_node_agent_version()
+    # Solange kein Administrator existiert: Setup-Token erzeugen und ins Log
+    # schreiben (Datei $DATA_DIR/setup_token.txt). Danach wird sie gelöscht.
+    ensure_setup_token()
     await seed_test_user_if_empty()
     await seed_admin_if_configured()
     log.info(f"GPU-Pool POC started. Ollama URL: {OLLAMA_URL}, default model: {DEFAULT_MODEL}")
@@ -149,6 +153,7 @@ app.add_middleware(
 )
 
 # Mount sub-routers
+app.include_router(setup_router)  # Erstinstallation: /setup/status, /setup/admin
 app.include_router(payments_router)
 app.include_router(frontend_router)
 app.include_router(nodes_router)
@@ -1668,13 +1673,25 @@ async def seed_admin_if_configured():
          (see _load_or_create_admin_key), so a fresh install has a working admin
          console without anyone hand-crafting a secret.
     """
+
+    # Ist die Ersteinrichtung im Browser abgeschlossen, gehört das Konto dem
+    # Betreiber: der Bootstrap darf das Passwort dann nicht mehr aus einer
+    # Datei überschreiben. Ohne diesen Riegel wäre das im Wizard gewählte
+    # Passwort beim nächsten Neustart weg.
+    if setup_completed():
+        log.info("Admin bootstrap: setup completed in the browser — admin account left untouched.")
+        return
+
     admin_key = (os.environ.get("ADMIN_API_KEY") or "").strip()
     promote_email = (os.environ.get("PROMOTE_ADMIN_EMAIL") or "").strip().lower()
     if not admin_key and not promote_email:
-        admin_key = _load_or_create_admin_key()
-        if not admin_key:
-            log.info("Admin bootstrap: no key available - /admin/* stays unreachable.")
-            return
+        # Ohne ausdrueckliches ADMIN_API_KEY gehoert der erste Administrator dem
+        # Setup im Browser (setup.html): dort waehlt der Betreiber Adresse und
+        # Passwort selbst. Frueher wurde hier ein Konto samt Passwortdatei
+        # angelegt - damit war das Setup sofort geschlossen, und das Passwort lag
+        # in einem Volume, das unter Windows niemand findet.
+        log.info("Admin bootstrap: no ADMIN_API_KEY set - the first admin is created in the setup wizard.")
+        return
 
     email = (os.environ.get("ADMIN_EMAIL") or "admin@gpu-pool.local").strip().lower()
     name = (os.environ.get("ADMIN_NAME") or "Platform Admin").strip()

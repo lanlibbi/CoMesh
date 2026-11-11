@@ -211,3 +211,46 @@ docker compose restart portal
 - Hat der andere Node `enabled: true`?
 - Letzter Heartbeat: `/nodes/{id}` → `last_seen`
 - Preis/Auslastung checken: `/pool/`
+
+## Ersteinrichtung: der erste Administrator
+
+Eine frische Installation hat noch kein Konto. Bis eines mit der Rolle `admin`
+existiert, leitet die Anmeldeseite auf **`setup.html`** um — dort werden Name,
+E-Mail und Passwort des Administrators festgelegt. Der Schritt ist einmalig:
+danach antwortet `POST /setup/admin` mit `410 Gone` und die Seite ist zu.
+
+**Das Setup-Token** steht beim Start im Log und in `$DATA_DIR/setup_token.txt`
+(Modus 600, also nur für root lesbar — im Container nachsehen, nicht auf dem Host):
+
+```bash
+docker compose logs api | grep -i "Setup-Token"
+docker compose exec api cat /data/setup_token.txt
+```
+
+Ohne dieses Token legt sich niemand Administratorrechte an. Das ist der Grund,
+warum eine frische Instanz auch dann nicht übernommen werden kann, wenn sie
+versehentlich schon im Internet hängt.
+
+Wer ohne Browser einrichten will, setzt vor dem ersten Start `ADMIN_API_KEY`
+(und optional `ADMIN_EMAIL`, `ADMIN_NAME`). Dann entfällt der Wizard; das Portal
+gilt als eingerichtet, sobald ein Admin-Konto existiert. Das Passwort für die
+Anmeldung im Portal steht in diesem Fall in `$DATA_DIR/admin_password.txt`.
+
+### Das Datenverzeichnis liegt nicht im Projektordner
+
+`docker-compose.yml` nutzt ein **named volume** (`comesh_sqlite_data`,
+`external: true`). Es liegt im Docker-Speicher, nicht als `./data` neben dem
+Quelltext — unter Docker Desktop (Windows/macOS) also in der WSL2-VM und
+nirgends im Explorer sichtbar. Deshalb:
+
+```bash
+docker volume create comesh_sqlite_data     # einmalig, VOR dem ersten "up"
+docker compose exec api ls -la /data        # Datenbank, Token, Notfall-Dateien
+docker cp comesh-api:/data/gpu_pool.db .    # heraus kopieren, statt zu suchen
+```
+
+Ohne das Anlegen bricht `docker compose up` mit
+`external volume "comesh_sqlite_data" not found` ab. Ein Bind-Mount
+(`./data:/data`) wäre sichtbar, ist für SQLite unter Windows aber die falsche
+Wahl: der Zugriff läuft über die WSL2-Brücke, das Datei-Locking ist dort nicht
+verlässlich.

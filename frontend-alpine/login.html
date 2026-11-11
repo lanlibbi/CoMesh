@@ -152,6 +152,16 @@ function loginForm() {
 </script>
 <script src="brand-mesh.js"></script>
 <script>
+/* Frisch aufgesetzt und noch kein Administrator? Dann ist die Anmeldung
+   sinnlos — der Endpunkt verrät nur einen Boolean, kein Konto. */
+(function () {
+  fetch((window.API_BASE || "") + "/setup/status", { cache: "no-store" })
+    .then(function (r) { return r.ok ? r.json() : null; })
+    .then(function (d) { if (d && d.required === true) window.location.replace("setup.html"); })
+    .catch(function () { /* im Zweifel auf der Anmeldung bleiben */ });
+})();
+</script>
+<script>
 /* Nach dem Aufbau neu vermessen: brand-mesh merkt sich beim ersten Start, dass es
    bereit ist, und zeichnet bei reduzierter Bewegung nur ein Standbild — dann bleibt
    der Puffer auf seiner Vorgabegröße. Ein zweiter Start nach `load` korrigiert das. */

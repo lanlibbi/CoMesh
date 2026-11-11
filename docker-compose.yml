@@ -16,7 +16,7 @@ name: comesh
 services:
   api:
     build: .
-    image: comesh-api:0.6.17
+    image: comesh-api:0.6.18
     container_name: comesh-api
     restart: unless-stopped
     # Nur Loopback per Default: die API ist im Compose-Netz unter
@@ -69,7 +69,7 @@ services:
 
   frontend:
     build: ./frontend-alpine
-    image: comesh-frontend:0.6.17
+    image: comesh-frontend:0.6.18
     container_name: comesh-frontend
     restart: unless-stopped
     # Nur Loopback per Default. Fuer den Zugang von aussen (Cloudflare-Tunnel,
@@ -100,7 +100,7 @@ services:
     build:
       context: .
       dockerfile: node-agent/Dockerfile
-    image: comesh-agent:0.6.17
+    image: comesh-agent:0.6.18
     container_name: comesh-agent
     restart: unless-stopped
     depends_on:

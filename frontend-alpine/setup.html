@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title data-i18n="title.setup">Einrichtung · CoMesh</title>
+<meta name="color-scheme" content="dark light" />
+<meta name="robots" content="noindex, nofollow" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<script>
+/* Theme vor dem Stylesheet setzen — identisch zu login.html, damit der erste
+   Aufbau schon die richtige Palette hat. */
+(function () {
+  try {
+    var stored = localStorage.getItem("gp_theme");
+    var theme = (stored === "light" || stored === "dark") ? stored
+      : (window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
+    document.documentElement.setAttribute("data-theme", theme);
+  } catch (e) {
+    document.documentElement.setAttribute("data-theme", "dark");
+  }
+})();
+</script>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<canvas id="brand-mesh" class="auth-mesh" data-mesh-scale="2.6" aria-hidden="true"></canvas>
+
+<main class="auth-wrap">
+
+  <section class="auth-aside">
+    <a href="index.html" class="brand">
+      <span class="brand-mark" aria-hidden="true">
+        <svg class="brand-glyph" width="26" height="26" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 2.7 20.1 7.35v9.3L12 21.3 3.9 16.65v-9.3z"/>
+        <path d="M12 7.6 16.2 15.1H7.8z" stroke-opacity="0.5"/>
+        <circle cx="12" cy="7.6" r="1.55" fill="currentColor" stroke="none"/>
+        <circle cx="16.2" cy="15.1" r="1.55" fill="currentColor" stroke="none"/>
+        <circle cx="7.8" cy="15.1" r="1.55" fill="currentColor" stroke="none"/>
+        <circle cx="12" cy="12.1" r="0.9" fill="currentColor" stroke="none" fill-opacity="0.55"/>
+      </svg>
+      </span>
+      <span class="brand-text">
+        <strong>CoMesh</strong>
+        <span data-i18n="brand.tagline">Your compute, meshed.</span>
+      </span>
+    </a>
+
+    <h1 data-i18n="setup.aside_headline">Diese Instanz ist noch nicht eingerichtet.</h1>
+    <p data-i18n="setup.aside_text">
+      Lege jetzt das Administratorkonto an — das ist der einzige Schritt vor der ersten Anmeldung.
+    </p>
+
+    <ul class="auth-points">
+      <li><span class="idx">01</span><span data-i18n="setup.point.token">Das Setup-Token steht in der Startausgabe des Containers. Ohne dieses Token legt sich niemand Administratorrechte an, auch nicht der erste Fremde, der die Adresse findet.</span></li>
+      <li><span class="idx">02</span><span data-i18n="setup.point.password">Mit diesem Konto meldest du dich im Portal an. Das Passwort lässt sich später in der Verwaltung ändern.</span></li>
+      <li><span class="idx">03</span><span data-i18n="setup.point.closed">Nach dem Anlegen ist diese Seite dauerhaft geschlossen. Sie erscheint erst wieder, wenn die Instanz neu aufgesetzt wird.</span></li>
+    </ul>
+  </section>
+
+  <section class="card auth-card" x-data="setupForm()">
+    <div class="eyebrow" data-i18n="setup.eyebrow">Ersteinrichtung</div>
+    <h2 data-i18n="setup.heading">Administrator anlegen</h2>
+    <p class="t-sm text-dim mt-2" data-i18n="setup.intro">Dieser Schritt ist nur einmal nötig. Danach ist diese Seite dauerhaft geschlossen.</p>
+
+    <form @submit.prevent="submit()" class="stack tight mt-4">
+      <div class="field">
+        <label class="label" for="token" data-i18n="setup.token_label">Setup-Token</label>
+        <input class="input mono" id="token" type="text" x-model="token" required
+               autocomplete="off" spellcheck="false" placeholder="…" />
+        <p class="hint" data-i18n="setup.token_hint">Aus der Startausgabe: docker compose logs api</p>
+      </div>
+      <div class="field">
+        <label class="label" for="name" data-i18n="setup.name_label">Name</label>
+        <input class="input" id="name" type="text" x-model="name" required
+               autocomplete="name" placeholder="Administrator" />
+      </div>
+      <div class="field">
+        <label class="label" for="email" data-i18n="e-mail">E-Mail</label>
+        <input class="input" id="email" type="email" x-model="email" required
+               autocomplete="email" placeholder="name@beispiel.de" data-i18n-placeholder="name-beispiel-de" />
+      </div>
+      <div class="field">
+        <label class="label" for="password" data-i18n="passwort">Passwort</label>
+        <input class="input" id="password" type="password" x-model="password" required
+               autocomplete="new-password" placeholder="••••••••" />
+        <p class="hint" data-i18n="setup.password_hint">Mindestens 10 Zeichen.</p>
+      </div>
+      <div class="field">
+        <label class="label" for="password2" data-i18n="setup.password2_label">Passwort wiederholen</label>
+        <input class="input" id="password2" type="password" x-model="password2" required
+               autocomplete="new-password" placeholder="••••••••" />
+      </div>
+
+      <div x-show="error" class="t-sm text-err" x-text="error"></div>
+      <div x-show="done" class="t-sm text-ok" x-text="done"></div>
+
+      <button type="submit" class="btn-primary btn-block mt-1" :disabled="loading">
+        <span x-show="!loading" data-i18n="setup.submit">Administrator anlegen</span>
+        <span x-show="loading" data-i18n="setup.submitting">Wird angelegt…</span>
+      </button>
+    </form>
+
+    <p class="auth-alt" data-i18n-html="setup.alt_login">Schon eingerichtet? <a href="login.html" class="link">Zur Anmeldung</a></p>
+  </section>
+</main>
+
+<footer class="auth-foot">
+  <span>CoMesh</span>
+  <span class="dot" aria-hidden="true">·</span>
+  <span data-i18n="login.foot.openai">OpenAI-kompatible API</span>
+</footer>
+
+<script src="config.js"></script>
+<script src="i18n-catalog.js"></script>
+<script src="i18n.js"></script>
+<script src="app.js"></script>
+<script>
+function setupForm() {
+  return {
+    token: "",
+    name: "",
+    email: "",
+    password: "",
+    password2: "",
+    loading: false,
+    error: "",
+    done: "",
+    async submit() {
+      this.error = "";
+      this.done = "";
+      if (this.password.length < 10) { this.error = I18n.t("setup.err_short"); return; }
+      if (this.password !== this.password2) { this.error = I18n.t("setup.err_mismatch"); return; }
+      this.loading = true;
+      try {
+        await API("/setup/admin", {
+          method: "POST",
+          body: { token: this.token.trim(), name: this.name, email: this.email, password: this.password }
+        });
+        this.done = I18n.t("setup.ok");
+        setTimeout(function () { window.location.href = "login.html"; }, 1400);
+      } catch (e) {
+        var m = (e && e.message) || "";
+        if (/setup token/i.test(m)) this.error = I18n.t("setup.err_token");
+        else if (/already completed/i.test(m)) this.error = I18n.t("setup.err_closed");
+        else this.error = m || I18n.t("setup.err_generic");
+      } finally {
+        this.loading = false;
+      }
+    }
+  };
+}
+</script>
+<script src="brand-mesh.js"></script>
+<script>
+/* Wie auf der Anmeldeseite: brand-mesh nach `load` neu vermessen. */
+window.addEventListener("load", function () {
+  var cv = document.getElementById("brand-mesh");
+  if (!cv || !window.mountBrandMesh) return;
+  cv.dataset.bereit = "";
+  window.mountBrandMesh();
+});
+</script>
+<script>
+/* Ist die Einrichtung schon erledigt, hat diese Seite hier nichts zu suchen.
+   Der Endpunkt antwortet nur mit einem Boolean; im Zweifel (kein Netz) bleibt
+   die Seite stehen, damit man sie nicht durch einen Fehler verliert. */
+(function () {
+  fetch((window.API_BASE || "") + "/setup/status", { cache: "no-store" })
+    .then(function (r) { return r.ok ? r.json() : null; })
+    .then(function (d) { if (d && d.required === false) window.location.replace("login.html"); })
+    .catch(function () { /* im Zweifel bleiben */ });
+})();
+</script>
+
+</body>
+</html>
