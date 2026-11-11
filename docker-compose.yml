@@ -16,9 +16,22 @@ name: comesh
 services:
   api:
     build: .
-    image: comesh-api:0.6.18
+    image: comesh-api:0.6.19
     container_name: comesh-api
     restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "5"
+    # Ohne Healthcheck startet 'restart: unless-stopped' auch einen Container, der
+    # läuft, aber nicht arbeitet — endlos und ohne Meldung.
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://127.0.0.1:8000/health',timeout=3)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 40s
     # Nur Loopback per Default: die API ist im Compose-Netz unter
     # http://api:8000 erreichbar (nginx im Frontend, Node-Agent), dafuer ist
     # keine Veroeffentlichung noetig. Wer Clients von anderen Rechnern direkt
@@ -52,6 +65,23 @@ services:
       - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET:-}
       # Admin bootstrap for /admin/* (see docs/api.md -> Admin).
       - ADMIN_API_KEY=${ADMIN_API_KEY:-}
+      # Selbstregistrierung: 0 = geschlossen (nur Einladung/Freigabe durch Admin).
+      - REGISTRATION_OPEN=${REGISTRATION_OPEN:-1}
+      # CORS: leer = kein CORS (Oberfläche läuft auf derselben Origin).
+      - CORS_ORIGINS=${CORS_ORIGINS:-}
+      # Rechtstexte (/impressum, /datenschutz, /agb) — fehlende Angaben werden auf
+      # der Seite rot angezeigt, statt still ein unvollständiges Impressum zu liefern.
+      - IMPRESSUM_FIRMA=${IMPRESSUM_FIRMA:-}
+      - IMPRESSUM_STRASSE=${IMPRESSUM_STRASSE:-}
+      - IMPRESSUM_PLZ_ORT=${IMPRESSUM_PLZ_ORT:-}
+      - IMPRESSUM_LAND=${IMPRESSUM_LAND:-Deutschland}
+      - IMPRESSUM_EMAIL=${IMPRESSUM_EMAIL:-}
+      - IMPRESSUM_TELEFON=${IMPRESSUM_TELEFON:-}
+      - IMPRESSUM_VERTRETEN=${IMPRESSUM_VERTRETEN:-}
+      - IMPRESSUM_REGISTER=${IMPRESSUM_REGISTER:-}
+      - IMPRESSUM_USTID=${IMPRESSUM_USTID:-}
+      - DATENSCHUTZ_EMAIL=${DATENSCHUTZ_EMAIL:-}
+      - HOSTING_ANBIETER=${HOSTING_ANBIETER:-}
       # Gemeinsames Geheimnis mit dem Node-Agenten (X-Node-Secret). Aus der
       # .env, nie aus dem Repo. Leer = Agenten ohne Sperre bleiben erreichbar.
       - NODE_SHARED_SECRET=${NODE_SHARED_SECRET:-}
@@ -69,9 +99,20 @@ services:
 
   frontend:
     build: ./frontend-alpine
-    image: comesh-frontend:0.6.18
+    image: comesh-frontend:0.6.19
     container_name: comesh-frontend
     restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "5"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1/index.html"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
     # Nur Loopback per Default. Fuer den Zugang von aussen (Cloudflare-Tunnel,
     # Reverse Proxy auf demselben Host) in der .env COMESH_BIND_ADDRESS=0.0.0.0
     # setzen — damit ist das Portal aber ohne vorgelagerten Proxy direkt
@@ -100,9 +141,20 @@ services:
     build:
       context: .
       dockerfile: node-agent/Dockerfile
-    image: comesh-agent:0.6.18
+    image: comesh-agent:0.6.19
     container_name: comesh-agent
     restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "5"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://127.0.0.1:%s/health' % __import__('os').environ.get('AGENT_PORT','11435'),timeout=3)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
     depends_on:
       - api
     environment:

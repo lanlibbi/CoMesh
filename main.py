@@ -58,6 +58,7 @@ from models import (
 )
 from payments import router as payments_router
 from setup_wizard import router as setup_router, ensure_setup_token, setup_completed
+from legal import router as legal_router
 from frontend import router as frontend_router
 from nodes import router as nodes_router
 from pool import router as pool_router, distribute_revenue
@@ -99,7 +100,21 @@ def _lies_version() -> str:
 
 VERSION = _lies_version()
 # Portal und Node-Agent laufen seit 0.5.0 auf derselben Version.
-NODE_AGENT_VERSION = VERSION
+def _lies_agent_version() -> str:
+    """Version des Node-Agenten — bewusst unabhängig von der Portal-Version.
+
+    Die Agent-Version steckt im PyInstaller-Binary. Hängt sie an VERSION, zeigt das
+    Portal nach jedem reinen Server-Release allen Nodes "veraltet", obwohl sich am
+    Agenten nichts geändert hat. Quelle ist AGENT_VERSION; fehlt die Datei, gilt VERSION.
+    """
+    try:
+        from pathlib import Path as _APath
+        return (_APath(__file__).with_name("AGENT_VERSION")).read_text(encoding="utf-8").strip()
+    except OSError:
+        return VERSION
+
+
+NODE_AGENT_VERSION = _lies_agent_version()
 
 
 # ----------------------------------------------------------------------------
@@ -144,16 +159,26 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# CORS — open for the POC. The existing frontend lives on :3000 (separate dev server).
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# CORS: Der Standard ist **kein** CORS. Die Oberfläche wird vom selben nginx
+# ausgeliefert und ruft /api/... auf derselben Origin — dafür braucht es keinen
+# CORS-Kopf. Nur wer die API aus einer anderen Web-Anwendung heraus aufruft, setzt
+# CORS_ORIGINS (kommagetrennt, exakte Origins). Ein offenes "*" ist bei einer API
+# mit Konten und Guthaben nicht vertretbar.
+_cors_origins = [o.strip() for o in (os.environ.get("CORS_ORIGINS") or "").split(",") if o.strip()]
+if _cors_origins:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=_cors_origins,
+        allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
+        allow_headers=["Authorization", "Content-Type", "X-Node-Key", "X-Node-Secret"],
+        allow_credentials=False,
+        max_age=600,
+    )
+    log.info("CORS erlaubt für: %s", ", ".join(_cors_origins))
 
 # Mount sub-routers
 app.include_router(setup_router)  # Erstinstallation: /setup/status, /setup/admin
+app.include_router(legal_router)  # /legal/impressum, /legal/datenschutz, /legal/agb
 app.include_router(payments_router)
 app.include_router(frontend_router)
 app.include_router(nodes_router)
@@ -1444,6 +1469,12 @@ def _auth_response(db, user, raw_token, key_prefix, credits,
 @app.post("/auth/register", response_model=AuthResponse)
 def auth_register(req: RegisterRequest, request: Request, db: Session = Depends(get_db)):
     limit_register(client_ip(request))
+
+    # Selbstregistrierung ist abschaltbar (REGISTRATION_OPEN=0). Für eine öffentliche
+    # Instanz ist "jeder kann ein Konto beantragen" eine Einladung, die Freigabeliste
+    # zuzumüllen; die Admin-Freigabe bleibt in jedem Fall bestehen.
+    if (os.environ.get("REGISTRATION_OPEN") or "1").strip().lower() in ("0", "false", "no", "off"):
+        raise HTTPException(status_code=403, detail="Registration is closed on this instance")
 
     email = (req.email or "").strip().lower()
     if db.query(User).filter(User.email == email).first():

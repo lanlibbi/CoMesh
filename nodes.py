@@ -199,11 +199,17 @@ class NodePublicOut(BaseModel):
 
 
 def _erwartete_agent_version() -> str:
-    """Agent-Version, die dieses Portal ausliefert (VERSION-Datei im Repo)."""
-    try:
-        return (Path(__file__).with_name("VERSION")).read_text(encoding="utf-8").strip()
-    except OSError:
-        return ""
+    """Agent-Version, die dieses Portal ausliefert.
+
+    Quelle ist AGENT_VERSION — nicht VERSION: ein reines Server-Release darf die
+    ausgelieferten Agenten nicht als veraltet markieren. Fehlt die Datei, gilt VERSION.
+    """
+    for name in ("AGENT_VERSION", "VERSION"):
+        try:
+            return (Path(__file__).with_name(name)).read_text(encoding="utf-8").strip()
+        except OSError:
+            continue
+    return ""
 
 
 def node_out_fields(node: GpuNode) -> dict:

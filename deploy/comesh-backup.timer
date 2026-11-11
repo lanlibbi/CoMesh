@@ -1,0 +1,11 @@
+[Unit]
+Description=CoMesh: Datenbank täglich sichern
+
+[Timer]
+OnCalendar=*-*-* 03:20:00
+# Nach einem Ausfall oder Ruhezustand nachholen, statt einen Tag zu überspringen.
+Persistent=true
+RandomizedDelaySec=300
+
+[Install]
+WantedBy=timers.target

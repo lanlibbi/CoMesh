@@ -1919,6 +1919,24 @@ window.GP_I18N = {
    "es": "No ha funcionado. Inténtalo de nuevo.",
    "fr": "Cela n'a pas fonctionné. Veuillez réessayer."
   },
+  "legal.impressum": {
+   "en": "Imprint",
+   "de": "Impressum",
+   "es": "Aviso legal",
+   "fr": "Mentions légales"
+  },
+  "legal.datenschutz": {
+   "en": "Privacy",
+   "de": "Datenschutz",
+   "es": "Privacidad",
+   "fr": "Confidentialité"
+  },
+  "legal.agb": {
+   "en": "Terms",
+   "de": "Nutzungsbedingungen",
+   "es": "Condiciones",
+   "fr": "Conditions"
+  },
   "chrome.theme": {
    "en": "Theme",
    "de": "Design",

@@ -1,14 +1,21 @@
 # Vom POC zur Produktion — offene Punkte
 
-Stand 10.11.2026, Version 0.6.17. Bestandsaufnahme am laufenden System und am Repo, keine
-Wunschliste: jeder Punkt nennt, was **gemessen** fehlt. Reihenfolge nach Risiko, nicht nach
-Aufwand.
+**Stand 11.11.2026, Version 0.6.19.** Was erledigt ist, steht mit ✔ und dem Weg dorthin; was
+offen bleibt, mit dem, was konkret fehlt. Reihenfolge nach Risiko, nicht nach Aufwand.
 
-Was bereits steht (damit die Liste nicht größer wirkt als sie ist): 152 Testfunktionen in 25
-Dateien, CI läuft auf jedem Push (`.github/workflows/tests.yml`), Abhängigkeiten sind exakt
-gepinnt, Rate-Limits sind implementiert (`ratelimit.py`), die API hängt per Default nur auf
-Loopback, Proxy-Kopfzeilen sind auf das Compose-Netz begrenzt, Zahlungspfade sind im
-Produktivmodus aus (fail closed), und die i18n-Abdeckung wird geprüft.
+## Erledigt in 0.6.19
+
+| Punkt | Wie |
+|---|---|
+| Datensicherung | `scripts/backup-db.sh` + `deploy/comesh-backup.{service,timer}`, täglich 03:20, 14 Tage Aufbewahrung, Wiederherstellung geübt (11 Konten, 140 Nutzungen, Integrität ok) |
+| Rechtstexte | `/impressum`, `/datenschutz`, `/agb` aus der Umgebung (`legal.py`), fehlende Pflichtangaben werden auf der Seite angezeigt; in allen Fußzeilen verlinkt, viersprachig |
+| Sicherheitsköpfe | HSTS, CSP, `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy` in `frontend-alpine/security-headers.conf`, in **jedem** `location`-Block eingebunden |
+| Healthchecks | API, nginx und Agent melden ihren Zustand (`healthy` gemessen) |
+| Logrotation | `json-file`, 50 MB × 5 je Dienst |
+| CORS | standardmäßig aus; `CORS_ORIGINS` nur bei fremder Web-Anwendung |
+| Selbstregistrierung | `REGISTRATION_OPEN=0` schaltet sie ab |
+| Agent-Version | eigene `AGENT_VERSION`, unabhängig von der Portal-Version; Vergleich „älter als", nicht „ungleich" |
+| Abhängigkeiten | `pip-audit` in der CI (Bericht), Dependabot wöchentlich |
 
 ---
 

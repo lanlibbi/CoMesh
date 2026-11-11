@@ -414,10 +414,10 @@
                 <span data-i18n="nodes.agent_version_label">Agent-Version:</span>
                 <span x-show="!n.agent_version" data-i18n="nodes.agent_unknown">noch keine Meldung</span>
                 <span x-show="n.agent_version" class="mono" x-text="n.agent_version"></span>
-                <span x-show="n.agent_version && n.agent_version_expected && n.agent_version !== n.agent_version_expected"
+                <span x-show="agentVeraltet(n)"
                       class="pill pill-flat t-xs" style="color:var(--warn)"
                       data-i18n="nodes.agent_outdated">veraltet</span>
-                <span x-show="n.agent_version && n.agent_version_expected && n.agent_version !== n.agent_version_expected"
+                <span x-show="agentVeraltet(n)"
                       class="mono t-xs" x-text="'→ ' + n.agent_version_expected"></span>
               </div>
               <div class="t-xs mt-1">

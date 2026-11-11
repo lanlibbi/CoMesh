@@ -29,3 +29,16 @@ jobs:
 
       - name: Auth-Härtung (eigenständiges Skript)
         run: python tests/test_auth_hardening.py
+
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Bekannte Lücken in den Abhängigkeiten
+        run: |
+          python -m pip install --quiet pip-audit
+          pip-audit -r requirements.txt || true   # Bericht, kein Blocker (POC)
+          pip-audit -r node-agent/requirements.txt || true

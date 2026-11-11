@@ -1,0 +1,13 @@
+[Unit]
+Description=CoMesh: Datenbank sichern (geprüfte SQLite-Momentaufnahme)
+Documentation=file://%h/projects/gpu-pool-live/docs/production-readiness.md
+After=docker.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=%h/projects/gpu-pool-live
+ExecStart=/bin/sh %h/projects/gpu-pool-live/scripts/backup-db.sh
+# Der Dienst ist ein Einmaljob: ein Fehlschlag soll sichtbar sein, nicht in der
+# Konsole verschwinden.
+StandardOutput=journal
+StandardError=journal

@@ -479,7 +479,23 @@ document.addEventListener("alpine:init", () => {
      * Backends). Getrennt von `allowed_models`: die Freigabe sagt, was ANDERE
      * nutzen dürfen, diese Liste sagt, was auf der Maschine liegt.
      */
-    gemeldeteModelle(n) {
+    // Ist der Agent auf dieser Node älter als der, den das Portal ausliefert?
+  // Ein Vergleich der Zahlen, nicht auf Ungleichheit: ein selbst gebauter Agent
+  // kann neuer sein als das letzte Release und ist deshalb nicht "veraltet".
+  agentVeraltet(n) {
+    const zerlege = (v) => String(v || "").split(".").map((x) => parseInt(x, 10) || 0);
+    const a = zerlege(n && n.agent_version);
+    const b = zerlege(n && n.agent_version_expected);
+    if (!a.length || !b.length) return false;
+    for (let i = 0; i < Math.max(a.length, b.length); i++) {
+      const x = a[i] || 0, y = b[i] || 0;
+      if (x < y) return true;
+      if (x > y) return false;
+    }
+    return false;
+  },
+
+  gemeldeteModelle(n) {
       return Array.isArray(n && n.reported_models) ? n.reported_models : [];
     },
     /** Gemeldete Modelle ins Freitextfeld übernehmen — gespeichert wird später. */

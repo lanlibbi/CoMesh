@@ -1,5 +1,39 @@
 # Changelog
 
+## 0.6.19 — 2026-11-11
+
+**Produktionsliste P0 abgearbeitet: Sicherung, Rechtstexte, Köpfe, Healthchecks, Logs**
+
+1. **Datensicherung.** `scripts/backup-db.sh` zieht eine konsistente Momentaufnahme
+   (`sqlite3.Connection.backup`, nicht `cp` mitten in einer Transaktion), prüft Integrität und
+   Kontozahl, komprimiert und verwirft Sicherungen älter als 14 Tage. Dazu
+   `deploy/comesh-backup.{service,timer}` (täglich 03:20, `Persistent=true`) und eine geübte
+   Wiederherstellung in `deploy/README.md`.
+2. **Rechtstexte aus der Umgebung.** `/impressum`, `/datenschutz`, `/agb` werden vom Backend
+   gerendert (`legal.py`) und aus `IMPRESSUM_*`/`DATENSCHUTZ_EMAIL`/`HOSTING_ANBIETER` gefüllt.
+   Fehlt eine Pflichtangabe, steht ein roter Hinweis mit der Liste der fehlenden Variablen auf
+   der Seite und sie geht auf `noindex` — statt still ein unvollständiges Impressum
+   auszuliefern. In allen Fußzeilen verlinkt, viersprachig beschriftet.
+3. **Sicherheitsköpfe** (`frontend-alpine/security-headers.conf`): HSTS,
+   `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy` und CSP.
+   Die CSP erlaubt `unpkg.com` (Alpine) und Google Fonts, weil die Seiten beides laden.
+   In jedem `location`-Block erneut eingebunden, der eigenes `add_header` setzt — sonst erbt er
+   die Server-Köpfe nicht.
+4. **CORS standardmäßig aus.** Nötig wird es nur, wenn eine fremde Web-Anwendung die API
+   aufruft: dann `CORS_ORIGINS` setzen.
+5. **Healthchecks und Logrotation.** Alle drei Dienste melden ihren Zustand (API `/health`,
+   nginx `index.html`, Agent `/health`); Docker schreibt `json-file` mit 50 MB × 5 statt
+   unbegrenzt.
+6. **Selbstregistrierung abschaltbar** (`REGISTRATION_OPEN=0`).
+7. **Agent-Version von der Portal-Version gelöst.** Neue Datei `AGENT_VERSION`: ein reines
+   Server-Release markiert die ausgelieferten Agenten nicht mehr fälschlich als „veraltet".
+8. **CI prüft Abhängigkeiten** (`pip-audit`, Bericht ohne Blocker) und Dependabot schlägt
+   wöchentlich Aktualisierungen vor.
+
+Nicht in diesem Schritt: Container als Nicht-root (braucht Entrypoint mit Rechteübergabe am
+Volume), externe Verfügbarkeitsüberwachung (eigener Host nötig), die inhaltliche Prüfung der
+Rechtstexte (bleibt beim Betreiber).
+
 ## 0.6.18 — 2026-11-11
 
 **Erstinstallation im Browser: Administrator anlegen, dann ist die Tür zu**
