@@ -133,11 +133,13 @@ More detail: [ARCHITECTURE.md](ARCHITECTURE.md),
 
 ## License and status
 
-Version **0.6.10**; changes are listed in [CHANGELOG.md](CHANGELOG.md).
+Version **0.6.17**; changes are listed in [CHANGELOG.md](CHANGELOG.md). What still
+separates this from production is listed in
+[docs/production-readiness.md](docs/production-readiness.md).
 
-There is **no licence file** in the repository. Without an explicit licence the
-statutory default applies (all rights reserved) — ask before reusing,
-redistributing or using CoMesh commercially.
+CoMesh is released under the **MIT licence** — see [LICENSE](LICENSE). You may use,
+modify and redistribute it, including commercially, as long as the copyright notice
+and the licence text stay with it. There is no warranty.
 
 ## Documentation
 
