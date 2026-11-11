@@ -1,6 +1,6 @@
 # Development / test extras (not needed in the runtime image).
 -r requirements.txt
-pytest==9.1.1
+pytest==9.2.0
 # node-agent/agent.py imports psutil; the reconnect tests import that module,
 # so without it the 4 LANA-48 tests fail at collection instead of running.
 psutil>=5.9.8
