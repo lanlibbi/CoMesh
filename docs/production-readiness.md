@@ -91,6 +91,17 @@ zurückrollen, und es gibt keinen Stand, den man in einer älteren Version wiede
 Empfehlung: Alembic einführen, die bestehenden `_ensure_*` in eine Baseline-Migration überführen,
 danach jede Änderung als Revision.
 
+### 8a. Registrierung steht jedem offen
+
+`register.html` ist ohne Einladung erreichbar; jedes neue Konto landet als `pending` in der
+Freigabeliste und braucht einen Klick im Adminbereich. Für einen POC richtig, für eine öffentliche
+Instanz zu offen: Wer die Adresse kennt, kann die Freigabeliste zumüllen, und jede Registrierung
+kostet einen Verwaltungsschritt.
+
+Nötig: eine der drei Varianten — Registrierung ganz abschaltbar (`REGISTRATION_OPEN=0`),
+E-Mail-Bestätigung vor der Freigabe, oder Einladungscode. Die Admin-Freigabe bleibt in jedem Fall
+bestehen.
+
 ### 9. SQLite und ein einzelner Worker sind die Skalierungsgrenze
 
 `database.py` nutzt `sqlite:///…/gpu_pool.db`; `docker-compose.yml` hält ausdrücklich an einem
