@@ -1,7 +1,7 @@
 fastapi==0.115.0
 uvicorn[standard]==0.30.6
 httpx==0.27.2
-psutil==5.9.8
+psutil==7.2.2
 # Phase 1: WebSocket outbound transport (AGENT_TRANSPORT=ws)
 websockets==13.1
 # pynvml — comment out if you only want to test on a non-GPU host
