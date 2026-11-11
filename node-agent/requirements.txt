@@ -6,4 +6,4 @@ psutil==5.9.8
 websockets==13.1
 # pynvml — comment out if you only want to test on a non-GPU host
 # (the agent will fall back to stub data if NVML init fails)
-pynvml==11.5.0
+pynvml==13.0.1
