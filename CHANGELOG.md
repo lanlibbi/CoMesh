@@ -1,3 +1,13 @@
+## 0.6.23
+
+### Behoben
+
+- **Letzte feste Adresse im Frontend entfernt.** Die Anleitung „eigene Node beitragen" zeigte in
+  `nodes.js` weiterhin auf `https://comesh.lanlibbilab.me`. Auf einer frischen Instanz hätten
+  Provider damit Befehle gegen einen fremden Server bekommen. Vorgabe ist jetzt die Adresse, unter
+  der die Seite geladen wurde; `window.COMESH_PUBLIC_ORIGIN` (config.js) bleibt für den Fall, dass
+  die öffentliche Adresse von der aufgerufenen abweicht.
+
 ## 0.6.22
 
 ### Behoben

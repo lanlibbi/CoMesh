@@ -11,10 +11,12 @@
 //     daneben für die Summe) statt hier eingetragen: eine abgetippte Summe ist
 //     nach dem nächsten Release falsch, ohne dass es jemand merkt.
 //
-// Die öffentliche Adresse ist die einzige feste Adresse im Frontend; sie lässt
-// sich über `window.COMESH_PUBLIC_ORIGIN` (config.js) überschreiben, damit ein
-// anderer Aufbau nicht am Quelltext hängt.
-const CONTRIBUTE_PUBLIC_ORIGIN = "https://comesh.lanlibbilab.me";
+// Vorgabe ist die Adresse, unter der diese Seite geladen wurde — die Downloads
+// liefert dieselbe Instanz aus, also stimmt sie. `window.COMESH_PUBLIC_ORIGIN`
+// (config.js) bleibt für den Sonderfall, dass Provider eine andere, von außen
+// erreichbare Adresse bekommen sollen. Eine feste Adresse darf hier nicht stehen:
+// eine frisch aufgebaute Instanz hätte sonst fremde Server in ihrer Anleitung.
+const CONTRIBUTE_PUBLIC_ORIGIN = "";
 
 // `hasSum: false` — für die beiden Installer gibt es keine .sha256-Datei; sie
 // prüfen die Summe des Binaries, das sie laden. Die Spalte sagt das dann auch.
@@ -108,7 +110,8 @@ document.addEventListener("alpine:init", () => {
 
     get currentOrigin() { return window.location.origin; },
     get publicOrigin() {
-      return String(window.COMESH_PUBLIC_ORIGIN || CONTRIBUTE_PUBLIC_ORIGIN).replace(/\/+$/, "");
+      return String(window.COMESH_PUBLIC_ORIGIN || CONTRIBUTE_PUBLIC_ORIGIN || window.location.origin)
+        .replace(/\/+$/, "");
     },
     /** Die Adresswahl erscheint nur, wenn sich die beiden wirklich unterscheiden. */
     get hasTwoOrigins() { return this.publicOrigin !== this.currentOrigin; },
