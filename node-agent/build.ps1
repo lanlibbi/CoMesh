@@ -40,7 +40,11 @@ function Invoke-Native {
 }
 
 $Version = "0.0.0"
-$versionFile = Join-Path (Split-Path -Parent $PSScriptRoot) "VERSION"
+# AGENT_VERSION (zuletzt ausgelieferte Artefakt-Version) hat Vorrang vor VERSION —
+# sonst nennt der Bericht die Portal-Version, waehrend das Binary die Agent-Version meldet.
+$root = Split-Path -Parent $PSScriptRoot
+$versionFile = Join-Path $root "AGENT_VERSION"
+if (-not (Test-Path $versionFile)) { $versionFile = Join-Path $root "VERSION" }
 if (Test-Path -LiteralPath $versionFile) {
     $Version = (Get-Content -LiteralPath $versionFile -Raw).Trim()
 }
