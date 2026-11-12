@@ -106,3 +106,12 @@ docker compose build frontend && docker compose up -d --no-deps --force-recreate
 curl -sI https://<portal>/downloads/install.sh | head -3
 curl -s https://<portal>/downloads/comesh-agent-linux-x86_64.sha256
 ```
+
+## Woher die Skripte die Adresse kennen
+
+`install.sh` und `install.ps1` werden vom Portal **mit der Adresse dieser Instanz** ausgeliefert
+(nginx ersetzt beim Ausliefern einen Platzhalter). Wer die Installationszeile aus dem Guide dieser
+Instanz kopiert, holt Agent, Prüfsumme und API-Adresse also immer von hier — nicht vom
+Referenzserver. Abweichende Ziele lassen sich weiterhin setzen: `COMESH_ORIGIN` (Umgebung),
+`--base-url` und `--portal-url` (Argumente). Wird ein Skript am Portal vorbei geholt, bricht es mit
+einer Erklärung ab, statt still auf eine fremde Adresse zu zeigen.

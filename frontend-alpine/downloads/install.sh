@@ -41,7 +41,10 @@ set -eu
 # Dieselbe Adresse, unter der auch die Oberfläche liegt. Die Binaries werden
 # vom Portal ausgeliefert (frontend-alpine/downloads/), damit ein Provider nur
 # EINEN Namen braucht. `--base-url` überschreibt das z. B. für GitHub Releases.
-DEFAULT_ORIGIN="${COMESH_ORIGIN:-https://comesh.lanlibbilab.me}"
+# Der Platzhalter wird beim Ausliefern durch die Adresse der Instanz ersetzt,
+# von der dieses Skript geladen wurde (siehe nginx.conf). Bleibt er stehen, wurde
+# die Datei am Portal vorbei geholt — dann muss die Adresse genannt werden.
+DEFAULT_ORIGIN="${COMESH_ORIGIN:-__COMESH_ORIGIN_PLATZHALTER__}"
 BASE_URL="${COMESH_BASE_URL:-$DEFAULT_ORIGIN/downloads}"
 PORTAL_URL="${COMESH_PORTAL_URL:-$DEFAULT_ORIGIN/api}"
 TRANSPORT="${COMESH_TRANSPORT:-ws}"
@@ -108,7 +111,13 @@ while [ $# -gt 0 ]; do
   esac
 done
 
-BASE_URL="${BASE_URL%/}"
+# Wenn der Platzhalter noch drinsteht, wurde das Skript nicht vom Portal geladen.
+case "$DEFAULT_ORIGIN" in
+  *__COMESH_ORIGIN_PLATZHALTER__*) BASE_URL="" ;;
+esac
+if [ -z "$BASE_URL" ] || [ "$BASE_URL" = "/downloads" ]; then
+  die "Dieses Skript kennt die Adresse des Portals nicht (es wurde nicht vom Portal geladen).\nBitte so aufrufen:  curl -fsSL https://DEIN-PORTAL/downloads/install.sh | sh\noder COMESH_ORIGIN=https://DEIN-PORTAL setzen bzw. --portal-url und --base-url angeben."
+fi
 PORTAL_URL="${PORTAL_URL%/}"
 case "$TRANSPORT" in ws|http) ;; *) die "--transport muss ws oder http sein, nicht '$TRANSPORT'" ;; esac
 case "$BACKEND" in ollama|openai) ;; *) die "--backend muss ollama oder openai sein" ;; esac

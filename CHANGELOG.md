@@ -1,3 +1,16 @@
+## 0.6.22
+
+### Behoben
+
+- **Eine fremde Instanz hätte die Agenten beim Referenzserver geladen.** `install.sh` und
+  `install.ps1` trugen die Adresse `https://comesh.lanlibbilab.me` als Vorgabe. Wer eine eigene
+  Instanz aufsetzt und dort `curl -fsSL https://<portal>/downloads/install.sh | sh` aufruft, hätte
+  Binary, Prüfsumme und Anmeldung von einem fremden Portal bezogen. Jetzt liefert nginx die Skripte
+  mit der Adresse aus, unter der sie abgerufen wurden (`sub_filter`, Schema aus
+  `X-Forwarded-Proto`, Name samt Port aus `$http_host`); `COMESH_ORIGIN`, `--base-url` und
+  `--portal-url` überschreiben weiterhin. Wird das Skript am Portal vorbei geholt, bricht es mit
+  einer Erklärung ab, statt still auf eine fremde Adresse zu zeigen.
+
 ## 0.6.21
 
 ### Behoben

@@ -385,3 +385,12 @@ wieder entfernen.
 - **Modelle melden Nodes nicht.** Was eine Node anbieten darf, steht in
   `gpu_nodes.allowed_models` und wird im Portal gepflegt. Ein Modell, das nur
   lokal auf der Node liegt, macht sie nicht sichtbar.
+
+## Woher die Skripte die Adresse kennen
+
+`install.sh` und `install.ps1` werden vom Portal **mit der Adresse dieser Instanz** ausgeliefert
+(nginx ersetzt beim Ausliefern einen Platzhalter). Wer die Installationszeile aus dem Guide dieser
+Instanz kopiert, holt Agent, Prüfsumme und API-Adresse also immer von hier — nicht vom
+Referenzserver. Abweichende Ziele lassen sich weiterhin setzen: `COMESH_ORIGIN` (Umgebung),
+`--base-url` und `--portal-url` (Argumente). Wird ein Skript am Portal vorbei geholt, bricht es mit
+einer Erklärung ab, statt still auf eine fremde Adresse zu zeigen.

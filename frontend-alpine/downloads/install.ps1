@@ -54,7 +54,9 @@ $ProgressPreference = "SilentlyContinue"   # Invoke-WebRequest ist sonst quaelen
 # ---------------------------------------------------------------------------
 # Vorgaben
 # ---------------------------------------------------------------------------
-$Origin      = if ($env:COMESH_ORIGIN) { $env:COMESH_ORIGIN } else { "https://comesh.lanlibbilab.me" }
+# Der Platzhalter wird beim Ausliefern durch die Adresse der Instanz ersetzt,
+# von der dieses Skript geladen wurde (siehe nginx.conf).
+$Origin      = if ($env:COMESH_ORIGIN) { $env:COMESH_ORIGIN } else { "__COMESH_ORIGIN_PLATZHALTER__" }
 if (-not $BaseUrl)   { $BaseUrl   = "$Origin/downloads" }
 if (-not $PortalUrl) { $PortalUrl = "$Origin/api" }
 if (-not $Transport) { $Transport = "ws" }
