@@ -1,3 +1,23 @@
+## 0.6.21
+
+### Behoben
+
+- **Die Oberfläche war nach 0.6.19 tot.** Die Content-Security-Policy erlaubte kein
+  `'unsafe-eval'`; Alpine.js wertet seine `x-data`/`x-html`-Ausdrücke aber über
+  `new AsyncFunction()` aus. Alpine lud danach zwar noch, initialisierte aber keine
+  Komponente — Navigation, Formulare, Schaltflächen und Tabellen blieben leer, es stand nur
+  das statische HTML. Betroffen war jede Seite der Instanz. `script-src` erlaubt jetzt
+  `'unsafe-eval'`, mit Begründung direkt in `security-headers.conf`.
+- **`admin-legal.html` lud Alpine gar nicht** (fehlendes `<script>`-Tag) — das Formular für die
+  Rechtstexte wäre auch mit korrigierter CSP leer geblieben.
+
+### Hinweis zur CSP
+
+Mit `'unsafe-inline'` und `'unsafe-eval'` schützt die Policy noch gegen fremde Skript-Quellen
+und gegen Einbettung (`frame-ancestors 'none'`), aber nicht mehr gegen eingeschleuste
+Inline-Skripte. Wer das strenge Profil braucht, muss auf `@alpinejs/csp` wechseln und die
+Ausdrücke in `Alpine.data()` verschieben.
+
 # Changelog
 
 ## 0.6.20 — 2026-11-11
