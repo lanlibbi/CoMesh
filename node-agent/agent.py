@@ -143,18 +143,23 @@ def _bundle_dir() -> str:
 
 
 def _read_version() -> str:
-    """Version aus der mitgelieferten VERSION-Datei, sonst der feste Ersatzwert."""
-    for candidate in (
-        os.path.join(_bundle_dir(), "VERSION"),
-        os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "VERSION"),
-    ):
-        try:
-            with open(candidate, "r", encoding="utf-8") as fh:
-                value = fh.read().strip()
-            if value:
-                return value
-        except OSError:
-            continue
+    """Agent-Version: AGENT_VERSION hat Vorrang vor VERSION.
+
+    Das Portal vergleicht die gemeldete Agent-Version mit AGENT_VERSION — der Version,
+    die zuletzt als Binary ausgeliefert wurde — nicht mit der Portal-Version. Baut man
+    den Agenten aus einem Repo, dessen Portal schon weiter ist, darf das Binary deshalb
+    nicht die Portal-Nummer behaupten: der Vergleich wäre sonst wertlos.
+    """
+    wurzel = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
+    for name in ("AGENT_VERSION", "VERSION"):
+        for candidate in (os.path.join(_bundle_dir(), name), os.path.join(wurzel, name)):
+            try:
+                with open(candidate, "r", encoding="utf-8") as fh:
+                    value = fh.read().strip()
+                if value:
+                    return value
+            except OSError:
+                continue
     return AGENT_VERSION_FALLBACK
 
 

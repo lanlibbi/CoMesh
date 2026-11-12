@@ -21,6 +21,7 @@ COPY node-agent/agent.py node-agent/netinfo.py ./
 # Eine Quelle fuer die Version: /version des Portals und die Kennung des Agenten
 # lesen dieselbe Datei.
 COPY VERSION ./VERSION
+COPY AGENT_VERSION ./AGENT_VERSION
 # Node credentials written by self-registration (LANA-89). Mount a volume here
 # if you want them to survive a container rebuild.
 ENV NODE_STATE_FILE=/data/node-state.json

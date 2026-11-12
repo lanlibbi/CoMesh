@@ -60,9 +60,13 @@ hiddenimports += [
 # Die VERSION-Datei wandert mit, damit `comesh-agent --version` und die
 # FastAPI-Kennung dieselbe Nummer melden wie das Portal (`/version`).
 datas = []
-version_file = os.path.join(ROOT, "VERSION")
-if os.path.isfile(version_file):
-    datas.append((version_file, "."))
+# AGENT_VERSION (zuletzt ausgelieferte Artefakt-Version) hat Vorrang vor VERSION.
+# Beide wandern mit, damit ein Binary aus einem neueren Repo trotzdem die richtige
+# Agent-Version meldet.
+for _name in ("AGENT_VERSION", "VERSION"):
+    _pfad = os.path.join(ROOT, _name)
+    if os.path.isfile(_pfad):
+        datas.append((_pfad, "."))
 
 # CA-Bündel für HTTPS zum Portal (httpx -> certifi). Ohne das scheitert jede
 # TLS-Verbindung im Binary mit SSLCertVerificationError.

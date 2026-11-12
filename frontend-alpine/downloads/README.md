@@ -18,8 +18,8 @@ Der Installer lädt von hier:
 | `comesh-agent-darwin-arm64` + `.sha256` | Apple Silicon | **vorhanden** — 0.6.10, 14.044.992 B, in GitHub Actions gebaut (04.11.2026), `--version` und Prüfsumme geprüft, `3881a74dece1…` |
 | `comesh-agent-darwin-x86_64` + `.sha256` | Intel-Mac | **fehlt** — `macos-latest` ist arm64; bräuchte einen Lauf auf `macos-13` |
 | `comesh-agent-linux-arm64` + `.sha256` | Linux ARM64 | **fehlt** — nur auf einem ARM-Linux zu bauen, PyInstaller baut nicht über Architekturen |
-| `comesh-agent-linux-x86_64` + `.sha256` | Linux x86_64 | **vorhanden** — 0.6.18. 14.610.896 B. am 11.11.2026 auf ai-lanlibbi gebaut. `--version` geprüft (`comesh-agent 0.6.18`). `2d8f8da2096e…` |
-| `comesh-agent-windows-x86_64.exe` + `.sha256` | Windows x64 | **0.6.17 — Neubau für 0.6.18 offen** (Bauhost war am 11.11. offline), 14.059.703 B, `02fa4ad075fe…`; das Portal zeigt an dieser Node „veraltet“ bis der Bau nachgezogen ist |
+| `comesh-agent-linux-x86_64` + `.sha256` | Linux x86_64 | **vorhanden** — 0.6.18, 14610072 B, am 12.11.2026 auf ai-lanlibbi gebaut (liest `AGENT_VERSION`), `--version` geprüft (`comesh-agent 0.6.18`), `8cfc5e866e23…` |
+| `comesh-agent-windows-x86_64.exe` + `.sha256` | Windows x64 | **0.6.17 — Neubau für 0.6.18 offen**) (Bauhost war am 11.11. offline), 14.059.703 B, `02fa4ad075fe…`; das Portal zeigt an dieser Node „veraltet“ bis der Bau nachgezogen ist |
 
 Die Größen sind am 09.11.2026 gegen die Dateien hier nachgemessen
 (SHA-256 der geladenen Datei == `.sha256` daneben == Datei in diesem Ordner).

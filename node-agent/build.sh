@@ -20,7 +20,7 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 
-VERSION="$(cat ../VERSION 2>/dev/null || echo "")"
+VERSION="$(cat ../AGENT_VERSION 2>/dev/null || cat ../VERSION 2>/dev/null || echo "")"
 if [ -z "$VERSION" ]; then
   VERSION="0.0.0"
   echo "WARNUNG: ../VERSION nicht gefunden — das Binary meldet $VERSION statt der Repo-Version." >&2
