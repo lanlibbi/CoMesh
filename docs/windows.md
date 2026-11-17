@@ -347,6 +347,33 @@ Sinnvoll ist eine **Herausgeber-Regel** auf ein signiertes Binary: der Betreiber
 Herausgeber. Eine Pfad-Regel ist schwächer (jeder kann dorthin schreiben) und wird von WDAC oft
 gar nicht angeboten und ist bei AppLocker nur in der Standard-Richtlinie möglich.
 
+### Empfehlung für Betreiber: von vornherein ohne .exe
+
+Auf Windows 11 ist Smart App Control bei vielen Neuinstallationen aktiv
+(`VerifiedAndReputablePolicyState = 1`). Dann ist der Quelltext-Weg **kein Notbehelf, sondern der
+normale Weg** — er kostet nur einmal Python und läuft unabhängig von jeder Richtlinie:
+
+```powershell
+$s = "$env:TEMP\comesh-src.ps1"
+irm http://<portal>:8767/downloads/install-from-source.ps1 -OutFile $s
+& $s -PortalUrl http://<portal>:8767/api
+```
+
+Belegt am 18.11.2026 auf einem Windows-Host: AppLocker leer, Smart App Control aktiv, und das
+CodeIntegrity-Ereignisprotokoll nennt den Block samt Zeitstempel — „did not meet the Enterprise
+signing level requirements". Eine Defender-Ausnahme ändert daran nichts.
+
+**Der strategische Ausweg ist eine Signatur, nicht das Abschalten von Smart App Control.**
+Sobald die Binaries mit einem Code-Signing-Zertifikat des Betreibers signiert sind (und eine
+gewisse Reputation haben), greift weder Smart App Control noch eine Herausgeber-Regel. Signieren
+gehört damit in den Build: `signtool sign /tr <timestamp-url> /td sha256 /fd sha256 /a <exe>` auf
+dem Windows-Bauhost, danach Prüfsumme neu schreiben. Ohne Zertifikat bleibt der Quelltext-Weg die
+richtige Antwort für andere Betreiber.
+
+**Smart App Control abschalten ist keine Option für Server.** Es lässt sich danach nur mit einer
+Neuinstallation von Windows wieder einschalten — auf einem Virtualisierungshost ist das ein
+unverhältnismäßiger Eingriff, auch wenn der Rechner privat wäre.
+
 ### Weg 3: Smart App Control abschalten
 
 Nur wenn die Ursache Smart App Control ist (Wert `1` oben) und der Rechner privat ist. Danach lässt
