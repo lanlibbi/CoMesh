@@ -10,7 +10,7 @@ COPY pool.js nodes.js agent.js profile.js usage.js admin-usage.js admin-registra
 COPY particles.js comesh-setup.png /usr/share/nginx/html/
 
 # Auslieferung der Node-Agent-Binaries und der Installer (docs/install.md).
-# Die Binaries selbst sind nicht versioniert (downloads/.gitignore) — ohne sie
+# Die Binaries liegen seit 17.11.2026 im Repo (siehe downloads/README.md) — ohne sie
 # baut das Image trotzdem, der Ordner enthält dann nur die README.
 COPY downloads/ /usr/share/nginx/html/downloads/
 
