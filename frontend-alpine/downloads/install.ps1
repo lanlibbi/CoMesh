@@ -183,9 +183,39 @@ Start-Sleep -Milliseconds 800
 Copy-Item -LiteralPath $tmpExe -Destination $Exe -Force
 Remove-Item -LiteralPath $tmpDir -Recurse -Force -ErrorAction SilentlyContinue
 
-$versionLine = & $Exe --version 2>&1
-if ($LASTEXITCODE -ne 0) {
-    Fail "Das Binary startet nicht:`n$versionLine"
+# Der Start kann vom Betriebssystem verweigert werden, nicht vom Binary: AppLocker, WDAC oder
+# Smart App Control blockieren unssignierte Programme. Heruntergeladen und geprueft ist die Datei
+# dann trotzdem — der Installer kann das nicht umgehen und soll es auch nicht versuchen.
+try {
+    $versionLine = & $Exe --version 2>&1
+    if ($LASTEXITCODE -ne 0) {
+        Fail "Das Binary startet nicht:`n$versionLine"
+    }
+} catch {
+    $meldung = "$($_.Exception.Message) $($_.Exception.GetType().Name)"
+    if ($meldung -match 'Application Control|blocked|ApplicationFailed|CodeIntegrity') {
+        Write-Host ""
+        Write-Warn "Eine Systemrichtlinie blockiert das Programm (nicht der Installer)."
+        Write-Host "  Heruntergeladen und per SHA-256 geprueft ist das Binary bereits. Es darf nur nicht starten."
+        Write-Host ""
+        Write-Host "  Wer blockiert - der Reihe nach pruefen:"
+        Write-Host "    (Get-ItemProperty 'HKLM:\SYSTEM\CurrentControlSet\Control\CI\Policy' -ErrorAction SilentlyContinue).VerifiedAndReputablePolicyState"
+        Write-Host "        1 = Smart App Control aktiv, 2 = Lernphase, 0 = aus"
+        Write-Host "    Get-AppLockerPolicy -Effective -Xml | Select-String -Pattern 'AppLocker' | Select-Object -First 3"
+        Write-Host "    Get-ChildItem C:\Windows\System32\CodeIntegrity\CiPolicies\Active -ErrorAction SilentlyContinue"
+        Write-Host "    Get-WinEvent -LogName 'Microsoft-Windows-CodeIntegrity/Operational' -MaxEvents 5 | Format-List TimeCreated,Message"
+        Write-Host ""
+        Write-Host "  Drei Wege nach vorn:"
+        Write-Host "    1) Firmenrichtlinie (AppLocker/WDAC): nur die IT kann eine Ausnahme setzen, sinnvoll als"
+        Write-Host "       Herausgeber-Regel auf ein signiertes Binary. Lokal gibt es keinen Schalter dafuer;"
+        Write-Host "       eine Defender-Ausnahme hilft nicht, Anwendungskontrolle ist etwas anderes."
+        Write-Host "    2) Ohne .exe arbeiten: den Agenten aus dem Quelltext starten - python.exe ist signiert"
+        Write-Host "       und wird nicht blockiert. Anleitung: docs/windows.md, Abschnitt Application Control."
+        Write-Host "    3) Smart App Control abschalten (Windows-Sicherheit, App- und Browsersteuerung)."
+        Write-Host "       Achtung: laesst sich danach nicht wieder einschalten, nur mit Neuinstallation."
+        Fail "Abgebrochen: die Anwendung wird von einer Systemrichtlinie blockiert."
+    }
+    Fail "Das Binary startet nicht:`n$($_.Exception.Message)"
 }
 Write-Ok "installiert: $Exe - $versionLine"
 

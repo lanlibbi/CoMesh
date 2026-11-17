@@ -259,3 +259,99 @@ Nach dem Start: `curl -H "X-Node-Secret: <wert>" http://127.0.0.1:11435/health` 
 stehen auch bei `BACKEND=openai` für „Backend erreichbar“). **Ohne** den Kopf antwortet
 der Agent nur mit `{"ok":true}` — Details gibt es seit dem Sicherheitsfix vom 03.11.2026
 nur noch mit dem gemeinsamen Geheimnis `NODE_SHARED_SECRET`.
+
+## Application Control blockiert das Binary (Windows 11)
+
+Symptom beim Installer:
+
+```
+iex : Program 'comesh-agent.exe' failed to run: An Application Control policy has blocked this file
+```
+
+Das ist **kein Installationsfehler und kein Schaden an der Datei**: Download und SHA-256-Prüfung
+sind bereits durchgelaufen (der Installer meldet `SHA-256 geprueft: …`), erst der Start wird vom
+Betriebssystem verweigert. Drei Richtlinien können das tun:
+
+| Richtlinie | Wer setzt sie | Lokal änderbar? |
+|---|---|---|
+| Smart App Control (Windows 11) | Microsoft-Vorgabe, Nutzerentscheidung | nur abschalten — **danach nicht wieder einschaltbar**, nur mit Neuinstallation |
+| AppLocker | Firmenrichtlinie (GPO) | nein, nur die IT |
+| WDAC (Windows Defender Application Control) | Firmenrichtlinie / Hersteller-Image | nein, nur die IT |
+
+Herausfinden, wer blockiert:
+
+```powershell
+(Get-ItemProperty 'HKLM:\SYSTEM\CurrentControlSet\Control\CI\Policy' -ErrorAction SilentlyContinue).VerifiedAndReputablePolicyState
+#   1 = Smart App Control aktiv, 2 = Lernphase, 0 = aus
+
+Get-AppLockerPolicy -Effective -Xml | Select-String -Pattern 'AppLocker' | Select-Object -First 3
+Get-ChildItem C:\Windows\System32\CodeIntegrity\CiPolicies\Active -ErrorAction SilentlyContinue
+Get-WinEvent -LogName 'Microsoft-Windows-CodeIntegrity/Operational' -MaxEvents 5 | Format-List TimeCreated,Message
+```
+
+Das CodeIntegrity-Ereignisprotokoll nennt die Richtlinie beim Namen. Eine
+Defender-**Ausnahme** für einen Ordner hilft hier **nicht** — Anwendungskontrolle ist ein anderer
+Mechanismus als Virenscanning. Auch ein selbst gebautes, unsigniertes Binary wird weiter blockiert;
+eine Herausgeber-Regel braucht eine Signatur.
+
+### Weg 1: Agent aus dem Quelltext starten (umgeht die Blockade)
+
+`python.exe` ist signiert und wird von der Anwendungskontrolle nicht beanstandet. Der Agent ist ein
+normales Python-Programm, das Binary ist nur eine Verpackung.
+
+```powershell
+# 1. Python 3.10+ (signiert) und Git, beides ohne Adminrechte möglich
+winget install -e --id Python.Python.3.12
+winget install -e --id Git.Git
+
+# 2. Quelltext holen (Repo ist öffentlich)
+git clone https://github.com/lanlibbi/CoMesh.git "$env:LOCALAPPDATA\CoMesh\src"
+cd "$env:LOCALAPPDATA\CoMesh\src\node-agent"
+
+# 3. Abhängigkeiten in eine eigene Umgebung
+py -3 -m venv .venv
+.\.venv\Scripts\python -m pip install -r requirements.txt
+
+# 4. agent.env anlegen — gleicher Ort und gleiche Schlüssel wie beim Installer
+#    (BOM-frei speichern, sonst heisst der erste Schlüssel "﻿PORTAL_URL")
+notepad "$env:LOCALAPPDATA\CoMesh\agent.env"
+```
+
+Inhalt der `agent.env` (Werte aus dem Portal: Konto-Schlüssel im Profil, Adresse der Instanz):
+
+```
+PORTAL_URL=http://<portal>:8765
+PORTAL_USER_KEY=<dein Konto-Schlüssel>
+AGENT_TRANSPORT=ws
+NODE_NAME=windows-node
+BACKEND=ollama
+OLLAMA_URL=http://127.0.0.1:11434
+NODE_VRAM_GB=12
+```
+
+```powershell
+# 5. Erst prüfen, dann starten
+.\.venv\Scripts\python agent.py --check
+.\.venv\Scripts\python agent.py
+```
+
+Autostart ohne `.exe`: eine Aufgabe in der Aufgabenplanung auf
+`<venv>\Scripts\pythonw.exe agent.py` mit Arbeitsverzeichnis `node-agent` anlegen (kein Fenster,
+keine Adminrechte). Der Agent findet seine `agent.env` über `%LOCALAPPDATA%\CoMesh` selbst; ein
+abweichender Ort geht über `COMESH_AGENT_ENV`.
+
+### Weg 2: Ausnahme durch die IT
+
+Sinnvoll ist eine **Herausgeber-Regel** auf ein signiertes Binary: der Betreiber signiert
+`comesh-agent.exe` mit einem Zertifikat aus dem eigenen Vertrauensspeicher, die IT erlaubt diesen
+Herausgeber. Eine Pfad-Regel ist schwächer (jeder kann dorthin schreiben) und wird von WDAC oft
+gar nicht angeboten und ist bei AppLocker nur in der Standard-Richtlinie möglich.
+
+### Weg 3: Smart App Control abschalten
+
+Nur wenn die Ursache Smart App Control ist (Wert `1` oben) und der Rechner privat ist. Danach lässt
+sich die Funktion **nicht wieder einschalten** — Microsoft verlangt dafür eine Neuinstallation.
+Deshalb: erst Weg 1 prüfen, der kostet nichts.
+
+Der Installer erkennt den Fall seit 0.6.23 und gibt diese Hinweise selbst aus, statt mit einem
+rohen `NativeCommandFailed` abzubrechen.
