@@ -1,9 +1,11 @@
-# Binaries werden gebaut bzw. aus node-agent/dist/ hierher kopiert und beim
-# Ausliefern hier abgelegt — nicht versioniert: 15–25 MB je Datei, und sie
-# gehören zu einem Release, nicht zum Quellstand. Siehe README.md.
+# Die Agent-Binaries SIND versioniert (seit 2026-11-17): eine frische Instanz soll sich
+# selbst genügen. Ohne sie zeigt die Beitragen-Ansicht im Portal für jede Datei
+# „nicht ermittelbar", und ein Betreiber müsste erst herausfinden, woher die Dateien kommen.
 #
-# Die Installer dagegen SIND versioniert: wenige KB Text, und sie sind der
-# Einstiegspunkt jeder Installation. Wären sie ignoriert, entstünde aus einem
-# frischen Klon ein Image ohne /downloads/install.sh — der dokumentierte
-# Einzeiler liefe ins 404.
-comesh-agent-*
+# Kosten: rund 41 MB je Agent-Version im Repo (linux-x86_64, windows-x86_64.exe,
+# darwin-arm64, je mit .sha256). Das ist der Preis dafür, dass `git clone` + `docker compose
+# build frontend` ohne Netzzugang und ohne zweite Instanz funktioniert. Nicht bei jedem
+# lokalen Testbau mitcommitten, sondern nur wenn sich die Agent-Version ändert
+# (`AGENT_VERSION` im Repo-Wurzelverzeichnis).
+#
+# Sicherungskopien bleiben draußen (siehe .gitignore in der Repo-Wurzel: *.bak-*).
