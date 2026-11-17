@@ -2,11 +2,19 @@
 
 ### Behoben
 
-- **Letzte feste Adresse im Frontend entfernt.** Die Anleitung „eigene Node beitragen" zeigte in
-  `nodes.js` weiterhin auf `https://comesh.lanlibbilab.me`. Auf einer frischen Instanz hätten
-  Provider damit Befehle gegen einen fremden Server bekommen. Vorgabe ist jetzt die Adresse, unter
-  der die Seite geladen wurde; `window.COMESH_PUBLIC_ORIGIN` (config.js) bleibt für den Fall, dass
-  die öffentliche Adresse von der aufgerufenen abweicht.
+- **Die Erstinstallation war seit 0.6.18 nicht möglich: `setup.html` lud Alpine.js nie.** Die Seite
+  benutzt durchgehend Alpine-Direktiven (`x-data`, `@submit.prevent`, `x-model`), hatte aber keinen
+  Script-Tag. Ohne Alpine wird `@submit.prevent` nicht gebunden, der Browser führt einen nativen
+  GET-Submit auf die eigene Seite aus — die Eingabefelder haben kein `name`-Attribut, also gehen
+  Token, E-Mail und Passwort verloren. Im Log steht dann `GET /setup.html?` und **kein** POST an
+  `/api/setup/admin`. Nachgewiesen im Browser: vor dem Fix kein Netzwerk-Request, nach dem Fix
+  `POST /api/setup/admin`.
+- **Alpine liegt jetzt im Image** (`frontend-alpine/vendor/alpine.min.js`, 3.5.1) und alle Seiten
+  laden es lokal. Damit hängt keine Seite mehr an `unpkg.com` — eine Instanz ohne Internetzugang
+  konnte die Oberfläche bisher nicht laden. Das `Dockerfile` kopiert `vendor/` mit.
+- **Sichtbarer Wächter auf der Setup-Seite:** Fehlt Alpine, erscheint ein roter Hinweis und der
+  native Formular-Submit wird unterbunden. Der Fehler blieb wochenlang unentdeckt, weil die Seite
+  ohne JavaScript vollständig und normal aussieht.
 
 ## 0.6.22
 

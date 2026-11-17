@@ -30,3 +30,6 @@ Thumbs.db
 node-agent/.venv-build/
 node-agent/build/
 node-agent/dist/
+
+# Sicherungskopien gehoeren nicht ins Repo
+*.bak-*

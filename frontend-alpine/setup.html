@@ -114,6 +114,7 @@
   <span data-i18n="login.foot.openai">OpenAI-kompatible API</span>
 </footer>
 
+<script defer src="vendor/alpine.min.js"></script>
 <script src="config.js"></script>
 <script src="i18n-catalog.js"></script>
 <script src="i18n.js"></script>
@@ -176,5 +177,23 @@ window.addEventListener("load", function () {
 })();
 </script>
 
+<script>
+// Wächter: Ohne Alpine ist dieses Formular funktionslos. Statt stumm zu scheitern (der Fehler
+// blieb wochenlang unentdeckt, weil die Seite normal aussieht), wird das sichtbar gemeldet und
+// der native Formular-Submit unterbunden.
+window.addEventListener('load', function () {
+  if (window.Alpine) return;
+  var form = document.querySelector('form');
+  if (form) form.addEventListener('submit', function (e) { e.preventDefault(); }, true);
+  var box = document.createElement('div');
+  box.setAttribute('role', 'alert');
+  box.style.cssText = 'position:fixed;left:0;right:0;bottom:0;z-index:9999;padding:16px 22px;' +
+    'background:#7a1f1a;color:#fff;font:400 16px/1.45 system-ui,-apple-system,sans-serif;';
+  box.textContent = 'Diese Seite konnte ihr Skript (vendor/alpine.min.js) nicht laden, deshalb ' +
+    'funktioniert das Anlegen nicht. Seite mit Strg+Shift+R neu laden. Bleibt es dabei: fehlt ' +
+    'die Datei im Container? Sie muss unter /usr/share/nginx/html/vendor/alpine.min.js liegen.';
+  document.body.appendChild(box);
+});
+</script>
 </body>
 </html>
