@@ -185,7 +185,8 @@ Remove-Item -LiteralPath $tmpDir -Recurse -Force -ErrorAction SilentlyContinue
 
 # Der Start kann vom Betriebssystem verweigert werden, nicht vom Binary: AppLocker, WDAC oder
 # Smart App Control blockieren unssignierte Programme. Heruntergeladen und geprueft ist die Datei
-# dann trotzdem — der Installer kann das nicht umgehen und soll es auch nicht versuchen.
+# dann trotzdem — der Installer kann das nicht umgehen und soll es auch nicht versuchen. Er stellt
+# aber fest, WER blockiert, damit der Nutzer nicht vier Befehle abtippen muss.
 try {
     $versionLine = & $Exe --version 2>&1
     if ($LASTEXITCODE -ne 0) {
@@ -193,29 +194,88 @@ try {
     }
 } catch {
     $meldung = "$($_.Exception.Message) $($_.Exception.GetType().Name)"
-    if ($meldung -match 'Application Control|blocked|ApplicationFailed|CodeIntegrity') {
-        Write-Host ""
-        Write-Warn "Eine Systemrichtlinie blockiert das Programm (nicht der Installer)."
-        Write-Host "  Heruntergeladen und per SHA-256 geprueft ist das Binary bereits. Es darf nur nicht starten."
-        Write-Host ""
-        Write-Host "  Wer blockiert - der Reihe nach pruefen:"
-        Write-Host "    (Get-ItemProperty 'HKLM:\SYSTEM\CurrentControlSet\Control\CI\Policy' -ErrorAction SilentlyContinue).VerifiedAndReputablePolicyState"
-        Write-Host "        1 = Smart App Control aktiv, 2 = Lernphase, 0 = aus"
-        Write-Host "    Get-AppLockerPolicy -Effective -Xml | Select-String -Pattern 'AppLocker' | Select-Object -First 3"
-        Write-Host "    Get-ChildItem C:\Windows\System32\CodeIntegrity\CiPolicies\Active -ErrorAction SilentlyContinue"
-        Write-Host "    Get-WinEvent -LogName 'Microsoft-Windows-CodeIntegrity/Operational' -MaxEvents 5 | Format-List TimeCreated,Message"
-        Write-Host ""
-        Write-Host "  Drei Wege nach vorn:"
-        Write-Host "    1) Firmenrichtlinie (AppLocker/WDAC): nur die IT kann eine Ausnahme setzen, sinnvoll als"
-        Write-Host "       Herausgeber-Regel auf ein signiertes Binary. Lokal gibt es keinen Schalter dafuer;"
-        Write-Host "       eine Defender-Ausnahme hilft nicht, Anwendungskontrolle ist etwas anderes."
-        Write-Host "    2) Ohne .exe arbeiten: den Agenten aus dem Quelltext starten - python.exe ist signiert"
-        Write-Host "       und wird nicht blockiert. Anleitung: docs/windows.md, Abschnitt Application Control."
-        Write-Host "    3) Smart App Control abschalten (Windows-Sicherheit, App- und Browsersteuerung)."
-        Write-Host "       Achtung: laesst sich danach nicht wieder einschalten, nur mit Neuinstallation."
-        Fail "Abgebrochen: die Anwendung wird von einer Systemrichtlinie blockiert."
+    if ($meldung -notmatch 'Application Control|blocked|ApplicationFailed|CodeIntegrity') {
+        Fail "Das Binary startet nicht:`n$($_.Exception.Message)"
     }
-    Fail "Das Binary startet nicht:`n$($_.Exception.Message)"
+
+    Write-Host ""
+    Write-Warn "Eine Systemrichtlinie blockiert das Programm (nicht der Installer)."
+    Write-Host "  Download und Pruefsumme sind in Ordnung — die Datei darf nur nicht starten."
+    Write-Host ""
+
+    # --- Wer blockiert? Jede Quelle einzeln absichern, eine darf die anderen nicht verhindern ---
+    $sac = $null
+    $sacText = "nicht lesbar"
+    try {
+        $sac = (Get-ItemProperty 'HKLM:\SYSTEM\CurrentControlSet\Control\CI\Policy' -ErrorAction Stop).VerifiedAndReputablePolicyState
+        $sacText = switch ($sac) {
+            0 { "aus (0)" }
+            1 { "AKTIV (1) - blockiert unssignierte Programme" }
+            2 { "Lernphase (2) - blockiert noch nicht, beobachtet" }
+            default { "unbekannter Wert ($sac)" }
+        }
+    } catch { $sacText = "nicht lesbar (Schluessel fehlt)" }
+
+    $wdac = @()
+    try {
+        $wdac = @(Get-ChildItem 'C:\Windows\System32\CodeIntegrity\CiPolicies\Active' -ErrorAction Stop |
+                  Select-Object -ExpandProperty Name)
+    } catch { }
+
+    $ciEvent = ""
+    try {
+        $ev = Get-WinEvent -LogName 'Microsoft-Windows-CodeIntegrity/Operational' -MaxEvents 1 -ErrorAction Stop
+        if ($ev) {
+            $ciEvent = ($ev.Message -split "`n" | Where-Object { $_.Trim() } | Select-Object -First 3) -join " | "
+        }
+    } catch { $ciEvent = "nicht lesbar (dafuer sind meist Adminrechte noetig)" }
+
+    $applocker = ""
+    try {
+        $al = Get-AppLockerPolicy -Effective -ErrorAction Stop
+        if ($al) { $applocker = "Richtlinie vorhanden ($($al.RuleCollections.Count) Regelgruppen)" }
+    } catch { $applocker = "nicht lesbar" }
+
+    Write-Host "  Befund auf diesem Rechner:"
+    Write-Host "    Smart App Control ....... $sacText"
+    Write-Host "    WDAC-Richtlinien ........ $(if ($wdac.Count) { $wdac -join ', ' } else { 'keine im Ordner CiPolicies\Active' })"
+    Write-Host "    AppLocker ............... $(if ($applocker) { $applocker } else { 'keine' })"
+    Write-Host "    Letztes CodeIntegrity-Ereignis: $ciEvent"
+    Write-Host ""
+
+    if ($sac -eq 1) {
+        Write-Host "  => Ursache ist Smart App Control (Windows 11). Drei Wege:"
+        Write-Host "     1) Ohne .exe arbeiten, Agent aus dem Quelltext - python.exe ist signiert und wird"
+        Write-Host "        nicht blockiert. Das ist der schnellste Weg und braucht keine Rechte:"
+        Write-Host "          irm $BaseUrl/install-from-source.ps1 -OutFile $env:TEMP\comesh-src.ps1; & $env:TEMP\comesh-src.ps1 -PortalUrl $PortalUrl"
+        Write-Host "     2) Smart App Control abschalten: Windows-Sicherheit -> App- und Browsersteuerung."
+        Write-Host "        Achtung: laesst sich danach NICHT wieder einschalten, nur mit Neuinstallation."
+        Write-Host "     3) Herausgeber-Regel durch die IT auf ein signiertes Binary."
+    } elseif ($wdac.Count -gt 0 -or $applocker) {
+        Write-Host "  => Ursache ist eine Firmenrichtlinie (WDAC/AppLocker). Lokal gibt es keinen Schalter."
+        Write-Host "     Sinnvoll: Agent aus dem Quelltext starten (braucht keine Rechte):"
+        Write-Host "       irm $BaseUrl/install-from-source.ps1 -OutFile $env:TEMP\comesh-src.ps1; & $env:TEMP\comesh-src.ps1 -PortalUrl $PortalUrl"
+        Write-Host "     Oder die IT um eine Herausgeber-Regel auf ein signiertes Binary bitten."
+        Write-Host "     Eine Defender-Ausnahme fuer einen Ordner hilft nicht — Anwendungskontrolle ist"
+        Write-Host "     ein anderer Mechanismus als Virenscanning."
+    } else {
+        Write-Host "  => Keine Richtlinie direkt lesbar (dafuer braucht es oft Adminrechte)."
+        Write-Host "     Zwei Versuche der Reihe nach:"
+        Write-Host "     a) Agent aus dem Quelltext starten (unabhaengig von jeder Richtlinie):"
+        Write-Host "          irm $BaseUrl/install-from-source.ps1 -OutFile $env:TEMP\comesh-src.ps1; & $env:TEMP\comesh-src.ps1 -PortalUrl $PortalUrl"
+        Write-Host "     b) Von Hand als Administrator nach C:\Program Files legen — die Standard-Pfadregeln"
+        Write-Host "        von AppLocker erlauben Programme dort:"
+        Write-Host "          New-Item -ItemType Directory -Force 'C:\Program Files\CoMesh' | Out-Null"
+        Write-Host "          Copy-Item `"$Exe`" 'C:\Program Files\CoMesh\' -Force"
+        Write-Host "          & 'C:\Program Files\CoMesh\comesh-agent.exe' --version"
+    }
+    Write-Host ""
+
+    if ($env:COMESH_DEBUG_APPLICATION_CONTROL) {
+        Write-Host "  Rohe Ausnahme (COMESH_DEBUG_APPLICATION_CONTROL gesetzt):"
+        Write-Host "    $($_.Exception.ToString())"
+    }
+    Fail "Abgebrochen: die Anwendung wird von einer Systemrichtlinie blockiert."
 }
 Write-Ok "installiert: $Exe - $versionLine"
 
