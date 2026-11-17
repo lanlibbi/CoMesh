@@ -1,5 +1,42 @@
 # Auslieferung der Node-Agent-Binaries
 
+## Eine frische Instanz hat keine Binaries — das ist der Normalfall
+
+Die Dateien `comesh-agent-*` sind **absichtlich nicht versioniert** (siehe `.gitignore` hier:
+15–25 MB je Datei, sie gehören zu einem Release, nicht zum Quellstand). Nach einem frischen Klon
+oder `git pull` ist dieser Ordner darum leer — und die Beitragen-Ansicht im Portal meldet für jede
+Datei „nicht ermittelbar / keine Prüfsummendatei". Die Oberfläche hat keinen Defekt; es fehlen
+schlicht die Dateien, die sie ausliefern soll.
+
+Nach dem Aufbau einer neuen Instanz gehören deshalb **zwei** Schritte dazu: Dateien bereitstellen,
+dann das Frontend-Image neu bauen (das `Dockerfile` kopiert diesen Ordner beim Bauen hinein).
+
+```bash
+# Dateien von einer Instanz holen, die sie hat (prüft jede SHA-256 gegen die .sha256 daneben)
+scripts/hole-agent-binaries.sh https://<quelle>
+
+# nur linux, wenn kein Windows-/macOS-Knoten geplant ist
+scripts/hole-agent-binaries.sh --nur-linux https://<quelle>
+
+# jederzeit prüfen, was fehlt
+scripts/hole-agent-binaries.sh --pruefen
+
+# danach zwingend neu bauen — sonst bleibt das Image ohne die Dateien
+docker compose build frontend
+docker compose up -d --no-deps --force-recreate frontend
+curl -s -o /dev/null -w '%{http_code} %{size_download}\n' \
+  http://127.0.0.1:8767/downloads/comesh-agent-linux-x86_64    # 200 und die Dateigröße
+```
+
+Das Skript hat **keine fest eingebaute Quelladresse**: eine Instanz soll nicht stillschweigend bei
+einer fremden mitlesen (dieselbe Regel wie in 0.6.22 für die Installer). Ohne Argument verweigert es
+den Dienst und nennt den Aufruf.
+
+Wer die Dateien selbst bauen will: `node-agent/build.sh` (Linux/macOS am Zielsystem, PyInstaller),
+`node-agent/build.ps1` (Windows). Für `darwin-arm64` gibt es den Workflow
+`.github/workflows/build-node-agent.yml` auf `macos-latest`.
+
+
 Dieser Ordner wird vom Frontend-Container mit ausgeliefert
 (`COPY downloads/ /usr/share/nginx/html/downloads/`), damit ein Provider nur
 **einen** Namen braucht:
