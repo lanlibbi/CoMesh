@@ -149,6 +149,17 @@ if ($KeyFile) {
 }
 if (-not $accountKey) { Fail "Ohne Account-Schluessel kann sich die Node nicht registrieren." }
 
+# Wurde mehr als der Schluessel eingefuegt (ganze Seite mitkopiert), den Wert heraussuchen.
+# Ein gueltiger Schluessel ist gpu_ + 43 Zeichen; das Muster findet ihn auch mitten im Text.
+if ($ACCOUNT_KEY.Length -gt 47) {
+    $laengeVorher = $ACCOUNT_KEY.Length
+    $treffer = [regex]::Match($ACCOUNT_KEY, "gpu_[A-Za-z0-9_-]{43}")
+    if ($treffer.Success) {
+        $ACCOUNT_KEY = $treffer.Value
+        Write-Ok "Schluessel aus der Eingabe herausgelesen (statt $laengeVorher Zeichen jetzt 47)."
+    }
+}
+
 # Format pruefen, ohne den Wert auszugeben: gueltig ist gpu_ + 43 Zeichen (token_urlsafe(32)).
 # Weicht die Laenge ab, wurde beim Kopieren abgeschnitten - der haeufigste Fall.
 $ACCOUNT_KEY = "$ACCOUNT_KEY".Trim()
