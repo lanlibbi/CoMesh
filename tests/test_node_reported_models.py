@@ -253,7 +253,9 @@ def test_portal_speichert_die_gemeldeten_modelle(client):
 
     _beat(client, node, models=[NODE_MODELL, ANDERES_MODELL, NODE_MODELL])
 
-    detail = client.get(f"/nodes/{node['id']}").json()
+    # SEC-08: die volle Node-Form gibt es nur noch fuer angemeldete Aufrufer (anonym kommt die
+    # schmale Katalog-Form ohne Agent-Selbstauskunft).
+    detail = client.get(f"/nodes/{node['id']}", headers=konto["headers"]).json()
     assert detail["reported_models"] == [NODE_MODELL, ANDERES_MODELL]
     assert detail["reported_models_at"]
     # Die Freigabe des Besitzers bleibt davon unberuehrt.
@@ -267,7 +269,8 @@ def test_heartbeat_ohne_meldung_laesst_die_liste_stehen(client):
     _beat(client, node, models=[NODE_MODELL])
     _beat(client, node, models=None)
 
-    assert client.get(f"/nodes/{node['id']}").json()["reported_models"] == [NODE_MODELL]
+    detail = client.get(f"/nodes/{node['id']}", headers=konto["headers"]).json()
+    assert detail["reported_models"] == [NODE_MODELL]
 
 
 # --------------------------------------------------------------------------

@@ -649,14 +649,36 @@ async def net_echo(request: Request):
         except Exception:
             derived = None
 
-    return {
-        "portal": {
+    # SEC-08: Hostname, FQDN und die nach aussen sichtbare IP des Portals gehen nur noch an
+    # angemeldete Aufrufer. Fuer die Setup-Pruefung (check_setup.sh, `agent.py --check`) zaehlen
+    # die Peer-Adresse und die abgeleitete Node-URL — die bleiben oeffentlich.
+    from auth import optional_user
+
+    angemeldet = False
+    try:
+        angemeldet = optional_user(
+            authorization=request.headers.get("authorization"),
+            x_api_key=request.headers.get("x-api-key"),
+            db=next(get_db()),
+        ) is not None
+    except Exception:
+        angemeldet = False
+
+    portal_info = {
+        "public_url": APP_PUBLIC_URL or request_base_url(request),
+        "base_url_seen_by_caller": request_base_url(request),
+    }
+    socket_info = {}
+    if angemeldet:
+        portal_info.update({
             "advertise_host": os.environ.get("ADVERTISE_HOST") or local_hostname(),
             "detected_ip": detect_outbound_ip(),
             "hostname": local_hostname(),
-            "public_url": APP_PUBLIC_URL or request_base_url(request),
-            "base_url_seen_by_caller": request_base_url(request),
-        },
+        })
+        socket_info = {"fqdn": socket.getfqdn(), "hostname": socket.gethostname()}
+
+    return {
+        "portal": portal_info,
         "caller": {
             "peer_host": peer,
             "x_forwarded_for": request.headers.get("x-forwarded-for"),
@@ -669,7 +691,7 @@ async def net_echo(request: Request):
             "Use a DNS or mDNS name instead of an IP so a DHCP lease change cannot break the pool.",
             "A mesh VPN (e.g. Tailscale MagicDNS) works too — it is one option, not a requirement.",
         ],
-        "socket": {"fqdn": socket.getfqdn(), "hostname": socket.gethostname()},
+        "socket": socket_info,
     }
 
 
@@ -1767,7 +1789,13 @@ async def seed_test_user_if_empty():
             seed_path = os.environ.get("SEED_KEY_PATH", "/data/seed_api_key.txt")
             with open(seed_path, "w") as f:
                 f.write(f"email: test@example.com\npassword: password123\nkey: {raw_key}\nkey_prefix: {key_prefix}\n")
-            log.info(f"=== SEED USER CREATED ===\n  email: test@example.com\n  password: password123\n  api_key: {raw_key}\n  (also written to {seed_path})")
+            # SEC-13: Passwort und Rohschluessel gehoerten nicht ins Container-Log (json-file,
+            # 50 MB x 5). Die Datei hat 0600 und reicht.
+            log.info(
+                "=== SEED USER CREATED === E-Mail test@example.com, Passwort und API-Schluessel "
+                "stehen in %s (Datei ist auf 0600 gesetzt).",
+                seed_path,
+            )
         else:
             log.info("DB already populated, skipping seed.")
             # Make sure the test user has a password set (idempotent)

@@ -27,7 +27,7 @@ from fastapi import APIRouter, Depends, HTTPException, Header, Request, status
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
-from auth import get_current_user, generate_node_key, verify_node_key, hash_api_key
+from auth import get_current_user, generate_node_key, verify_node_key, hash_api_key, optional_user
 from ratelimit import limit_node
 from database import get_db
 from models import GpuNode, NodeHeartbeat, User
@@ -556,15 +556,45 @@ def my_nodes(
     return out
 
 
-@router.get("/{node_id}", response_model=NodeOut)
-def get_node(node_id: int, db: Session = Depends(get_db)):
+@router.get("/{node_id}")
+def get_node(node_id: int, db: Session = Depends(get_db), user=Depends(optional_user)):
+    """Eine Node — anonym in der schmalen Form, angemeldet vollstaendig.
+
+    SEC-08: ohne Anmeldung fallen `node_url`, `owner_id`, `earnings_total`, `allowed_models` und
+    die Agent-Selbstauskunft weg. Genau diese Felder ergaben zusammen mit /net/echo ein Bild der
+    internen Topologie und der Umsaetze. Der oeffentliche Katalog (`/nodes/list`) hatte die
+    schmale Form schon immer; hier fehlte sie nur.
+    """
     node = db.query(GpuNode).filter(GpuNode.id == node_id).first()
     if not node:
         raise HTTPException(status_code=404, detail="Node not found")
+
+    online = _is_online(node)
     fields = node_out_fields(node)
-    if not _is_online(node):
+    if not online:
         fields["status"] = "offline"
-    return NodeOut(**fields)
+
+    if user is not None:
+        return NodeOut(**fields)
+
+    oeffentlich = NodePublicOut(
+        id=node.id,
+        name=node.name,
+        gpu_type=node.gpu_type,
+        vram_gb=node.vram_gb,
+        vram_source=getattr(node, "vram_source", None) or "",
+        status="online" if online else node.status,
+        hourly_rate=node.hourly_rate,
+        backend=node.backend or "ollama",
+        last_seen=node.last_seen.isoformat() if node.last_seen else None,
+        current_utilization=node.current_utilization if online else 0.0,
+        vram_used_gb=node.vram_used_gb if online else 0.0,
+        description=node.description,
+        allowed_models=node.get_allowed_models(),
+        availability=getattr(node, "availability", None) or "always",
+        created_at=node.created_at.isoformat(),
+    )
+    return oeffentlich
 
 
 @router.post("/{node_id}/heartbeat", status_code=204)

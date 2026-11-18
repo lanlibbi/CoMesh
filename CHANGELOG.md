@@ -1,3 +1,75 @@
+## 0.6.28
+
+Sicherheitsdurchgang nach einem externen Review (13 Befunde, alle am Code nachgeprüft). Die
+Fehlerklasse war überall dieselbe: Prüfungen lagen an zwei Orten statt an einer Stelle.
+
+### Behoben (hoch)
+
+- **Das globale `NODE_SHARED_SECRET` ging an eine benutzerwählbare Adresse.** `node_url` ist ein
+  freies Feld bei `POST /nodes/register`; das Portal baute daraus die Proxy-URL und schickte das
+  gemeinsame Geheimnis mit. Wer es kannte, sprach jeden Agenten direkt an (Bindung `0.0.0.0`) —
+  fremde GPUs kostenlos, an Guthaben und Modell-Whitelist vorbei. Jetzt leitet
+  `pool.node_request_headers(node)` ein **node-eigenes** Token ab
+  (`HMAC-SHA256(api_key_hash, "comesh-portal-v1")`); der Agent rechnet dasselbe aus seinem
+  Node-Key. Für andere Nodes ist das Token wertlos. Das globale Secret verlässt das Portal nur
+  noch mit `ALLOW_LEGACY_NODE_SECRET=1`.
+- **`node_url` wurde nicht geprüft.** `netinfo.node_url_is_allowed()` erlaubt nur `http`/`https`
+  und lehnt Loopback sowie Link-Local (inkl. `169.254.169.254`) ab; LAN-Bereiche bleiben erlaubt,
+  weil Nodes dort hängen. Registrierung und Änderung antworten mit 422, und vor jedem Request
+  wird erneut geprüft — mit DNS-Auflösung, damit ein nachträglich umgebogener Eintrag nicht
+  durchkommt.
+- **Der WebSocket-Chat baute die Authentifizierung nach** und prüfte nur `is_active`. Damit
+  fehlten Token-Ablauf (`expires_at`) und Freigabestatus (`registration_status`), und
+  `limit_chat()` wurde nie aufgerufen: ein abgelaufener Schlüssel und ein nicht freigegebenes
+  Konto kamen über WS weiter, Nachrichten waren unbegrenzt. `ws._ws_auth_user()` benutzt jetzt
+  `auth.resolve_token()` — eine Stelle, eine Regel — und limitiert pro Nachricht.
+
+### Behoben (mittel)
+
+- **Startguthaben ließ sich selbst bestimmen.** `RegisterRequest.initial_credits` war
+  unbeschränkt und landete in `signup_credits`; ein Admin buchte es beim Freischalten mit. Jetzt
+  bestimmt die Instanz den Wert (`SIGNUP_CREDITS`, Vorgabe 100), das Feld ist begrenzt und wird
+  ignoriert.
+- **Admin-Passwörter wurden ungesalzen gehasht** (`sha256`, an zwei Stellen). Jetzt
+  `auth.hash_password()` — PBKDF2-HMAC-SHA256, 240k Iterationen, pro User gesalzen.
+- **Der Agent war ohne `NODE_SHARED_SECRET` offen.** Die Sperre ließ alles durch und warnte nur.
+  Jetzt genügt der Node-Key: der Agent verlangt das abgeleitete Token, sobald einer existiert.
+- **Ein echter API-Schlüssel stand im Klartext in `POC-REPORT.md`** (im HEAD). Redigieret; der
+  Schlüssel selbst muss widerrufen werden (Portal → Profil → Schlüssel löschen).
+- **`frontend/index.html` lieferte vorbelegte Zugangsdaten aus** (`test@example.com` /
+  `password123`) — auch über den API-Port.
+- **32 Sicherungskopien lagen im Git und im Image** (`.bak-comesh-sse/`, `.bak-comesh-ui/`,
+  `.trash-20261011/`). Darin alte `main.py`-Stände mit Klartext-Passwort. Aus dem Index entfernt,
+  `.gitignore` und `.dockerignore` decken sie jetzt ab.
+
+### Behoben (niedrig)
+
+- `GET /nodes/{id}` zeigt anonym nur noch die schmale Katalogform (kein `node_url`, `owner_id`,
+  `earnings_total`, keine Agent-Selbstauskunft); angemeldet bleibt die volle Form.
+- `GET /net/echo` gibt Hostname, FQDN und Außen-IP nur noch an angemeldete Aufrufer — die Felder
+  für die Setup-Prüfung bleiben offen.
+- `scripts/smoke_run.sh` bricht ohne `ADMIN_API_KEY` ab, statt einen festen Bearer zu erfinden.
+- `payments.py` setzt keinen Ersatzschlüssel (`sk_test_mock`) mehr am Stripe-SDK.
+- Setup-Token und Seed-Schlüssel stehen nicht mehr im Container-Log, nur noch der Dateipfad.
+- `.gitignore` um `node_modules/`, `*.db-wal`, `*.db-shm`, `*.sqlite3`, `data/`, `*.pem`, `*.key`,
+  `.env*` und die Token-Dateien ergänzt.
+
+### Tests
+
+Neu: `tests/test_security_node_secret.py` (18 Wächter: Header enthält nie das globale Secret,
+LAN-Adressen bleiben erlaubt, Loopback/Link-Local/fremde Schemata nicht, Agent rechnet dasselbe
+Token, Agent ist ohne Secret nicht mehr offen) und `tests/test_security_credits_auth.py`
+(Guthaben nicht aufblähbar, Admin-Passwörter PBKDF2). In `tests/test_ws_chat.py` vier Wächter für
+die WS-Bypasses — gegen den alten Stand nachweislich rot, mit dem neuen grün.
+
+### Offen (bewusst)
+
+- **Agent-Schlüssel steht weiter im Query-String** (`ws://…/agent/connect?node_key=…`), siehe
+  `docs/security.md`. Der Agent spricht direkt mit dem Portal; hinter einem Reverse-Proxy landet
+  der Schlüssel aber im Access-Log. Umstellung auf Subprotocol folgt.
+- **History-Bereinigung** (der alte Schlüssel steckt in der Commit-Historie) braucht
+  `git filter-repo` und schreibt alle Hashes neu — nur nach ausdrücklicher Freigabe.
+
 ## 0.6.27
 
 ### Behoben

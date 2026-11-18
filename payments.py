@@ -62,7 +62,11 @@ APP_PUBLIC_URL = os.environ.get("APP_PUBLIC_URL", "").rstrip("/")
 # Optional SDKs
 try:
     import stripe  # type: ignore
-    stripe.api_key = STRIPE_SECRET_KEY or "sk_test_mock"
+    # SEC-12: keinen Ersatzschluessel am SDK setzen. Alle Aufrufstellen pruefen ohnehin auf ein
+    # gesetztes STRIPE_SECRET_KEY; ein "sk_test_mock" als globaler Default ist eine Falle fuer
+    # spaetere Umbauten (dann geht ein Request mit Attrappe hinaus statt zu scheitern).
+    if STRIPE_SECRET_KEY:
+        stripe.api_key = STRIPE_SECRET_KEY
     STRIPE_AVAILABLE = True
 except Exception:  # pragma: no cover
     STRIPE_AVAILABLE = False

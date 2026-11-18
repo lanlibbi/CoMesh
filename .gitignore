@@ -33,3 +33,24 @@ node-agent/dist/
 
 # Sicherungskopien gehoeren nicht ins Repo
 *.bak-*
+
+# SEC-11: Luecken, die im Sicherheitsbericht aufgelaufen sind.
+node_modules/
+*.db-wal
+*.db-shm
+*.sqlite3
+data/
+*.pem
+*.key
+.env
+.env.local
+.env.*
+admin_api_key.txt
+admin_password.txt
+setup_token.txt
+seed_api_key.txt
+
+# SEC-07: Sicherungskopien und Papierkorb. `*.bak-*` deckte die Verzeichnisse nicht ab,
+# deshalb lagen sie im Repo und per COPY . . auch im Produktionsimage.
+.bak-*
+.trash-*

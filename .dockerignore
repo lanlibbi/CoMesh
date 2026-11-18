@@ -14,6 +14,9 @@ data/
 *.db-journal
 seed_api_key.txt
 *.bak-lana*
+# SEC-07: Sicherungskopien enthalten alte main.py-Staende mit Seed-Passwort im Klartext.
+.bak-*
+.trash-*
 *.tgz
 
 # Python noise

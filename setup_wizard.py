@@ -111,8 +111,10 @@ def ensure_setup_token() -> Optional[str]:
             return None
 
     log.warning("=" * 68)
-    log.warning("Setup-Token für die Ersteinrichtung: %s", token)
-    log.warning("Aufrufen: http://<host>:<port>/setup.html  (Datei: %s)", SETUP_TOKEN_FILE)
+    # SEC-13: Das Token ist die einzige Sperre gegen die Uebernahme einer frischen Instanz — es
+    # stand aber im Container-Log (json-file, 50 MB x 5). Jetzt steht dort nur noch der Ort.
+    log.warning("Setup-Token für die Ersteinrichtung liegt in: %s", SETUP_TOKEN_FILE)
+    log.warning("Aufrufen: http://<host>:<port>/setup.html")
     log.warning("Dieser Hinweis erscheint nur, solange kein Administrator existiert.")
     log.warning("=" * 68)
     return token

@@ -277,6 +277,30 @@ def parse_bearer_header(authorization: Optional[str]) -> str:
     return parts[1].strip()
 
 
+def optional_user(
+    authorization: Optional[str] = Header(None),
+    x_api_key: Optional[str] = Header(None, alias="x-api-key"),
+    db: Session = Depends(get_db),
+):
+    """Angemeldeter User oder None — fuer Endpunkte, die auch anonym antworten.
+
+    SEC-08: `/nodes/{id}` soll ohne Token nur oeffentliche Felder zeigen, mit Token alles. Statt
+    die Token-Aufloesung ein zweites Mal zu schreiben (genau daraus entstand der WS-Bypass), wird
+    hier `resolve_token` benutzt und jeder Fehler zu `None`.
+    """
+    roh = (x_api_key or "").strip()
+    if not roh and authorization:
+        teile = authorization.split(None, 1)
+        roh = (teile[1] if len(teile) == 2 else "").strip()
+    if not roh:
+        return None
+    try:
+        _key, user = resolve_token(db, roh, touch=False)
+    except HTTPException:
+        return None
+    return user
+
+
 def resolve_token(db: Session, raw_token: str, *, touch: bool = True) -> Tuple[ApiKey, User]:
     """
     Resolve a raw token to (ApiKey, User). Raises 401 on any failure.

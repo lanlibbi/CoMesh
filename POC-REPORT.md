@@ -36,9 +36,9 @@ endpoint that proxies to the host's existing Ollama instance.
 - **email:** `test@example.com`
 - **name:** `Test User`
 - **initial credits:** 100.0
-- **API key:** `gpu_ScOgpgvZWQDh2OgPY_XmsRI2uELsUud8tWQyEvPn2bs`
+- **API key:** `gpu_<redacted>`
   - Also persisted to `/data/seed_api_key.txt` on the Docker volume
-  - Key prefix shown in DB: `gpu_ScOgpgvZ`
+  - Key prefix shown in DB: `gpu_<redacted>`
 
 > ⚠️ The raw key is only visible in the container log / seed file on first
 > start. Subsequent restarts won't show it again. If lost, create a new user
@@ -61,7 +61,7 @@ endpoint that proxies to the host's existing Ollama instance.
 
 ```
 users:                [(1, 'test@example.com', 'Test User')]
-api_keys:             [(1, 1, 'gpu_ScOgpgvZ', 'seed-test-key')]
+api_keys:             [(1, 1, 'gpu_<redacted>', 'seed-test-key')]
 credit_transactions:  [
   (1, 1, 100.0,    100.0,    'initial credit (seed)'),
   (2, 1, -0.00004, 99.99996, 'chat: qwen2.5-coder:7b (40 tokens)')
@@ -79,7 +79,7 @@ curl http://portal-host:8765/health
 
 # Chat
 curl -X POST http://portal-host:8765/v1/chat/completions \
-  -H "Authorization: Bearer gpu_ScOgpgvZWQDh2OgPY_XmsRI2uELsUud8tWQyEvPn2bs" \
+  -H "Authorization: Bearer gpu_<redacted>" \
   -H "Content-Type: application/json" \
   -d '{
     "model": "qwen2.5-coder:7b",
@@ -167,5 +167,5 @@ Three HTML pages served by FastAPI itself:
 - `/credits`  — buy credit packages (4 buttons per package, transaction history)
 
 Open http://portal-host:8765/credits in a browser, log in with
-`test@example.com` / `password123`, and click any payment button to test
+`test@example.com` / `<redacted-password>`, and click any payment button to test
 the full flow.
