@@ -641,9 +641,10 @@ def admin_create_user(
 
         user = User(email=email, name=req.name, is_active=True, role=role)
         if req.password:
-            user.password_hash = __import__("hashlib").sha256(
-                req.password.encode("utf-8")
-            ).hexdigest()
+            # SEC-04: gesalzenes PBKDF2 wie ueberall sonst (vorher sha256 ohne Salt).
+            from auth import hash_password as _hash_password
+
+            user.password_hash = _hash_password(req.password)
         db.add(user)
         db.flush()
         db.add(CreditTransaction(
@@ -1002,8 +1003,11 @@ def admin_update_user(
             user.allow_cloud = bool(req.allow_cloud)
 
     if req.password:
-        import hashlib as _hashlib
-        user.password_hash = _hashlib.sha256(req.password.encode("utf-8")).hexdigest()
+        # SEC-04: gesalzenes PBKDF2 wie ueberall sonst. Der alte sha256-Hash ohne Salt war mit
+        # Rainbow-Tables knackbar und lag bis zum naechsten Login in der Datenbank.
+        from auth import hash_password as _hash_password
+
+        user.password_hash = _hash_password(req.password)
         # Der Wert selbst gehoert nie ins Protokoll, nur die Tatsache.
         changes["password"] = {"changed": True}
 

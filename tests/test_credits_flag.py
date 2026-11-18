@@ -75,12 +75,24 @@ def flag():
 
 
 def _new_user(client, initial_credits: float = 0.0):
-    """Register a fresh user and return (headers, user_id, api_key)."""
+    """Register a fresh user and return (headers, user_id, api_key).
+
+    SEC-03: das Startguthaben kommt nicht mehr aus dem Request. Es wird serverseitig ueber
+    SIGNUP_CREDITS gesetzt (die Registrierung liest die Variable zur Laufzeit).
+    """
     email = f"credits-{uuid.uuid4().hex[:10]}@example.com"
-    r = client.post("/auth/register", json={
-        "email": email, "name": "Credits Test", "password": "pw123456",
-        "role": "both", "initial_credits": initial_credits,
-    })
+    alt = os.environ.get("SIGNUP_CREDITS")
+    os.environ["SIGNUP_CREDITS"] = str(initial_credits)
+    try:
+        r = client.post("/auth/register", json={
+            "email": email, "name": "Credits Test", "password": "pw123456",
+            "role": "both", "initial_credits": initial_credits,
+        })
+    finally:
+        if alt is None:
+            os.environ.pop("SIGNUP_CREDITS", None)
+        else:
+            os.environ["SIGNUP_CREDITS"] = alt
     assert r.status_code == 200, r.text
     body = r.json()
 

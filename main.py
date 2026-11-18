@@ -260,7 +260,10 @@ class ChatCompletionResponse(BaseModel):
 class CreateUserRequest(BaseModel):
     email: str
     name: str
-    initial_credits: float = 100.0
+    # SEC-03: Startguthaben bestimmt die Instanz, nicht der Registrierende. Das Feld bleibt fuer
+    # alte Clients lesbar, wird aber nicht mehr uebernommen (siehe auth_register). Die Grenze hier
+    # ist nur der zweite Boden — ein 1e9 aus dem Request darf nirgends durchrutschen.
+    initial_credits: float = Field(100.0, ge=0.0, le=1_000_000.0)
 
 
 class AdminSettingsUpdate(BaseModel):
@@ -1492,6 +1495,26 @@ def _hash_pw(pw: str) -> str:
     return hash_password(pw)
 
 
+def signup_startguthaben() -> float:
+    """Startguthaben fuer Selbstregistrierungen (SEC-03).
+
+    Eine Sache der Instanz: `SIGNUP_CREDITS` in der Umgebung, sonst 100. Der Wert aus dem
+    Registrierungs-Request wird absichtlich ignoriert — sonst setzt sich jeder sein Guthaben
+    selbst und ein Admin bucht es beim Freischalten mit.
+    """
+    roh = (os.environ.get("SIGNUP_CREDITS") or "").strip()
+    if not roh:
+        return 100.0
+    try:
+        wert = float(roh)
+    except ValueError:
+        log.warning("SIGNUP_CREDITS ist keine Zahl (%r) — nehme 100.0", roh)
+        return 100.0
+    if wert < 0:
+        return 0.0
+    return min(wert, 1_000_000.0)
+
+
 class RegisterRequest(BaseModel):
     email: str
     name: str
@@ -1619,7 +1642,9 @@ def auth_register(req: RegisterRequest, request: Request, db: Session = Depends(
         registration_status="pending",
         password_hash=hash_password(req.password),
         role=role,
-        signup_credits=req.initial_credits,
+        # SEC-03: bewusst *nicht* req.initial_credits — sonst bestimmt der Registrierende sein
+        # Startguthaben selbst, und ein Admin bestaetigt es beim Freischalten unwissentlich mit.
+        signup_credits=signup_startguthaben(),
     )
     db.add(user)
     db.flush()
