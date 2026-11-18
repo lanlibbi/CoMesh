@@ -14,6 +14,10 @@ AGENT = BASIS / "node-agent" / "agent.py"
 
 
 def _lade_agent():
+    # node-agent muss im Suchpfad stehen, sonst greift das gleichnamige Modul im
+    # Repo-Wurzelverzeichnis und der Import von gpu_summary scheitert.
+    import sys
+    sys.path.insert(0, str(AGENT.parent))
     spec = importlib.util.spec_from_file_location("comesh_agent_test", AGENT)
     modul = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(modul)

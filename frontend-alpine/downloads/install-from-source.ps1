@@ -78,6 +78,31 @@ function Stop-Agent {
     return
 }
 
+function Set-Autostart {
+    # Erst die Aufgabenplanung, dann der Run-Schluessel. Auf verwalteten Rechnern verweigert
+    # schtasks die Aufgabe; HKCU braucht dafuer keine Rechte und keinen Dienst.
+    $vorher = $ErrorActionPreference
+    $ErrorActionPreference = "SilentlyContinue"
+    try {
+        & schtasks.exe /Create /TN "$TaskName" /TR "$TaskCmd" /SC ONLOGON /RL LIMITED /F 2>&1 | Out-Null
+        if ($LASTEXITCODE -eq 0) {
+            Write-Ok "Autostart: Aufgabe '$TaskName' (bei Anmeldung)."
+            return $true
+        }
+        Write-Warn "Aufgabenplanung verweigert '$TaskName' (Exitcode $LASTEXITCODE) - Run-Schluessel als Ausweichweg."
+        $runKey = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run"
+        if (-not (Test-Path -LiteralPath $runKey)) { New-Item -Path $runKey -Force | Out-Null }
+        Set-ItemProperty -LiteralPath $runKey -Name "CoMesh Agent" -Value $TaskCmd
+        Write-Ok "Autostart: Run-Schluessel HKCU (startet bei der naechsten Anmeldung)."
+        return $true
+    } catch {
+        Write-Warn "Autostart konnte nicht eingerichtet werden: $($_.Exception.Message)"
+        return $false
+    } finally {
+        $ErrorActionPreference = $vorher
+    }
+}
+
 # ---------------------------------------------------------------------------
 # Entfernen
 # ---------------------------------------------------------------------------
@@ -250,19 +275,19 @@ if ($KeyOnly) {
         Write-Warn "Der Agent hat sich sofort beendet - siehe Protokoll unten."
     }
 
-    # Autostart nachziehen, falls er nie angelegt wurde.
+    # Autostart sicherstellen: Aufgabe oder Run-Schluessel.
+    $autostartOk = $false
     $vorher = $ErrorActionPreference
     $ErrorActionPreference = "SilentlyContinue"
     try {
         & schtasks.exe /Query /TN "$TaskName" 2>&1 | Out-Null
-        if ($LASTEXITCODE -ne 0) {
-            & schtasks.exe /Create /TN "$TaskName" /TR "$TaskCmd" /SC ONLOGON /RL LIMITED /F 2>&1 | Out-Null
-            if ($LASTEXITCODE -eq 0) { Write-Ok "Autostart-Aufgabe '$TaskName' nachgezogen." }
-            else { Write-Warn "Autostart-Aufgabe konnte nicht angelegt werden." }
-        } else {
-            Write-Ok "Autostart-Aufgabe '$TaskName' ist vorhanden."
-        }
+        $autostartOk = ($LASTEXITCODE -eq 0)
     } finally { $ErrorActionPreference = $vorher }
+    if ($autostartOk) {
+        Write-Ok "Autostart: Aufgabe '$TaskName' ist vorhanden."
+    } else {
+        [void](Set-Autostart)
+    }
 
     Write-Step "Protokoll (letzte Zeilen)"
     if (Test-Path -LiteralPath $LogFile) {
