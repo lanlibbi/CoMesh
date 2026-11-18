@@ -90,10 +90,20 @@ if (-not $PortalUrl) {
 }
 $PortalUrl = $PortalUrl.TrimEnd("/")
 if ($PortalUrl -notmatch '^https?://') { Fail "PortalUrl muss mit http:// oder https:// beginnen, nicht '$PortalUrl'." }
-$apiProbe = "$PortalUrl/version"
+# /health ist der einzige lebende Endpunkt am Frontend-Port. /version gehoert nicht zu den
+# Pfaden, die nginx an die API durchreicht - dort antwortet die HTML-Ersatzseite mit 200, und ein
+# reines Statuscode-Pruefen haelt das fuer Erfolg. Deshalb: JSON verlangen, Ausgabe kurz halten.
+$apiProbe = "$PortalUrl/health"
 try {
-    $v = Invoke-RestMethod -Uri $apiProbe -TimeoutSec 15
-    Write-Ok "Portal erreichbar: $(($v | ConvertTo-Json -Compress))"
+    $antwort = Invoke-WebRequest -Uri $apiProbe -TimeoutSec 15 -UseBasicParsing
+    $istJson = "$($antwort.Headers['Content-Type'])" -match 'json'
+    if (-not $istJson) {
+        Write-Warn "$apiProbe antwortet mit $($antwort.Headers['Content-Type']) statt JSON - das ist die HTML-Ersatzseite."
+        Write-Warn "Pruefe die Adresse: sie muss auf die API zeigen, z. B. http://<host>:8765 oder http://<host>:8767/api"
+    } else {
+        $v = $antwort.Content | ConvertFrom-Json
+        Write-Ok "Portal erreichbar: ok=$($v.ok) status=$($v.status)"
+    }
 } catch {
     Write-Warn "Portal antwortet nicht auf $apiProbe ($($_.Exception.Message)). Die Installation laeuft weiter."
 }
@@ -135,20 +145,36 @@ if ($accountKey -notmatch '^[A-Za-z0-9._:-]+$') {
 # 3. Python
 # ---------------------------------------------------------------------------
 Write-Step "Python"
-$python = $null
-foreach ($kandidat in @("py", "python")) {
+# Reihenfolge: py-Launcher, dann python im PATH, dann die ueblichen Installationspfade.
+# Der Store-Platzhalter python.exe meldet keinen Versionsstring - er faellt damit automatisch raus.
+$pythonPfad = $null
+$kandidaten = @("py", "python", "python3")
+$pfade = @()
+foreach ($muster in @("$env:LOCALAPPDATA\Programs\Python\Python3*\python.exe",
+                      "C:\Python3*\python.exe",
+                      "$env:ProgramFiles\Python3*\python.exe")) {
+    $pfade += @(Get-ChildItem -Path $muster -ErrorAction SilentlyContinue | Select-Object -ExpandProperty FullName)
+}
+$kandidaten += $pfade
+
+foreach ($kandidat in $kandidaten) {
+    if (-not $kandidat) { continue }
     try {
-        $roh = if ($kandidat -eq "py") { & py -3 --version 2>&1 } else { & python --version 2>&1 }
-        if ($LASTEXITCODE -eq 0 -and "$roh" -match 'Python 3\.(\d+)') {
+        $roh = if ($kandidat -eq "py") { & py -3 --version 2>&1 } else { & $kandidat --version 2>&1 }
+        if ("$roh" -match 'Python 3\.(\d+)') {
             $minor = [int]$Matches[1]
-            if ($minor -ge 10) { $python = $kandidat; Write-Ok "gefunden: $roh ($kandidat)"; break }
-            else { Write-Warn "$roh ist zu alt (mindestens 3.10)." }
+            if ($minor -ge 10) { $pythonPfad = $kandidat; Write-Ok "gefunden: $roh ($kandidat)"; break }
+            else { Write-Warn "$roh ist zu alt (mindestens 3.10): $kandidat" }
         }
     } catch { }
 }
-if (-not $python) {
-    Write-Warn "Kein Python 3.10+ gefunden. Installieren ohne Adminrechte:"
+if (-not $pythonPfad) {
+    Write-Warn "Kein Python 3.10+ gefunden. Zwei Wege, beide ohne Administratorrechte:"
     Write-Host "    winget install -e --id Python.Python.3.12"
+    Write-Host "    oder direkt von python.org (signiert, Smart App Control laesst es durch):"
+    Write-Host '      $u = "https://www.python.org/ftp/python/3.12.8/python-3.12.8-amd64.exe"'
+    Write-Host '      irm $u -OutFile "$env:TEMP\py.exe"; & "$env:TEMP\py.exe" /quiet InstallAllUsers=0 PrependPath=1 Include_pip=1'
+    Write-Host "    Danach ein NEUES PowerShell-Fenster oeffnen (PATH) und dieses Skript erneut starten."
     Fail "Bitte Python installieren und dieses Skript erneut starten."
 }
 
@@ -184,7 +210,7 @@ Write-Ok "liegt in $SrcDir (Agent-Version $(if ($versionDatei) { $versionDatei }
 # ---------------------------------------------------------------------------
 Write-Step "Abhaengigkeiten"
 if (-not (Test-Path $PythonExe)) {
-    if ($python -eq "py") { & py -3 -m venv $VenvDir } else { & python -m venv $VenvDir }
+    & $pythonPfad -m venv $VenvDir
     if (-not (Test-Path $PythonExe)) { Fail "Die Python-Umgebung liess sich nicht anlegen ($VenvDir)." }
 }
 & $PythonExe -m pip install --quiet --upgrade pip 2>&1 | Out-Null

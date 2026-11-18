@@ -122,10 +122,15 @@ if [ -z "$PORTAL_URL" ]; then
 fi
 PORTAL_URL="${PORTAL_URL%/}"
 case "$PORTAL_URL" in http://*|https://*) ;; *) die "Portal-Adresse muss mit http:// oder https:// beginnen." ;; esac
-if command -v curl >/dev/null 2>&1 && curl -fsS --max-time 10 "$PORTAL_URL/version" >/dev/null 2>&1; then
-  say "Portal erreichbar: $(curl -fsS --max-time 10 "$PORTAL_URL/version" | head -c 120)"
-else
-  warn "Portal antwortet nicht auf $PORTAL_URL/version — Installation läuft weiter."
+# /health ist der einzige lebende Endpunkt am Frontend-Port; /version liefert dort die
+# HTML-Ersatzseite mit Status 200. Deshalb JSON verlangen und die Ausgabe kurz halten.
+if command -v curl >/dev/null 2>&1; then
+  ANTWORT=$(curl -fsS --max-time 10 "$PORTAL_URL/health" 2>/dev/null || true)
+  case "$ANTWORT" in
+    *'"ok"'*) say "Portal erreichbar: $(printf '%s' "$ANTWORT" | head -c 100)" ;;
+    "")       warn "Portal antwortet nicht auf $PORTAL_URL/health — Installation läuft weiter." ;;
+    *)        warn "$PORTAL_URL/health antwortet ohne JSON. Prüfe die Adresse: http://<host>:8765 oder http://<host>:8767/api" ;;
+  esac
 fi
 
 case "$BACKEND" in ollama|openai) ;; *) die "Backend muss 'ollama' oder 'openai' sein." ;; esac
