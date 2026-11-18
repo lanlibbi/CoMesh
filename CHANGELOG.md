@@ -1,3 +1,63 @@
+## 0.6.24
+
+### Behoben
+
+- **Ein Rechner mit zwei Grafikkarten meldete nur eine.** `gpu_summary()` las ausschließlich
+  `nvmlDeviceGetHandleByIndex(0)` — Name und Speicher der ersten Karte. Die Node war damit im Portal
+  zu klein ausgewiesen (das VRAM-Gate ließ nur Modelle zu, die in eine Karte passen) und hieß wie
+  eine einzelne Karte. Jetzt werden alle Karten gezählt, der Speicher summiert und der Name
+  zusammengefasst: `RTX A2000 12GB x2` bei gleichen Karten, `A2000 + 3060` bei gemischten.
+  Nachgeprüft auf einem Rechner mit zwei Karten: 12 + 10 GB → `vram_gb: 22`, passend zu `nvidia-smi`.
+- **Die Statusmeldung beschrieb nur eine Karte.** `get_gpu_info()` meldete Speicher und Auslastung
+  von Index 0; bei zwei Karten arbeitet die zweite unsichtbar, und „50 % Auslastung" kann auch
+  „eine voll, eine leer" heißen. Jetzt Summe über alle Karten, Auslastung als Durchschnitt und
+  zusätzlich `gpus: [...]` mit den Werten je Karte (die alten Feldnamen bleiben).
+- **Das Portal behielt GPU-Name und Speicher aus der Registrierung.** Der Heartbeat überträgt
+  `gpu_type` jetzt mit, und `vram_gb` wird auch bei `vram_source=detected` nachgezogen. `assumed`
+  bleibt bewusst ausgenommen — eine fehlgeschlagene Erkennung darf eine Node nicht auf 1 GB
+  schrumpfen und aus dem Routing kippen.
+
+### Windows-Node (Quelltext-Weg)
+
+- **`agent.env` wurde mit BOM geschrieben.** PowerShell 5.1 hängt bei `Set-Content -Encoding utf8`
+  ein BOM an; der Agent liest UTF-8, das BOM bleibt am ersten Schlüsselnamen kleben
+  (`\ufeffPORTAL_URL`). Folge: `PORTAL_URL` war leer, die Selbstregistrierung wurde stillschweigend
+  übersprungen, die Node blieb offline — ohne eine einzige Fehlermeldung im Protokoll. Der Agent
+  entfernt ein BOM jetzt beim Einlesen, der Installer schreibt ohne.
+- **Der Installer prüfte den Schlüssel in der falschen Variable.** `$accountKey` (Skript) und
+  `$ACCOUNT_KEY` (Prüfblock) sind in PowerShell zwei verschiedene Variablen — der Unterstrich
+  trennt, nicht die Schreibweise. Der Block las deshalb immer einen leeren Wert, meldete
+  „0 Zeichen", schickte einen leeren Schlüssel an `/v1/me`, erhielt 401 und schrieb
+  `PORTAL_USER_KEY=` ohne Wert. Ein gültiger Schlüssel sah dadurch wie ein falscher aus.
+- **`schtasks` und `icacls` brachen die Installation ab.** `$ErrorActionPreference = "Stop"` gilt
+  auch für externe Programme; jede stderr-Zeile wird zum abbrechenden Fehler. „Diese Aufgabe gibt es
+  nicht" ist beim Aufräumen aber der Normalfall.
+- **Python-Suche zu eng.** Gesucht wird jetzt zuerst über `py -0p` (nennt jede Installation mit Pfad,
+  ohne sie zu starten), danach PATH und die üblichen Installationsorte. Scheitert die Suche, nennt
+  der Installer, was er gesehen hat (Pfade, `py -0p`, Store-Platzhalter, PATH-Hinweis).
+- **Portal-Prüfung zeigte die HTML-Seite.** `/version` wird am Frontend-Port nicht an die API
+  durchgereicht; dort antwortet die Ersatzseite mit Status 200. Geprüft wird jetzt `/health` **und**
+  auf JSON-Inhalt, nicht nur auf den Statuscode.
+- **Schlüssel wird vor dem Einrichten geprüft** (`/v1/me`): E-Mail und Rolle werden angezeigt, bei
+  401 bricht die Installation mit Anweisung ab, statt eine Node zu hinterlassen, die stumm nichts
+  tut. Länge (47 Zeichen) und Präfix werden genannt, ohne den Wert auszugeben.
+- **Neuer Modus `-KeyOnly`**: nur Schlüssel ersetzen, Agent neu starten, Autostart nachziehen. Ein
+  laufender Agent hält die Konfiguration im Speicher — ohne Neustart bleibt ein Schlüsselwechsel
+  wirkungslos.
+- **Autostart mit Ausweichweg**: verweigert die Aufgabenplanung die Aufgabe (verwaltete Rechner),
+  wird `HKCU\Software\Microsoft\Windows\CurrentVersion\Run` gesetzt. Keine Rechte, kein Dienst.
+- **`install.ps1` installiert bei blockiertem Binary automatisch aus dem Quelltext weiter**, statt
+  abzubrechen (abschaltbar mit `-NoSourceFallback`). `python.exe` ist signiert und wird von
+  Application Control nicht beanstandet.
+
+### Tests
+
+- `tests/test_windows_skripte_ascii.py` — PowerShell-Skripte bleiben reines ASCII (PS 5.1 ohne BOM
+  liest sonst ANSI, aus `$laeuft` wird `$läuft` und der Parser bricht ab).
+- `tests/test_agent_env_bom.py` — `agent.env` mit BOM wird trotzdem gelesen.
+- `tests/test_key_variable.py` — der Schlüssel liegt in allen Blöcken in derselben Variable.
+- `tests/test_gpu_multigpu.py` — zwei Karten ergeben die Summe; die alte Fassung meldet 12 statt 24.
+
 ## 0.6.23
 
 ### Behoben
