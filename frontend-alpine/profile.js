@@ -25,6 +25,7 @@ document.addEventListener("alpine:init", () => {
     // ist — er kommt aus der Antwort von POST /v1/me/keys und wird nirgends
     // gespeichert (kein localStorage, keine Anzeige nach dem Neuladen).
     keys: [],
+    confirmDeleteId: null,   // Id des Schlüssels, für den die Rückfrage läuft
     keysLoaded: false,
     keyPassword: "",
     keyError: "",
@@ -72,6 +73,29 @@ document.addEventListener("alpine:init", () => {
     },
 
     // ---- API-Schlüssel ---------------------------------------------------
+    /** Erster Klick: nachfragen statt sofort löschen. */
+    askDeleteKey(k) {
+      this.keyError = "";
+      this.confirmDeleteId = k.id;
+    },
+
+    /** Zweiter Klick: löschen. Entfernt die Zeile endgültig (DELETE /v1/me/keys/{id}). */
+    async deleteKey(k) {
+      if (!k || !k.id) return;
+      try {
+        await api(`/v1/me/keys/${k.id}`, { method: "DELETE", auth: true });
+        // Wurde gerade der Schlüssel gelöscht, dessen Wert im Hinweis steht, muss der Hinweis weg:
+        // ein gelöschter Schlüssel, der weiter als "nur einmal sichtbar" angezeigt wird, ist irreführend.
+        if (this.newKey && k.prefix && this.newKey.startsWith(k.prefix)) this.newKey = "";
+        this.confirmDeleteId = null;
+        toast(I18n.t("profile.key.deleted"), "ok");
+        await this.loadKeys();
+      } catch (e) {
+        this.confirmDeleteId = null;
+        this.keyError = I18n.t("profile.key.delete_failed") + " " + e.message;
+      }
+    },
+
     /** Liste mit Präfix, Datum und Zustand — mehr gibt der Server nicht her. */
     async loadKeys() {
       try {

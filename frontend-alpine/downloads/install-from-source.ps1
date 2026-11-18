@@ -26,6 +26,9 @@
 #>
 [CmdletBinding()]
 param(
+    # Leer lassen, wenn das Skript vom Portal geladen wird: dann fuellt nginx die Adresse
+    # dieser Instanz ein (__COMESH_ORIGIN_PLATZHALTER__). Am Portal vorbei geholt, muss sie
+    # genannt werden - ein eingebautes localhost waere auf jedem anderen Rechner falsch.
     [string]$PortalUrl = $env:COMESH_PORTAL_URL,
     [string]$Transport = $env:COMESH_TRANSPORT,
     [string]$KeyFile   = $env:COMESH_KEY_FILE,
@@ -57,6 +60,21 @@ $PythonW   = Join-Path $VenvDir "Scripts\pythonw.exe"
 $EnvFile   = Join-Path $Root "agent.env"
 $LogFile   = Join-Path $Root "agent.log"
 $StateFile = Join-Path $Root "node-state.json"
+# Die Adresse dieser Instanz. Beim Ausliefern ersetzt nginx den Platzhalter; bleibt er stehen,
+# wurde die Datei nicht vom Portal geholt.
+$Origin = if ($env:COMESH_ORIGIN) { $env:COMESH_ORIGIN.TrimEnd("/") } else { "__COMESH_ORIGIN_PLATZHALTER__" }
+if (-not $PortalUrl) {
+    if ($Origin -like "*__COMESH_ORIGIN_PLATZHALTER__*") {
+        Fail ("Die Adresse des Portals ist unbekannt: dieses Skript wurde nicht vom Portal geladen.`n" +
+              "  So aufrufen (Adresse der Instanz einsetzen):`n" +
+              "    irm https://DEIN-PORTAL/downloads/install-from-source.ps1 -OutFile `$env:TEMP\c.ps1; & `$env:TEMP\c.ps1`n" +
+              "  oder ausdruecklich angeben:  -PortalUrl http://DEIN-PORTAL:8767/api`n" +
+              "  Die Adresse muss auf die API zeigen: mit /api am Ende, wenn ein Reverse-Proxy davor steht.")
+    }
+    $PortalUrl = "$Origin/api"
+    Write-Ok "Portal-Adresse aus der Herkunft: $PortalUrl"
+}
+
 $TaskName  = "CoMesh Agent"
 $TaskCmd   = "`"$PythonW`" `"$(Join-Path $AgentDir 'agent.py')`""
 

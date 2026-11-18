@@ -144,6 +144,21 @@ async def lifespan(app: FastAPI):
     await seed_test_user_if_empty()
     await seed_admin_if_configured()
     log.info(f"GPU-Pool POC started. Ollama URL: {OLLAMA_URL}, default model: {DEFAULT_MODEL}")
+
+    # Zwei Einstellungen, die auf einer erreichbaren Instanz haeufig in Vergessenheit geraten.
+    if (os.environ.get("PROMOTE_ADMIN_EMAIL") or "").strip():
+        log.warning(
+            "PROMOTE_ADMIN_EMAIL ist gesetzt: dieses Konto wird bei jedem Start zum Administrator "
+            "gemacht. Auf einer oeffentlich erreichbaren Instanz ist das eine Hintertuer - "
+            "besser leeren und Adminrechte ueber den Adminbereich vergeben."
+        )
+    if not (os.environ.get("COMESH_PUBLIC_BASE_URL") or "").strip():
+        log.warning(
+            "COMESH_PUBLIC_BASE_URL ist nicht gesetzt: Installationsbefehle in der Oberflaeche "
+            "werden aus der jeweiligen Anfrage gebaut. Auf einem anderen Rechner als dem "
+            "Portal-Host stimmt das nur, wenn er das Portal unter demselben Namen erreicht. "
+            "Fuer fremde Rechner die Adresse der Instanz eintragen."
+        )
     yield
 
 
@@ -814,6 +829,9 @@ def list_my_keys(user: User = Depends(get_current_user), db: Session = Depends(g
     )
     keys = [
         {
+            # Die Id wird zum Loeschen gebraucht (DELETE /v1/me/keys/{id}). Der Schluessel
+            # selbst laesst sich aus dem Hash nicht rekonstruieren, die Id verraet nichts.
+            "id": k.id,
             "prefix": k.key_prefix,
             "label": k.label,
             "is_active": bool(k.is_active),
@@ -827,6 +845,89 @@ def list_my_keys(user: User = Depends(get_current_user), db: Session = Depends(g
         "count": len(keys),
         "active": sum(1 for k in keys if k["is_active"]),
     }
+
+@app.delete("/v1/me/keys/{key_id}")
+def delete_my_key(
+    key_id: int,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Einen eigenen API-Schluessel endgueltig entfernen.
+
+    Nur eigene Schluessel (Filter auf `user_id`, sonst koennte man fremde Ids raten), nur
+    API-Schluessel (`gpu_...`) - Sitzungsmarken sind keine Schluessel und werden hier nicht
+    angeboten. Der Schluessel wird geloescht, nicht nur entwertet: Wer ihn loscht, will die Zeile
+    loswerden. Das Ereignis steht danach im Log, nicht mehr in der Liste.
+
+    Achtung fuer den Aufrufer: Loescht man den Schluessel, mit dem ein Node-Agent laeuft, ist die
+    Node sofort offline. Die Oberflaeche weist vor dem Loeschen darauf hin.
+    """
+    row = (
+        db.query(ApiKey)
+        .filter(ApiKey.id == key_id, ApiKey.user_id == user.id)
+        .first()
+    )
+    if not row:
+        raise HTTPException(status_code=404, detail="Key not found")
+    if not (row.key_prefix or "").startswith("gpu_"):
+        raise HTTPException(
+            status_code=400,
+            detail="Only API keys (gpu_...) can be deleted here. Session tokens are not keys.",
+        )
+
+    prefix = row.key_prefix
+    db.delete(row)
+    db.commit()
+    log.info(f"API key {key_id} (prefix {prefix}) deleted by user {user.id}")
+    return {
+        "deleted": True,
+        "id": key_id,
+        "key_prefix": prefix,
+        "note": "A node agent using this key loses access immediately.",
+    }
+
+
+def _portal_base_url(request: Request) -> tuple:
+    """(Basis-URL, Herkunft) — die Adresse, unter der dieses Portal erreichbar ist.
+
+    Reihenfolge:
+      1. `COMESH_PUBLIC_BASE_URL` — die verbindliche Angabe. Auf einer Instanz, die von anderen
+         Rechnern aus Agents annimmt, ist sie Pflicht: nur der Betreiber weiss, unter welchem Namen
+         die Instanz erreichbar ist (LAN-IP, DNS-Name, Tunnel).
+      2. sonst die Adresse dieser Anfrage (X-Forwarded-* beachtet) — stimmt fuer den Aufrufer,
+         ist aber geraten.
+
+    Ein fest eingebautes `localhost` gibt es nicht mehr: ein Installationsbefehl, der auf dem
+    Portal-Host entsteht und auf einem anderen Rechner laeuft, ist damit zwangslaeufig falsch.
+    """
+    fest = (os.environ.get("COMESH_PUBLIC_BASE_URL") or "").strip().rstrip("/")
+    if fest:
+        return fest, "setting"
+    schema = (request.headers.get("x-forwarded-proto") or request.url.scheme or "http").split(",")[0].strip()
+    host = (request.headers.get("x-forwarded-host") or request.headers.get("host") or "").split(",")[0].strip()
+    if not host:
+        return "", "unbekannt"
+    return f"{schema}://{host}".rstrip("/"), "request"
+
+
+@app.get("/v1/portal-info")
+def portal_info(request: Request):
+    """Oeffentliche Auskunft fuer die Oberflaeche: unter welcher Adresse liegt dieses Portal?
+
+    Absichtlich ohne Anmeldung: Die Seite, die den Installationsbefehl anzeigt, laedt sie. Sie
+    enthaelt keine Geheimnisse, nur Adresse und Downloads-Pfad.
+    """
+    basis, herkunft = _portal_base_url(request)
+    return {
+        "base_url": basis,
+        "downloads_url": f"{basis}/downloads" if basis else "",
+        "source": herkunft,
+        # Ohne diese Angabe baut die Oberflaeche den Befehl aus der Anfrage. Das ist richtig fuer
+        # den Aufrufer, aber nicht verlaesslich fuer andere Rechner.
+        "public_url_configured": herkunft == "setting",
+        "setting": "COMESH_PUBLIC_BASE_URL",
+    }
+
 
 @app.get("/v1/me")
 def me(user: User = Depends(get_current_user), db: Session = Depends(get_db)):

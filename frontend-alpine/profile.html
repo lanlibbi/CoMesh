@@ -131,6 +131,7 @@
               <th data-i18n="profile.key.col.prefix">Präfix</th>
               <th data-i18n="profile.key.col.created">Erstellt</th>
               <th data-i18n="profile.key.col.status">Status</th>
+              <th data-i18n="profile.key.col.action">Aktion</th>
             </tr>
           </thead>
           <tbody>
@@ -142,11 +143,28 @@
                   <span class="pill pill-flat" :class="k.is_active ? 'pill-online' : 'pill-offline'"
                         x-text="keyStatus(k)"></span>
                 </td>
+                <td class="nowrap">
+                  <!-- Zwei Klicks: der erste fragt nach, der zweite loescht. -->
+                  <button type="button" class="btn-ghost btn-sm"
+                          x-show="confirmDeleteId !== k.id"
+                          @click="askDeleteKey(k)"
+                          data-i18n="profile.key.delete">Löschen</button>
+                  <span x-show="confirmDeleteId === k.id" class="row gap-1">
+                    <button type="button" class="btn-ghost btn-sm btn-quiet"
+                            @click="deleteKey(k)"
+                            data-i18n="profile.key.delete.confirm">Wirklich löschen</button>
+                    <button type="button" class="btn-ghost btn-sm"
+                            @click="confirmDeleteId = null"
+                            data-i18n="abbrechen">Abbrechen</button>
+                  </span>
+                </td>
               </tr>
             </template>
           </tbody>
         </table>
       </div>
+
+      <p class="hint mt-2" x-show="keys.length > 0" data-i18n="profile.key.delete.hint">Löschen entfernt den Schlüssel endgültig. Läuft ein Node-Agent damit, ist die Node sofort offline.</p>
 
       <div class="divider inset"></div>
 

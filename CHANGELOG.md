@@ -1,3 +1,41 @@
+## 0.6.25
+
+### Neu
+
+- **Alte API-Schlüssel lassen sich löschen.** Bisher verschwanden sie nur, indem ein neuer
+  ausgestellt wurde — die Liste füllte sich mit entwerteten Einträgen, die niemand entfernen
+  konnte. `DELETE /v1/me/keys/{id}` löscht einen eigenen Schlüssel endgültig (nur `gpu_…`, nur
+  eigene; Sitzungsmarken sind keine Schlüssel), die Profilseite hat dafür einen Knopf mit
+  Rückfrage. Achtung, steht auch in der Oberfläche: löscht man den Schlüssel, mit dem ein
+  Node-Agent läuft, ist die Node sofort offline.
+- **Die Portal-Adresse ist eine Einstellung, kein `localhost`.** Installationsbefehle wurden mit
+  der Adresse gebaut, unter der die Seite gerade geöffnet war — auf dem Portal-Host also
+  `localhost`, auf jedem anderen Rechner wertlos. Neu:
+  - `COMESH_PUBLIC_BASE_URL` legt die Adresse fest (`.env.example` erklärt sie),
+  - `GET /v1/portal-info` liefert sie der Oberfläche (öffentlich, ohne Geheimnisse),
+  - der Guide baut die Befehle daraus und zeigt einen Hinweis, solange die Einstellung fehlt,
+  - der Start warnt, wenn sie nicht gesetzt ist.
+- **`install-from-source.sh|ps1` kannten die Adresse gar nicht.** nginx ersetzt
+  `__COMESH_ORIGIN_PLATZHALTER__` beim Ausliefern durch die aufgerufene Adresse — das Regex
+  erfasste aber nur `install.sh|ps1`. Der Quelltext-Weg ist der einzige, der auf Rechnern mit
+  Application Control funktioniert; dort fehlte die Adresse. Ohne Adresse verlangen beide Skripte
+  sie jetzt ausdrücklich, mit Beispiel statt Verweis auf die Dokumentation.
+- **Startwarnung für `PROMOTE_ADMIN_EMAIL`:** Die Einstellung macht beim Start ein vorhandenes
+  Konto zum Administrator. Auf einer öffentlich erreichbaren Instanz ist das eine Hintertür und
+  stand bisher nirgends sichtbar.
+
+### Geändert
+
+- **`node-agent`-Dienst:** `NODE_ID` kommt aus der `.env` statt fest `1`. Nach einer
+  Neuinstallation ist die erste Node-Id nicht mehr 1; mit einer falschen Id antwortet der
+  Heartbeat `404 Node id mismatch` und die Node bleibt offline, ohne sichtbaren Grund.
+
+### Tests
+
+- `tests/test_keys_origin.py` — löschen wirkt wirklich (der gelöschte Schlüssel wird abgelehnt),
+  fremde Schlüssel bleiben unberührt, unbekannte Id gibt 404, `/v1/portal-info` liefert
+  Einstellung oder Anfrageadresse.
+
 ## 0.6.24
 
 ### Behoben

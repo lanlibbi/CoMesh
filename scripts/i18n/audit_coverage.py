@@ -44,6 +44,13 @@ LOCALE_BLOCK_PAGES = {"guide.html"}
 # Nur der Katalog selbst ist keine Anwendung.
 SKIP_JS = {"i18n-catalog.js"}
 
+# Datenwerte der API, die zufaellig wie deutsche Oberflaechentexte aussehen. Sie werden im JS
+# verglichen, nicht angezeigt - eine Uebersetzung waere hier falsch. Nur woertliche Gleichheit
+# zaehlt: der Eintrag schaltet genau diesen einen Wert frei, nicht das ganze Wort.
+DATA_LITERALS = {
+    "umgebung",   # admin-legal.js: quelle === "umgebung" (legal.py liefert diesen Wert)
+}
+
 # --------------------------------------------------------------- Ausnahmelisten
 # Fachbegriffe der Produktregel: bleiben in jeder Sprache gleich, sind also keine
 # fehlende Übersetzung. Bewusst als Liste, damit ein neuer Begriff hier landet
@@ -357,6 +364,8 @@ def _scan_literals(text, where, label, problems):
             continue
         # Variablennamen in ${...} sind kein Anzeigetext.
         val = re.sub(r"\$\{[^}]*\}", " ", val)
+        if lit.strip().strip('"\'') in DATA_LITERALS:
+            continue
         if CODEISH.match(val):
             continue
         words = german_words(val)

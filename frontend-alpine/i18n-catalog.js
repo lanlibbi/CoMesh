@@ -1781,6 +1781,18 @@ window.GP_I18N = {
    "es": "Dirección guardada — la node se reportará con la nueva dirección en el próximo heartbeat.",
    "fr": "Adresse enregistrée — la node se signale avec la nouvelle adresse au prochain heartbeat."
   },
+  "setup.alpine.fehlt.titel": {
+   "en": "This page does not work",
+   "de": "Diese Seite ist nicht funktionsfähig",
+   "es": "Esta página no funciona",
+   "fr": "Cette page ne fonctionne pas"
+  },
+  "setup.alpine.fehlt.text": {
+   "en": "The script vendor/alpine.min.js was not loaded, so creating the account does not work. Reload with Ctrl+Shift+R. If it persists the file is missing in the container: it must exist at /usr/share/nginx/html/vendor/alpine.min.js.",
+   "de": "Das Skript vendor/alpine.min.js wurde nicht geladen, deshalb funktioniert das Anlegen nicht. Mit Strg+Shift+R neu laden. Bleibt es dabei, fehlt die Datei im Container: sie muss unter /usr/share/nginx/html/vendor/alpine.min.js liegen.",
+   "es": "El script vendor/alpine.min.js no se cargó, por eso no se puede crear la cuenta. Recarga con Ctrl+Shift+R. Si persiste, falta el archivo en el contenedor: debe estar en /usr/share/nginx/html/vendor/alpine.min.js.",
+   "fr": "Le script vendor/alpine.min.js n'a pas été chargé, c'est pourquoi la création ne fonctionne pas. Rechargez avec Ctrl+Maj+R. Si cela persiste, le fichier manque dans le conteneur : il doit se trouver sous /usr/share/nginx/html/vendor/alpine.min.js."
+  },
   "title.setup": {
    "en": "Setup · CoMesh",
    "de": "Einrichtung · CoMesh",
@@ -2866,6 +2878,42 @@ window.GP_I18N = {
    "de": "Authorization: Bearer &lt;api-key&gt;",
    "es": "Authorization: Bearer &lt;api-key&gt;",
    "fr": "Authorization: Bearer &lt;api-key&gt;"
+  },
+  "profile.key.col.action": {
+   "en": "Action",
+   "de": "Aktion",
+   "es": "Acción",
+   "fr": "Action"
+  },
+  "profile.key.delete": {
+   "en": "Delete",
+   "de": "Löschen",
+   "es": "Eliminar",
+   "fr": "Supprimer"
+  },
+  "profile.key.delete.confirm": {
+   "en": "Really delete",
+   "de": "Wirklich löschen",
+   "es": "Eliminar de verdad",
+   "fr": "Supprimer vraiment"
+  },
+  "profile.key.delete.hint": {
+   "en": "Deleting removes the key for good. If a node agent uses it, the node goes offline immediately.",
+   "de": "Löschen entfernt den Schlüssel endgültig. Läuft ein Node-Agent damit, ist die Node sofort offline.",
+   "es": "Eliminar borra la clave definitivamente. Si un agente de nodo la usa, el nodo queda offline de inmediato.",
+   "fr": "La suppression retire la clé définitivement. Si un agent de nœud l'utilise, le nœud passe hors ligne immédiatement."
+  },
+  "profile.key.deleted": {
+   "en": "Key deleted",
+   "de": "Schlüssel gelöscht",
+   "es": "Clave eliminada",
+   "fr": "Clé supprimée"
+  },
+  "profile.key.delete_failed": {
+   "en": "Deleting failed:",
+   "de": "Löschen fehlgeschlagen:",
+   "es": "Error al eliminar:",
+   "fr": "Échec de la suppression :"
   },
   "direkter-testlauf-gegen-den-pool": {
    "en": "A direct test run against the pool. Billing is per Token from your balance — currently <span class=\"text-brand num\" x-text=\"fmtCredits(me?.credits)\"></span> Credits.",

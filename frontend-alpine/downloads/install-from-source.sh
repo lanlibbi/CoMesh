@@ -16,6 +16,9 @@
 
 set -eu
 
+# Adresse dieser Instanz. Beim Ausliefern ersetzt nginx den Platzhalter durch die aufgerufene
+# Adresse; bleibt er stehen, wurde das Skript nicht vom Portal geladen.
+ORIGIN="${COMESH_ORIGIN:-__COMESH_ORIGIN_PLATZHALTER__}"
 PORTAL_URL="${COMESH_PORTAL_URL:-}"
 ACCOUNT_KEY="${COMESH_USER_KEY:-}"
 KEY_FILE="${COMESH_KEY_FILE:-}"
@@ -112,6 +115,20 @@ say "gefunden: $("$PYTHON" --version 2>&1) ($PYTHON)"
 # 2. Portal und Schlüssel
 # ---------------------------------------------------------------------------
 step "Portal"
+# Adresse bestimmen: aus der Herkunft, oder ausdruecklich verlangt.
+if [ -z "$PORTAL_URL" ]; then
+  case "$ORIGIN" in
+    *__COMESH_ORIGIN_PLATZHALTER__*)
+      die "Die Adresse des Portals ist unbekannt: dieses Skript wurde nicht vom Portal geladen.
+  So aufrufen (Adresse der Instanz einsetzen):
+    curl -fsSL https://DEIN-PORTAL/downloads/install-from-source.sh | sh
+  oder ausdruecklich angeben:  --portal-url http://DEIN-PORTAL:8767/api
+  Die Adresse muss auf die API zeigen: mit /api am Ende, wenn ein Reverse-Proxy davor steht."
+      ;;
+    *) PORTAL_URL="${ORIGIN%/}/api" ;;
+  esac
+fi
+
 if [ -z "$PORTAL_URL" ] && [ -r "$ENV_FILE" ]; then
   PORTAL_URL=$(sed -n 's/^PORTAL_URL=//p' "$ENV_FILE" | head -1)
   [ -n "$PORTAL_URL" ] && say "Adresse aus der vorhandenen Konfiguration übernommen."

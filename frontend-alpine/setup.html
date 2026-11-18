@@ -26,6 +26,14 @@
 <link rel="stylesheet" href="style.css" />
 </head>
 <body>
+
+  <!-- Wird sichtbar, wenn Alpine nicht geladen werden konnte. Der Text steht hier und nicht im
+       Skript, damit er uebersetzt wird. -->
+  <div id="alpineFehlt" hidden role="alert" class="notice"
+       style="position:fixed;left:0;right:0;bottom:0;z-index:9999;padding:16px 22px;background:#7a1f1a;color:#fff;font:400 16px/1.45 system-ui,-apple-system,sans-serif">
+    <strong data-i18n="setup.alpine.fehlt.titel">Diese Seite ist nicht funktionsfähig</strong>
+    <span data-i18n="setup.alpine.fehlt.text">Das Skript vendor/alpine.min.js wurde nicht geladen, deshalb funktioniert das Anlegen nicht. Mit Strg+Shift+R neu laden. Bleibt es dabei, fehlt die Datei im Container: sie muss unter /usr/share/nginx/html/vendor/alpine.min.js liegen.</span>
+  </div>
 <canvas id="brand-mesh" class="auth-mesh" data-mesh-scale="2.6" aria-hidden="true"></canvas>
 
 <main class="auth-wrap">
@@ -185,14 +193,10 @@ window.addEventListener('load', function () {
   if (window.Alpine) return;
   var form = document.querySelector('form');
   if (form) form.addEventListener('submit', function (e) { e.preventDefault(); }, true);
-  var box = document.createElement('div');
-  box.setAttribute('role', 'alert');
-  box.style.cssText = 'position:fixed;left:0;right:0;bottom:0;z-index:9999;padding:16px 22px;' +
-    'background:#7a1f1a;color:#fff;font:400 16px/1.45 system-ui,-apple-system,sans-serif;';
-  box.textContent = 'Diese Seite konnte ihr Skript (vendor/alpine.min.js) nicht laden, deshalb ' +
-    'funktioniert das Anlegen nicht. Seite mit Strg+Shift+R neu laden. Bleibt es dabei: fehlt ' +
-    'die Datei im Container? Sie muss unter /usr/share/nginx/html/vendor/alpine.min.js liegen.';
-  document.body.appendChild(box);
+  // Der Text steht im Markup (mit data-i18n), damit er uebersetzt wird und nicht als deutscher
+  // String im Skript liegt. Hier wird nur sichtbar geschaltet.
+  var box = document.getElementById('alpineFehlt');
+  if (box) box.hidden = false;
 });
 </script>
 </body>

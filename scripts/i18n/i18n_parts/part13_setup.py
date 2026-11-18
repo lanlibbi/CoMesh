@@ -10,6 +10,18 @@
 # Fehlertexte werden im Seitenskript über I18n.t geholt.
 
 KEYS = {
+    "setup.alpine.fehlt.titel": {
+        "en": "This page does not work",
+        "de": "Diese Seite ist nicht funktionsfähig",
+        "es": "Esta página no funciona",
+        "fr": "Cette page ne fonctionne pas",
+    },
+    "setup.alpine.fehlt.text": {
+        "en": "The script vendor/alpine.min.js was not loaded, so creating the account does not work. Reload with Ctrl+Shift+R. If it persists the file is missing in the container: it must exist at /usr/share/nginx/html/vendor/alpine.min.js.",
+        "de": "Das Skript vendor/alpine.min.js wurde nicht geladen, deshalb funktioniert das Anlegen nicht. Mit Strg+Shift+R neu laden. Bleibt es dabei, fehlt die Datei im Container: sie muss unter /usr/share/nginx/html/vendor/alpine.min.js liegen.",
+        "es": "El script vendor/alpine.min.js no se cargó, por eso no se puede crear la cuenta. Recarga con Ctrl+Shift+R. Si persiste, falta el archivo en el contenedor: debe estar en /usr/share/nginx/html/vendor/alpine.min.js.",
+        "fr": "Le script vendor/alpine.min.js n'a pas été chargé, c'est pourquoi la création ne fonctionne pas. Rechargez avec Ctrl+Maj+R. Si cela persiste, le fichier manque dans le conteneur : il doit se trouver sous /usr/share/nginx/html/vendor/alpine.min.js.",
+    },
     "title.setup": {
         "en": "Setup · CoMesh", "de": "Einrichtung · CoMesh",
         "es": "Configuración · CoMesh", "fr": "Installation · CoMesh",

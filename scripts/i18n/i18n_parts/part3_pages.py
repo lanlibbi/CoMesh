@@ -3,6 +3,28 @@
 # Fachbegriffe stay untranslated in every locale (product rule).
 
 KEYS = {
+    # ---- API-Schluessel loeschen (0.6.24) ----
+    "profile.key.col.action": {
+        "en": "Action", "de": "Aktion", "es": "Acción", "fr": "Action",
+    },
+    "profile.key.delete": {
+        "en": "Delete", "de": "Löschen", "es": "Eliminar", "fr": "Supprimer",
+    },
+    "profile.key.delete.confirm": {
+        "en": "Really delete", "de": "Wirklich löschen", "es": "Eliminar de verdad", "fr": "Supprimer vraiment",
+    },
+    "profile.key.delete.hint": {
+        "en": "Deleting removes the key for good. If a node agent uses it, the node goes offline immediately.",
+        "de": "Löschen entfernt den Schlüssel endgültig. Läuft ein Node-Agent damit, ist die Node sofort offline.",
+        "es": "Eliminar borra la clave definitivamente. Si un agente de nodo la usa, el nodo queda offline de inmediato.",
+        "fr": "La suppression retire la clé définitivement. Si un agent de nœud l'utilise, le nœud passe hors ligne immédiatement.",
+    },
+    "profile.key.deleted": {
+        "en": "Key deleted", "de": "Schlüssel gelöscht", "es": "Clave eliminada", "fr": "Clé supprimée",
+    },
+    "profile.key.delete_failed": {
+        "en": "Deleting failed:", "de": "Löschen fehlgeschlagen:", "es": "Error al eliminar:", "fr": "Échec de la suppression :",
+    },
     # ============================================================= chat.html
     "direkter-testlauf-gegen-den-pool": {
         "en": "A direct test run against the pool. Billing is per Token from your balance — currently <span class=\"text-brand num\" x-text=\"fmtCredits(me?.credits)\"></span> Credits.",
@@ -31,6 +53,41 @@ KEYS = {
     "senden": {"en": "Send", "de": "Senden", "es": "Enviar", "fr": "Envoyer"},
     "bitte-waehlen": {"en": "Please choose", "de": "Bitte wählen", "es": "Elige", "fr": "Choisir"},
     "modell-waehlen": {"en": "Choose a model", "de": "Modell wählen", "es": "Elegir modelo", "fr": "Choisir un modèle"},
+
+    # ========================================================== credits.html
+    "abrechnung": {"en": "Billing", "de": "Abrechnung", "es": "Facturación", "fr": "Facturation"},
+    "credits-aufladen": {"en": "Top up Credits", "de": "Credits aufladen", "es": "Recargar Credits", "fr": "Recharger des Credits"},
+    "aktuelles-guthaben-span-class-text-brand": {
+        "en": "Current balance: <span class=\"text-brand num semibold\" x-text=\"fmtCredits(me?.credits)\"></span> Credits. Billing is per Token — no subscription and no minimum term.",
+        "de": "Aktuelles Guthaben: <span class=\"text-brand num semibold\" x-text=\"fmtCredits(me?.credits)\"></span> Credits. Abgerechnet wird pro Token — es gibt kein Abo und keine Mindestlaufzeit.",
+        "es": "Saldo actual: <span class=\"text-brand num semibold\" x-text=\"fmtCredits(me?.credits)\"></span> Credits. Se factura por Token — sin suscripción ni permanencia mínima.",
+        "fr": "Solde actuel : <span class=\"text-brand num semibold\" x-text=\"fmtCredits(me?.credits)\"></span> Credits. Facturation par Token — sans abonnement ni engagement.",
+        },
+    "empfohlen": {"en": "recommended", "de": "empfohlen", "es": "recomendado", "fr": "recommandé"},
+    "kaufen": {"en": "Buy", "de": "Kaufen", "es": "Comprar", "fr": "Acheter"},
+    "zahlung-ist-im-poc-nicht-angeschlossen": {"en": "Payment is not wired up in the POC", "de": "Zahlung ist im POC nicht angeschlossen", "es": "El pago no está conectado en el POC", "fr": "Le paiement n'est pas raccordé dans le POC"},
+    "kaufen-legt-lediglich-einen-aufladewunsch": {
+        "en": "\"Buy\" only files a top-up request that an admin confirms. Real payment processing (Stripe or similar) is not implemented yet.",
+        "de": "„Kaufen\" legt lediglich einen Aufladewunsch an, den ein Admin bestätigt. Echte Zahlungsabwicklung (Stripe o. ä.) ist noch nicht implementiert.",
+        "es": "«Comprar» solo crea una solicitud de recarga que un admin confirma. El procesamiento de pagos real (Stripe u otros) aún no está implementado.",
+        "fr": "« Acheter » crée seulement une demande de recharge qu'un admin confirme. Le traitement des paiements réels (Stripe ou autre) n'est pas encore implémenté.",
+        },
+    "manuell": {"en": "Manual", "de": "Manuell", "es": "Manual", "fr": "Manuel"},
+    "aufladung-anfragen": {"en": "Request a top-up", "de": "Aufladung anfragen", "es": "Solicitar recarga", "fr": "Demander une recharge"},
+    "betrag-und-optionalen-verwendungszweck": {"en": "Enter an amount and an optional note — the admin credits it.", "de": "Betrag und optionalen Verwendungszweck angeben — der Admin schreibt gut.", "es": "Indica el importe y una nota opcional — el admin lo abona.", "fr": "Indiquez un montant et une note facultative — l'admin crédite."},
+    "betrag-credits": {"en": "Amount (Credits)", "de": "Betrag (Credits)", "es": "Importe (Credits)", "fr": "Montant (Credits)"},
+    "notiz-optional": {"en": "Note (optional)", "de": "Notiz (optional)", "es": "Nota (opcional)", "fr": "Note (facultative)"},
+    "z-b-rechnungsnummer": {"en": "e.g. invoice number", "de": "z. B. Rechnungsnummer", "es": "p. ej. número de factura", "fr": "p. ex. numéro de facture"},
+    "anfrage-senden": {"en": "Send request", "de": "Anfrage senden", "es": "Enviar solicitud", "fr": "Envoyer la demande"},
+    "historie": {"en": "History", "de": "Historie", "es": "Historial", "fr": "Historique"},
+    "deine-aufladungen": {"en": "Your top-ups", "de": "Deine Aufladungen", "es": "Tus recargas", "fr": "Vos recharges"},
+    "noch-keine-anfragen-gestellt": {"en": "No requests made yet.", "de": "Noch keine Anfragen gestellt.", "es": "Aún no has hecho solicitudes.", "fr": "Aucune demande pour l'instant."},
+    "betrag": {"en": "Amount", "de": "Betrag", "es": "Importe", "fr": "Montant"},
+    "status": {"en": "Status", "de": "Status", "es": "Estado", "fr": "Statut"},
+    "notiz": {"en": "Note", "de": "Notiz", "es": "Nota", "fr": "Note"},
+    "pending": {"en": "pending", "de": "offen", "es": "pendiente", "fr": "en attente"},
+    "approved": {"en": "approved", "de": "bestätigt", "es": "aprobado", "fr": "approuvé"},
+    "rejected": {"en": "rejected", "de": "abgelehnt", "es": "rechazado", "fr": "refusé"},
 
     # ========================================================== credits.html
     "abrechnung": {"en": "Billing", "de": "Abrechnung", "es": "Facturación", "fr": "Facturation"},
