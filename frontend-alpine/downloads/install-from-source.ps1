@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-    CoMesh Node-Agent aus dem Quelltext installieren — für Rechner, auf denen eine
+    CoMesh Node-Agent aus dem Quelltext installieren - fuer Rechner, auf denen eine
     Application-Control-Richtlinie (Smart App Control, AppLocker, WDAC) die unsignierte
     comesh-agent.exe blockiert.
 
@@ -8,13 +8,13 @@
     Die .exe ist nur eine Verpackung: der Agent ist ein Python-Programm. python.exe ist signiert
     und wird von der Anwendungskontrolle nicht beanstandet. Dieses Skript holt den Quelltext,
     legt eine eigene Python-Umgebung an, schreibt dieselbe agent.env wie install.ps1 und richtet
-    den Autostart über pythonw.exe ein.
+    den Autostart ueber pythonw.exe ein.
 
-    Was es NICHT tut: Rechte ändern, Richtlinien umgehen, den Defender anfassen. Es arbeitet
-    ausschließlich im Benutzerprofil.
+    Was es NICHT tut: Rechte aendern, Richtlinien umgehen, den Defender anfassen. Es arbeitet
+    ausschliesslich im Benutzerprofil.
 
 .PARAMETER SourceZip
-    Woher der Quelltext kommt. Vorgabe: das öffentliche Repo als ZIP. In einem Netz ohne
+    Woher der Quelltext kommt. Vorgabe: das oeffentliche Repo als ZIP. In einem Netz ohne
     GitHub-Zugang auf eine eigene Ablage zeigen.
 
 .EXAMPLE
@@ -77,11 +77,11 @@ if ($Uninstall) {
     return
 }
 
-Write-Host "CoMesh Node-Agent — Installation aus dem Quelltext" -ForegroundColor Cyan
+Write-Host "CoMesh Node-Agent - Installation aus dem Quelltext" -ForegroundColor Cyan
 Write-Host "Ziel: $Root"
 
 # ---------------------------------------------------------------------------
-# 1. Portal und Schlüssel
+# 1. Portal und Schluessel
 # ---------------------------------------------------------------------------
 Write-Step "Portal"
 if (-not $PortalUrl) {
@@ -110,7 +110,7 @@ if (-not $Name) {
 }
 
 # ---------------------------------------------------------------------------
-# 2. Schlüssel
+# 2. Schluessel
 # ---------------------------------------------------------------------------
 Write-Step "Konto-Schluessel"
 $accountKey = ""
@@ -168,7 +168,7 @@ Expand-Archive -LiteralPath $zip -DestinationPath $entpackt -Force
 $gefunden = Get-ChildItem -LiteralPath $entpackt -Directory | Select-Object -First 1
 if (-not $gefunden) { Fail "Das ZIP enthaelt keinen Ordner." }
 if (-not (Test-Path (Join-Path $gefunden.FullName "node-agent\agent.py"))) {
-    Fail "Im ZIP fehlt node-agent\agent.py — ist das wirklich das CoMesh-Repo?"
+    Fail "Im ZIP fehlt node-agent\agent.py - ist das wirklich das CoMesh-Repo?"
 }
 Stop-Agent
 Remove-Item -LiteralPath $SrcDir -Recurse -Force -ErrorAction SilentlyContinue
@@ -179,7 +179,7 @@ $versionDatei = Get-Content (Join-Path $SrcDir "AGENT_VERSION") -ErrorAction Sil
 Write-Ok "liegt in $SrcDir (Agent-Version $(if ($versionDatei) { $versionDatei } else { 'unbekannt' }))"
 
 # ---------------------------------------------------------------------------
-# 5. Python-Umgebung und Abhängigkeiten
+# 5. Python-Umgebung und Abhaengigkeiten
 # ---------------------------------------------------------------------------
 Write-Step "Abhaengigkeiten"
 if (-not (Test-Path $PythonExe)) {
@@ -192,7 +192,7 @@ if ($LASTEXITCODE -ne 0) { Fail "pip install ist fehlgeschlagen (PyPI erreichbar
 Write-Ok "Pakete installiert in $VenvDir"
 
 # ---------------------------------------------------------------------------
-# 6. agent.env — gleiche Schlüssel wie install.ps1
+# 6. agent.env - gleiche Schluessel wie install.ps1
 # ---------------------------------------------------------------------------
 Write-Step "Konfiguration"
 $lines = @(
@@ -234,7 +234,7 @@ try {
 } finally { Pop-Location }
 
 # ---------------------------------------------------------------------------
-# 8. Autostart über pythonw.exe (kein Fenster, keine Adminrechte)
+# 8. Autostart ueber pythonw.exe (kein Fenster, keine Adminrechte)
 # ---------------------------------------------------------------------------
 Write-Step "Autostart"
 Stop-Agent
@@ -244,7 +244,7 @@ if ($LASTEXITCODE -eq 0) {
     $angelegt = $true
     Write-Ok "Aufgabe '$TaskName' angelegt (bei Anmeldung)."
 } else {
-    # Verwaltete Rechner verweigern schtasks haeufig — Run-Schluessel braucht nie Adminrechte.
+    # Verwaltete Rechner verweigern schtasks haeufig - Run-Schluessel braucht nie Adminrechte.
     try {
         New-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run" -Name "CoMeshAgent" `
             -Value $TaskCmd -PropertyType String -Force | Out-Null
@@ -263,10 +263,10 @@ Write-Step "Start"
 if ($checkOk) {
     Start-Process -FilePath $PythonW -ArgumentList @((Join-Path $AgentDir "agent.py")) -WorkingDirectory $AgentDir -WindowStyle Hidden
     Start-Sleep -Seconds 4
-    $läuft = @(Get-Process -Name "pythonw" -ErrorAction SilentlyContinue |
+    $laeuft = @(Get-Process -Name "pythonw" -ErrorAction SilentlyContinue |
                Where-Object { $_.Path -like "*$VenvDir*" }).Count
-    if ($läuft -gt 0) { Write-Ok "Agent laeuft (Prozess pythonw)." }
-    else { Write-Warn "Prozess nicht gefunden — Protokoll: $LogFile" }
+    if ($laeuft -gt 0) { Write-Ok "Agent laeuft (Prozess pythonw)." }
+    else { Write-Warn "Prozess nicht gefunden - Protokoll: $LogFile" }
 } else {
     Write-Warn "Nicht gestartet, weil der Selbsttest nicht sauber war. Von Hand:"
     Write-Host "    cd `"$AgentDir`"; `"$PythonExe`" agent.py --check"

@@ -40,7 +40,7 @@ function Invoke-Native {
 }
 
 $Version = "0.0.0"
-# AGENT_VERSION (zuletzt ausgelieferte Artefakt-Version) hat Vorrang vor VERSION —
+# AGENT_VERSION (zuletzt ausgelieferte Artefakt-Version) hat Vorrang vor VERSION -
 # sonst nennt der Bericht die Portal-Version, waehrend das Binary die Agent-Version meldet.
 $root = Split-Path -Parent $PSScriptRoot
 $versionFile = Join-Path $root "AGENT_VERSION"
@@ -88,17 +88,17 @@ if (-not (Test-Path -LiteralPath $raw)) { throw "Build hat kein dist\comesh-agen
 Move-Item -LiteralPath $raw -Destination $Artifact -Force
 
 # ---------------------------------------------------------------------------
-# Optionale Signatur — MUSS vor dem Hashen passieren
+# Optionale Signatur - MUSS vor dem Hashen passieren
 # ---------------------------------------------------------------------------
 # Signiert wird mit dem Zertifikat des BETREIBERS, nicht mit einem gemeinsamen: eine Instanz, die
 # ihre Nodes selbst ausliefert, muss auch selbst der Herausgeber sein. Ein geteiltes Zertifikat
-# waere ein Generalschluessel — ein Leck kompromittiert dann jede Installation.
+# waere ein Generalschluessel - ein Leck kompromittiert dann jede Installation.
 #
 #   $env:COMESH_SIGN_THUMBPRINT = "<Cert-Thumbprint>"      # Zertifikat im Zertifikatsspeicher
 #   $env:COMESH_SIGN_PFX        = "C:\pfad\sign.pfx"       # oder eine PFX-Datei
 #   $env:COMESH_SIGN_PFX_PASS   = "<Kennwort der PFX>"     # nur bei PFX noetig
 #
-# Ohne diese Variablen passiert nichts — der Build bleibt wie bisher. Der Agent ist dann
+# Ohne diese Variablen passiert nichts - der Build bleibt wie bisher. Der Agent ist dann
 # unsigniert und auf Windows 11 mit aktivem Smart App Control nicht startbar; dort ist der
 # Quelltext-Weg (downloads/install-from-source.ps1) die Antwort.
 $signiert = $false
@@ -138,7 +138,7 @@ if ($env:COMESH_SIGN_THUMBPRINT -or $env:COMESH_SIGN_PFX) {
     if ($LASTEXITCODE -ne 0) {
         throw "Signaturpruefung fehlgeschlagen:`n$pruefung"
     }
-    $zeile = ($pruefung -split "`n" | Where-Object { $_ -match "Issued to|Ausgestellt für" } | Select-Object -First 1)
+    $zeile = ($pruefung -split "`n" | Where-Object { $_ -match "Issued to|Ausgestellt fuer" } | Select-Object -First 1)
     if ($zeile) { Write-Host "  Signatur gueltig - $($zeile.Trim())" }
     else        { Write-Host "  Signatur gueltig" }
 

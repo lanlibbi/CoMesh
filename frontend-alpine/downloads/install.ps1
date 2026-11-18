@@ -185,7 +185,7 @@ Remove-Item -LiteralPath $tmpDir -Recurse -Force -ErrorAction SilentlyContinue
 
 # Der Start kann vom Betriebssystem verweigert werden, nicht vom Binary: AppLocker, WDAC oder
 # Smart App Control blockieren unssignierte Programme. Heruntergeladen und geprueft ist die Datei
-# dann trotzdem — der Installer kann das nicht umgehen und soll es auch nicht versuchen. Er stellt
+# dann trotzdem - der Installer kann das nicht umgehen und soll es auch nicht versuchen. Er stellt
 # aber fest, WER blockiert, damit der Nutzer nicht vier Befehle abtippen muss.
 try {
     $versionLine = & $Exe --version 2>&1
@@ -200,7 +200,7 @@ try {
 
     Write-Host ""
     Write-Warn "Eine Systemrichtlinie blockiert das Programm (nicht der Installer)."
-    Write-Host "  Download und Pruefsumme sind in Ordnung — die Datei darf nur nicht starten."
+    Write-Host "  Download und Pruefsumme sind in Ordnung - die Datei darf nur nicht starten."
     Write-Host ""
 
     # --- Wer blockiert? Jede Quelle einzeln absichern, eine darf die anderen nicht verhindern ---
@@ -256,14 +256,14 @@ try {
         Write-Host "     Sinnvoll: Agent aus dem Quelltext starten (braucht keine Rechte):"
         Write-Host "       irm $BaseUrl/install-from-source.ps1 -OutFile $env:TEMP\comesh-src.ps1; & $env:TEMP\comesh-src.ps1 -PortalUrl $PortalUrl"
         Write-Host "     Oder die IT um eine Herausgeber-Regel auf ein signiertes Binary bitten."
-        Write-Host "     Eine Defender-Ausnahme fuer einen Ordner hilft nicht — Anwendungskontrolle ist"
+        Write-Host "     Eine Defender-Ausnahme fuer einen Ordner hilft nicht - Anwendungskontrolle ist"
         Write-Host "     ein anderer Mechanismus als Virenscanning."
     } else {
         Write-Host "  => Keine Richtlinie direkt lesbar (dafuer braucht es oft Adminrechte)."
         Write-Host "     Zwei Versuche der Reihe nach:"
         Write-Host "     a) Agent aus dem Quelltext starten (unabhaengig von jeder Richtlinie):"
         Write-Host "          irm $BaseUrl/install-from-source.ps1 -OutFile $env:TEMP\comesh-src.ps1; & $env:TEMP\comesh-src.ps1 -PortalUrl $PortalUrl"
-        Write-Host "     b) Von Hand als Administrator nach C:\Program Files legen — die Standard-Pfadregeln"
+        Write-Host "     b) Von Hand als Administrator nach C:\Program Files legen - die Standard-Pfadregeln"
         Write-Host "        von AppLocker erlauben Programme dort:"
         Write-Host "          New-Item -ItemType Directory -Force 'C:\Program Files\CoMesh' | Out-Null"
         Write-Host "          Copy-Item `"$Exe`" 'C:\Program Files\CoMesh\' -Force"
