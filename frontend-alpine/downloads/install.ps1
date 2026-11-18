@@ -1,3 +1,4 @@
+# Fassung: 2026-11-18a -- reines ASCII (PowerShell 5.1 ohne BOM liest sonst Buchstabensalat)
 <#
 .SYNOPSIS
     CoMesh Node-Agent - Installation mit einem Befehl unter Windows.
