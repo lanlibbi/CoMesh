@@ -85,6 +85,7 @@ Run:
   python agent.py --check
 """
 import asyncio
+import hashlib
 import hmac
 import json
 import logging
@@ -686,29 +687,76 @@ def vram_report() -> tuple:
 app = FastAPI(title="CoMesh Node-Agent", version=AGENT_VERSION)
 
 
+_LEGACY_SECRET_WARNED = False
+PORTAL_TOKEN_LABEL = b"comesh-portal-v1"
+
+
+def _portal_token() -> str:
+    """Das portal-eigene Token fuer diesen Node: HMAC-SHA256(SHA-256(Node-Key), Label).
+
+    Gegenstueck zu `pool.node_token_for()`. Der Agent hat seinen Node-Key zur Laufzeit (Umgebung
+    oder State-Datei), also braucht er kein zusaetzliches Geheimnis. Fuer andere Nodes ist das
+    Token wertlos — genau darum ging es: das frueher benutzte globale Secret oeffnete *alle*
+    Agenten auf einmal.
+    """
+    key = (NODE_API_KEY or "").strip()
+    if not key:
+        return ""
+    basis = hashlib.sha256(key.encode("utf-8")).hexdigest()
+    return hmac.new(basis.encode("utf-8"), PORTAL_TOKEN_LABEL, hashlib.sha256).hexdigest()
+
+
+def _legacy_shared_secret_allowed() -> bool:
+    """Uebergangszeit: globales Secret noch akzeptieren (Portal in alter Version)."""
+    wert = (os.environ.get("NODE_ALLOW_LEGACY_SHARED_SECRET", "0") or "0").strip().lower()
+    return wert not in ("0", "", "false", "no")
+
+
 @app.middleware("http")
 async def _enforce_shared_secret(request: Request, call_next):
-    """Zugangssperre: jeder Endpunkt verlangt den gemeinsamen Schluessel.
+    """Zugangssperre: jeder Endpunkt verlangt ein gueltiges Token.
 
-    Ohne gesetztes NODE_SHARED_SECRET bleibt alles offen (Rueckwaerts-
-    vertraeglichkeit zu Agenten ohne die Variable) — der Start warnt davor.
-    `/health` ist ausgenommen und antwortet ohne Schluessel nur mit einem
-    nackten {"ok": …}, damit Monitoring weiter funktioniert, ohne dass
-    Node-Id, GPU oder Speicher nach aussen fallen.
+    Erwartet wird das aus dem Node-Key abgeleitete Token (`_portal_token`). Damit faellt die
+    Sperre zu, sobald ein Node-Key existiert — auch ohne `NODE_SHARED_SECRET`. Frueher war es
+    umgekehrt: ohne diese Variable ging alles durch, und der Agent hoerte auf 0.0.0.0, also war er
+    ein offener LLM-Proxy (der Start warnte nur).
+
+    Offen bleibt nur der Fall "weder Secret noch Node-Key" — z. B. ein Agent, der noch nie
+    registriert wurde. Das ist der alte Zustand und wird beim Start laut angesagt.
+
+    `/health` ist ausgenommen und antwortet ohne Token nur mit einem nackten {"ok": …}, damit
+    Monitoring weiter funktioniert, ohne dass Node-Id, GPU oder Speicher nach aussen fallen.
     """
-    if not NODE_SHARED_SECRET:
-        return await call_next(request)
     if request.url.path == "/health":
         return await call_next(request)  # antwortet selbst, ggf. ohne Details
+
+    erwartet = _portal_token()
     provided = request.headers.get(SECRET_HEADER, "")
-    if provided and hmac.compare_digest(provided, NODE_SHARED_SECRET):
+    if erwartet and provided and hmac.compare_digest(provided, erwartet):
         return await call_next(request)
+
+    if _legacy_shared_secret_allowed() and NODE_SHARED_SECRET:
+        if provided and hmac.compare_digest(provided, NODE_SHARED_SECRET):
+            if not _LEGACY_SECRET_WARNED:
+                log.warning(
+                    "Zugriff mit dem globalen NODE_SHARED_SECRET erlaubt "
+                    "(NODE_ALLOW_LEGACY_SHARED_SECRET=1). Portal aktualisieren und die Variable "
+                    "entfernen, damit das Geheimnis nicht mehr ueber die Leitung geht."
+                )
+                _LEGACY_SECRET_WARNED = True
+            return await call_next(request)
+
+    if not erwartet and not NODE_SHARED_SECRET:
+        # Alte Lage: kein Node-Key, kein Secret -> keine Sperre moeglich. Beim Start angesagt.
+        return await call_next(request)
+
     return JSONResponse(
         status_code=401,
         content={
             "detail": (
-                f"Missing or invalid {SECRET_HEADER} header. This node-agent requires "
-                "the shared secret configured for the portal (NODE_SHARED_SECRET)."
+                f"Missing or invalid {SECRET_HEADER} header. This node-agent expects the token "
+                "derived from its node key (portal >= 0.6.28). Update the portal, or run the "
+                "agent with NODE_ALLOW_LEGACY_SHARED_SECRET=1 while it is still older."
             )
         },
     )

@@ -86,12 +86,38 @@ def test_health_with_header_reveals_details(http):
     assert "gpu" in body
 
 
-def test_unset_secret_keeps_legacy_behaviour(http, agent_app):
-    """Ohne NODE_SHARED_SECRET verhaelt sich der Agent wie vorher (nur Warnung)."""
+def test_ohne_secret_aber_mit_node_key_bleibt_die_sperre_zu(http, agent_app):
+    """Neuer Vertrag seit SEC-01: der Node-Key genuegt, das globale Secret ist nicht noetig.
+
+    Frueher galt: kein NODE_SHARED_SECRET -> alles offen. Weil der Agent auf 0.0.0.0 hoert, war
+    das ein offener LLM-Proxy (Startwarnung hin oder her). Jetzt leitet der Agent aus seinem
+    eigenen Node-Key ein Token ab und verlangt es.
+    """
+    secret_vorher, key_vorher = agent_app.NODE_SHARED_SECRET, agent_app.NODE_API_KEY
     agent_app.NODE_SHARED_SECRET = ""
+    agent_app.NODE_API_KEY = "test-key"
+    try:
+        assert http.get("/").status_code == 401
+        assert http.post("/v1/chat/completions", json=BODY).status_code == 401
+        gueltig = {"X-Node-Secret": agent_app._portal_token()}
+        assert http.get("/", headers=gueltig).status_code == 200
+    finally:
+        agent_app.NODE_SHARED_SECRET = secret_vorher
+        agent_app.NODE_API_KEY = key_vorher
+
+
+def test_ohne_secret_und_ohne_node_key_bleibt_der_alte_zustand(http, agent_app):
+    """Ein Agent, der noch nie registriert wurde, hat nichts zum Ableiten — weiter offen, mit Warnung.
+
+    Das ist der einzige verbleibende offene Fall, und er ist beim Start angesagt. Sobald ein
+    Node-Key existiert (Selbstregistrierung oder agent.env), greift die Sperre.
+    """
+    secret_vorher, key_vorher = agent_app.NODE_SHARED_SECRET, agent_app.NODE_API_KEY
+    agent_app.NODE_SHARED_SECRET = ""
+    agent_app.NODE_API_KEY = ""
     try:
         assert http.get("/").status_code == 200
-        # /health liefert dann wieder die vollen Details.
-        assert "node_id" in http.get("/health").json()
+        assert agent_app._portal_token() == ""
     finally:
-        agent_app.NODE_SHARED_SECRET = SECRET
+        agent_app.NODE_SHARED_SECRET = secret_vorher
+        agent_app.NODE_API_KEY = key_vorher

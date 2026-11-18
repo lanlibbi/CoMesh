@@ -17,6 +17,7 @@ its own dedicated key issued at registration time. This way the user's
 account key is never exposed to the agent process.
 """
 import logging
+import os
 import secrets
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -264,8 +265,33 @@ def node_out_fields(node: GpuNode) -> dict:
     }
 
 
+def _node_url_gueltig_oder_422(url: Optional[str]) -> None:
+    """Lehnt eine unzulaessige Node-Adresse mit 422 ab (SEC-01b).
+
+    Geprueft wird nur Schema und Hostname — die Aufloesung passiert unmittelbar vor jedem Request
+    in pool._forward_to_node(), weil ein DNS-Eintrag sich nach der Registrierung aendern kann.
+    """
+    if not url:
+        return
+    if (os.environ.get("ALLOW_RESTRICTED_NODE_URLS", "0") or "0").strip().lower() not in ("0", "", "false", "no"):
+        return
+    from netinfo import node_url_is_allowed
+
+    if not node_url_is_allowed(url, strict=False):
+        raise HTTPException(
+            status_code=422,
+            detail=(
+                "Node address not allowed: only http/https, and no loopback or link-local "
+                "addresses (127.0.0.0/8, 169.254.0.0/16). LAN addresses like 192.168.1.50 "
+                "are fine. If the node really runs on localhost, set "
+                "ALLOW_RESTRICTED_NODE_URLS=1 on the portal."
+            ),
+        )
+
+
 def resolve_node_url(req_url: Optional[str], legacy_ip: Optional[str], port: int) -> Optional[str]:
     """Explicit URL wins; otherwise a legacy `tailscale_ip` is promoted to one."""
+    _node_url_gueltig_oder_422(req_url)
     explicit = normalize_node_url(req_url, default_port=None)
     if explicit:
         return explicit

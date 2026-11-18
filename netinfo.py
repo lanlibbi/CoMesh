@@ -36,6 +36,66 @@ LOCAL_HOSTS = {
     "host.docker.internal.",
 }
 
+# Hosts, die nie eine Node-Adresse sein duerfen: Loopback und Link-Local (dort liegt auch die
+# Cloud-Metadaten-Adresse 169.254.169.254). Private LAN-Bereiche (10/8, 172.16/12, 192.168/16)
+# stehen bewusst NICHT hier — ein Node haengt im LAN, das ist der Normalfall.
+FORBIDDEN_NODE_SCHEMES = ("http", "https")
+
+
+def _blocked_ip(value: str) -> bool:
+    """True fuer Loopback, Link-Local, 0.0.0.0/:: und reservierte Bereiche."""
+    try:
+        addr = ipaddress.ip_address(str(value).strip().strip("[]"))
+    except (ValueError, TypeError):
+        return False
+    return bool(
+        addr.is_loopback              # 127.0.0.0/8, ::1
+        or addr.is_link_local        # 169.254.0.0/16 -> 169.254.169.254
+        or addr.is_unspecified       # 0.0.0.0, ::
+        or addr.is_reserved
+        or addr.is_multicast
+    )
+
+
+def node_url_is_allowed(url: Optional[str], strict: bool = False) -> bool:
+    """True, wenn *url* als Node-Adresse zulaessig ist.
+
+    `strict=False` prueft Schema und Hostnamen — schnell genug fuer die Registrierung, damit der
+    Benutzer sofort eine Rueckmeldung bekommt. `strict=True` loest den Host zusaetzlich auf und
+    prueft die IPs; das gehoert unmittelbar vor jeden Request, weil ein Angreifer seinen
+    DNS-Eintrag nach der Registrierung auf 127.0.0.1 umbiegen kann (DNS-Rebinding).
+
+    Ein `False` heisst: nicht an diese Adresse senden.
+    """
+    if not url:
+        return True
+    roh = url.strip()
+    if "://" not in roh:
+        roh = f"http://{roh}"
+    teile = urlsplit(roh)
+    if (teile.scheme or "").lower() not in FORBIDDEN_NODE_SCHEMES:
+        return False
+    host = (teile.hostname or "").strip().lower()
+    if not host:
+        return False
+    if host in {h.lower() for h in LOCAL_HOSTS}:
+        return False
+    if host.endswith(".localhost"):
+        return False
+    if _blocked_ip(host):
+        return False
+    if not strict:
+        return True
+    try:
+        infos = socket.getaddrinfo(host, None)
+    except OSError:
+        # Nicht aufloesbar: nicht senden. Ein Node, den das Portal nicht findet, ist kein Ziel.
+        return False
+    if not infos:
+        return False
+    return not any(_blocked_ip(info[4][0]) for info in infos)
+
+
 DEFAULT_AGENT_PORT = 11435
 
 
@@ -157,7 +217,11 @@ def normalize_node_url(
     scheme = default_scheme
     if "://" in value:
         scheme, _, rest = value.partition("://")
-        scheme = scheme.strip() or default_scheme
+        scheme = (scheme.strip() or default_scheme).lower()
+        if scheme not in FORBIDDEN_NODE_SCHEMES:
+            # file://, gopher://, ftp:// ... sind keine Node-Adressen. Hier ist die einzige
+            # Stelle, durch die jede Node-URL laeuft, also wird hier abgelehnt.
+            return None
     else:
         rest = value
     rest = rest.strip().strip("/")

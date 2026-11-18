@@ -158,15 +158,64 @@ def _round_robin(group: List["NodeCandidate"]) -> "NodeCandidate":
 
 
 
-def node_request_headers() -> dict:
+_LEGACY_WARNED = False
+
+NODE_TOKEN_LABEL = b"comesh-portal-v1"
+
+
+def node_token_for(node) -> str:
+    """Aus dem Node-Key abgeleitetes Token (HMAC-SHA256 mit festem Label).
+
+    `api_key_hash` ist der SHA-256 des Node-Keys, den der Agent selbst besitzt. Beide Seiten
+    rechnen dieselbe Funktion, also braucht kein Geheimnis ueber die Leitung zu gehen.
+    """
+    basis = (getattr(node, "api_key_hash", None) or "").strip()
+    if not basis:
+        return ""
+    import hashlib
+    import hmac
+
+    return hmac.new(basis.encode("utf-8"), NODE_TOKEN_LABEL, hashlib.sha256).hexdigest()
+
+
+def _legacy_node_secret_allowed() -> bool:
+    """Nur fuer die Uebergangszeit: globales Secret wieder mitschicken.
+
+    Ohne diese Notbremse verlaesst `NODE_SHARED_SECRET` das Portal nie. Ist sie gesetzt, gilt
+    wieder die alte Schwachstelle (jede benutzerkontrollierte `node_url` bekommt das Geheimnis
+    aller Agenten) — deshalb Vorgabe 0 und eine Warnung im Log.
+    """
+    global _LEGACY_WARNED
+
+    wert = (os.environ.get("ALLOW_LEGACY_NODE_SECRET", "0") or "0").strip().lower()
+    if wert in ("0", "", "false", "no"):
+        return False
+    if not _LEGACY_WARNED:
+        log.warning(
+            "ALLOW_LEGACY_NODE_SECRET ist gesetzt: das globale NODE_SHARED_SECRET wird wieder an "
+            "Node-Adressen geschickt. Nur so lange noetig, wie Agenten ohne Token-Pruefung laufen."
+        )
+        _LEGACY_WARNED = True
+    return True
+
+
+def node_request_headers(node=None) -> dict:
     """Header fuer jede Anfrage an einen Node-Agenten.
 
-    `X-Node-Secret` ist das gemeinsame Geheimnis (NODE_SHARED_SECRET beider
-    Seiten). Ist es nicht gesetzt, bleibt das Verhalten wie bisher — ein Agent
-    ohne Sperre erwartet dann auch keinen Kopf.
+    Vorrang hat das node-eigene Token. Nur wenn der Node keinen Schluessel-Hash hat (Altbestand)
+    und `ALLOW_LEGACY_NODE_SECRET=1` gesetzt ist, geht das globale Secret raus.
+
+    Hintergrund: `node_url` ist ein vom Benutzer frei waehlbares Feld. Mit dem globalen Secret
+    bekam der Betreiber einer beliebigen Node den Schluessel zu *allen* Agenten im Pool — der
+    Agent bindet auf 0.0.0.0, also fremde GPUs kostenlos an Guthaben und Modell-Whitelist vorbei.
     """
-    secret = (os.environ.get("NODE_SHARED_SECRET") or "").strip()
-    return {"X-Node-Secret": secret} if secret else {}
+    token = node_token_for(node) if node is not None else ""
+    if token:
+        return {"X-Node-Secret": token}
+    if _legacy_node_secret_allowed():
+        secret = (os.environ.get("NODE_SHARED_SECRET") or "").strip()
+        return {"X-Node-Secret": secret} if secret else {}
+    return {}
 
 
 def _node_allows_model(node: GpuNode, model: str) -> bool:
@@ -358,6 +407,14 @@ async def _forward_to_node(node: GpuNode, ollama_payload: dict, timeout: float =
             f"Node {node.id} has no reachable address yet. It gets one from its first "
             "heartbeat (or set node_url at registration / in the node's ADVERTISE_HOST)."
         )
+    # Zieladresse unmittelbar vor dem Senden pruefen (DNS-Rebinding, SEC-01b).
+    from netinfo import node_url_is_allowed
+
+    if not node_url_is_allowed(base, strict=True):
+        raise RuntimeError(
+            f"Node {node.id}: Zieladresse {base!r} ist als Node-Adresse nicht zulaessig "
+            "(nur http/https, kein Loopback, kein Link-Local). Request unterlassen."
+        )
     url = f"{base}/v1/chat/completions"
     # Build the OpenAI-shaped payload from the ollama_payload
     openai_payload = {
@@ -373,7 +430,7 @@ async def _forward_to_node(node: GpuNode, ollama_payload: dict, timeout: float =
         if ollama_payload.get("tool_choice") is not None:
             openai_payload["tool_choice"] = ollama_payload["tool_choice"]
     async with httpx.AsyncClient(timeout=timeout) as client:
-        r = await client.post(url, json=openai_payload, headers=node_request_headers())
+        r = await client.post(url, json=openai_payload, headers=node_request_headers(node))
         r.raise_for_status()
         data = r.json()
     # Normalize to the dict shape downstream expects (Ollama-style with
@@ -415,9 +472,16 @@ async def _forward_to_node_stream(node: GpuNode, ollama_payload: dict, on_delta,
     prompt_tokens = 0
     completion_tokens = 0
 
+    from netinfo import node_url_is_allowed
+
+    if not node_url_is_allowed(base, strict=True):
+        raise RuntimeError(
+            f"Node {node.id}: Zieladresse {base!r} ist als Node-Adresse nicht zulaessig "
+            "(nur http/https, kein Loopback, kein Link-Local). Request unterlassen."
+        )
     async with _hx.AsyncClient(timeout=timeout) as client:
         async with client.stream("POST", f"{base.rstrip('/')}/v1/chat/completions",
-                                 json=payload, headers=node_request_headers()) as r:
+                                 json=payload, headers=node_request_headers(node)) as r:
             r.raise_for_status()
             async for line in r.aiter_lines():
                 if not line or not line.startswith("data:"):
