@@ -83,6 +83,56 @@ def _stub_upstream(monkeypatch, content="ws ok", tokens=1000):
     monkeypatch.setattr(pool, "route_request", fake_route_request)
 
 
+def _ws_warten(ws, maxn=80, frist=8.0, bis=("final", "error")):
+    """Liest Frames einer Nachricht mit Zeitgrenze. Leere Liste = nichts geschickt.
+
+    Endet bei einem Frame aus `bis` (Vorgabe: `final` oder `error`, also das Ende einer
+    Chat-Nachricht). Ohne dieses Ende wuerde der Faden weiterlesen und die Frames der *naechsten*
+    Nachricht einsammeln — dann zaehlt der Test das falsche.
+
+    Ohne Frist blockiert `ws.receive_json()` unbegrenzt, wenn der Server die Verbindung duldet statt
+    sie abzulehnen; ein Sicherheits-Test wuerde dann wie ein Haenger aussehen statt wie ein Befund.
+    """
+    import queue
+    import threading
+
+    q = queue.Queue()
+
+    def _lesen():
+        try:
+            for _ in range(maxn):
+                f = ws.receive_json()
+                q.put(("frame", f))
+                if isinstance(f, dict) and f.get("type") in bis:
+                    return
+        except Exception as e:  # WebSocketDisconnect o. ae.
+            q.put(("ende", type(e).__name__))
+
+    faden = threading.Thread(target=_lesen, daemon=True)
+    faden.start()
+    frames = []
+    while True:
+        try:
+            art, wert = q.get(timeout=frist)
+        except queue.Empty:
+            return frames
+        if art == "ende":
+            return frames
+        frames.append(wert)
+        if isinstance(wert, dict) and wert.get("type") in bis:
+            faden.join(timeout=1.0)
+            return frames
+
+
+def _ws_connect(client, key: str):
+    """Verbindet wie die Frontends: Schluessel als Subprotocol, nicht in der URL.
+
+    `?api_key=` wird seit SEC-09 nicht mehr akzeptiert (der Schluessel stand sonst im Access-Log
+    von nginx und im Cloudflare-Edge-Log).
+    """
+    return client.websocket_connect("/ws/chat", subprotocols=[f"api-key.{key}"])
+
+
 def _frames(ws, until_types=("final",), maxn=50):
     got = []
     for _ in range(maxn):
@@ -94,7 +144,7 @@ def _frames(ws, until_types=("final",), maxn=50):
 
 
 def test_ws_bad_key_rejected(client):
-    with client.websocket_connect("/ws/chat?api_key=gpu_INVALID") as ws:
+    with _ws_connect(client, "gpu_INVALID") as ws:
         hello = ws.receive_json()
         assert hello["type"] == "hello"
         err = ws.receive_json()
@@ -108,7 +158,7 @@ def test_ws_blocked_user_gets_403_frame(client, admin_headers, db_session, monke
     r = client.patch(f"/admin/users/{user.id}/quota", json={"quota_mode": "blocked"},
                      headers=admin_headers)
     assert r.status_code == 200
-    with client.websocket_connect(f"/ws/chat?api_key={raw}") as ws:
+    with _ws_connect(client, raw) as ws:
         ws.receive_json()  # hello
         ws.send_text('{"id":"q1","model":"m","messages":[{"role":"user","content":"hi"}]}')
         err = ws.receive_json()
@@ -119,7 +169,7 @@ def test_ws_unlimited_stream_success_and_no_charge(client, admin_headers, db_ses
     user, raw = _mk_user(db_session, quota_mode="unlimited")
     _stub_upstream(monkeypatch, content="abcdefgh" * 10)
     before = db_session.query(CreditTransaction).count()
-    with client.websocket_connect(f"/ws/chat?api_key={raw}") as ws:
+    with _ws_connect(client, raw) as ws:
         ws.receive_json()  # hello
         ws.send_text('{"id":"s1","model":"m","stream":true,"messages":[{"role":"user","content":"hi"}]}')
         frames = _frames(ws, until_types=("final",))
@@ -140,7 +190,7 @@ def test_ws_unlimited_stream_success_and_no_charge(client, admin_headers, db_ses
 def test_ws_no_stream_final_only(client, db_session, monkeypatch):
     user, raw = _mk_user(db_session)
     _stub_upstream(monkeypatch)
-    with client.websocket_connect(f"/ws/chat?api_key={raw}") as ws:
+    with _ws_connect(client, raw) as ws:
         ws.receive_json()  # hello
         ws.send_text('{"id":"n1","model":"m","stream":false,"messages":[{"role":"user","content":"hi"}]}')
         f1 = ws.receive_json()
@@ -153,7 +203,7 @@ def test_ws_no_stream_final_only(client, db_session, monkeypatch):
 
 def test_ws_invalid_json_gets_error_frame(client, db_session):
     user, raw = _mk_user(db_session)
-    with client.websocket_connect(f"/ws/chat?api_key={raw}") as ws:
+    with _ws_connect(client, raw) as ws:
         ws.receive_json()  # hello
         ws.send_text("kein-json")
         err = ws.receive_json()
@@ -186,7 +236,7 @@ def test_ws_subprotocol_handshake_echoes_key(client, db_session):
 def test_ws_query_param_fallback_still_works(client, db_session):
     """Fix 6 fallback: ?api_key= still authenticates when no subprotocol offered."""
     user, raw = _mk_user(db_session)
-    with client.websocket_connect(f"/ws/chat?api_key={raw}") as ws:
+    with _ws_connect(client, raw) as ws:
         assert ws.receive_json()["type"] == "hello"
 
 
@@ -194,7 +244,7 @@ def test_ws_bad_frame_validation_survives_session(client, db_session, monkeypatc
     """Fix 4: malformed max_tokens -> safe 422 error frame, session stays open."""
     user, raw = _mk_user(db_session)
     _stub_upstream(monkeypatch)
-    with client.websocket_connect(f"/ws/chat?api_key={raw}") as ws:
+    with _ws_connect(client, raw) as ws:
         ws.receive_json()  # hello
         ws.send_text('{"id":"b1","model":"m","max_tokens":"nonsense","messages":[{"role":"user","content":"hi"}]}')
         err = ws.receive_json()
@@ -225,7 +275,7 @@ def test_ws_keepalive_frames_close_gap(client, db_session, monkeypatch):
     import ws as ws_mod
     monkeypatch.setattr(ws_mod, "_KEEPALIVE_INTERVAL_S", 0.4)
     user, raw = _mk_user(db_session)
-    with client.websocket_connect(f"/ws/chat?api_key={raw}") as ws:
+    with _ws_connect(client, raw) as ws:
         ws.receive_json()  # hello
         ws.send_text('{"id":"k1","model":"m","messages":[{"role":"user","content":"hi"}]}')
         stamps = []
@@ -249,7 +299,7 @@ def test_ws_balance_mode_zero_credits_gets_402(client, admin_headers, db_session
     assert r.status_code == 200
     _stub_upstream(monkeypatch)
     before = db_session.query(CreditTransaction).count()
-    with client.websocket_connect(f"/ws/chat?api_key={raw}") as ws:
+    with _ws_connect(client, raw) as ws:
         ws.receive_json()
         ws.send_text('{"id":"z1","model":"m","messages":[{"role":"user","content":"hi"}]}')
         err = ws.receive_json()
@@ -274,10 +324,83 @@ def test_ws_balance_mode_books_once_and_negative_credits(client, admin_headers, 
         db_session.query(_U).filter(_U.id == user.id).update({"quota_mode": "balance"})
     db_session.commit()
     before = db_session.query(CreditTransaction).count()
-    with client.websocket_connect(f"/ws/chat?api_key={raw}") as ws:
+    with _ws_connect(client, raw) as ws:
         ws.receive_json()
         frames = _ws_frames(ws, '{"id":"p1","model":"m","messages":[{"role":"user","content":"hi"}]}')
         assert frames[-1]["type"] == "final"
         assert float(frames[-1]["credits"]) < 0
     db_session.expire_all()
     assert db_session.query(CreditTransaction).count() == before + 1  # exactly one booking
+
+
+# ---------------------------------------------------------------------------
+# SEC-02: dieselben Regeln wie im HTTP-Pfad
+# ---------------------------------------------------------------------------
+def test_ws_rejects_expired_token(client, db_session):
+    """Ein abgelaufener Token darf am WebSocket nicht weiterarbeiten.
+
+    Der HTTP-Pfad antwortet 401 (auth.resolve_token prueft expires_at); der WS-Pfad baute die
+    Abfrage selbst nach und kannte die Pruefung nicht.
+    """
+    import datetime as _dt
+
+    user, raw = _mk_user(db_session)
+    from auth import hash_api_key
+    from models import ApiKey
+
+    key = db_session.query(ApiKey).filter(ApiKey.key_hash == hash_api_key(raw)).first()
+    key.expires_at = _dt.datetime.utcnow() - _dt.timedelta(hours=1)
+    db_session.commit()
+
+    with _ws_connect(client, raw) as ws:
+        ws.receive_json()  # hello
+        rahmen = _ws_warten(ws)
+        assert rahmen, "Server hat den abgelaufenen Token NICHT abgelehnt (kein Fehler-Frame)"
+        err = rahmen[-1]
+        assert err["type"] == "error" and err["status"] == 401, err
+
+
+def test_ws_rejects_pending_registration(client, db_session):
+    """Ein Konto in der Freigabewarteschlange darf auch per WS nicht arbeiten."""
+    user, raw = _mk_user(db_session)
+    user.registration_status = "pending"
+    db_session.commit()
+
+    with _ws_connect(client, raw) as ws:
+        ws.receive_json()  # hello
+        rahmen = _ws_warten(ws)
+        assert rahmen, "Server hat das nicht freigegebene Konto NICHT abgelehnt (kein Fehler-Frame)"
+        err = rahmen[-1]
+        assert err["type"] == "error" and err["status"] == 403, err
+
+
+def test_ws_is_rate_limited(client, db_session, monkeypatch):
+    """Nach dem Burst muss der WS-Pfad 429 liefern — nicht endlos durchlassen."""
+    user, raw = _mk_user(db_session, quota_mode="unlimited")
+    _stub_upstream(monkeypatch)
+    monkeypatch.setenv("RATE_LIMIT_CHAT_BURST", "3")
+    monkeypatch.setenv("RATE_LIMIT_CHAT_PER_MIN", "3")
+
+    with _ws_connect(client, raw) as ws:
+        ws.receive_json()  # hello
+        statuscodes = []
+        for i in range(6):
+            ws.send_text('{"id":"r%d","model":"m","messages":[{"role":"user","content":"hi"}]}' % i)
+            for f in _ws_warten(ws, maxn=60, frist=20.0):
+                if f.get("type") == "error":
+                    statuscodes.append(f.get("status"))
+                    break
+                if f.get("type") == "final":
+                    break
+        assert 429 in statuscodes, statuscodes
+
+
+def test_ws_ignores_query_parameter_key(client, db_session):
+    """`?api_key=` ist kein gueltiger Weg mehr (Schluessel gehoert ins Subprotocol)."""
+    user, raw = _mk_user(db_session)
+    with client.websocket_connect(f"/ws/chat?api_key={raw}") as ws:
+        ws.receive_json()  # hello
+        rahmen = _ws_warten(ws)
+        assert rahmen, "Schluessel aus der URL wurde akzeptiert (Query-Fallback noch aktiv)"
+        err = rahmen[-1]
+        assert err["type"] == "error" and err["status"] == 401, err

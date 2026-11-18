@@ -611,28 +611,75 @@ async def _ws_keepalive_task(websocket: WebSocket):
 
 
 def _extract_ws_user_key(websocket: WebSocket) -> str:
-    """Fix 6 order: subprotocol first (not in CF URL logs), query fallback."""
+    """Schluessel ausschliesslich aus dem Subprotocol.
+
+    Der fruehere Fallback `?api_key=` ist entfallen: eine URL landet im Access-Log von nginx, im
+    Cloudflare-Edge-Log und in jedem Zwischenproxy. Beide Frontends senden den Schluessel als
+    Subprotocol (`api-key.<key>`, frontend-alpine/app.js), der Fallback war nur eine zweite,
+    unsicherere Tuer.
+    """
     for sub in (websocket.headers.get("sec-websocket-protocol") or "").split(","):
         s = sub.strip()
         if s.startswith("api-key."):
             return s[len("api-key."):]
-    return websocket.query_params.get("api_key") or ""
+    return ""
+
+
+def _ws_peer_ip(websocket: WebSocket) -> str:
+    """Peer-IP einer WS-Verbindung, mit derselben Proxy-Regel wie ratelimit.client_ip().
+
+    Hinter nginx (und Cloudflare) ist `websocket.client.host` immer der Proxy. `X-Real-IP` darf
+    deshalb nur gelten, wenn der TCP-Peer in TRUSTED_PROXY_NETS liegt — sonst waere das IP-Limit
+    mit einem einzigen Header faelschbar.
+    """
+    peer = ""
+    try:
+        peer = (websocket.client.host if websocket.client else "") or ""
+    except Exception:
+        peer = ""
+    try:
+        from ratelimit import peer_is_trusted_proxy
+
+        kopf_ip = (websocket.headers.get("x-real-ip") or "").strip()
+        if kopf_ip and peer_is_trusted_proxy(peer):
+            return kopf_ip
+    except Exception:
+        # Kein Zugriff auf die Trust-Logik: dann bleibt es beim TCP-Peer (sichere Vorgabe).
+        pass
+    return peer or "unknown"
 
 
 def _ws_auth_user(db, user_key):
-    """Resolve a raw api key to its active User (same rule as get_current_user)."""
-    from auth import hash_api_key
-    from models import ApiKey, User
+    """(User, fehler) — Auth ueber **denselben** Weg wie HTTP.
+
+    Frueher stand hier eine eigene Abfrage, die nur `is_active` prueft. Damit fehlten zwei Regeln,
+    die der HTTP-Pfad durchsetzt:
+
+      * `expires_at` — ein abgelaufener Token galt am WebSocket weiter (Session-Token laufen per
+        Vorgabe nach 24 Stunden ab, ueber WS liefen sie unbegrenzt),
+      * `registration_status` — ein Konto in der Freigabewarteschlange durfte per WS arbeiten.
+
+    Beides ist jetzt unmoeglich, weil hier `auth.resolve_token` aufgerufen wird: eine Stelle,
+    eine Regel. `touch=False`, weil sonst jede WS-Nachricht einen Schreibvorgang in `api_keys`
+    ausloest; das `last_used_at` setzen wir einmal beim Verbindungsaufbau.
+
+    Rueckgabe: (User, None) bei Erfolg, sonst (None, (status, meldung)) fuer den Fehler-Frame.
+    """
+    from fastapi import HTTPException
+
+    from auth import resolve_token
+
     if not user_key:
-        return None
-    kh = hash_api_key(user_key)
-    key = db.query(ApiKey).filter(ApiKey.key_hash == kh, ApiKey.is_active == True).first()  # noqa: E712
-    if key is None:
-        return None
-    u = db.query(User).filter(User.id == key.user_id).first()
-    if u is None or not getattr(u, "is_active", True):
-        return None
-    return u
+        return None, (401, "Missing API key.")
+    try:
+        _api_key, user = resolve_token(db, user_key, touch=False)
+    except HTTPException as e:
+        # 403 = Konto nicht freigegeben, 401 = Schluessel ungueltig/abgelaufen/widerrufen.
+        meldung = "Invalid, expired or revoked API key."
+        if e.status_code == 403:
+            meldung = "Account is waiting for approval."
+        return None, (e.status_code, meldung)
+    return user, None
 
 
 async def _ws_chat_send_error(websocket: WebSocket, echo, status: int, message: str):
@@ -664,19 +711,21 @@ async def ws_chat(websocket: WebSocket):
     db = SessionLocal()
     api_key_row = None
     try:
-        user = _ws_auth_user(db, user_key)
+        user, fehler = _ws_auth_user(db, user_key)
         if user is None:
-            await _ws_chat_send_error(websocket, None, 401, "Invalid or inactive API key.")
-            await websocket.close(code=4401)
+            status, meldung = fehler or (401, "Invalid or inactive API key.")
+            await _ws_chat_send_error(websocket, None, status, meldung)
+            # 4401 = nicht authentifiziert, 4403 = angemeldet, aber nicht erlaubt.
+            await websocket.close(code=4403 if status == 403 else 4401)
             return
-        # Fix 6/audit: mark key last-use like the HTTP get_current_user path.
-        if sub_used or websocket.query_params.get("api_key"):
-            api_key_row = db.query(ApiKey).filter(
-                ApiKey.key_hash == __import__("auth").hash_api_key(user_key),
-                ApiKey.is_active == True).first()  # noqa: E712
-            if api_key_row is not None:
-                api_key_row.last_used_at = _dt.datetime.utcnow()
-                db.commit()
+        # last_used_at einmal beim Verbindungsaufbau setzen (der HTTP-Pfad macht es pro Anfrage;
+        # hier waere es pro Frame ein Schreibvorgang).
+        api_key_row = db.query(ApiKey).filter(
+            ApiKey.key_hash == __import__("auth").hash_api_key(user_key),
+            ApiKey.is_active == True).first()  # noqa: E712
+        if api_key_row is not None:
+            api_key_row.last_used_at = _dt.datetime.utcnow()
+            db.commit()
 
         while True:
             raw = await websocket.receive_text()
@@ -696,6 +745,19 @@ async def ws_chat(websocket: WebSocket):
                 continue
             echo = req.id
             req_dict = req.model_dump(exclude_none=True)
+
+            # ---------- Rate-Limit (wie main.chat_completions) ----------
+            # Eine Nachricht = eine Generierung. Ohne diese Pruefung war der WS-Pfad der bequeme
+            # Weg an limit_chat() vorbei: 30 von 30 Nachrichten wurden akzeptiert.
+            try:
+                from ratelimit import limit_chat
+
+                limit_chat(user.id, _ws_peer_ip(websocket))
+            except HTTPException as e:
+                if e.status_code == 429:
+                    await _ws_chat_send_error(websocket, echo, 429, "Rate limit exceeded. Try again later.")
+                    continue
+                raise
 
             # ---------- quota (mirrors main.chat_completions, LANA-88) ----------
             qm = (getattr(user, "quota_mode", "unlimited") or "unlimited")

@@ -168,6 +168,18 @@ def _is_trusted_proxy(peer: str) -> bool:
     return any(addr in net for net in _trusted_proxy_networks())
 
 
+def peer_is_trusted_proxy(peer: str) -> bool:
+    """Oeffentliche Fassung von `_is_trusted_proxy` fuer Pfade ohne Request-Objekt.
+
+    Der WebSocket-Chat braucht dieselbe Regel: hinter nginx ist der TCP-Peer immer der Proxy,
+    `X-Real-IP` darf also nur gelten, wenn dieser Peer vertrauenswuerdig ist. Ohne die Pruefung
+    waere das IP-Rate-Limit mit einem einzigen Header umgehbar.
+    """
+    if not _trust_proxy_headers():
+        return False
+    return _is_trusted_proxy(peer)
+
+
 def client_ip(request: Request) -> str:
     """
     Best-effort client identity for rate limiting.
