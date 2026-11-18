@@ -228,7 +228,11 @@ if ($KeyOnly) {
         $zeilen += "PORTAL_USER_KEY=$accountKey"
         Write-Ok "PORTAL_USER_KEY ergaenzt"
     }
-    Set-Content -LiteralPath $EnvFile -Value $zeilen -Encoding utf8
+    # Ohne BOM schreiben: PowerShell 5.1 haengt bei -Encoding utf8 eines an, und dann
+    # liest der Agent den ersten Schluesselnamen als "\ufeffPORTAL_URL" - PORTAL_URL bleibt leer,
+    # die Selbstregistrierung wird stillschweigend uebersprungen.
+    $utf8NoBomEnv = New-Object System.Text.UTF8Encoding($false)
+    [System.IO.File]::WriteAllLines($EnvFile, [string[]]$zeilen, $utf8NoBomEnv)
 
     $vorher = $ErrorActionPreference
     $ErrorActionPreference = "SilentlyContinue"

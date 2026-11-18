@@ -495,7 +495,10 @@ def _load_env_file(path: str = ".env") -> None:
     except OSError:
         return
     for raw in raw_lines:
-        line = raw.strip()
+        # Ein BOM am Dateianfang (PowerShell 5.1 mit `-Encoding utf8`) wuerde sonst am ersten
+        # Schluesselnamen kleben bleiben: aus PORTAL_URL wird "\ufeffPORTAL_URL", die Variable
+        # landet unter falschem Namen und PORTAL_URL bleibt leer - ohne Fehlermeldung.
+        line = raw.lstrip("\ufeff").strip()
         if not line or line.startswith("#") or "=" not in line:
             continue
         if line.startswith("export "):
