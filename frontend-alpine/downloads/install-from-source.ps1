@@ -179,6 +179,11 @@ try {
         Write-Host "  Im Portal unter Profil -> Schluessel verwalten einen NEUEN gpu_-Schluessel ausstellen."
         Write-Host "  Ein Sitzungswert (sess_...) aus dem Browser ist kein API-Schluessel."
         Write-Host "  Achtung: ein neuer Schluessel entwertet alle aelteren desselben Kontos."
+        # Praefix und Laenge nennen: der Praefix steht auch in der Schluesselliste des Portals,
+        # damit laesst sich vergleichen, ob der Wert zu einem ausgestellten Schluessel gehoert.
+        $praefix = if ($ACCOUNT_KEY.Length -ge 12) { $ACCOUNT_KEY.Substring(0, 12) } else { $ACCOUNT_KEY }
+        Write-Host "  Geprueft: $($ACCOUNT_KEY.Length) Zeichen, Praefix '$praefix'."
+        Write-Host "  Dieser Praefix muss in der Schluesselliste des Portals auftauchen."
         Write-Host "  Und: ein Schluessel gilt nur in der Instanz, die ihn ausgestellt hat."
         Write-Host "  Gegen diese Adresse wurde geprueft: $PortalUrl"
         Fail "Nicht installiert - erst einen gueltigen Schluessel besorgen."
