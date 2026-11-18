@@ -203,9 +203,8 @@ Control** von Windows und kein Fehler des Pakets: die Prüfsumme stimmt, nur der
 unsignierten `.exe` wird verweigert. Dann den Quelltext-Weg nehmen — Python ist signiert und läuft:
 
 ```powershell
-$s = "$env:TEMP\comesh-src.ps1"
-irm https://<portal>/downloads/install-from-source.ps1 -OutFile $s
-& $s -PortalUrl https://<portal>/api
+$env:COMESH_PORTAL_URL = "https://<portal>/api"
+irm https://<portal>/downloads/install-from-source.ps1 | iex
 ```
 
 Voraussetzung: Python 3.10 oder neuer. Smart App Control abzuschalten ist keine gute Idee — das

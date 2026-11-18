@@ -225,9 +225,8 @@ wird nicht beanstandet. Der Agent ist ohnehin ein Python-Programm, das Binary is
 Verpackung:
 
 ```powershell
-$s = "$env:TEMP\comesh-src.ps1"
-irm <portal>/downloads/install-from-source.ps1 -OutFile $s
-& $s -PortalUrl <portal>/api
+$env:COMESH_PORTAL_URL = "<portal>/api"
+irm <portal>/downloads/install-from-source.ps1 | iex
 ```
 
 Das Skript holt den Quelltext als ZIP (kein Git nötig), legt eine eigene Python-Umgebung an,
