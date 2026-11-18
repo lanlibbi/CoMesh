@@ -169,7 +169,34 @@ foreach ($kandidat in $kandidaten) {
     } catch { }
 }
 if (-not $pythonPfad) {
-    Write-Warn "Kein Python 3.10+ gefunden. Zwei Wege, beide ohne Administratorrechte:"
+    # Befund statt Raetsel: zeigen, was die Suche gesehen hat.
+    Write-Host "  Gefunden wurde:"
+    $gefunden = $false
+    foreach ($befehl in @("python", "py", "python3")) {
+        try {
+            $pfad = (Get-Command $befehl -ErrorAction Stop).Source
+            $gefunden = $true
+            $version = (& $befehl --version 2>&1 | Out-String).Trim()
+            Write-Host "    $befehl -> $pfad  ($version)"
+        } catch { Write-Host "    $befehl -> nicht im PATH" }
+    }
+    try {
+        $launcher = (& py -0p 2>&1 | Out-String).Trim()
+        if ($launcher) { Write-Host "    py -0p meldet:"; ($launcher -split "`n") | ForEach-Object { Write-Host "      $($_.Trim())" } }
+    } catch { }
+    try {
+        $store = @(Get-AppxPackage -Name "*Python*" -ErrorAction SilentlyContinue)
+        if ($store.Count) {
+            Write-Host "    Store-Paket: $($store[0].Name) $($store[0].Version) - dessen python.exe ist nur ein Platzhalter"
+        }
+    } catch { }
+    if (-not $gefunden) {
+        Write-Host "    (keine Python-Installation im PATH und nichts an den ueblichen Orten)"
+        Write-Host "    Haeufige Ursache: Python wurde NACH dem Oeffnen dieses Fensters installiert."
+        Write-Host "    Dann ein neues PowerShell-Fenster oeffnen - der PATH wird nur beim Start gelesen."
+    }
+    Write-Host ""
+    Write-Warn "Kein brauchbares Python 3.10+ gefunden. Zwei Wege, beide ohne Administratorrechte:"
     Write-Host "    winget install -e --id Python.Python.3.12"
     Write-Host "    oder direkt von python.org (signiert, Smart App Control laesst es durch):"
     Write-Host '      $u = "https://www.python.org/ftp/python/3.12.8/python-3.12.8-amd64.exe"'
