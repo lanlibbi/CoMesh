@@ -10,15 +10,13 @@ import os
 import pathlib
 
 BASIS = pathlib.Path(__file__).resolve().parent.parent
-AGENT = BASIS / "node-agent" / "agent.py"
+ENVFILE = BASIS / "node-agent" / "envfile.py"
 
 
-def _lade_agent():
-    # node-agent muss im Suchpfad stehen, sonst greift das gleichnamige Modul im
-    # Repo-Wurzelverzeichnis und der Import von gpu_summary scheitert.
-    import sys
-    sys.path.insert(0, str(AGENT.parent))
-    spec = importlib.util.spec_from_file_location("comesh_agent_test", AGENT)
+def _lade_envfile():
+    # envfile.py braucht nur die Standardbibliothek - der Test laeuft damit auch dort, wo
+    # psutil, pynvml oder httpx fehlen (z. B. im API-Abbild).
+    spec = importlib.util.spec_from_file_location("comesh_envfile_test", ENVFILE)
     modul = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(modul)
     return modul
@@ -29,10 +27,10 @@ def test_bom_wird_entfernt(tmp_path):
     # BOM ausdruecklich voranstellen, wie es PowerShell 5.1 tut
     datei.write_text("\ufeffPORTAL_URL=http://127.0.0.1:8765\nPORTAL_USER_KEY=egal\n", encoding="utf-8")
 
-    agent = _lade_agent()
+    envfile = _lade_envfile()
     for name in ("PORTAL_URL", "PORTAL_USER_KEY", "COMESH_AGENT_ENV"):
         os.environ.pop(name, None)
-    agent._load_env_file(str(datei))
+    envfile.load_env_file(str(datei))
 
     assert os.environ.get("PORTAL_URL") == "http://127.0.0.1:8765", (
         "PORTAL_URL wurde nicht gesetzt - das BOM klebt am Schluesselnamen"

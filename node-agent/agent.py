@@ -109,6 +109,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel
 
+from envfile import load_env_file
 from netinfo import (
     detect_outbound_ip,
     gpu_summary,
@@ -488,28 +489,12 @@ WS_HEARTBEAT_SEC = int(os.environ.get("WS_HEARTBEAT_SEC", "15"))
 # although .env set it. Compose injects the values itself, so this only adds a
 # path for direct runs — and a real environment variable always wins.
 def _load_env_file(path: str = ".env") -> None:
-    """Read KEY=VALUE lines from *path* into os.environ, never overriding."""
-    try:
-        with open(path, "r", encoding="utf-8") as fh:
-            raw_lines = fh.readlines()
-    except OSError:
-        return
-    for raw in raw_lines:
-        # Ein BOM am Dateianfang (PowerShell 5.1 mit `-Encoding utf8`) wuerde sonst am ersten
-        # Schluesselnamen kleben bleiben: aus PORTAL_URL wird "\ufeffPORTAL_URL", die Variable
-        # landet unter falschem Namen und PORTAL_URL bleibt leer - ohne Fehlermeldung.
-        line = raw.lstrip("\ufeff").strip()
-        if not line or line.startswith("#") or "=" not in line:
-            continue
-        if line.startswith("export "):
-            line = line[len("export "):].lstrip()
-        key, _, value = line.partition("=")
-        key = key.strip()
-        value = value.strip()
-        if len(value) >= 2 and value[0] == value[-1] and value[0] in "\"'":
-            value = value[1:-1]
-        if key and key not in os.environ:
-            os.environ[key] = value
+    """Liest KEY=VALUE-Zeilen aus *path* in os.environ, ohne vorhandene Werte zu ueberschreiben.
+
+    Die Umsetzung liegt in `envfile.py` (nur Standardbibliothek), damit sie ohne GPU-Abhaengigkeiten
+    geprueft werden kann. Hier bleibt nur der Name, den die Aufrufstellen benutzen.
+    """
+    return load_env_file(path)
 
 
 def _env_file_candidates() -> List[str]:
