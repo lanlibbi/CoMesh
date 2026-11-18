@@ -97,13 +97,44 @@ def gpu_summary() -> dict:
         import pynvml  # type: ignore
 
         pynvml.nvmlInit()
-        handle = pynvml.nvmlDeviceGetHandleByIndex(0)
-        name = pynvml.nvmlDeviceGetName(handle)
-        mem = pynvml.nvmlDeviceGetMemoryInfo(handle)
-        pynvml.nvmlShutdown()
+        try:
+            anzahl = int(pynvml.nvmlDeviceGetCount())
+            namen = []
+            bytes_gesamt = 0
+            for index in range(anzahl):
+                handle = pynvml.nvmlDeviceGetHandleByIndex(index)
+                roh = pynvml.nvmlDeviceGetName(handle)
+                if not isinstance(roh, str):
+                    roh = roh.decode("utf-8", "ignore")
+                namen.append(roh.strip())
+                bytes_gesamt += int(pynvml.nvmlDeviceGetMemoryInfo(handle).total)
+        finally:
+            pynvml.nvmlShutdown()
+
+        if anzahl <= 0:
+            raise RuntimeError("NVML meldet keine Karte")
+
+        if anzahl == 1:
+            bezeichnung = namen[0]
+        elif len(set(namen)) == 1:
+            # Zwei gleiche Karten: "NVIDIA RTX A2000 12GB x2"
+            bezeichnung = f"{namen[0]} x{anzahl}"
+        else:
+            # Gemischt: jede Karte einmal nennen
+            eindeutig = []
+            for n in namen:
+                if n not in eindeutig:
+                    eindeutig.append(n)
+            bezeichnung = " + ".join(eindeutig)
+
         return {
-            "name": name if isinstance(name, str) else name.decode("utf-8", "ignore"),
-            "vram_gb": int(mem.total / 1024**3),
+            "name": bezeichnung,
+            "vram_gb": int(bytes_gesamt / 1024**3),
+            "count": anzahl,
         }
     except Exception:
-        return {"name": os.environ.get("GPU_TYPE", "unknown"), "vram_gb": int(os.environ.get("VRAM_GB", "0") or 0)}
+        return {
+            "name": os.environ.get("GPU_TYPE", "unknown"),
+            "vram_gb": int(os.environ.get("VRAM_GB", "0") or 0),
+            "count": 0,
+        }

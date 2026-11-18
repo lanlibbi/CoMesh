@@ -632,18 +632,40 @@ def get_gpu_info() -> dict:
     if not _HAVE_NVML:
         return info
     try:
-        handle = pynvml.nvmlDeviceGetHandleByIndex(0)
-        name = pynvml.nvmlDeviceGetName(handle)
-        mem = pynvml.nvmlDeviceGetMemoryInfo(handle)
-        util = pynvml.nvmlDeviceGetUtilizationRates(handle)
-        info.update({
-            "name": name if isinstance(name, str) else name.decode("utf-8", "ignore"),
-            "vram_total": int(mem.total),
-            "vram_used": int(mem.used),
-            "vram_total_gb": round(mem.total / 1024**3, 2),
-            "vram_used_gb": round(mem.used / 1024**3, 2),
-            "utilization": util.gpu / 100.0,
-        })
+        # Alle Karten lesen, nicht nur die erste: sonst bleibt die zweite unsichtbar und die
+        # Auslastung im Portal beschreibt nur eine von zwei Karten.
+        anzahl = int(pynvml.nvmlDeviceGetCount())
+        karten = []
+        bytes_total = bytes_used = 0
+        for index in range(anzahl):
+            handle = pynvml.nvmlDeviceGetHandleByIndex(index)
+            roh = pynvml.nvmlDeviceGetName(handle)
+            if not isinstance(roh, str):
+                roh = roh.decode("utf-8", "ignore")
+            mem = pynvml.nvmlDeviceGetMemoryInfo(handle)
+            util = pynvml.nvmlDeviceGetUtilizationRates(handle)
+            bytes_total += int(mem.total)
+            bytes_used += int(mem.used)
+            karten.append({
+                "index": index,
+                "name": roh.strip(),
+                "vram_total_gb": round(mem.total / 1024**3, 2),
+                "vram_used_gb": round(mem.used / 1024**3, 2),
+                "utilization": util.gpu / 100.0,
+            })
+        if karten:
+            info.update({
+                # Alter Feldname bleibt: die Summe aller Karten.
+                "name": gpu_summary().get("name") or karten[0]["name"],
+                "vram_total": bytes_total,
+                "vram_used": bytes_used,
+                "vram_total_gb": round(bytes_total / 1024**3, 2),
+                "vram_used_gb": round(bytes_used / 1024**3, 2),
+                # Durchschnitt: eine volle und eine leere Karte ergeben 50 %, nicht 100 %.
+                "utilization": round(sum(k["utilization"] for k in karten) / len(karten), 4),
+                "gpu_count": len(karten),
+                "gpus": karten,
+            })
     except Exception as e:
         log.debug(f"NVML read failed: {e}")
     return info
@@ -1101,6 +1123,9 @@ async def send_heartbeat(client: httpx.AsyncClient):
         # "assumed" heisst: keine GPU erkannt und nichts gesetzt -> 1 GB.
         "vram_gb": vram_gb,
         "vram_source": vram_source,
+        # Erkannte GPU-Bezeichnung mitschicken. Ohne das behaelt die Node den Namen aus der
+        # Registrierung fuer immer - bei zwei Karten also den einer einzelnen Karte.
+        "gpu_type": gpu_summary().get("name") or "",
         "active_jobs": info["active_jobs"],
         # null = Abfrage fehlgeschlagen; das Portal behaelt dann die letzte Liste.
         "models": models,

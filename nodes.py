@@ -109,6 +109,9 @@ class UpdateNodeRequest(BaseModel):
 class HeartbeatRequest(BaseModel):
     status: str = Field("online", pattern="^(online|offline|busy)$")
     gpu_util: float = Field(0.0, ge=0.0, le=1.0)
+    # Erkannte GPU-Bezeichnung des Agenten (bei mehreren Karten zusammengefasst, z. B.
+    # "RTX A2000 12GB x2"). Leer/null heisst: nichts aendern.
+    gpu_type: Optional[str] = Field(None, max_length=80)
     vram_used_gb: float = Field(0.0, ge=0.0, le=1024)
     vram_total_gb: Optional[float] = None
     # Der Agent wiederholt hier seine gemeldete VRAM-Zahl samt Herkunft. Ein
@@ -588,9 +591,17 @@ def heartbeat(
     # VRAM-Herkunft mitschreiben. Ein ausdrueckliches NODE_VRAM_GB (override)
     # gewinnt gegen den gespeicherten Wert: so kommt eine Node aus der
     # 1-GB-Falle, ohne dass jemand die Geräteseite bearbeiten muss.
+    if req.gpu_type:
+        # Nur uebernehmen, wenn der Agent wirklich etwas erkannt hat.
+        node.gpu_type = req.gpu_type[:80]
     if req.vram_source:
         node.vram_source = req.vram_source
         if req.vram_source == "override" and req.vram_gb:
+            node.vram_gb = int(req.vram_gb)
+        elif req.vram_source == "detected" and req.vram_gb and int(req.vram_gb) >= 1:
+            # Erkannte Hardware nachziehen (z. B. nachdem eine zweite Karte dazukam).
+            # "assumed" bleibt bewusst aussen vor: eine fehlgeschlagene Erkennung darf die
+            # Node nicht auf 1 GB schrumpfen und aus dem Routing kippen.
             node.vram_gb = int(req.vram_gb)
 
     # Update live state
