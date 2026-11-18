@@ -157,6 +157,15 @@ if [ -z "$ACCOUNT_KEY" ]; then
 fi
 [ -n "$ACCOUNT_KEY" ] || die "Ohne Account-Schlüssel kann sich die Node nicht registrieren."
 
+# Format pruefen, ohne den Wert auszugeben: gueltig ist gpu_ + 43 Zeichen = 47.
+ACCOUNT_KEY=$(printf '%s' "$ACCOUNT_KEY" | tr -d '[:space:]')
+LAENGE=${#ACCOUNT_KEY}
+case "$ACCOUNT_KEY" in
+  gpu_*) ;;
+  *) warn "Format ungewoehnlich: Praefix ist nicht gpu_." ;;
+esac
+[ "$LAENGE" -eq 47 ] || warn "Format ungewoehnlich: $LAENGE Zeichen, erwartet 47 (gpu_ + 43) - abgeschnitten kopiert?"
+
 # Schluessel vor dem Einrichten pruefen (siehe Kommentar im PowerShell-Skript).
 if command -v curl >/dev/null 2>&1; then
   ME=$(curl -sS --max-time 20 -H "Authorization: Bearer $ACCOUNT_KEY" "$PORTAL_URL/v1/me" 2>/dev/null || true)

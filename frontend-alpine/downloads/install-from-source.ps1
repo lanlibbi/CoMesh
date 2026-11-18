@@ -149,12 +149,23 @@ if ($KeyFile) {
 }
 if (-not $accountKey) { Fail "Ohne Account-Schluessel kann sich die Node nicht registrieren." }
 
+# Format pruefen, ohne den Wert auszugeben: gueltig ist gpu_ + 43 Zeichen (token_urlsafe(32)).
+# Weicht die Laenge ab, wurde beim Kopieren abgeschnitten - der haeufigste Fall.
+$ACCOUNT_KEY = "$ACCOUNT_KEY".Trim()
+$hatPraefix = $ACCOUNT_KEY.StartsWith("gpu_")
+if (-not $hatPraefix -or $ACCOUNT_KEY.Length -ne 47) {
+    Write-Warn "Format ungewoehnlich: $($ACCOUNT_KEY.Length) Zeichen, Praefix gpu_ = $hatPraefix."
+    Write-Host "  Ein gueltiger Schluessel ist 47 Zeichen lang (gpu_ + 43)."
+    Write-Host "  Kuerzer heisst: beim Kopieren abgeschnitten. Laenger/zwei Zeilen: nur den Wert kopieren."
+}
+
 # Schluessel vor dem Einrichten pruefen. Ohne das faellt ein falscher Schluessel erst im
 # Agenten-Protokoll auf ("Self-registration failed (401)"), gefolgt von einer WebSocket-Schleife
 # mit 403 - das sieht nach Netzproblem aus, ist aber ein abgelehnter Schluessel.
 try {
     $me = Invoke-RestMethod -Uri "$PortalUrl/v1/me" -Headers @{ Authorization = "Bearer $ACCOUNT_KEY" } -TimeoutSec 20
     Write-Ok "Schluessel gueltig: $($me.email) (Rolle: $($me.role))"
+    Write-Host "  Geprueft gegen: $PortalUrl"
     if ($me.role -eq "consumer") {
         Write-Warn "Dieses Konto hat die Rolle 'consumer'. Eine Node registriert nur ein Konto mit"
         Write-Warn "'provider' oder 'both' - im Profil umstellen, dann den Agenten neu starten."
@@ -168,6 +179,8 @@ try {
         Write-Host "  Im Portal unter Profil -> Schluessel verwalten einen NEUEN gpu_-Schluessel ausstellen."
         Write-Host "  Ein Sitzungswert (sess_...) aus dem Browser ist kein API-Schluessel."
         Write-Host "  Achtung: ein neuer Schluessel entwertet alle aelteren desselben Kontos."
+        Write-Host "  Und: ein Schluessel gilt nur in der Instanz, die ihn ausgestellt hat."
+        Write-Host "  Gegen diese Adresse wurde geprueft: $PortalUrl"
         Fail "Nicht installiert - erst einen gueltigen Schluessel besorgen."
     }
     Write-Warn "Vorpruefung nicht moeglich ($($_.Exception.Message)). Die Installation laeuft weiter."
