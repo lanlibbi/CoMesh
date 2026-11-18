@@ -34,7 +34,9 @@ param(
     [string]$InferenceUrl = $env:COMESH_INFERENCE_URL,
     [string]$VramGb    = $env:COMESH_VRAM_GB,
     [string]$SourceZip = "https://github.com/lanlibbi/CoMesh/archive/refs/heads/main.zip",
-    [switch]$Uninstall
+    [switch]$Uninstall,
+    # Nur den Konto-Schluessel ersetzen und den Agenten neu starten (kein Download, kein venv).
+    [switch]$KeyOnly
 )
 
 $ErrorActionPreference = "Stop"
@@ -204,6 +206,67 @@ try {
 
 if ($accountKey -notmatch '^[A-Za-z0-9._:-]+$') {
     Fail "Der Schluessel enthaelt unerwartete Zeichen (erwartet: Buchstaben, Ziffern, . _ : -)."
+}
+
+# ---------------------------------------------------------------------------
+# 2b. Nur Schluessel ersetzen (-KeyOnly)
+# ---------------------------------------------------------------------------
+if ($KeyOnly) {
+    Write-Step "Nur Schluessel ersetzen"
+    if (-not (Test-Path -LiteralPath $EnvFile)) {
+        Fail "$EnvFile fehlt. Ohne -KeyOnly installieren, damit die Konfiguration entsteht."
+    }
+    if (-not (Test-Path -LiteralPath $PythonW)) {
+        Fail "$PythonW fehlt. Die Installation ist unvollstaendig - ohne -KeyOnly erneut ausfuehren."
+    }
+
+    $zeilen = Get-Content -LiteralPath $EnvFile
+    if ($zeilen -match "^PORTAL_USER_KEY=") {
+        $zeilen = $zeilen -replace "^PORTAL_USER_KEY=.*", "PORTAL_USER_KEY=$accountKey"
+        Write-Ok "PORTAL_USER_KEY ersetzt"
+    } else {
+        $zeilen += "PORTAL_USER_KEY=$accountKey"
+        Write-Ok "PORTAL_USER_KEY ergaenzt"
+    }
+    Set-Content -LiteralPath $EnvFile -Value $zeilen -Encoding utf8
+
+    $vorher = $ErrorActionPreference
+    $ErrorActionPreference = "SilentlyContinue"
+    try { & icacls.exe $EnvFile /inheritance:r /grant:r "${whoami}:(F)" 2>&1 | Out-Null }
+    finally { $ErrorActionPreference = $vorher }
+
+    # Ein laufender Agent haelt den alten Schluessel im Speicher - beenden ist Pflicht.
+    Stop-Agent
+    Start-Sleep -Seconds 2
+    $proc = Start-Process -FilePath $PythonW -ArgumentList "`"$(Join-Path $AgentDir 'agent.py')`"" -WindowStyle Hidden -PassThru
+    Start-Sleep -Seconds 12
+    if ($proc -and -not $proc.HasExited) {
+        Write-Ok "Agent gestartet (PID $($proc.Id))"
+    } else {
+        Write-Warn "Der Agent hat sich sofort beendet - siehe Protokoll unten."
+    }
+
+    # Autostart nachziehen, falls er nie angelegt wurde.
+    $vorher = $ErrorActionPreference
+    $ErrorActionPreference = "SilentlyContinue"
+    try {
+        & schtasks.exe /Query /TN "$TaskName" 2>&1 | Out-Null
+        if ($LASTEXITCODE -ne 0) {
+            & schtasks.exe /Create /TN "$TaskName" /TR "$TaskCmd" /SC ONLOGON /RL LIMITED /F 2>&1 | Out-Null
+            if ($LASTEXITCODE -eq 0) { Write-Ok "Autostart-Aufgabe '$TaskName' nachgezogen." }
+            else { Write-Warn "Autostart-Aufgabe konnte nicht angelegt werden." }
+        } else {
+            Write-Ok "Autostart-Aufgabe '$TaskName' ist vorhanden."
+        }
+    } finally { $ErrorActionPreference = $vorher }
+
+    Write-Step "Protokoll (letzte Zeilen)"
+    if (Test-Path -LiteralPath $LogFile) {
+        Get-Content -LiteralPath $LogFile -Tail 12 | ForEach-Object { Write-Host "  $_" }
+    }
+    Write-Host ""
+    Write-Ok "Erwartet: 'WS welcome received' - kein 401/403."
+    return
 }
 
 # ---------------------------------------------------------------------------
