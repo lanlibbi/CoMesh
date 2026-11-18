@@ -162,7 +162,10 @@ services:
       - api
     environment:
       - PORTAL_URL=http://api:8000
-      - NODE_ID=1
+      # Aus der .env, nicht fest verdrahtet: nach einer Neuinstallation ist die erste Node-Id
+      # nicht mehr 1. Mit einer falschen Id antwortet der Heartbeat "Node id mismatch" (404)
+      # und die Node bleibt offline.
+      - NODE_ID=${NODE_ID:-1}
       # Aus .env (nicht im Repo): Knoten-Schluessel aus POST /nodes/register
       - NODE_API_KEY=${NODE_API_KEY:-}
       # Muss dem Wert im API-Container entsprechen, sonst antwortet der Agent 401.
