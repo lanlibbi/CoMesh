@@ -59,11 +59,21 @@ $TaskName  = "CoMesh Agent"
 $TaskCmd   = "`"$PythonW`" `"$(Join-Path $AgentDir 'agent.py')`""
 
 function Stop-Agent {
-    Get-Process -Name "python", "pythonw" -ErrorAction SilentlyContinue |
-        Where-Object { $_.Path -like "*$Root*" } |
-        Stop-Process -Force -ErrorAction SilentlyContinue
-    schtasks /End /TN "$TaskName" *> $null
-    schtasks /Delete /TN "$TaskName" /F *> $null
+    # Externe Befehle einzeln absichern: unter $ErrorActionPreference = "Stop" wird jede
+    # stderr-Zeile eines fremden Programms zum abbrechenden Fehler. "Aufgabe gibt es nicht"
+    # ist hier aber der Normalfall, kein Fehler.
+    $vorher = $ErrorActionPreference
+    $ErrorActionPreference = "SilentlyContinue"
+    try {
+        Get-Process -Name "python", "pythonw" -ErrorAction SilentlyContinue |
+            Where-Object { $_.Path -like "*$Root*" } |
+            Stop-Process -Force -ErrorAction SilentlyContinue
+        & schtasks.exe /End /TN "$TaskName" 2>&1 | Out-Null
+        & schtasks.exe /Delete /TN "$TaskName" /F 2>&1 | Out-Null
+    } finally {
+        $ErrorActionPreference = $vorher
+    }
+    return
 }
 
 # ---------------------------------------------------------------------------
@@ -169,12 +179,14 @@ try {
 # Erst wenn py -0p nichts geliefert hat: PATH durchsuchen.
 $kandidaten = if ($pythonPfad) { @() } else { @("py", "python", "python3") }
 $pfade = @()
-foreach ($muster in @("$env:LOCALAPPDATA\Programs\Python\Python3*\python.exe",
-                      "C:\Python3*\python.exe",
-                      "$env:ProgramFiles\Python3*\python.exe")) {
-    $pfade += @(Get-ChildItem -Path $muster -ErrorAction SilentlyContinue | Select-Object -ExpandProperty FullName)
+if (-not $pythonPfad) {
+    foreach ($muster in @("$env:LOCALAPPDATA\Programs\Python\Python3*\python.exe",
+                          "C:\Python3*\python.exe",
+                          "$env:ProgramFiles\Python3*\python.exe")) {
+        $pfade += @(Get-ChildItem -Path $muster -ErrorAction SilentlyContinue | Select-Object -ExpandProperty FullName)
+    }
+    $kandidaten += $pfade
 }
-$kandidaten += $pfade
 
 foreach ($kandidat in $kandidaten) {
     if (-not $kandidat) { continue }
@@ -288,7 +300,9 @@ if ($VramGb) {
 $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
 [System.IO.File]::WriteAllText($EnvFile, (($lines -join "`r`n") + "`r`n"), $utf8NoBom)
 $whoami = if ($env:USERDOMAIN) { "$($env:USERDOMAIN)\$($env:USERNAME)" } else { $env:USERNAME }
-& icacls.exe $EnvFile /inheritance:r /grant:r "${whoami}:(F)" *> $null
+$vorher = $ErrorActionPreference; $ErrorActionPreference = "SilentlyContinue"
+try { & icacls.exe $EnvFile /inheritance:r /grant:r "${whoami}:(F)" 2>&1 | Out-Null }
+finally { $ErrorActionPreference = $vorher }
 Write-Ok "geschrieben: $EnvFile (nur $whoami)"
 
 # ---------------------------------------------------------------------------
@@ -312,8 +326,15 @@ try {
 Write-Step "Autostart"
 Stop-Agent
 $angelegt = $false
-schtasks /Create /TN "$TaskName" /TR "$TaskCmd" /SC ONLOGON /RL LIMITED /F *> $null
-if ($LASTEXITCODE -eq 0) {
+# Auch hier: ein refusal von schtasks (verwaltete Rechner) darf nicht abbrechen, wir haben
+# einen Rueckfall ueber den Run-Schluessel.
+$vorher = $ErrorActionPreference
+$ErrorActionPreference = "SilentlyContinue"
+$taskRc = 1
+try { & schtasks.exe /Create /TN "$TaskName" /TR "$TaskCmd" /SC ONLOGON /RL LIMITED /F 2>&1 | Out-Null; $taskRc = $LASTEXITCODE }
+catch { $taskRc = 1 }
+finally { $ErrorActionPreference = $vorher }
+if ($taskRc -eq 0) {
     $angelegt = $true
     Write-Ok "Aufgabe '$TaskName' angelegt (bei Anmeldung)."
 } else {
