@@ -46,7 +46,11 @@ param(
     [string]$Name      = $env:COMESH_AGENT_NAME,
     [string]$Backend   = $env:COMESH_BACKEND,
     [string]$InferenceUrl = $env:COMESH_INFERENCE_URL,
-    [switch]$Uninstall
+    [switch]$Uninstall,
+    # Wenn das Binary von einer Systemrichtlinie blockiert wird (Smart App Control,
+    # AppLocker, WDAC): automatisch aus dem Quelltext weiterinstallieren, statt abzubrechen.
+    # Abschalten mit -NoSourceFallback.
+    [switch]$NoSourceFallback
 )
 
 $ErrorActionPreference = "Stop"
@@ -203,6 +207,29 @@ try {
     Write-Warn "Eine Systemrichtlinie blockiert das Programm (nicht der Installer)."
     Write-Host "  Download und Pruefsumme sind in Ordnung - die Datei darf nur nicht starten."
     Write-Host ""
+
+    # --- Ein Befehl soll reichen: aus dem Quelltext weitermachen ---
+    if (-not $NoSourceFallback) {
+        Write-Host ""
+        Write-Step "Weiter aus dem Quelltext (das Binary darf hier nicht starten)"
+        $quelle = "$BaseUrl/install-from-source.ps1"
+        $skriptText = $null
+        try {
+            $skriptText = (Invoke-WebRequest -Uri $quelle -TimeoutSec 60 -UseBasicParsing).Content
+        } catch {
+            Write-Warn "Konnte $quelle nicht laden ($($_.Exception.Message))."
+        }
+        if ($skriptText) {
+            Write-Ok "geladen: $quelle"
+            Write-Host "  Die Angaben von oben werden uebernommen; nach dem Account-Schluessel wird erneut gefragt."
+            # Parameter weitergeben, die hier schon feststehen. Leere Werte laesst das Skript erfragen.
+            & ([scriptblock]::Create($skriptText)) -PortalUrl $PortalUrl -Transport $Transport `
+                -Backend $Backend -KeyFile $KeyFile -Name $Name -VramGb $VramGb -InferenceUrl $InferenceUrl
+            return
+        }
+        Write-Warn "Der Quelltext-Weg ist nicht erreichbar. Von Hand: irm $quelle | iex"
+        Write-Host ""
+    }
 
     # --- Wer blockiert? Jede Quelle einzeln absichern, eine darf die anderen nicht verhindern ---
     $sac = $null

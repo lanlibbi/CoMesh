@@ -112,7 +112,8 @@ try {
         Write-Warn "Pruefe die Adresse: sie muss auf die API zeigen, z. B. http://<host>:8765 oder http://<host>:8767/api"
     } else {
         $v = $antwort.Content | ConvertFrom-Json
-        Write-Ok "Portal erreichbar: ok=$($v.ok) status=$($v.status)"
+        $stand = if ($v.status) { $v.status } elseif ($v.ok -ne $null) { "ok=$($v.ok)" } else { "JSON ohne status/ok" }
+        Write-Ok "Portal erreichbar: $stand"
     }
 } catch {
     Write-Warn "Portal antwortet nicht auf $apiProbe ($($_.Exception.Message)). Die Installation laeuft weiter."
