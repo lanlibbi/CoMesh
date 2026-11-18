@@ -145,10 +145,29 @@ if ($accountKey -notmatch '^[A-Za-z0-9._:-]+$') {
 # 3. Python
 # ---------------------------------------------------------------------------
 Write-Step "Python"
-# Reihenfolge: py-Launcher, dann python im PATH, dann die ueblichen Installationspfade.
-# Der Store-Platzhalter python.exe meldet keinen Versionsstring - er faellt damit automatisch raus.
+# Reihenfolge: py -0p, dann py/python/python3 im PATH, dann die ueblichen
+# Installationspfade. Der Store-Platzhalter python.exe meldet keinen Versionsstring -
+# er faellt damit automatisch raus.
+# Quelle 0: `py -0p` nennt jede Installation mit Pfad und Version, ohne sie zu starten.
+# Zeilenform: " -V:3.12 *        C:\Users\...\Python312\python.exe"
 $pythonPfad = $null
-$kandidaten = @("py", "python", "python3")
+try {
+    $liste = (& py -0p 2>&1 | Out-String)
+    foreach ($zeile in ($liste -split "`r?`n")) {
+        if ($zeile -match '-V:3\.(\d+)') {
+            $minorGefunden = [int]$Matches[1]
+            $kandidatPfad = ($zeile.Trim() -split '\s+')[-1]
+            if ($minorGefunden -ge 10 -and $kandidatPfad -and (Test-Path -LiteralPath $kandidatPfad)) {
+                $pythonPfad = $kandidatPfad
+                Write-Ok "gefunden: Python 3.$minorGefunden ($kandidatPfad)"
+                break
+            }
+        }
+    }
+} catch { }
+
+# Erst wenn py -0p nichts geliefert hat: PATH durchsuchen.
+$kandidaten = if ($pythonPfad) { @() } else { @("py", "python", "python3") }
 $pfade = @()
 foreach ($muster in @("$env:LOCALAPPDATA\Programs\Python\Python3*\python.exe",
                       "C:\Python3*\python.exe",
