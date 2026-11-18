@@ -148,6 +148,31 @@ if ($KeyFile) {
     finally { [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($bstr) }
 }
 if (-not $accountKey) { Fail "Ohne Account-Schluessel kann sich die Node nicht registrieren." }
+
+# Schluessel vor dem Einrichten pruefen. Ohne das faellt ein falscher Schluessel erst im
+# Agenten-Protokoll auf ("Self-registration failed (401)"), gefolgt von einer WebSocket-Schleife
+# mit 403 - das sieht nach Netzproblem aus, ist aber ein abgelehnter Schluessel.
+try {
+    $me = Invoke-RestMethod -Uri "$PortalUrl/v1/me" -Headers @{ Authorization = "Bearer $ACCOUNT_KEY" } -TimeoutSec 20
+    Write-Ok "Schluessel gueltig: $($me.email) (Rolle: $($me.role))"
+    if ($me.role -eq "consumer") {
+        Write-Warn "Dieses Konto hat die Rolle 'consumer'. Eine Node registriert nur ein Konto mit"
+        Write-Warn "'provider' oder 'both' - im Profil umstellen, dann den Agenten neu starten."
+    }
+} catch {
+    $code = $null
+    try { $code = [int]$_.Exception.Response.StatusCode } catch { }
+    if ($code -eq 401) {
+        Write-Host ""
+        Write-Warn "Der Account-Schluessel wird abgelehnt (401 Invalid API key)."
+        Write-Host "  Im Portal unter Profil -> Schluessel verwalten einen NEUEN gpu_-Schluessel ausstellen."
+        Write-Host "  Ein Sitzungswert (sess_...) aus dem Browser ist kein API-Schluessel."
+        Write-Host "  Achtung: ein neuer Schluessel entwertet alle aelteren desselben Kontos."
+        Fail "Nicht installiert - erst einen gueltigen Schluessel besorgen."
+    }
+    Write-Warn "Vorpruefung nicht moeglich ($($_.Exception.Message)). Die Installation laeuft weiter."
+}
+
 if ($accountKey -notmatch '^[A-Za-z0-9._:-]+$') {
     Fail "Der Schluessel enthaelt unerwartete Zeichen (erwartet: Buchstaben, Ziffern, . _ : -)."
 }

@@ -157,6 +157,24 @@ if [ -z "$ACCOUNT_KEY" ]; then
 fi
 [ -n "$ACCOUNT_KEY" ] || die "Ohne Account-Schlüssel kann sich die Node nicht registrieren."
 
+# Schluessel vor dem Einrichten pruefen (siehe Kommentar im PowerShell-Skript).
+if command -v curl >/dev/null 2>&1; then
+  ME=$(curl -sS --max-time 20 -H "Authorization: Bearer $ACCOUNT_KEY" "$PORTAL_URL/v1/me" 2>/dev/null || true)
+  case "$ME" in
+    *'"email"'*)
+      ROLLE=$(printf '%s' "$ME" | sed -n 's/.*"role":"\([a-z]*\)".*/\1/p')
+      say "Schlüssel gültig (Rolle: ${ROLLE:-unbekannt})"
+      [ "$ROLLE" = "consumer" ] && warn "Rolle 'consumer': eine Node braucht 'provider' oder 'both'."
+      ;;
+    *"Invalid API key"*|"")
+      die "Der Account-Schlüssel wird abgelehnt. Im Portal unter Profil → Schlüssel verwalten einen neuen gpu_-Schlüssel ausstellen (entwertet ältere desselben Kontos)."
+      ;;
+    *)
+      warn "Vorprüfung unklar: $(printf '%s' "$ME" | head -c 120)"
+      ;;
+  esac
+fi
+
 # ---------------------------------------------------------------------------
 # 3. Quelltext holen
 # ---------------------------------------------------------------------------
