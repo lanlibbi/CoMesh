@@ -67,6 +67,7 @@ from admin import router as admin_router  # /admin/* — whoami, overview, users
 from config import credits_enabled
 from ws import router as ws_router  # Phase 1: WebSocket outbound layer
 from usage_stats import router as usage_stats_router  # /v1/me/usage
+import anthropic_api  # Anthropic Messages API (/v1/messages) fuer Claude Desktop
 
 # ----------------------------------------------------------------------------
 # Config
@@ -670,7 +671,7 @@ async def net_echo(request: Request):
 
 
 @app.get("/v1/models")
-async def list_models(user: User = Depends(get_current_user),
+async def list_models(request: Request, user: User = Depends(anthropic_api.get_current_user_any),
                       db: Session = Depends(get_db)):
     """Modelle, die **dieses Konto** nutzen darf — in der OpenAI-Form.
 
@@ -752,18 +753,29 @@ async def list_models(user: User = Depends(get_current_user),
         except Exception:
             return 0
 
+    eintraege = [
+        {
+            "id": m.get("name") or m.get("model"),
+            "object": "model",
+            "created": _erstellt(m),
+            "owned_by": "comesh",
+        }
+        for m in modelle
+        if m.get("name") or m.get("model")
+    ]
+
+    # Claude Desktop (Gateway-Anbieter) fragt mit x-api-key und erwartet die Anthropic-Form;
+    # ohne sie findet die App keine Modelle in der Auswahl. OpenAI-Clients bleiben unberuehrt.
+    anthropic_client = bool(
+        request.headers.get("x-api-key") or request.headers.get("anthropic-version")
+    )
+    if anthropic_client:
+        import anthropic_api
+        return anthropic_api.models_antwort_anthropic(eintraege)
+
     return {
         "object": "list",
-        "data": [
-            {
-                "id": m.get("name") or m.get("model"),
-                "object": "model",
-                "created": _erstellt(m),
-                "owned_by": "comesh",
-            }
-            for m in modelle
-            if m.get("name") or m.get("model")
-        ],
+        "data": eintraege,
         # Kompatibilität: chat.html liest models[].name
         "models": modelle,
     }
@@ -1902,3 +1914,14 @@ async def seed_admin_if_configured():
         log.error(f"Admin bootstrap failed: {e}")
     finally:
         db.close()
+
+
+# ---------------------------------------------------------------------------
+# Anthropic Messages API fuer Claude Desktop
+#
+# Claude Desktop kann einen eigenen Gateway als Inferenz-Anbieter nutzen und erwartet dafuer
+# POST /v1/messages (Anthropic-Form). Damit erscheinen die Modelle des Pools direkt in der
+# Modellauswahl der App - kein Zusatzprogramm, kein MCP-Umweg. Die Einhängung steht am Dateiende,
+# weil `chat_completions` (der bestehende OpenAI-Weg) erst oben definiert wird.
+# ---------------------------------------------------------------------------
+anthropic_api.register(app, default_modell=DEFAULT_MODEL)

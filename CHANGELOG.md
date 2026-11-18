@@ -1,3 +1,35 @@
+## 0.6.26
+
+### Neu
+
+- **Claude Desktop kann den Pool als Anbieter nutzen — mit den Modellen des Pools in der
+  Modellauswahl.** Claude Desktop lässt sich über Developer → „Configure Third-Party Inference"
+  auf einen eigenen Gateway stellen (`inferenceProvider = gateway`) und verlangt dafür die
+  **Anthropic Messages API**: `POST /v1/messages` mit Streaming und Werkzeugaufrufen.
+  `GET /v1/models` ist optional — ist es vorhanden, findet die App die Modelle selbst.
+  CoMesh spricht jetzt beides:
+  - `POST /v1/messages` (neu, `anthropic_api.py`) — übersetzt in die OpenAI-Form, ruft intern
+    denselben Weg wie `/v1/chat/completions` auf (Routing, Freigaben, Guthaben, Abrechnung bleiben
+    an einer Stelle) und übersetzt die Antwort zurück. Streaming wird ereignisweise übertragen
+    (`message_start → content_block_delta* → message_stop`), Werkzeuge in beide Richtungen
+    (`tools`/`tool_choice`, `tool_use`, `tool_result`).
+  - `GET /v1/models` antwortet je nach Client: mit `x-api-key` in der Anthropic-Form
+    (`data[].id`, `display_name`), mit `Authorization: Bearer` unverändert in der OpenAI-Form.
+  - Zugang über `x-api-key` **oder** `Authorization: Bearer`.
+- Bewusst nicht übersetzt: Prompt-Caching. Der Pool cached nicht über Anfragen hinweg;
+  `cache_read_input_tokens` wird mit 0 gemeldet statt mit erfundenen Trefferzahlen.
+- Anleitung: `docs/claude-desktop.md` (englisch/englisch-deutsch), inklusive der Felder, die im
+  Dialog einzutragen sind, und dem Weg über verwaltete Konfiguration für viele Rechner.
+
+### Tests
+
+- `tests/test_anthropic_kompat.py` — Übersetzung in beide Richtungen (System/Textblöcke,
+  Werkzeuge, `tool_use`/`tool_result`, Antwortform, Modellliste).
+- `tests/testkit/stub_ollama.py` — Ollama-Testdoppel für Prüfungen ohne GPU.
+- Ende-zu-Ende gegen das Testdoppel: Modellliste in beiden Formen, Antwort ohne Streaming,
+  Ereignisfolge im Streaming, Werkzeugweg, Fehlerfälle (fehlendes `max_tokens` → 422,
+  falscher Schlüssel → 401, ohne Zugangsdaten → 401).
+
 ## 0.6.25
 
 ### Neu
