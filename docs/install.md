@@ -26,6 +26,36 @@ Vorher braucht der Provider nur zweierlei:
 
 ---
 
+## Voraussetzungen
+
+**Für den normalen Weg (Installer mit Binary): keine.** Die Binaries bringen ihre Python-Laufzeit
+mit, es wird weder Python noch Docker noch Git gebraucht.
+
+**Für den Quelltext-Weg** (`install-from-source.sh` / `install-from-source.ps1`) — nötig, wenn es
+für die eigene Architektur kein Binary gibt (z. B. `linux-arm64`) oder wenn eine Richtlinie das
+Binary blockiert: **Python 3.10 oder neuer**. Die Skripte installieren nichts systemweit, sie legen
+eine eigene Umgebung unter `~/.local/share/comesh/venv` an.
+
+| System | Befehl |
+|---|---|
+| Windows (winget, ohne Adminrechte) | `winget install -e --id Python.Python.3.12` |
+| Windows (python.org) | <https://www.python.org/downloads/windows/> — „Add python.exe to PATH“ anhaken |
+| Debian / Ubuntu | `sudo apt update && sudo apt install -y python3 python3-venv python3-pip` |
+| Fedora / RHEL | `sudo dnf install -y python3 python3-pip` |
+| Arch | `sudo pacman -S --needed python python-pip` |
+| Alpine | `sudo apk add python3 py3-pip` |
+| macOS | `brew install python@3.12` (oder `xcode-select --install`) |
+
+Prüfen, ob es reicht:
+
+```bash
+python3 --version      # muss 3.10 oder höher melden
+```
+
+`python3-venv` gehört auf Debian/Ubuntu dazu — ohne dieses Paket scheitert das Anlegen der
+Umgebung mit „ensurepip is not available". Eine ältere Version genügt nicht: der Agent nutzt
+Syntax aus 3.10.
+
 ## Was der eine Befehl tut
 
 1. **System erkennen** — macOS `arm64`/`x86_64`, Linux `arm64`/`x86_64`,

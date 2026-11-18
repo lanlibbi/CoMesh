@@ -42,6 +42,31 @@ books the usage and shows both in a web interface.
 - **Web interface** with chat, device list, usage and administration — German and
   English.
 
+## Requirements
+
+The installer path needs **nothing** — the agent binaries ship their own Python runtime; no
+Python, no Docker, no Git.
+
+The **source path** (`install-from-source.sh` / `install-from-source.ps1`) needs **Python 3.10+**.
+It is used when no binary exists for your architecture (e.g. `linux-arm64`) or when a policy blocks
+the binary:
+
+```bash
+# Debian/Ubuntu
+sudo apt update && sudo apt install -y python3 python3-venv python3-pip
+# Fedora/RHEL        sudo dnf install -y python3 python3-pip
+# Arch               sudo pacman -S --needed python python-pip
+# Alpine             sudo apk add python3 py3-pip
+# macOS              brew install python@3.12
+```
+
+```powershell
+# Windows (no admin rights needed)
+winget install -e --id Python.Python.3.12
+```
+
+Check with `python3 --version` (Windows: `py -3 --version`) — it must report 3.10 or newer.
+
 ## Quickstart
 
 ### 1. Start the portal (operator)
@@ -214,6 +239,31 @@ die Node, rechnet den Verbrauch ab und zeigt beides in einer Web-Oberfläche.
   Administratorrechte.
 - **Web-Oberfläche** mit Chat, Geräteliste, Verbrauch und Verwaltung — deutsch
   und englisch.
+
+## Voraussetzungen
+
+Der Installer-Weg braucht **nichts** — die Agent-Binaries bringen ihre Python-Laufzeit mit; kein
+Python, kein Docker, kein Git.
+
+Der **Quelltext-Weg** (`install-from-source.sh` / `install-from-source.ps1`) braucht **Python 3.10
+oder neuer**. Er ist nötig, wenn es für die eigene Architektur kein Binary gibt (z. B.
+`linux-arm64`) oder wenn eine Richtlinie das Binary blockiert:
+
+```bash
+# Debian/Ubuntu
+sudo apt update && sudo apt install -y python3 python3-venv python3-pip
+# Fedora/RHEL        sudo dnf install -y python3 python3-pip
+# Arch               sudo pacman -S --needed python python-pip
+# Alpine             sudo apk add python3 py3-pip
+# macOS              brew install python@3.12
+```
+
+```powershell
+# Windows (ohne Administratorrechte)
+winget install -e --id Python.Python.3.12
+```
+
+Prüfen mit `python3 --version` (Windows: `py -3 --version`) — es muss 3.10 oder höher melden.
 
 ## Schnellstart
 
