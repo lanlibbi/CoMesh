@@ -173,10 +173,46 @@ xattr -d com.apple.quarantine ~/.local/bin/comesh-agent
 
 Dasselbe gilt für `install.sh` selbst — auch das Skript wird über `curl` geholt.
 
-Windows und SmartScreen: eine unsignierte `.exe` kann beim **manuellen** Start
-eine Warnung zeigen. Der Installer startet sie aus einer Aufgabe heraus; das
-Attribut „aus dem Internet" (`Zone.Identifier`) trägt eine per `Invoke-WebRequest`
-geladene Datei nicht in derselben Form wie ein Browser-Download.
+## Windows 11 mit Smart App Control: Quelltext statt `.exe`
+
+Auf vielen Windows-11-Rechnern ist **Smart App Control** aktiv
+(`HKLM\SYSTEM\CurrentControlSet\Control\CI\Policy` → `VerifiedAndReputablePolicyState = 1`).
+Dann blockiert Windows **jede** unsignierte `.exe` — auch eine, die per `Invoke-WebRequest` geladen
+wurde und deren Prüfsumme stimmt:
+
+```
+Program 'comesh-agent.exe' failed to run: An Application Control policy has blocked this file
+```
+
+Im CodeIntegrity-Ereignisprotokoll steht dann „did not meet the Enterprise signing level
+requirements". Die Prüfsumme ist zu diesem Zeitpunkt bereits geprüft — der Download ist in Ordnung,
+nur der Start nicht. `install.ps1` erkennt das seit 0.6.23, nennt die Ursache und verweist auf den
+Quelltext-Weg.
+
+**Warum der Quelltext-Weg funktioniert:** die Signaturprüfung gilt der ausführenden
+`powershell.exe`, nicht dem Skript, das sie auswertet. `python.exe` von python.org ist signiert und
+wird nicht beanstandet. Der Agent ist ohnehin ein Python-Programm, das Binary ist nur eine
+Verpackung:
+
+```powershell
+$s = "$env:TEMP\comesh-src.ps1"
+irm <portal>/downloads/install-from-source.ps1 -OutFile $s
+& $s -PortalUrl <portal>/api
+```
+
+Das Skript holt den Quelltext als ZIP (kein Git nötig), legt eine eigene Python-Umgebung an,
+schreibt **dieselbe `agent.env`** wie der normale Installer und richtet den Autostart über
+`pythonw.exe` ein — mit Rückfall auf den `Run`-Schlüssel, falls `schtasks` verboten ist. Voraussetzung
+ist Python 3.10+ (`winget install -e --id Python.Python.3.12`) und GitHub-Zugang.
+
+**Nicht empfehlenswert:** Smart App Control abschalten. Das lässt sich danach nur mit einer
+Neuinstallation von Windows wieder einschalten — auf einem Virtualisierungshost ist das ein
+unverhältnismäßiger Eingriff.
+
+**Für betreute Firmennetze** ist die Signatur der sauberere Weg: der Betreiber signiert den Agenten
+mit seinem eigenen Code-Signing-Zertifikat (`COMESH_SIGN_THUMBPRINT` bzw. `COMESH_SIGN_PFX` beim Bau),
+und die Clients bekommen das Zertifikat per GPO/Intune als Herausgeber-Vertrauen. Ein gemeinsames
+Zertifikat für alle Instanzen gibt es bewusst nicht. Details: `docs/windows.md`.
 
 ---
 

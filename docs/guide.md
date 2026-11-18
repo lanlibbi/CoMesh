@@ -196,6 +196,21 @@ rechnet auf der Node. Er prüft deshalb bei allen Endpunkten außer `/health` de
 `X-Node-Secret`. Das Geheimnis steht auf beiden Seiten (Portal und Agent) und muss gleich sein;
 fehlt es, bleibt der Agent offen und warnt beim Start.
 
+### Windows 11: wenn die `.exe` blockiert wird
+
+Meldet der Installer „An Application Control policy has blocked this file", ist das **Smart App
+Control** von Windows und kein Fehler des Pakets: die Prüfsumme stimmt, nur der Start einer
+unsignierten `.exe` wird verweigert. Dann den Quelltext-Weg nehmen — Python ist signiert und läuft:
+
+```powershell
+$s = "$env:TEMP\comesh-src.ps1"
+irm https://<portal>/downloads/install-from-source.ps1 -OutFile $s
+& $s -PortalUrl https://<portal>/api
+```
+
+Voraussetzung: Python 3.10 oder neuer. Smart App Control abzuschalten ist keine gute Idee — das
+lässt sich nur mit einer Neuinstallation von Windows rückgängig machen.
+
 ## Credits
 
 Kein Geld. Der Verbrauch wird in Credits gemessen, die jedem Konto zugeteilt werden. Wer eine GPU
