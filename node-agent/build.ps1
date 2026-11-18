@@ -87,6 +87,89 @@ $raw = Join-Path "dist" "comesh-agent.exe"
 if (-not (Test-Path -LiteralPath $raw)) { throw "Build hat kein dist\comesh-agent.exe erzeugt." }
 Move-Item -LiteralPath $raw -Destination $Artifact -Force
 
+# ---------------------------------------------------------------------------
+# Optionale Signatur — MUSS vor dem Hashen passieren
+# ---------------------------------------------------------------------------
+# Signiert wird mit dem Zertifikat des BETREIBERS, nicht mit einem gemeinsamen: eine Instanz, die
+# ihre Nodes selbst ausliefert, muss auch selbst der Herausgeber sein. Ein geteiltes Zertifikat
+# waere ein Generalschluessel — ein Leck kompromittiert dann jede Installation.
+#
+#   $env:COMESH_SIGN_THUMBPRINT = "<Cert-Thumbprint>"      # Zertifikat im Zertifikatsspeicher
+#   $env:COMESH_SIGN_PFX        = "C:\pfad\sign.pfx"       # oder eine PFX-Datei
+#   $env:COMESH_SIGN_PFX_PASS   = "<Kennwort der PFX>"     # nur bei PFX noetig
+#
+# Ohne diese Variablen passiert nichts — der Build bleibt wie bisher. Der Agent ist dann
+# unsigniert und auf Windows 11 mit aktivem Smart App Control nicht startbar; dort ist der
+# Quelltext-Weg (downloads/install-from-source.ps1) die Antwort.
+$signiert = $false
+if ($env:COMESH_SIGN_THUMBPRINT -or $env:COMESH_SIGN_PFX) {
+    Write-Host "==> Signieren (Code-Signing-Zertifikat des Betreibers)"
+    $signtool = $null
+    foreach ($kandidat in @(
+        "${env:ProgramFiles(x86)}\Windows Kits\10\bin\x64\signtool.exe",
+        "$env:ProgramFiles\Windows Kits\10\bin\x64\signtool.exe"
+    )) { if (Test-Path -LiteralPath $kandidat) { $signtool = $kandidat; break } }
+    if (-not $signtool) {
+        $cmd = Get-Command signtool.exe -ErrorAction SilentlyContinue
+        if ($cmd) { $signtool = $cmd.Source }
+    }
+    if (-not $signtool) {
+        throw "signtool.exe nicht gefunden. Es kommt mit dem Windows SDK; ohne SDK keine Signatur."
+    }
+
+    $arguments = @("sign", "/fd", "sha256", "/td", "sha256",
+                   "/tr", "http://timestamp.digicert.com")
+    if ($env:COMESH_SIGN_PFX) {
+        if (-not (Test-Path -LiteralPath $env:COMESH_SIGN_PFX)) {
+            throw "PFX nicht gefunden: $env:COMESH_SIGN_PFX"
+        }
+        $arguments += @("/f", $env:COMESH_SIGN_PFX)
+        if ($env:COMESH_SIGN_PFX_PASS) { $arguments += @("/p", $env:COMESH_SIGN_PFX_PASS) }
+    } else {
+        $arguments += @("/sha1", $env:COMESH_SIGN_THUMBPRINT)
+    }
+    $arguments += @("/v", $Artifact)
+
+    Invoke-Native { & $signtool @arguments } "signtool sign"
+    Write-Host "  signiert: $Artifact"
+
+    # Signatur gegenpruefen, nicht annehmen
+    $pruefung = & $signtool verify /pa /v $Artifact 2>&1 | Out-String
+    if ($LASTEXITCODE -ne 0) {
+        throw "Signaturpruefung fehlgeschlagen:`n$pruefung"
+    }
+    $zeile = ($pruefung -split "`n" | Where-Object { $_ -match "Issued to|Ausgestellt für" } | Select-Object -First 1)
+    if ($zeile) { Write-Host "  Signatur gueltig - $($zeile.Trim())" }
+    else        { Write-Host "  Signatur gueltig" }
+
+    # Das oeffentliche Zertifikat gehoert neben das Binary: Clients brauchen es als
+    # Herausgeber-Vertrauen (GPO/Intune), sonst hilft die Signatur dort nichts.
+    try {
+        $cert = $null
+        if ($env:COMESH_SIGN_PFX) {
+            $pass = if ($env:COMESH_SIGN_PFX_PASS) {
+                ConvertTo-SecureString $env:COMESH_SIGN_PFX_PASS -AsPlainText -Force
+            } else { $null }
+            $cert = if ($pass) { Get-PfxCertificate -FilePath $env:COMESH_SIGN_PFX -Password $pass }
+                    else        { Get-PfxCertificate -FilePath $env:COMESH_SIGN_PFX }
+        } else {
+            $cert = Get-ChildItem Cert:\CurrentUser\My, Cert:\LocalMachine\My -ErrorAction SilentlyContinue |
+                    Where-Object { $_.Thumbprint -eq $env:COMESH_SIGN_THUMBPRINT } |
+                    Select-Object -First 1
+        }
+        if ($cert) {
+            Export-Certificate -Cert $cert -FilePath "$Artifact.cer" -Type CERT | Out-Null
+            Write-Host "  Herausgeber-Zertifikat: $Artifact.cer (auf den Zielrechnern unter"
+            Write-Host "  'Vertrauenswuerdige Herausgeber' verteilen - per GPO oder Intune)"
+        } else {
+            Write-Host "  Hinweis: Zertifikat nicht exportierbar; .cer bitte von Hand neben das Binary legen."
+        }
+    } catch {
+        Write-Host "  Hinweis: .cer konnte nicht geschrieben werden ($($_.Exception.Message))."
+    }
+    $signiert = $true
+}
+
 $hash = (Get-FileHash -LiteralPath $Artifact -Algorithm SHA256).Hash.ToLower()
 $shaFile = "$Artifact.sha256"
 # Format wie unter Linux: "<hex>  <dateiname>" - install.ps1 und install.sh

@@ -374,6 +374,51 @@ richtige Antwort für andere Betreiber.
 Neuinstallation von Windows wieder einschalten — auf einem Virtualisierungshost ist das ein
 unverhältnismäßiger Eingriff, auch wenn der Rechner privat wäre.
 
+### Wer signiert? Das Zertifikat gehört dem Betreiber, nicht dem Projekt
+
+Ein **gemeinsames** Zertifikat für alle CoMesh-Instanzen ist der falsche Weg: wer es besitzt, kann
+für jede Installation signieren, ein Leck kompromittiert alle, und Vertrauen wäre global statt pro
+Betreiber. Jede Instanz liefert ihre Binaries selbst aus (`/downloads/`), also muss auch jede
+Instanz der Herausgeber sein.
+
+Der Weg ist deshalb:
+
+1. **Der Betreiber besitzt ein Code-Signing-Zertifikat** (eigenes CA-Zertifikat im Haus, oder
+   gekauft bei einer öffentlichen CA — für ein internes Werkzeug genügt OV, EV ist nicht nötig).
+2. **Der Build signiert** mit diesem Zertifikat und legt das öffentliche Zertifikat als `.cer`
+   daneben. Auf dem Windows-Bauhost:
+
+   ```powershell
+   $env:COMESH_SIGN_THUMBPRINT = "<Thumbprint aus Cert:\CurrentUser\My>"
+   # oder:  $env:COMESH_SIGN_PFX = "C:\pfx\sign.pfx"; $env:COMESH_SIGN_PFX_PASS = "…"
+   .\build.ps1
+   ```
+
+   Signiert wird **vor** dem Hashen — eine Signatur ändert die Datei, die `.sha256` muss also
+   danach entstehen, sonst lehnt der Installer das signierte Binary ab. Das Skript macht das in
+   dieser Reihenfolge und prüft die Signatur anschließend mit `signtool verify /pa`.
+3. **Die Clients bekommen das Zertifikat als Herausgeber-Vertrauen** — per GPO oder Intune in
+   „Vertrauenswürdige Herausgeber". Das ist der Schritt, der eine Signatur erst wirksam macht:
+   eine Signatur ohne verteiltes Zertifikat ändert auf dem Zielrechner nichts.
+
+Was das leistet und was nicht, ehrlich:
+
+| Lage | ohne Signatur | mit Signatur + verteiltem Zertifikat |
+|---|---|---|
+| AppLocker/WDAC mit Herausgeber-Regel | blockiert | **erlaubt** |
+| Smart App Control | blockiert unssignierte Programme | lässt CA-signierte Software eher durch, garantiert aber nichts — Smart App Control bewertet zusätzlich Reputation |
+| Rechner ohne Richtlinie | läuft | läuft |
+
+Für Smart App Control bleibt der Quelltext-Weg damit weiterhin die verlässliche Antwort; die
+Signatur ist der Weg für betreute Firmennetze mit Herausgeber-Regeln. Beides gehört ins Handwerks-
+zeug, keines ersetzt das andere.
+
+**Open-Source-Grenze:** das Projekt kann fremde Instanzen nicht mit einem Zertifikat ausstatten,
+ohne genau die Generalschlüssel-Situation zu schaffen, die oben ausgeschlossen wurde. Wer eine
+Instanz für eine Community betreibt, nimmt entweder ein eigenes (auch selbst ausgestelltes)
+Zertifikat und verteilt es über seine eigene Anleitung, oder liefert gleich den Quelltext-Weg
+(`install-from-source.ps1`) als Standard aus.
+
 ### Weg 3: Smart App Control abschalten
 
 Nur wenn die Ursache Smart App Control ist (Wert `1` oben) und der Rechner privat ist. Danach lässt
