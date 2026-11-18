@@ -17,7 +17,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY node-agent/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY node-agent/agent.py node-agent/netinfo.py ./
+# Jedes lokale Modul einzeln: fehlt eines, startet der Agent mit ModuleNotFoundError im
+# Neustart-Kreis. tests/test_agent_image_modules.py haelt diese Liste vollstaendig.
+COPY node-agent/agent.py node-agent/netinfo.py node-agent/envfile.py ./
 # Eine Quelle fuer die Version: /version des Portals und die Kennung des Agenten
 # lesen dieselbe Datei.
 COPY VERSION ./VERSION

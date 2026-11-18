@@ -1,3 +1,37 @@
+## 0.6.27
+
+### Behoben
+
+- **Das Agent-Abbild enthielt `envfile.py` nicht.** Der Umbau aus 0.6.25 hat das Einlesen der
+  `agent.env` in eine eigene Datei gezogen, das Dockerfile kopiert aber namentlich nur `agent.py`
+  und `netinfo.py`. Ergebnis: `ModuleNotFoundError: No module named 'envfile'` und ein
+  Neustart-Kreis des Containers — auf jeder Maschine, die das Agent-Abbild neu baut.
+  `tests/test_agent_image_modules.py` prüft jetzt, dass jedes lokale Modul, das `agent.py`
+  importiert, im Dockerfile kopiert wird (Gegenprobe: am alten Dockerfile schlägt der Test an).
+- **Die Image-Tags standen fest auf `0.6.23`.** Nach `git pull` und `build` hieß das frische Abbild
+  weiter `0.6.23`; am Tag war nicht ablesbar, welcher Code läuft (im Diagnosebericht einer
+  Instanz stand deshalb „Repo 0.6.24, Container 0.6.23"). Die Tags folgen jetzt
+  `${COMESH_VERSION}`, das `scripts/deploy.sh` aus der `VERSION`-Datei setzt.
+- **Ein Dienst in einer Neustart-Schleife wurde beim Deploy übersprungen.** `docker compose ps
+  --services --filter status=running` listet ihn nicht, also lief der Agent mit seinem alten
+  Abbild weiter — und damit ohne die GPU-Reservierung aus dem Compose. Er sah nur eine
+  Grafikkarte und meldete **12 statt 22 GB**; das VRAM-Gate hätte nur Modelle zugelassen, die in
+  eine Karte passen. `deploy.sh` erkennt ihn jetzt über `ps -a`.
+
+### Neu
+
+- **`scripts/deploy.sh`** — baut Api, Oberfläche und Agent, startet sie mit `--force-recreate` neu
+  und prüft danach, was wirklich läuft (Container samt Tag, `/api/health`, `/api/v1/messages`,
+  `/api/v1/models`, Node-Tabelle). Optionen: `--nur-api`, `--pruefen` (nichts bauen, nur zeigen).
+
+### Gemessen nach dem Deploy (Referenz-Instanz)
+
+- Oberfläche, Api und Agent auf `0.6.27`-Stand, alle healthy.
+- Node 1 online, `NVIDIA GeForce RTX 3060 + NVIDIA GeForce RTX 3080`, **22 GB**, Agent meldet
+  `0.6.24`, WebSocket verbunden.
+- `POST /api/v1/messages` und `GET /api/v1/models` über den öffentlichen Namen erreichbar
+  (401 ohne Zugangsdaten, 405 bei falscher Methode) — also durch nginx und Cloudflare hindurch.
+
 ## 0.6.26
 
 ### Neu
