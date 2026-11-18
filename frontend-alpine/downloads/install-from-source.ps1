@@ -153,21 +153,21 @@ if (-not $accountKey) { Fail "Ohne Account-Schluessel kann sich die Node nicht r
 
 # Wurde mehr als der Schluessel eingefuegt (ganze Seite mitkopiert), den Wert heraussuchen.
 # Ein gueltiger Schluessel ist gpu_ + 43 Zeichen; das Muster findet ihn auch mitten im Text.
-if ($ACCOUNT_KEY.Length -gt 47) {
-    $laengeVorher = $ACCOUNT_KEY.Length
-    $treffer = [regex]::Match($ACCOUNT_KEY, "gpu_[A-Za-z0-9_-]{43}")
+if ($accountKey.Length -gt 47) {
+    $laengeVorher = $accountKey.Length
+    $treffer = [regex]::Match($accountKey, "gpu_[A-Za-z0-9_-]{43}")
     if ($treffer.Success) {
-        $ACCOUNT_KEY = $treffer.Value
+        $accountKey = $treffer.Value
         Write-Ok "Schluessel aus der Eingabe herausgelesen (statt $laengeVorher Zeichen jetzt 47)."
     }
 }
 
 # Format pruefen, ohne den Wert auszugeben: gueltig ist gpu_ + 43 Zeichen (token_urlsafe(32)).
 # Weicht die Laenge ab, wurde beim Kopieren abgeschnitten - der haeufigste Fall.
-$ACCOUNT_KEY = "$ACCOUNT_KEY".Trim()
-$hatPraefix = $ACCOUNT_KEY.StartsWith("gpu_")
-if (-not $hatPraefix -or $ACCOUNT_KEY.Length -ne 47) {
-    Write-Warn "Format ungewoehnlich: $($ACCOUNT_KEY.Length) Zeichen, Praefix gpu_ = $hatPraefix."
+$accountKey = "$accountKey".Trim()
+$hatPraefix = $accountKey.StartsWith("gpu_")
+if (-not $hatPraefix -or $accountKey.Length -ne 47) {
+    Write-Warn "Format ungewoehnlich: $($accountKey.Length) Zeichen, Praefix gpu_ = $hatPraefix."
     Write-Host "  Ein gueltiger Schluessel ist 47 Zeichen lang (gpu_ + 43)."
     Write-Host "  Kuerzer heisst: beim Kopieren abgeschnitten. Laenger/zwei Zeilen: nur den Wert kopieren."
 }
@@ -176,7 +176,7 @@ if (-not $hatPraefix -or $ACCOUNT_KEY.Length -ne 47) {
 # Agenten-Protokoll auf ("Self-registration failed (401)"), gefolgt von einer WebSocket-Schleife
 # mit 403 - das sieht nach Netzproblem aus, ist aber ein abgelehnter Schluessel.
 try {
-    $me = Invoke-RestMethod -Uri "$PortalUrl/v1/me" -Headers @{ Authorization = "Bearer $ACCOUNT_KEY" } -TimeoutSec 20
+    $me = Invoke-RestMethod -Uri "$PortalUrl/v1/me" -Headers @{ Authorization = "Bearer $accountKey" } -TimeoutSec 20
     Write-Ok "Schluessel gueltig: $($me.email) (Rolle: $($me.role))"
     Write-Host "  Geprueft gegen: $PortalUrl"
     if ($me.role -eq "consumer") {
@@ -194,8 +194,8 @@ try {
         Write-Host "  Achtung: ein neuer Schluessel entwertet alle aelteren desselben Kontos."
         # Praefix und Laenge nennen: der Praefix steht auch in der Schluesselliste des Portals,
         # damit laesst sich vergleichen, ob der Wert zu einem ausgestellten Schluessel gehoert.
-        $praefix = if ($ACCOUNT_KEY.Length -ge 12) { $ACCOUNT_KEY.Substring(0, 12) } else { $ACCOUNT_KEY }
-        Write-Host "  Geprueft: $($ACCOUNT_KEY.Length) Zeichen, Praefix '$praefix'."
+        $praefix = if ($accountKey.Length -ge 12) { $accountKey.Substring(0, 12) } else { $accountKey }
+        Write-Host "  Geprueft: $($accountKey.Length) Zeichen, Praefix '$praefix'."
         Write-Host "  Dieser Praefix muss in der Schluesselliste des Portals auftauchen."
         Write-Host "  Und: ein Schluessel gilt nur in der Instanz, die ihn ausgestellt hat."
         Write-Host "  Gegen diese Adresse wurde geprueft: $PortalUrl"
