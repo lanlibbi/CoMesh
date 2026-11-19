@@ -1,3 +1,15 @@
+## 0.6.30
+
+### Neu
+
+- **Infobox im Guide: "Portal aktualisiert - und die Agenten?"** Sie steht unter "Installation
+  verwalten", in allen vier Sprachen. Inhalt: ab wann ein Agent nachziehen muss (0.6.28, Token
+  statt gemeinsamem Geheimnis), die Reihenfolge bei mehreren Rechnern (Agenten zuerst, mit
+  `NODE_ALLOW_LEGACY_SHARED_SECRET=1` als Notbremse), dass `-KeyOnly` keine Agent-Quellen
+  aktualisiert, dass der Installer nach dem Portal-Update vom Portal geladen werden muss, und dass
+  ein laufender Heartbeat den Token-Weg nicht beweist. Damit koennen Nutzer die Information selbst
+  an ihre Agenten weitergeben.
+
 ## 0.6.29
 
 Nur Portal (Aenderung an `pool.py`). **Agenten muessen dafuer nicht erneut aktualisiert werden.**
