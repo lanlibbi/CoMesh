@@ -1,3 +1,17 @@
+## 0.6.36
+
+### Behoben
+
+- **Claude Code / Claude Desktop fanden keine Modelle.** Beide akzeptieren im Gateway-Betrieb nur
+  Modellnamen im **Claude-Stil**; unsere Liste fuehrte ausschliesslich Ollama-Namen wie
+  `qwen3-vl:8b`. Ergebnis: "Gateway returned no usable models", obwohl `/v1/models` mit 200
+  antwortete — der API-Schluessel war nie das Problem.
+  Jetzt bietet `/v1/models` zusaetzlich die Aliase `claude-sonnet-4-5`, `claude-opus-4-1` und
+  `claude-haiku-4-5` an. Sie zeigen auf `ANTHROPIC_ALIAS_TARGET`, sonst `DEFAULT_MODEL`, sonst das
+  erste verfuegbare Modell; `POST /v1/messages` loest den Namen vor dem Routing auf, damit der
+  echte Modellname beim Backend ankommt. Jeder Alias traegt `comesh_target` als Hinweis.
+  Doku: `docs/claude-desktop.md`. Tests: `tests/test_claude_aliases.py`.
+
 ## 0.6.35
 
 ### Behoben

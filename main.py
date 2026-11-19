@@ -807,6 +807,31 @@ async def list_models(request: Request, user: User = Depends(anthropic_api.get_c
 
     # Claude Desktop (Gateway-Anbieter) fragt mit x-api-key und erwartet die Anthropic-Form;
     # ohne sie findet die App keine Modelle in der Auswahl. OpenAI-Clients bleiben unberuehrt.
+    # --- Claude-Stil-Aliase -------------------------------------------------
+    # Claude Code und Claude Desktop akzeptieren im Gateway-Betrieb nur Namen im Claude-Stil
+    # ("claude-sonnet-4-5"); echte Ollama-Namen gelten dort als "keine brauchbaren Modelle".
+    # Die Aliase zeigen auf ein echtes Modell (ANTHROPIC_ALIAS_TARGET, sonst DEFAULT_MODEL,
+    # sonst das erste verfuegbare). Die Abbildung passiert in anthropic_api.alias_ziel().
+    import anthropic_api as _ant
+
+    ziel = _ant.alias_ziel([m.get("name") or m.get("model") for m in modelle], DEFAULT_MODEL)
+    if ziel:
+        vorhanden = {e["id"] for e in eintraege}
+        for alias in _ant.CLAUDE_ALIASE:
+            if alias in vorhanden:
+                continue
+            eintraege.append({
+                "id": alias,
+                "object": "model",
+                "created": 0,
+                "owned_by": "comesh",
+                "display_name": alias,
+                "created_at": "1970-01-01T00:00:00Z",
+                "type": "model",
+                # Zusatzfeld: Clients ignorieren es, Menschen sehen, was dahinter laeuft.
+                "comesh_target": ziel,
+            })
+
     # Eine Antwortform fuer beide Client-Typen. `models` bleibt fuer die Chat-Seite, die
     # models[].name liest; OpenAI-Clients lesen data[].id, Anthropic-Clients data[].display_name.
     # Zusaetzliche Felder ignorieren beide, fehlende nicht - deshalb steht alles drin.

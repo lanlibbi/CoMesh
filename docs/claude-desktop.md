@@ -114,3 +114,37 @@ Windows oder die Enterprise-Admin-Konsole) — Schlüssel dafür sind `inference
 - Reihenfolge im Streaming `message_start → content_block_delta* → message_stop`,
 - Werkzeuge: `tools` (Anthropic) → `tool_calls` (OpenAI) → `tool_use`-Block mit `input`-Objekt,
 - Fehlerfälle: fehlendes `max_tokens` → 422, falscher Schlüssel → 401, ohne Zugangsdaten → 401.
+
+## Model names for Claude (Code and Desktop)
+
+Claude Code and Claude Desktop only accept **Claude-style model names** from a gateway's
+`GET /v1/models`. A catalogue that lists only local Ollama names (`qwen3-vl:8b`, `gemma4:12b`)
+produces "Gateway returned no usable models" — the endpoint works, the names are rejected.
+
+CoMesh therefore advertises three aliases next to the real models:
+
+| Alias | Served by |
+|---|---|
+| `claude-sonnet-4-5` | `ANTHROPIC_ALIAS_TARGET`, else `DEFAULT_MODEL`, else the first available model |
+| `claude-opus-4-1` | same |
+| `claude-haiku-4-5` | same |
+
+`POST /v1/messages` maps an alias to that target before routing, so Claude works without further
+configuration. Each alias entry carries `comesh_target` so you can see what it resolves to.
+Set `ANTHROPIC_ALIAS_TARGET` to pin it to one model, for example `qwen3-vl:8b`.
+
+Base URL for Claude: the portal address **without** `/v1` — Claude appends `/v1/messages` and
+`/v1/models` itself. OpenAI-compatible clients use the address **with** `/v1`.
+
+---
+
+## Modellnamen fuer Claude (Code und Desktop)
+
+Claude Code und Claude Desktop akzeptieren von einem Gateway nur **Modellnamen im Claude-Stil**.
+Eine Liste, die ausschliesslich lokale Ollama-Namen fuehrt, ergibt "Gateway returned no usable
+models" — die Route arbeitet, die Namen werden abgelehnt.
+
+Deshalb bietet CoMesh drei Aliase neben den echten Modellen an (`claude-sonnet-4-5`,
+`claude-opus-4-1`, `claude-haiku-4-5`). Sie zeigen auf `ANTHROPIC_ALIAS_TARGET`, sonst auf
+`DEFAULT_MODEL`, sonst auf das erste verfuegbare Modell; `POST /v1/messages` loest den Namen vor
+dem Routing auf. Basisadresse fuer Claude: die Portal-Adresse **ohne** `/v1`.

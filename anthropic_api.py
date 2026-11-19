@@ -22,6 +22,7 @@ akzeptiert, weil Clients des Pools den letzteren benutzen.
 from __future__ import annotations
 
 import json
+import os
 import secrets
 import time
 from typing import Any, Dict, List, Optional, Tuple
@@ -379,6 +380,41 @@ def _felder(body: Dict[str, Any]) -> Tuple[bool, str, bool]:
     return bool(body.get("stream")), modell, bool(body.get("max_tokens"))
 
 
+# Namen im Claude-Stil, die Claude Code und Claude Desktop in der Auswahl akzeptieren.
+CLAUDE_ALIASE = ("claude-sonnet-4-5", "claude-opus-4-1", "claude-haiku-4-5")
+
+
+def alias_ziel(verfuegbare_modelle=None, default_modell: str = "") -> str:
+    """Auf welches echte Modell ein Claude-Alias zeigt.
+
+    Reihenfolge: `ANTHROPIC_ALIAS_TARGET` (ausdrueckliche Angabe des Betreibers), sonst
+    `DEFAULT_MODEL` des Portals, sonst das erste Modell, das der Pool gerade anbietet.
+    Gibt "" zurueck, wenn es nichts gibt — dann werden auch keine Aliase angeboten.
+    """
+    aus_env = (os.environ.get("ANTHROPIC_ALIAS_TARGET") or "").strip()
+    if aus_env:
+        return aus_env
+    if (default_modell or "").strip():
+        return default_modell.strip()
+    for name in (verfuegbare_modelle or []):
+        if (name or "").strip():
+            return name.strip()
+    return ""
+
+
+def modell_aufloesen(angefragt: str, default_modell: str = "") -> str:
+    """Claude-Alias -> echtes Modell. Alles andere bleibt unveraendert.
+
+    Ohne diese Abbildung schickt das Portal "claude-sonnet-4-5" an Ollama, und das Modell gibt es
+    dort nicht (404). Nur Namen aus CLAUDE_ALIASE werden ersetzt, damit ein Konto nicht
+    versehentlich umgebogen wird, das ein echtes Modell gleichen Namens meint.
+    """
+    name = (angefragt or "").strip()
+    if name in CLAUDE_ALIASE:
+        return alias_ziel(None, default_modell) or default_modell
+    return angefragt
+
+
 def register(app, *, default_modell: str) -> None:
     """Hängt die Anthropic-Route an die bestehende App.
 
@@ -408,7 +444,8 @@ def register(app, *, default_modell: str) -> None:
 
         offen = to_openai_request(body)
         offen["stream"] = False   # Streaming übersetzen wir selbst aus dem OpenAI-Strom
-        modell = offen.get("model") or default_modell
+        # Claude schickt seinen eigenen Modellnamen; dahinter muss ein Modell des Pools laufen.
+        modell = modell_aufloesen(offen.get("model") or default_modell, default_modell) or default_modell
 
         try:
             anfrage = ChatCompletionRequest(**offen)
