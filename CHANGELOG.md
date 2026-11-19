@@ -22,8 +22,10 @@
 - **Fremde Konten sahen zu viel von einer Node.** `GET /nodes/{id}` lieferte jedem angemeldeten
   Konto Adresse, Besitzer-Kennung, Umsatz und Agent-Selbstauskunft. Jetzt bekommen Besitzer und
   Admin die volle Form, alle anderen die oeffentliche mit den freigegebenen Modellen.
-- **Doppelter Installationsweg:** `nodes.html#beitragen` verweist jetzt auf die vollstaendige Seite
-  `agent.html`, statt die Befehle ein zweites Mal (und abweichend) zu zeigen.
+- **Zwei Installationswege sind jetzt abgegrenzt, nicht vermischt.** `nodes.html#beitragen` ist der
+  Installer auf einem einzelnen Rechner, `agent.html` der Betrieb als Container (Image bauen,
+  Container starten). Beide Seiten sagen in einem Satz, welchen Weg sie beschreiben, und verweisen
+  auf den anderen. Sie sind keine Dubletten - das war beim Vergleich zu sehen.
 
 ### Tests
 

@@ -4133,12 +4133,6 @@ window.GP_I18N = {
    "es": "En vigor:",
    "fr": "En vigueur :"
   },
-  "node.contribute.pointer": {
-   "en": "The complete install commands are collected on <a class=\"link\" href=\"agent.html\">Set up the node agent</a> — for Windows, macOS and Linux, including the key, autostart and uninstall. Only what you need for registration is here.",
-   "de": "Die vollständigen Installationsbefehle stehen gesammelt auf <a class=\"link\" href=\"agent.html\">Node-Agent einrichten</a> — für Windows, macOS und Linux, mit Schlüssel, Autostart und Deinstallation. Hier steht nur, was du zur Registrierung brauchst.",
-   "es": "Los comandos de instalación completos están reunidos en <a class=\"link\" href=\"agent.html\">Configurar el node agent</a>: para Windows, macOS y Linux, con clave, arranque automático y desinstalación. Aquí solo está lo necesario para el registro.",
-   "fr": "Les commandes d'installation complètes sont réunies sur <a class=\"link\" href=\"agent.html\">Configurer le node agent</a> — pour Windows, macOS et Linux, avec la clé, le démarrage automatique et la désinstallation. Ici, seul ce qui est nécessaire à l'enregistrement."
-  },
   "einstellungen-dieser-node": {
    "en": "Settings of this node",
    "de": "Einstellungen dieser Node",
@@ -4174,6 +4168,18 @@ window.GP_I18N = {
    "de": "Konto nicht gefunden:",
    "es": "Cuenta no encontrada:",
    "fr": "Compte introuvable :"
+  },
+  "node.contribute.container_hint": {
+   "en": "This is the way for a single machine. For permanent operation as a container on your own server see <a class=\"link\" href=\"agent.html\">Set up the node agent</a> (build image, start container).",
+   "de": "Das ist der Weg für einen einzelnen Rechner. Für den Dauerbetrieb als Container auf einem eigenen Server siehe <a class=\"link\" href=\"agent.html\">Node-Agent einrichten</a> (Image bauen, Container starten).",
+   "es": "Este es el camino para un solo equipo. Para el funcionamiento continuo como contenedor en un servidor propio, consulta <a class=\"link\" href=\"agent.html\">Configurar el node agent</a> (crear imagen, iniciar contenedor).",
+   "fr": "C'est la voie pour une machine unique. Pour un fonctionnement continu en conteneur sur votre propre serveur, voir <a class=\"link\" href=\"agent.html\">Configurer le node agent</a> (construire l'image, démarrer le conteneur)."
+  },
+  "agent.installer_hint": {
+   "en": "This page is about running the agent as a container. To simply install it on a Windows, macOS or Linux machine, use the installer under <a class=\"link\" href=\"nodes.html#beitragen\">My nodes &rarr; Contribute</a>.",
+   "de": "Diese Seite beschreibt den Betrieb als Container. Wer den Agenten einfach auf einem Windows-, macOS- oder Linux-Rechner installieren will, nimmt den Installer unter <a class=\"link\" href=\"nodes.html#beitragen\">Meine Nodes &rarr; Beitragen</a>.",
+   "es": "Esta página describe el funcionamiento como contenedor. Para instalar el agente simplemente en un equipo Windows, macOS o Linux, usa el instalador en <a class=\"link\" href=\"nodes.html#beitragen\">Mis nodos &rarr; Contribuir</a>.",
+   "fr": "Cette page décrit l'exploitation en conteneur. Pour simplement installer l'agent sur une machine Windows, macOS ou Linux, utilisez l'installateur sous <a class=\"link\" href=\"nodes.html#beitragen\">Mes nodes &rarr; Contribuer</a>."
   },
   "abbrechen": {
    "en": "Cancel",
