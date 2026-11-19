@@ -144,3 +144,34 @@ def test_echter_name_wird_nicht_still_umgebogen(monkeypatch):
     assert anthropic_api.modell_aufloesen("qwen3-vl:8b", "x", ["gemma4:12b"]) == "qwen3-vl:8b"
     # Ohne Freigabeliste (None = alle lokalen) bleibt alles, wie es ist.
     assert anthropic_api.modell_aufloesen("claude-sonnet-4-5", "qwen2.5-coder:7b", None) == "qwen2.5-coder:7b"
+
+# --------------------------------------------------------------------------- lesbare Kennungen
+def test_kennung_ist_lesbar():
+    """Aus einer Kennung soll ein Mensch ablesen koennen, welches Modell gemeint ist."""
+    import anthropic_api
+
+    kennung = anthropic_api.claude_kennung("qwen2.5-coder:7b")
+    assert kennung == "claude-custom-qwen2-5-coder-7b", kennung
+    assert anthropic_api.claude_kennung("gemma4:12b") == "claude-custom-gemma4-12b"
+
+
+def test_kennung_bleibt_eindeutig_bei_gleichstand():
+    import anthropic_api
+
+    vergeben = set()
+    a = anthropic_api.claude_kennung("qwen3:8b", vergeben)
+    vergeben.add(a)
+    b = anthropic_api.claude_kennung("qwen3-8b", vergeben)
+    assert a != b, "zwei Modelle mit gleichem Slug brauchen verschiedene Kennungen"
+
+
+def test_lesbare_kennung_wird_aufgeloest():
+    import anthropic_api
+
+    modelle = ["qwen2.5-coder:7b", "gemma4:12b"]
+    for name in modelle:
+        kennung = anthropic_api.claude_kennung(name)
+        assert anthropic_api.modell_aufloesen(kennung, "x", modelle, modelle) == name
+    # Alte base64-Kennung funktioniert weiter (Clients haben sie evtl. gespeichert).
+    alt = "claude-custom-cXdlbjIuNS1jb2Rlcjo3Yg"
+    assert anthropic_api.modell_aufloesen(alt, "x", modelle, modelle) == "qwen2.5-coder:7b"

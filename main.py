@@ -695,26 +695,12 @@ async def net_echo(request: Request):
     }
 
 
-@app.get("/v1/models")
-async def list_models(request: Request, user: User = Depends(anthropic_api.get_current_user_any),
-                      db: Session = Depends(get_db)):
-    """Modelle, die **dieses Konto** nutzen darf — in der OpenAI-Form.
+async def _modell_katalog(user, db):
+    """Modelle, die dieses Konto nutzen darf — eine Quelle fuer Liste und Tabelle.
 
-    OpenAI-Clients lesen `data[].id`, die Chat-Seite liest `models[].name`, deshalb
-    stehen beide Formen in der Antwort.
-
-    Gefiltert wird mit derselben Prüfung wie im Aufrufpfad (`can_use_model`). Ohne
-    Filter zeigt ein Client Modelle zur Auswahl, die beim ersten Aufruf mit 403
-    abgelehnt werden — und wer die Freigabe nicht kennt, kann nicht wissen, welche
-    Auswahl für ihn gilt.
-
-    Zwei Quellen: der Katalog des zentralen Ollama **und** die Modelle, die aktive
-    Nodes in ihrem eigenen Backend gemeldet haben. Letztere sind der Grund für diese
-    Erweiterung: ein Provider, der auf seiner Maschine ein Modell laufen hat, das der
-    Portal-Host nicht kennt (qwen3:4b auf einem Windows-Rechner), konnte es bisher
-    niemandem anbieten, weil die Auswahl ausschliesslich aus dem zentralen Katalog kam.
-    Cloud-Modelle bleiben wie bisher behandelt: sie muessen zusätzlich von einem
-    Provider freigegeben sein (`angebotene_cloud_modelle`).
+    Zwei Quellen: der Katalog des zentralen Ollama und die Modelle, die aktive Nodes selbst
+    gemeldet haben. Gefiltert wird mit `user.can_use_model()` — derselben Pruefung wie im
+    Aufrufpfad, damit Auswahl und Ergebnis nicht auseinanderlaufen.
     """
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
@@ -767,6 +753,33 @@ async def list_models(request: Request, user: User = Depends(anthropic_api.get_c
             "source": "node",
             "node_ids": eintrag["node_ids"],
         })
+
+
+    return modelle
+
+
+@app.get("/v1/models")
+async def list_models(request: Request, user: User = Depends(anthropic_api.get_current_user_any),
+                      db: Session = Depends(get_db)):
+    """Modelle, die **dieses Konto** nutzen darf — in der OpenAI-Form.
+
+    OpenAI-Clients lesen `data[].id`, die Chat-Seite liest `models[].name`, deshalb
+    stehen beide Formen in der Antwort.
+
+    Gefiltert wird mit derselben Prüfung wie im Aufrufpfad (`can_use_model`). Ohne
+    Filter zeigt ein Client Modelle zur Auswahl, die beim ersten Aufruf mit 403
+    abgelehnt werden — und wer die Freigabe nicht kennt, kann nicht wissen, welche
+    Auswahl für ihn gilt.
+
+    Zwei Quellen: der Katalog des zentralen Ollama **und** die Modelle, die aktive
+    Nodes in ihrem eigenen Backend gemeldet haben. Letztere sind der Grund für diese
+    Erweiterung: ein Provider, der auf seiner Maschine ein Modell laufen hat, das der
+    Portal-Host nicht kennt (qwen3:4b auf einem Windows-Rechner), konnte es bisher
+    niemandem anbieten, weil die Auswahl ausschliesslich aus dem zentralen Katalog kam.
+    Cloud-Modelle bleiben wie bisher behandelt: sie muessen zusätzlich von einem
+    Provider freigegeben sein (`angebotene_cloud_modelle`).
+    """
+    modelle = await _modell_katalog(user, db)
 
     def _erstellt(eintrag: dict) -> int:
         # Ollama liefert modified_at als ISO-Zeit; OpenAI-Clients erwarten eine Zahl.
@@ -876,6 +889,41 @@ async def list_models(request: Request, user: User = Depends(anthropic_api.get_c
         "first_id": eintraege[0]["id"] if eintraege else None,
         "last_id": eintraege[-1]["id"] if eintraege else None,
         "models": modelle,
+    }
+
+
+@app.get("/v1/models/aliases")
+async def model_aliases(
+    user: User = Depends(anthropic_api.get_current_user_any),
+    db: Session = Depends(get_db),
+):
+    """Uebersetzungstabelle: welche Kennung gehoert zu welchem Modell.
+
+    Gedacht fuer Menschen, nicht fuer Clients: die Kennungen sind lesbar, aber niemand soll raten
+    muessen, was `claude-custom-qwen2-5-coder-7b` bedeutet. Die Liste ist nach denselben Regeln
+    gebaut wie `/v1/models` (gleiche Funktion `_modell_katalog`), damit sie nicht auseinanderlaeuft.
+    """
+    modelle = await _modell_katalog(user, db)
+    namen = [m.get("name") or m.get("model") for m in modelle if (m.get("name") or m.get("model"))]
+
+    ziel = anthropic_api.alias_ziel(namen, DEFAULT_MODEL)
+    vergeben = set(anthropic_api.CLAUDE_ALIASE)
+    tabelle = [
+        {"alias": alias, "modell": ziel, "art": "fest"} for alias in anthropic_api.CLAUDE_ALIASE
+    ]
+    for name in namen:
+        kennung = anthropic_api.claude_kennung(name, vergeben)
+        vergeben.add(kennung)
+        tabelle.append({"alias": kennung, "modell": name, "art": "modell"})
+
+    return {
+        "alias_ziel": ziel,
+        "modelle": namen,
+        "aliase": tabelle,
+        "hinweis": (
+            "Feste Aliase zeigen auf das eingestellte Zielmodell; Kennungen zeigen auf genau ein "
+            "Modell. Basisadresse fuer Claude: die Portal-Adresse ohne /v1."
+        ),
     }
 
 

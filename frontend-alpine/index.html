@@ -197,6 +197,14 @@
           <p class="label mt-2" data-i18n="verbindungsendpunkt">Verbindungsadresse</p>
           <p class="mono" id="portal-endpoint" style="word-break:break-all">…</p>
           <p class="hint" data-i18n="verbindungsendpunkt-hilfe">Diese Adresse in einem OpenAI-kompatiblen Client als Basis-URL eintragen.</p>
+          <details class="mt-2" id="alias-tabelle" hidden>
+            <summary class="label" data-i18n="uebersetzungstabelle">Übersetzungstabelle</summary>
+            <p class="hint" data-i18n="uebersetzungstabelle-hilfe">Welche Kennung in einem Claude-Client zu welchem Modell gehört.</p>
+            <table class="tbl" style="width:100%">
+              <thead><tr><th data-i18n="kennung">Kennung</th><th data-i18n="modell-spalte">Modell</th></tr></thead>
+              <tbody id="alias-tabelle-koerper"></tbody>
+            </table>
+          </details>
           <p class="hint" data-i18n-html="verbindungsendpunkt-klienten">OpenAI-kompatible Clients bekommen <code class="inline">/v1</code> als Basis-URL. Claude Code und andere Anthropic-Clients hängen <code class="inline">/v1/messages</code> selbst an — dort die Adresse <b>ohne</b> <code class="inline">/v1</code> eintragen.</p>
         </div>
         <div class="row">
@@ -440,6 +448,24 @@
         const d = await r.json();
         ziel.textContent = d.connect_endpoint || d.base_url || "—";
       } catch (e) { ziel.textContent = "—"; }
+
+      /* Uebersetzungstabelle: Kennung -> Modell, direkt aus der API. Nur zeigen, wenn es
+         tatsaechlich Claude-Kennungen gibt (also wenn Modelle angeboten werden). */
+      try {
+        const roh = localStorage.getItem("api_key");
+        const key = roh ? JSON.parse(roh) : null;
+        if (!key) return;
+        const a = await fetch("/api/v1/models/aliases", { headers: { Authorization: "Bearer " + key } });
+        if (!a.ok) return;
+        const d = await a.json();
+        const zeilen = (d.aliase || []).filter((x) => x.art === "modell");
+        if (!zeilen.length) return;
+        const koerper = document.getElementById("alias-tabelle-koerper");
+        koerper.innerHTML = zeilen
+          .map((x) => `<tr><td class="mono">${x.alias}</td><td class="mono">${x.modell}</td></tr>`)
+          .join("");
+        document.getElementById("alias-tabelle").hidden = false;
+      } catch (e) { /* still: die Tabelle ist eine Zugabe */ }
     })();
   </script>
 </body>

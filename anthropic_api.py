@@ -24,6 +24,7 @@ from __future__ import annotations
 import base64
 import json
 import os
+import re
 import secrets
 import time
 from typing import Any, Dict, List, Optional, Tuple
@@ -409,13 +410,36 @@ def alias_ziel(verfuegbare_modelle=None, default_modell: str = "") -> str:
 PRAEFIX = "claude-custom-"
 
 
-def claude_kennung(modell: str) -> str:
-    """Claude-taugliche Kennung fuer ein echtes Modell (umkehrbar, URL-sicher)."""
+def modell_slug(modell: str) -> str:
+    """Lesbarer Teil einer Kennung: 'qwen2.5-coder:7b' -> 'qwen2-5-coder-7b'."""
+    roh = (modell or "").strip().lower()
+    if not roh:
+        return ""
+    roh = roh.split("/")[-1]                      # Registry-Pfade abschneiden
+    roh = re.sub(r"[^a-z0-9]+", "-", roh).strip("-")
+    return roh[:48]
+
+
+def claude_kennung(modell: str, vergeben=None) -> str:
+    """Claude-taugliche, LESBARE Kennung fuer ein echtes Modell.
+
+    `vergeben` ist die Menge bereits benutzter Kennungen; bei Gleichstand (zwei Modelle ergeben
+    denselben Slug, z.B. 'qwen3:8b' und 'qwen3-8b') bekommt das zweite einen kurzen Zusatz aus dem
+    Modellnamen, damit die Kennung eindeutig bleibt.
+    """
     roh = (modell or "").strip()
     if not roh:
         return ""
-    kodiert = base64.urlsafe_b64encode(roh.encode("utf-8")).decode("ascii").rstrip("=")
-    return PRAEFIX + kodiert
+    slug = modell_slug(roh) or "modell"
+    kennung = PRAEFIX + slug
+    if vergeben and kennung in vergeben:
+        zusatz = re.sub(r"[^a-z0-9]", "", roh.lower())[:4] or "x1"
+        kennung = f"{PRAEFIX}{slug}-{zusatz}"
+        lauf = 2
+        while kennung in vergeben:
+            kennung = f"{PRAEFIX}{slug}-{zusatz}{lauf}"
+            lauf += 1
+    return kennung
 
 
 def modell_aus_kennung(kennung: str) -> str:
@@ -431,7 +455,29 @@ def modell_aus_kennung(kennung: str) -> str:
         return ""
 
 
-def modell_aufloesen(angefragt: str, default_modell: str = "", erlaubte=None) -> str:
+def modell_aus_slug(kennung: str, kandidaten=None) -> str:
+    """Lesbare Kennung gegen die vorhandenen Modelle abgleichen.
+
+    Die Kennung ist nicht mehr umkehrbar (aus 'qwen2-5-coder-7b' laesst sich 'qwen2.5-coder:7b'
+    nicht rekonstruieren), deshalb wird verglichen: welches Modell ergibt denselben Slug?
+    """
+    name = (kennung or "").strip()
+    if not name.startswith(PRAEFIX):
+        return ""
+    rest = name[len(PRAEFIX):]
+    for modell in (kandidaten or []):
+        if (modell or "").strip() and modell_slug(modell) == rest:
+            return modell
+    # Zusatz wegen Gleichstand abschneiden und erneut versuchen.
+    ohne = re.sub(r"-[a-z0-9]{1,6}\d*$", "", rest)
+    if ohne != rest:
+        for modell in (kandidaten or []):
+            if (modell or "").strip() and modell_slug(modell) == ohne:
+                return modell
+    return ""
+
+
+def modell_aufloesen(angefragt: str, default_modell: str = "", erlaubte=None, kandidaten=None) -> str:
     """Claude-Alias -> echtes Modell. Alles andere bleibt unveraendert.
 
     Ohne diese Abbildung schickt das Portal "claude-sonnet-4-5" an Ollama, und das Modell gibt es
@@ -440,8 +486,10 @@ def modell_aufloesen(angefragt: str, default_modell: str = "", erlaubte=None) ->
     """
     name = (angefragt or "").strip()
     ziel = name
-    # 1. Kennung eines bestimmten Modells (claude-custom-...): exakt zurueckuebersetzen.
-    echt = modell_aus_kennung(name)
+    # 1. Kennung eines bestimmten Modells. Zwei Formen:
+    #    * lesbar (claude-custom-qwen2-5-coder-7b)  -> Abgleich mit den vorhandenen Modellen,
+    #    * alt (claude-custom-<base64>)             -> rueckuebersetzen, damit nichts bricht.
+    echt = modell_aus_slug(name, kandidaten or erlaubte) or modell_aus_kennung(name)
     if echt:
         ziel = echt
     # 2. Die drei festen Aliase zeigen auf das eingestellte Zielmodell.
@@ -497,8 +545,19 @@ def register(app, *, default_modell: str) -> None:
             _freigaben = user.get_allowed_models()
         except Exception:
             _freigaben = None
-        modell = modell_aufloesen(offen.get("model") or default_modell, default_modell,
-                                  _freigaben) or default_modell
+        # Lesbare Kennungen (claude-custom-qwen2-5-coder-7b) sind nicht umkehrbar; sie werden
+        # gegen den aktuellen Katalog abgeglichen. Nur bei solchen Namen wird der Katalog geholt.
+        _kandidaten = None
+        _angefragt = str(offen.get("model") or "")
+        if _angefragt.startswith("claude-custom-"):
+            try:
+                from main import _modell_katalog
+
+                _kandidaten = [ (m.get("name") or m.get("model")) for m in await _modell_katalog(user, db) ]
+            except Exception:
+                _kandidaten = None
+        modell = modell_aufloesen(_angefragt or default_modell, default_modell,
+                                  _freigaben, _kandidaten) or default_modell
         if modell:
             offen["model"] = modell
 

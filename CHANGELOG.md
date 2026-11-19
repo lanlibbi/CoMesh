@@ -1,3 +1,18 @@
+## 0.6.42
+
+### Neu
+
+- **Lesbare Claude-Kennungen statt base64.** Aus `claude-custom-cXdlbjIuNS1jb2Rlcjo3Yg` wird
+  `claude-custom-qwen2-5-coder-7b`. Die Kennung ist nicht mehr umkehrbar, sondern wird beim Aufruf
+  gegen den aktuellen Katalog abgeglichen; bei zwei Modellen mit gleichem Slug bekommt das zweite
+  einen kurzen Zusatz. Die alten base64-Kennungen werden weiter akzeptiert, damit gespeicherte
+  Client-Konfigurationen nicht brechen.
+- **Uebersetzungstabelle:** `GET /v1/models/aliases` liefert je Kennung das echte Modell (und die
+  drei festen Aliase mit ihrem Ziel). Grundlage ist dieselbe Funktion `_modell_katalog()`, die auch
+  `/v1/models` speist — die Logik liegt jetzt an einer Stelle statt in der Route.
+- **Im Dashboard** steht die Tabelle unter „Zugang" als aufklappbarer Bereich, sobald es
+  Kennungen gibt.
+
 ## 0.6.40
 
 ### Behoben
