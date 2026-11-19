@@ -839,7 +839,16 @@ async def list_models(request: Request, user: User = Depends(anthropic_api.get_c
             })
             vorhanden_ids.add(kennung)
 
-    ziel = _ant.alias_ziel([m.get("name") or m.get("model") for m in modelle], DEFAULT_MODEL)
+    # Kandidaten: was der Katalog fuer dieses Konto hergibt - und, falls der leer ist, die
+    # Freigabeliste des Kontos selbst. Sonst zeigt die Liste ein Ziel, das der Aufruf gleich
+    # wieder korrigieren muss (Liste und Aufruf sollen dasselbe sagen).
+    _kandidaten = [m.get("name") or m.get("model") for m in modelle]
+    if not _kandidaten:
+        try:
+            _kandidaten = [x for x in (user.get_allowed_models() or []) if x]
+        except Exception:
+            _kandidaten = []
+    ziel = _ant.alias_ziel(_kandidaten, DEFAULT_MODEL)
     if ziel and claude_client:
         vorhanden = vorhanden_ids
         for alias in _ant.CLAUDE_ALIASE:
