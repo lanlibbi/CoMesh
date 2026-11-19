@@ -164,3 +164,39 @@ Neben den drei festen Aliasen bekommt **jedes** Modell eine eigene Claude-taugli
 landet also exakt beim richtigen Modell — ohne Tabelle und ohne Katalogabruf. Ein spaeter
 installiertes Modell funktioniert sofort, ohne dass etwas nachgetragen wird. Der echte Name steht
 als `display_name` und `comesh_target` daneben.
+
+## MCP: the portal as a tool server for Claude
+
+CoMesh serves an MCP endpoint at `/mcp` (Streamable HTTP, JSON-RPC). No download, no local
+installation — Claude connects with the portal URL:
+
+```
+claude mcp add --transport http comesh https://<your-portal>/mcp \
+  --header "Authorization: Bearer gpu_..."
+```
+
+Claude Desktop: Settings → Connectors → Add custom connector, URL `https://<your-portal>/mcp`,
+same bearer token as a header.
+
+Tools: `list_models` (what this account may use), `ask` (send a prompt to a model), `whoami`
+(account, role, releases). Every call goes through the same path as the API, so whitelist, credits
+and rate limits apply unchanged.
+
+---
+
+## MCP: das Portal als Werkzeugserver fuer Claude
+
+CoMesh spricht MCP unter `/mcp` (Streamable HTTP, JSON-RPC). Kein Download, keine lokale
+Installation — Claude verbindet sich mit der Portal-Adresse:
+
+```
+claude mcp add --transport http comesh https://<dein-portal>/mcp \
+  --header "Authorization: Bearer gpu_..."
+```
+
+Claude Desktop: Einstellungen → Konnektoren → eigenen Konnektor hinzufuegen, URL
+`https://<dein-portal>/mcp`, denselben Bearer-Token als Kopfzeile.
+
+Werkzeuge: `list_models` (was dieses Konto nutzen darf), `ask` (Frage an ein Modell), `whoami`
+(Konto, Rolle, Freigaben). Jeder Aufruf geht ueber denselben Weg wie die API — Whitelist, Guthaben
+und Rate-Limit gelten unveraendert.

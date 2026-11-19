@@ -1,3 +1,26 @@
+## 0.6.44
+
+### Neu
+
+- **MCP-Endpunkt: Claude bindet das Portal als Werkzeugserver ein.** Unter `/mcp` spricht CoMesh
+  MCP (Streamable HTTP, JSON-RPC). Kein Download, keine lokale Installation — Claude bekommt eine
+  URL und den ueblichen Account-Schluessel:
+
+  ```
+  claude mcp add --transport http comesh https://<portal>/mcp \
+    --header "Authorization: Bearer gpu_..."
+  ```
+
+  In Claude Desktop: Einstellungen -> Konnektoren -> eigener Konnektor mit derselben URL.
+
+  Werkzeuge: `list_models` (was dieses Konto nutzen darf), `ask` (Frage an ein Modell, optional mit
+  `model`, `system`, `max_tokens`), `whoami` (Konto, Rolle, Freigaben). Jeder Aufruf geht ueber
+  `chat_completions` — Whitelist, Guthaben, Rate-Limit und Abrechnung gelten unveraendert, es gibt
+  keinen zweiten Pfad daran vorbei.
+
+  nginx reicht `/mcp` als eigenen Pfad durch (kurze URL, kein `/api/...` fuer Clients).
+  Tests: `tests/test_mcp.py` (Handshake, Benachrichtigung, Werkzeugliste, Aufrufe, Fehlerfaelle).
+
 ## 0.6.42
 
 ### Neu

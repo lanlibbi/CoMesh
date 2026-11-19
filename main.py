@@ -205,6 +205,17 @@ app.include_router(ws_router)  # Phase 1: WebSocket /agent/connect + /nodes/{id}
 # POC create-user/topup handlers that used to live here were removed in favour of
 # the authenticated, idempotent versions in admin.py.
 app.include_router(admin_router)
+
+# MCP: Claude verbindet sich per URL auf /mcp (Streamable HTTP, JSON-RPC).
+# Die Werkzeuge benutzen denselben Aufrufpfad wie die API - Whitelist, Guthaben und Abrechnung
+# gelten damit unveraendert.
+try:
+    import mcp_server
+
+    mcp_server.register(app)
+    log.info("MCP-Endpunkt aktiv: /mcp")
+except Exception as e:  # pragma: no cover
+    log.warning("MCP-Endpunkt nicht verfuegbar: %s", e)
 app.include_router(usage_stats_router)  # /v1/me/usage — lost in the same merge; the frontend and its tests call it
 
 
