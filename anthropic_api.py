@@ -395,11 +395,14 @@ def alias_ziel(verfuegbare_modelle=None, default_modell: str = "") -> str:
     aus_env = (os.environ.get("ANTHROPIC_ALIAS_TARGET") or "").strip()
     if aus_env:
         return aus_env
-    if (default_modell or "").strip():
-        return default_modell.strip()
+    # Vorrang hat, was das Konto wirklich nutzen darf: `verfuegbare_modelle` ist bereits mit
+    # can_use_model() gefiltert. Erst danach der Portal-Standardwert - sonst zeigt der Alias auf
+    # ein Modell, das beim ersten Aufruf mit 403 abgelehnt wird (genau das ist passiert).
     for name in (verfuegbare_modelle or []):
         if (name or "").strip():
             return name.strip()
+    if (default_modell or "").strip():
+        return default_modell.strip()
     return ""
 
 
@@ -428,7 +431,7 @@ def modell_aus_kennung(kennung: str) -> str:
         return ""
 
 
-def modell_aufloesen(angefragt: str, default_modell: str = "") -> str:
+def modell_aufloesen(angefragt: str, default_modell: str = "", erlaubte=None) -> str:
     """Claude-Alias -> echtes Modell. Alles andere bleibt unveraendert.
 
     Ohne diese Abbildung schickt das Portal "claude-sonnet-4-5" an Ollama, und das Modell gibt es
@@ -436,15 +439,26 @@ def modell_aufloesen(angefragt: str, default_modell: str = "") -> str:
     versehentlich umgebogen wird, das ein echtes Modell gleichen Namens meint.
     """
     name = (angefragt or "").strip()
+    ziel = name
     # 1. Kennung eines bestimmten Modells (claude-custom-...): exakt zurueckuebersetzen.
     echt = modell_aus_kennung(name)
     if echt:
-        return echt
+        ziel = echt
     # 2. Die drei festen Aliase zeigen auf das eingestellte Zielmodell.
-    if name in CLAUDE_ALIASE:
-        return alias_ziel(None, default_modell) or default_modell
+    elif name in CLAUDE_ALIASE:
+        ziel = alias_ziel(None, default_modell) or default_modell
     # 3. Alles andere ist ein echter Modellname und bleibt unangetastet.
-    return angefragt
+
+    # Liegt das Ziel nicht in der Freigabeliste des Kontos, das erste freigegebene Modell nehmen.
+    # Sonst scheitert der erste Chat mit 403, obwohl der Client nur einen Alias geschickt hat.
+    # Nur wenn ein Alias oder eine Kennung umgebogen wurde. Ein echter Modellname, der nicht
+    # freigegeben ist, muss weiter mit 403 scheitern - stillschweigend ein anderes Modell zu
+    # liefern waere schlimmer als eine ehrliche Absage.
+    if ziel != name and erlaubte is not None:
+        liste = [x for x in (erlaubte or []) if (x or "").strip()]
+        if liste and ziel not in liste:
+            return liste[0]
+    return ziel
 
 
 def register(app, *, default_modell: str) -> None:
@@ -479,7 +493,12 @@ def register(app, *, default_modell: str) -> None:
         # Claude schickt seinen eigenen Modellnamen; dahinter muss ein Modell des Pools laufen.
         # Wichtig: der Name wird IM KOERPER ersetzt, nicht nur in der Variable - sonst geht
         # "claude-sonnet-4-5" an das Backend und Ollama antwortet 404.
-        modell = modell_aufloesen(offen.get("model") or default_modell, default_modell) or default_modell
+        try:
+            _freigaben = user.get_allowed_models()
+        except Exception:
+            _freigaben = None
+        modell = modell_aufloesen(offen.get("model") or default_modell, default_modell,
+                                  _freigaben) or default_modell
         if modell:
             offen["model"] = modell
 

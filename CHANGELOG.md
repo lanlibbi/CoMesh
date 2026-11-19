@@ -1,3 +1,18 @@
+## 0.6.40
+
+### Behoben
+
+- **Erster Chat mit Claude scheiterte mit 403.** Meldung aus dem Kundenportal:
+  `Model 'qwen2.5-coder:7b' is not in your allowed-models list. Update your profile.`
+  Ursache: `alias_ziel()` bildete den Claude-Alias auf `DEFAULT_MODEL` des Portals ab, ohne zu
+  pruefen, ob das Konto dieses Modell ueberhaupt nutzen darf. Jetzt hat Vorrang, was in der
+  kontogefilterten Liste steht (`ANTHROPIC_ALIAS_TARGET` bleibt die ausdrueckliche Angabe des
+  Betreibers), und im Aufrufpfad faellt ein Alias, dessen Ziel nicht freigegeben ist, auf das erste
+  freigegebene Modell zurueck.
+- **Ein echter Modellname wird dabei nicht umgebogen.** Wer ausdruecklich ein Modell anfragt, das
+  er nicht nutzen darf, bekommt weiter die ehrliche 403-Absage — stillschweigend ein anderes Modell
+  zu liefern waere schlimmer.
+
 ## 0.6.39
 
 ### Behoben

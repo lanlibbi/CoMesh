@@ -105,3 +105,42 @@ def test_leere_kennung_bleibt_leer():
     assert anthropic_api.claude_kennung("") == ""
     assert anthropic_api.modell_aus_kennung("qwen3-vl:8b") == ""
     assert anthropic_api.modell_aus_kennung("claude-custom-!!!") == ""
+
+# --------------------------------------------------------------------------- Freigaben beachten
+def test_alias_ziel_nimmt_freigegebenes_modell(monkeypatch):
+    """Das Ziel muss aus der kontogefilterten Liste kommen, nicht aus DEFAULT_MODEL.
+
+    Befund: Claude schickte einen Alias, das Portal bildete ihn auf DEFAULT_MODEL ab, und das war
+    fuer das Konto nicht freigegeben -> 403 beim ersten Chat.
+    """
+    import anthropic_api
+
+    monkeypatch.delenv("ANTHROPIC_ALIAS_TARGET", raising=False)
+    assert anthropic_api.alias_ziel(["gemma4:12b"], "qwen2.5-coder:7b") == "gemma4:12b"
+    # Ohne Freigabeliste bleibt der Portal-Standardwert.
+    assert anthropic_api.alias_ziel([], "qwen2.5-coder:7b") == "qwen2.5-coder:7b"
+    # Ausdrueckliche Angabe des Betreibers gewinnt immer.
+    monkeypatch.setenv("ANTHROPIC_ALIAS_TARGET", "fest")
+    assert anthropic_api.alias_ziel(["gemma4:12b"], "qwen2.5-coder:7b") == "fest"
+
+
+def test_alias_faellt_auf_freigegebenes_modell_zurueck(monkeypatch):
+    import anthropic_api
+
+    monkeypatch.delenv("ANTHROPIC_ALIAS_TARGET", raising=False)
+    # Alias, Ziel nicht freigegeben -> erstes freigegebenes Modell
+    assert anthropic_api.modell_aufloesen("claude-sonnet-4-5", "qwen2.5-coder:7b",
+                                          ["gemma4:12b"]) == "gemma4:12b"
+    # Kennung eines gesperrten Modells -> ebenfalls erstes freigegebenes
+    kennung = anthropic_api.claude_kennung("qwen2.5-coder:7b")
+    assert anthropic_api.modell_aufloesen(kennung, "x", ["gemma4:12b"]) == "gemma4:12b"
+
+
+def test_echter_name_wird_nicht_still_umgebogen(monkeypatch):
+    """Ein nicht freigegebenes ECHTES Modell muss weiter 403 geben, nicht ersetzt werden."""
+    import anthropic_api
+
+    monkeypatch.delenv("ANTHROPIC_ALIAS_TARGET", raising=False)
+    assert anthropic_api.modell_aufloesen("qwen3-vl:8b", "x", ["gemma4:12b"]) == "qwen3-vl:8b"
+    # Ohne Freigabeliste (None = alle lokalen) bleibt alles, wie es ist.
+    assert anthropic_api.modell_aufloesen("claude-sonnet-4-5", "qwen2.5-coder:7b", None) == "qwen2.5-coder:7b"
