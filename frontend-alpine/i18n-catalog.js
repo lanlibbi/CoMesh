@@ -4181,6 +4181,12 @@ window.GP_I18N = {
    "es": "Esta página describe el funcionamiento como contenedor. Para instalar el agente simplemente en un equipo Windows, macOS o Linux, usa el instalador en <a class=\"link\" href=\"nodes.html#beitragen\">Mis nodos &rarr; Contribuir</a>.",
    "fr": "Cette page décrit l'exploitation en conteneur. Pour simplement installer l'agent sur une machine Windows, macOS ou Linux, utilisez l'installateur sous <a class=\"link\" href=\"nodes.html#beitragen\">Mes nodes &rarr; Contribuer</a>."
   },
+  "verbindungsendpunkt-klienten": {
+   "en": "OpenAI-compatible clients take <code class=\"inline\">/v1</code> as the base URL. Claude Code and other Anthropic clients append <code class=\"inline\">/v1/messages</code> themselves — enter the address <b>without</b> <code class=\"inline\">/v1</code> there.",
+   "de": "OpenAI-kompatible Clients bekommen <code class=\"inline\">/v1</code> als Basis-URL. Claude Code und andere Anthropic-Clients hängen <code class=\"inline\">/v1/messages</code> selbst an — dort die Adresse <b>ohne</b> <code class=\"inline\">/v1</code> eintragen.",
+   "es": "Los clientes compatibles con OpenAI usan <code class=\"inline\">/v1</code> como URL base. Claude Code y otros clientes de Anthropic añaden <code class=\"inline\">/v1/messages</code> por su cuenta: ahí se introduce la dirección <b>sin</b> <code class=\"inline\">/v1</code>.",
+   "fr": "Les clients compatibles OpenAI prennent <code class=\"inline\">/v1</code> comme URL de base. Claude Code et les autres clients Anthropic ajoutent <code class=\"inline\">/v1/messages</code> eux-mêmes : y saisir l'adresse <b>sans</b> <code class=\"inline\">/v1</code>."
+  },
   "abbrechen": {
    "en": "Cancel",
    "de": "Abbrechen",

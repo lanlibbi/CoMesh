@@ -197,6 +197,7 @@
           <p class="label mt-2" data-i18n="verbindungsendpunkt">Verbindungsadresse</p>
           <p class="mono" id="portal-endpoint" style="word-break:break-all">…</p>
           <p class="hint" data-i18n="verbindungsendpunkt-hilfe">Diese Adresse in einem OpenAI-kompatiblen Client als Basis-URL eintragen.</p>
+          <p class="hint" data-i18n-html="verbindungsendpunkt-klienten">OpenAI-kompatible Clients bekommen <code class="inline">/v1</code> als Basis-URL. Claude Code und andere Anthropic-Clients hängen <code class="inline">/v1/messages</code> selbst an — dort die Adresse <b>ohne</b> <code class="inline">/v1</code> eintragen.</p>
         </div>
         <div class="row">
           <button x-show="isApiKey" class="btn-ghost btn-sm" @click="revealKey = !revealKey"

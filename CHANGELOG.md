@@ -1,3 +1,20 @@
+## 0.6.35
+
+### Behoben
+
+- **`/v1/models` lieferte je nach Anfrage-Kopf eine andere Form.** Mit `x-api-key` kam die
+  Anthropic-Form, mit `Authorization` die OpenAI-Form. Claude Code schickt je nach Konfiguration
+  beides oder nur eines — und meldete dann "Gateway returned no usable models", obwohl die Route
+  antwortete. Jetzt traegt jeder Eintrag beide Feldsaetze (`id`, `object`, `created`, `owned_by`,
+  `display_name`, `created_at`, `type`), und die Antwort enthaelt zusaetzlich
+  `has_more`/`first_id`/`last_id`. Der Kopf entscheidet nichts mehr.
+- **Doppeltes `/v1` laeuft nicht mehr ins Leere.** Claude Code haengt `/v1/messages` bzw.
+  `/v1/models` selbst an die Basisadresse; wer dort `.../v1` eintrug (so stand es im Dashboard),
+  bekam `404 /v1/v1/models`. nginx biegt `/v1/v1/...` und `/api/v1/v1/...` jetzt auf den einfachen
+  Pfad um.
+- **Dashboard sagt, welche Adresse in welchen Client gehoert:** OpenAI-kompatibel mit `/v1`,
+  Claude Code / Anthropic-Clients ohne (`.../v1/messages` haengen sie selbst an).
+
 ## 0.6.33
 
 ### Behoben

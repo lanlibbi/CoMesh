@@ -778,30 +778,44 @@ async def list_models(request: Request, user: User = Depends(anthropic_api.get_c
         except Exception:
             return 0
 
-    eintraege = [
-        {
-            "id": m.get("name") or m.get("model"),
+    def _iso(sekunden: int) -> str:
+        try:
+            import datetime as _dt
+
+            return _dt.datetime.utcfromtimestamp(int(sekunden or 0)).strftime("%Y-%m-%dT%H:%M:%SZ")
+        except Exception:
+            return "1970-01-01T00:00:00Z"
+
+    # Jeder Eintrag traegt beide Feldsaetze: OpenAI-Clients lesen id/object/created/owned_by,
+    # Anthropic-Clients (Claude Code, Claude Desktop) erwarten display_name/created_at/type.
+    # Vorher hing das am Anfrage-Kopf - ein Client mit unerwartetem Kopf sah "keine Modelle".
+    eintraege = []
+    for m in modelle:
+        name = m.get("name") or m.get("model")
+        if not name:
+            continue
+        erstellt = _erstellt(m)
+        eintraege.append({
+            "id": name,
             "object": "model",
-            "created": _erstellt(m),
+            "created": erstellt,
             "owned_by": "comesh",
-        }
-        for m in modelle
-        if m.get("name") or m.get("model")
-    ]
+            "display_name": name,
+            "created_at": _iso(erstellt),
+            "type": "model",
+        })
 
     # Claude Desktop (Gateway-Anbieter) fragt mit x-api-key und erwartet die Anthropic-Form;
     # ohne sie findet die App keine Modelle in der Auswahl. OpenAI-Clients bleiben unberuehrt.
-    anthropic_client = bool(
-        request.headers.get("x-api-key") or request.headers.get("anthropic-version")
-    )
-    if anthropic_client:
-        import anthropic_api
-        return anthropic_api.models_antwort_anthropic(eintraege)
-
+    # Eine Antwortform fuer beide Client-Typen. `models` bleibt fuer die Chat-Seite, die
+    # models[].name liest; OpenAI-Clients lesen data[].id, Anthropic-Clients data[].display_name.
+    # Zusaetzliche Felder ignorieren beide, fehlende nicht - deshalb steht alles drin.
     return {
         "object": "list",
         "data": eintraege,
-        # Kompatibilität: chat.html liest models[].name
+        "has_more": False,
+        "first_id": eintraege[0]["id"] if eintraege else None,
+        "last_id": eintraege[-1]["id"] if eintraege else None,
         "models": modelle,
     }
 
