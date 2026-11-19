@@ -1,3 +1,14 @@
+## 0.6.48
+
+### Doku
+
+- **Anleitung, Guide-Seite und README beschreiben MCP.** Neuer Abschnitt in `docs/guide.md`
+  (beide Wege: Claude Code mit `--header`, Claude Desktop ueber `mcp-remote`, inklusive des
+  absichtlich fehlenden Leerzeichens nach `Authorization:`), eine Karte in allen vier Sprachen auf
+  `guide.html` und je ein Merkmal in den beiden README-Listen.
+- **`docs/claude-desktop.md`** erklaert, warum Claudes Auswahl nur die drei eigenen Modellnamen
+  zeigt und wie jedem Namen ein eigenes Zielmodell zugeordnet wird.
+
 ## 0.6.47
 
 ### Neu
