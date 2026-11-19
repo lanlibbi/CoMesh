@@ -1,3 +1,14 @@
+## 0.6.46
+
+### Neu
+
+- **Die MCP-Karte zeigt beide Wege.** `claude mcp add` ist die Kommandozeile; die
+  Konnektor-Oberflaeche von Claude Desktop kann keine eigenen `Authorization`-Kopfzeilen senden.
+  Deshalb steht dort jetzt zusaetzlich die fertige `claude_desktop_config.json` mit dem
+  `mcp-remote`-Umweg (Voraussetzung: Node.js) — jeweils mit Kopieren-Knopf und der Adresse der
+  eigenen Instanz. Der Hinweis auf das absichtlich fehlende Leerzeichen nach `Authorization:` ist
+  dabei, weil `mcp-remote` unter Windows sonst stolpert.
+
 ## 0.6.45
 
 ### Neu

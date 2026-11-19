@@ -317,4 +317,27 @@ KEYS = {
         "es": "Claude Desktop: Ajustes -> Conectores -> anadir un conector propio, la misma direccion (sin el comando) y la misma clave como cabecera Authorization.",
         "fr": "Claude Desktop : Reglages -> Connecteurs -> ajouter un connecteur personnalise, la meme adresse (sans la commande) et la meme cle en en-tete Authorization.",
     },
+
+    "mcp-code-titel": {
+        "en": "Claude Code (CLI)", "de": "Claude Code (Kommandozeile)",
+        "es": "Claude Code (CLI)", "fr": "Claude Code (CLI)",
+    },
+    "mcp-desktop-titel": {
+        "en": "Claude Desktop (config file)",
+        "de": "Claude Desktop (Konfigurationsdatei)",
+        "es": "Claude Desktop (archivo de configuración)",
+        "fr": "Claude Desktop (fichier de configuration)",
+    },
+    "mcp-desktop-hilfe": {
+        "en": "Desktop connectors cannot send their own Authorization header, so the helper mcp-remote bridges to this endpoint. Node.js must be installed. Paste the block into claude_desktop_config.json (Settings -> Developer -> Edit Config) and restart Claude completely.",
+        "de": "Desktop-Konnektoren können keine eigene Authorization-Kopfzeile senden; das Hilfspaket mcp-remote überbrückt deshalb zu diesem Endpunkt. Node.js muss installiert sein. Den Block in claude_desktop_config.json eintragen (Einstellungen → Developer → Edit Config) und Claude komplett neu starten.",
+        "es": "Los conectores de Desktop no pueden enviar su propia cabecera Authorization, por eso el ayudante mcp-remote conecta con este endpoint. Node.js debe estar instalado. Pegar el bloque en claude_desktop_config.json (Ajustes → Developer → Edit Config) y reiniciar Claude por completo.",
+        "fr": "Les connecteurs de Desktop ne peuvent pas envoyer leur propre en-tête Authorization ; l'assistant mcp-remote fait donc le lien avec ce point d'accès. Node.js doit être installé. Coller le bloc dans claude_desktop_config.json (Réglages → Developer → Edit Config) et redémarrer Claude complètement.",
+    },
+    "mcp-schluessel-hinweis": {
+        "en": "Replace the placeholder with your account key from the profile page.",
+        "de": "Platzhalter durch deinen Konto-Schlüssel aus dem Profil ersetzen.",
+        "es": "Sustituir el marcador por la clave de tu cuenta de la página de perfil.",
+        "fr": "Remplacer le texte par la clé de votre compte depuis la page de profil.",
+    },
 }

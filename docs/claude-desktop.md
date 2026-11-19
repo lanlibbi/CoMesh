@@ -200,3 +200,32 @@ Claude Desktop: Einstellungen → Konnektoren → eigenen Konnektor hinzufuegen,
 Werkzeuge: `list_models` (was dieses Konto nutzen darf), `ask` (Frage an ein Modell), `whoami`
 (Konto, Rolle, Freigaben). Jeder Aufruf geht ueber denselben Weg wie die API — Whitelist, Guthaben
 und Rate-Limit gelten unveraendert.
+
+### Claude Desktop: why not just the connector URL
+
+Desktop connectors cannot send their own `Authorization` header, so a plain URL is not enough for
+an authenticated endpoint. The usual bridge is `mcp-remote`:
+
+```json
+{
+  "mcpServers": {
+    "comesh": {
+      "command": "npx",
+      "args": ["-y", "mcp-remote", "https://<your-portal>/mcp", "--header", "Authorization:${AUTH_HEADER}"],
+      "env": { "AUTH_HEADER": "Bearer gpu_..." }
+    }
+  }
+}
+```
+
+Node.js is required. The missing space after `Authorization:` is intentional — `mcp-remote` chokes
+on it on Windows; the space lives in the environment variable instead. The portal page shows both
+variants ready to copy.
+
+### Claude Desktop: warum nicht einfach die Konnektor-URL
+
+Desktop-Konnektoren koennen keine eigene `Authorization`-Kopfzeile senden, eine blosse URL reicht
+bei einem geschuetzten Endpunkt also nicht. Der uebliche Weg ist `mcp-remote` (siehe Block oben);
+Node.js ist Voraussetzung. Das fehlende Leerzeichen nach `Authorization:` ist Absicht — mcp-remote
+stolpert unter Windows darueber, das Leerzeichen steckt in der Umgebungsvariable. Beide Varianten
+stehen fertig zum Kopieren im Portal.

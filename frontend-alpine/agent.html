@@ -43,9 +43,20 @@
         </div>
         <!-- Der Befehl wird aus der Portal-Adresse gebaut (/v1/portal-info), damit er auf jeder
              Instanz stimmt - dieselbe Mechanik wie bei den Installationsbefehlen. -->
-        <pre id="mcp-befehl" class="mono" style="white-space:pre-wrap;word-break:break-all">…</pre>
-        <button class="btn-ghost btn-sm" id="mcp-kopieren" data-i18n="mcp-kopieren">Kopieren</button>
-        <p class="hint" id="mcp-hinweis" style="display:none" data-i18n="mcp-desktop-hinweis"></p></p>
+        <div class="grid-2 mt-2" style="display:grid;grid-template-columns:1fr;gap:14px">
+          <div>
+            <div class="label" data-i18n="mcp-code-titel">Claude Code (Kommandozeile)</div>
+            <pre id="mcp-befehl" class="mono" style="white-space:pre-wrap;word-break:break-all">…</pre>
+            <button class="btn-ghost btn-sm" id="mcp-kopieren" data-i18n="mcp-kopieren">Kopieren</button>
+          </div>
+          <div>
+            <div class="label" data-i18n="mcp-desktop-titel">Claude Desktop (Konfigurationsdatei)</div>
+            <p class="hint" data-i18n="mcp-desktop-hilfe">Desktop-Konnektoren können keine eigene Authorization-Kopfzeile senden; das Hilfspaket mcp-remote überbrückt deshalb zu diesem Endpunkt. Node.js muss installiert sein. Den Block in claude_desktop_config.json eintragen (Einstellungen → Developer → Edit Config) und Claude komplett neu starten.</p>
+            <pre id="mcp-desktop-config" class="mono" style="white-space:pre-wrap;word-break:break-all">…</pre>
+            <button class="btn-ghost btn-sm" id="mcp-desktop-kopieren" data-i18n="mcp-kopieren">Kopieren</button>
+            <p class="hint" data-i18n="mcp-schluessel-hinweis">Platzhalter durch deinen Konto-Schlüssel aus dem Profil ersetzen.</p>
+          </div>
+        </div></p>
       </div>
 
       <details id="agent-alias-tabelle" class="mt-2" style="border:1px solid var(--line);border-radius:10px;padding:10px 12px" hidden>
@@ -152,12 +163,34 @@ docker build -t gpu-pool-node-agent .</code></pre>
         ziel.textContent =
           "claude mcp add --transport http comesh " + basis + "/mcp \\\n" +
           '  --header "Authorization: Bearer <DEIN-KONTO-SCHLUESSEL>"';
-        document.getElementById("mcp-hinweis").style.display = "";
-        const knopf = document.getElementById("mcp-kopieren");
-        knopf.addEventListener("click", async () => {
-          try { await navigator.clipboard.writeText(ziel.textContent); knopf.textContent = "✓"; }
-          catch (e) { /* Clipboard gesperrt: Text steht ja sichtbar da */ }
-        });
+
+        /* Claude Desktop: die Konnektor-Oberflaeche kann keine eigenen Kopfzeilen senden,
+           deshalb der Umweg ueber mcp-remote. Das Leerzeichen nach "Authorization:" fehlt
+           absichtlich - mcp-remote stolpert unter Windows darueber; es steckt in der Variable. */
+        const desktop = document.getElementById("mcp-desktop-config");
+        if (desktop) {
+          desktop.textContent = JSON.stringify({
+            mcpServers: {
+              comesh: {
+                command: "npx",
+                args: ["-y", "mcp-remote", basis + "/mcp", "--header", "Authorization:${AUTH_HEADER}"],
+                env: { AUTH_HEADER: "Bearer DEIN_KONTO_SCHLUESSEL" },
+              },
+            },
+          }, null, 2);
+        }
+
+        
+        const kopieren = (knopfId, quelle) => {
+          const knopf = document.getElementById(knopfId);
+          if (!knopf || !quelle) return;
+          knopf.addEventListener("click", async () => {
+            try { await navigator.clipboard.writeText(quelle.textContent); knopf.textContent = "✓"; }
+            catch (e) { /* Clipboard gesperrt: Text steht ja sichtbar da */ }
+          });
+        };
+        kopieren("mcp-kopieren", ziel);
+        kopieren("mcp-desktop-kopieren", desktop);
       } catch (e) { /* still */ }
     })();
   </script>
