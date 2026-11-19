@@ -171,3 +171,43 @@ def test_agent_ist_ohne_secret_nicht_mehr_offen(monkeypatch):
     assert falsch.status_code == 401, falsch.text
     # Mit gueltigem Token kommt die Anfrage durch die Sperre (Antwort danach ist Sache des Routers).
     assert richtig.status_code != 401, richtig.text
+
+# --------------------------------------------------------------------------- Migration
+def test_legacy_schalter_greift_bei_altem_agenten(monkeypatch):
+    """Ein Agent vor 0.6.28 kennt das Token nicht — mit Schalter bekommt er das globale Secret.
+
+    Ohne diesen Fall waere ein gemischter Bestand nicht aktualisierbar: das Portal schickte immer
+    das Token, alte Agenten antworteten 401, und der Schalter haette nichts bewirkt.
+    """
+    import hashlib
+
+    import pool
+
+    monkeypatch.setenv("NODE_SHARED_SECRET", "GLOBAL-XYZ")
+    monkeypatch.setenv("ALLOW_LEGACY_NODE_SECRET", "1")
+    alt = _node(api_key_hash=hashlib.sha256(b"k").hexdigest(), agent_version="0.6.24")
+    assert pool.node_request_headers(alt)["X-Node-Secret"] == "GLOBAL-XYZ"
+
+
+def test_neuer_agent_bekommt_trotz_schalter_das_token(monkeypatch):
+    """Ist der Agent aktuell, gewinnt das Token — der Schalter schaltet sich selbst ab."""
+    import hashlib
+
+    import pool
+
+    monkeypatch.setenv("NODE_SHARED_SECRET", "GLOBAL-XYZ")
+    monkeypatch.setenv("ALLOW_LEGACY_NODE_SECRET", "1")
+    neu = _node(api_key_hash=hashlib.sha256(b"k").hexdigest(), agent_version="0.6.28")
+    assert pool.node_request_headers(neu)["X-Node-Secret"] != "GLOBAL-XYZ"
+
+
+def test_unbekannte_agent_version_gilt_als_alt(monkeypatch):
+    """Im Zweifel das, was auch der aelteste Agent versteht — nie umgekehrt."""
+    import hashlib
+
+    import pool
+
+    monkeypatch.setenv("NODE_SHARED_SECRET", "GLOBAL-XYZ")
+    monkeypatch.setenv("ALLOW_LEGACY_NODE_SECRET", "1")
+    unbekannt = _node(api_key_hash=hashlib.sha256(b"k").hexdigest(), agent_version=None)
+    assert pool.node_request_headers(unbekannt)["X-Node-Secret"] == "GLOBAL-XYZ"

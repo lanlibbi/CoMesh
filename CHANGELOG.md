@@ -1,3 +1,17 @@
+## 0.6.29
+
+Nur Portal (Aenderung an `pool.py`). **Agenten muessen dafuer nicht erneut aktualisiert werden.**
+
+### Behoben
+
+- **`ALLOW_LEGACY_NODE_SECRET` hat nichts bewirkt.** Der Migrationsschalter aus 0.6.28 war dafuer
+  gedacht, Agenten zu ueberbruecken, die das abgeleitete Token noch nicht kennen — griff aber nur,
+  wenn eine Node gar keinen Schluessel-Hash hat, und den hat jede registrierte Node. Ergebnis: ein
+  alter Agent bekam trotz gezogener Notbremse 401, und ein gemischter Bestand liess sich nicht
+  nacheinander aktualisieren. Jetzt entscheidet die gemeldete Agent-Version: vor 0.6.28 (oder
+  unbekannt) mit gesetztem Schalter -> globales Secret, ab 0.6.28 immer das Token. Drei Tests
+  halten das fest (`tests/test_security_node_secret.py`).
+
 ## 0.6.28
 
 Sicherheitsdurchgang nach einem externen Review (13 Befunde, alle am Code nachgeprüft). Die

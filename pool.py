@@ -199,6 +199,33 @@ def _legacy_node_secret_allowed() -> bool:
     return True
 
 
+# Ab dieser Agent-Version versteht der Agent das abgeleitete Token. Aeltere Agenten kennen nur
+# das globale Secret; sie laufen nur weiter, wenn der Betreiber ALLOW_LEGACY_NODE_SECRET=1 setzt.
+ERSTE_TOKEN_AGENT_VERSION = (0, 6, 28)
+
+
+def _versions_tupel(wert) -> tuple:
+    """'0.6.28' -> (0, 6, 28). Unbekannt/leer -> () (gilt als alt)."""
+    if not wert:
+        return ()
+    teile = []
+    for stueck in str(wert).strip().split("."):
+        ziffern = "".join(ch for ch in stueck if ch.isdigit())
+        if not ziffern:
+            break
+        teile.append(int(ziffern))
+    return tuple(teile)
+
+
+def _agent_kennt_das_token(node) -> bool:
+    """True, wenn die Node einen Agenten ab ERSTE_TOKEN_AGENT_VERSION meldet.
+
+    Unbekannt zaehlt bewusst als "alt": ein Agent, der sich noch nie gemeldet hat, bekommt im
+    Zweifel das, was auch der aelteste Agent versteht — nie umgekehrt.
+    """
+    return _versions_tupel(getattr(node, "agent_version", None)) >= ERSTE_TOKEN_AGENT_VERSION
+
+
 def node_request_headers(node=None) -> dict:
     """Header fuer jede Anfrage an einen Node-Agenten.
 
@@ -209,9 +236,22 @@ def node_request_headers(node=None) -> dict:
     bekam der Betreiber einer beliebigen Node den Schluessel zu *allen* Agenten im Pool — der
     Agent bindet auf 0.0.0.0, also fremde GPUs kostenlos an Guthaben und Modell-Whitelist vorbei.
     """
-    token = node_token_for(node) if node is not None else ""
+    if node is None:
+        return {}
+
+    # Uebergangszeit: ein Agent vor 0.6.28 kennt das abgeleitete Token nicht. Mit ausdruecklichem
+    # Schalter bekommt er das globale Secret — sonst waere ein gemischter Bestand nicht
+    # aktualisierbar, ohne den ganzen Pool gleichzeitig anzufassen.
+    if _legacy_node_secret_allowed() and not _agent_kennt_das_token(node):
+        secret = (os.environ.get("NODE_SHARED_SECRET") or "").strip()
+        if secret:
+            return {"X-Node-Secret": secret}
+
+    token = node_token_for(node)
     if token:
         return {"X-Node-Secret": token}
+
+    # Kein Hash (Altbestand ohne Schluessel): bleibt nur das globale Secret, wenn erlaubt.
     if _legacy_node_secret_allowed():
         secret = (os.environ.get("NODE_SHARED_SECRET") or "").strip()
         return {"X-Node-Secret": secret} if secret else {}
