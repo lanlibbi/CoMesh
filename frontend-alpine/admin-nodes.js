@@ -61,7 +61,7 @@ document.addEventListener("alpine:init", () => {
     /** Portal-Adresse laden: im Portal gesetzter Wert und der, der gerade wirklich gilt. */
     async loadPortalSettings() {
       try {
-        const d = await api("/admin/settings", { auth: true });
+        const d = await api("/admin/portal-settings", { auth: true });
         this.portalBaseUrl = d.public_base_url || "";
         this.portalEffective = d.effective_base_url || "";
         this.portalEndpoint = d.connect_endpoint || "";
@@ -72,7 +72,7 @@ document.addEventListener("alpine:init", () => {
 
     async savePortalBaseUrl() {
       try {
-        const d = await api("/admin/settings", {
+        const d = await api("/admin/portal-settings", {
           method: "PUT", auth: true,
           body: { public_base_url: String(this.portalBaseUrl || "").trim() },
         });

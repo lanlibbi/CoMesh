@@ -38,7 +38,7 @@ def _node(client, konto):
 def test_admin_setzt_portal_adresse(client):
     """Die Adresse landet in der Datenbank, gewinnt gegen die Umgebung und steht in portal-info."""
     neu = "https://comesh.example.test"
-    r = client.put("/admin/settings", headers=ADMIN, json={"public_base_url": neu + "/"})
+    r = client.put("/admin/portal-settings", headers=ADMIN, json={"public_base_url": neu + "/"})
     assert r.status_code == 200, r.text
     assert r.json()["public_base_url"] == neu
     assert r.json()["connect_endpoint"] == neu + "/v1"
@@ -51,8 +51,8 @@ def test_admin_setzt_portal_adresse(client):
 
 
 def test_adresse_wieder_entfernen(client):
-    client.put("/admin/settings", headers=ADMIN, json={"public_base_url": "https://zwischen.example"})
-    r = client.put("/admin/settings", headers=ADMIN, json={"public_base_url": ""})
+    client.put("/admin/portal-settings", headers=ADMIN, json={"public_base_url": "https://zwischen.example"})
+    r = client.put("/admin/portal-settings", headers=ADMIN, json={"public_base_url": ""})
     assert r.status_code == 200, r.text
     assert r.json()["public_base_url"] == ""
     assert client.get("/v1/portal-info").json()["source"] != "setting"
@@ -62,13 +62,13 @@ def test_ungueltige_adresse_wird_abgelehnt(client):
     for wert in ("ftp://example.test", "https://example.test/mit/pfad", ""):
         if wert == "":
             continue
-        r = client.put("/admin/settings", headers=ADMIN, json={"public_base_url": wert})
+        r = client.put("/admin/portal-settings", headers=ADMIN, json={"public_base_url": wert})
         assert r.status_code == 422, f"{wert} haette abgelehnt werden muessen: {r.text}"
 
 
 def test_nur_admin_darf_die_adresse_setzen(client):
     konto = _konto(client, role="both")
-    r = client.put("/admin/settings", headers=konto["headers"],
+    r = client.put("/admin/portal-settings", headers=konto["headers"],
                    json={"public_base_url": "https://boese.example"})
     assert r.status_code in (401, 403), r.text
     assert client.get("/v1/portal-info").json()["base_url"] != "https://boese.example"

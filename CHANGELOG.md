@@ -4,7 +4,7 @@
 
 - **Portal-Adresse im Adminbereich setzbar.** Bisher ging das nur ueber `COMESH_PUBLIC_BASE_URL` in
   der `.env` — im Portal gab es kein Feld. Jetzt: Adminbereich -> Geraete im Pool, Karte
-  "Portal-Adresse" (`GET/PUT /admin/settings`, Wert in `system_settings`, geht der Umgebungsvariable
+  "Portal-Adresse" (`GET/PUT /admin/portal-settings`, Wert in `system_settings`, geht der Umgebungsvariable
   vor). Daraus werden Installationsbefehle *und* die Verbindungsadresse gebaut.
 - **Verbindungsadresse im Dashboard.** Die Karte "Zugang" zeigt den Endpunkt, den ein Client
   eintraegt (`.../v1`, aus `/v1/portal-info`), statt ihn zusammensetzen zu lassen.

@@ -717,8 +717,8 @@ def _pruefe_basis_url(wert: str) -> str:
     return f"{teile.scheme.lower()}://{teile.netloc}".rstrip("/")
 
 
-@router.get("/settings")
-def get_settings(admin=Depends(require_admin), db: Session = Depends(get_db)):
+@router.get("/portal-settings")
+def get_portal_settings(admin=Depends(require_admin), db: Session = Depends(get_db)):
     """Was die Instanz ueber sich selbst sagt - und was tatsaechlich gilt.
 
     `public_base_url` ist die gesetzte Adresse (leer = nicht gesetzt). `effective_base_url` ist
@@ -750,8 +750,8 @@ def _portal_base_url_for_settings(db: Session):
     return "", "nicht gesetzt"
 
 
-@router.put("/settings")
-def put_settings(
+@router.put("/portal-settings")
+def put_portal_settings(
     req: PortalSettingsRequest,
     admin=Depends(require_admin),
     db: Session = Depends(get_db),
