@@ -1,3 +1,17 @@
+## 0.6.39
+
+### Behoben
+
+- **OpenAI-kompatible Clients sahen die Claude-Eintraege mit.** Seit 0.6.38 standen zu jedem Modell
+  zusaetzlich eine `claude-custom-...`-Kennung und die drei festen Aliase in `/v1/models` — fuer
+  opencode, Continue oder Cline ist das Rauschen (23 statt 10 Eintraege). Die Claude-Eintraege
+  erscheinen jetzt nur noch, wenn der Aufruf einen `anthropic-version`-Kopf mitbringt: den sendet
+  jeder Anthropic-Client (die API verlangt ihn), und kein OpenAI-Client sendet ihn. Die
+  Antwortform bleibt fuer beide vollstaendig — gefiltert wird nur die Liste.
+
+  Gemessen: mit `anthropic-version` 23 Eintraege (10 Modelle + 10 Kennungen + 3 Aliase), ohne
+  **10 Eintraege, davon 0 mit `claude-`**. `POST /v1/messages` mit einer Kennung weiterhin 200.
+
 ## 0.6.38
 
 ### Neu

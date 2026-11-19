@@ -814,11 +814,17 @@ async def list_models(request: Request, user: User = Depends(anthropic_api.get_c
     # sonst das erste verfuegbare). Die Abbildung passiert in anthropic_api.alias_ziel().
     import anthropic_api as _ant
 
+    # Claude-Eintraege nur fuer Anthropic-Clients. `anthropic-version` sendet jeder
+    # Anthropic-Client (die API verlangt den Kopf), und kein OpenAI-Client sendet ihn. Ohne diese
+    # Bedingung saehe ein OpenAI-Client wie opencode 23 Eintraege, von denen 13 nicht fuer ihn
+    # gedacht sind.
+    claude_client = bool(request.headers.get("anthropic-version"))
+
     # Fuer JEDES Modell eine Claude-Kennung: damit ist ein neu installiertes Modell sofort
     # auswaehlbar, ohne dass hier etwas nachgetragen werden muss. Der echte Name steht als
     # display_name daneben.
     vorhanden_ids = {e["id"] for e in eintraege}
-    for e in list(eintraege):
+    for e in (list(eintraege) if claude_client else []):
         kennung = _ant.claude_kennung(e["id"])
         if kennung and kennung not in vorhanden_ids:
             eintraege.append({
@@ -834,7 +840,7 @@ async def list_models(request: Request, user: User = Depends(anthropic_api.get_c
             vorhanden_ids.add(kennung)
 
     ziel = _ant.alias_ziel([m.get("name") or m.get("model") for m in modelle], DEFAULT_MODEL)
-    if ziel:
+    if ziel and claude_client:
         vorhanden = vorhanden_ids
         for alias in _ant.CLAUDE_ALIASE:
             if alias in vorhanden:
