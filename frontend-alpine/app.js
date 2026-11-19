@@ -535,8 +535,10 @@ async function ladeAliasTabelle(koerperId, containerId) {
     });
     if (!r.ok) return;
     const d = await r.json();
-    const zeilen = (d.aliase || []).filter((x) => x.art === "modell");
-    if (!zeilen.length) return;
+    // Erst die drei festen Claude-Namen (die zeigt Claude in seiner Auswahl), dann die
+    // Kennungen je Modell.
+    const zeilen = (d.aliase || []).slice().sort((a, b) => (a.art === b.art ? 0 : a.art === "fest" ? -1 : 1));
+    if (!(d.aliase || []).length) return;
     koerper.innerHTML = zeilen
       .map((x) => `<tr><td class="mono">${x.alias}</td><td class="mono">${x.modell}</td></tr>`)
       .join("");
