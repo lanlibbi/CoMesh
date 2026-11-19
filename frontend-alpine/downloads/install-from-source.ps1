@@ -1,4 +1,4 @@
-# Fassung: 2026-11-18a -- reines ASCII (PowerShell 5.1 ohne BOM liest sonst Buchstabensalat)
+# Fassung: 2026-11-19a -- reines ASCII (PowerShell 5.1 ohne BOM liest sonst Buchstabensalat); Autostart nur an einer Stelle
 <#
 .SYNOPSIS
     CoMesh Node-Agent aus dem Quelltext installieren - fuer Rechner, auf denen eine
