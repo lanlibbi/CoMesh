@@ -96,12 +96,44 @@ function Stop-Agent {
     return
 }
 
+# Namen, unter denen der Autostart in HKCU\...\Run stehen kann. Der Wert ohne Leerzeichen stammt
+# aus einer aelteren Fassung; er wird mit entfernt, sonst startet beim naechsten Login ein zweiter
+# Agent neben der Aufgabe.
+$script:RunValueNames = @("CoMesh Agent", "CoMeshAgent")
+
+function Remove-AutostartRunEntries {
+    # Raeumt BEIDE Schreibweisen. Ohne das bleibt der Eintrag des jeweils anderen Pfades stehen und
+    # startet zusaetzlich zur Aufgabe einen zweiten Prozess (zweimal in Folge aufgetreten).
+    $vorher = $ErrorActionPreference
+    $ErrorActionPreference = "SilentlyContinue"
+    $entfernt = @()
+    try {
+        foreach ($n in $script:RunValueNames) {
+            $da = Get-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run" -Name $n -ErrorAction SilentlyContinue
+            if ($null -ne $da) {
+                Remove-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run" -Name $n -ErrorAction SilentlyContinue
+                $entfernt += $n
+            }
+        }
+    } finally {
+        $ErrorActionPreference = $vorher
+    }
+    if ($entfernt.Count -gt 0) {
+        Write-Ok ("Alte Autostart-Eintraege entfernt: " + ($entfernt -join ", "))
+    }
+    return
+}
+
 function Set-Autostart {
     # Erst die Aufgabenplanung, dann der Run-Schluessel. Auf verwalteten Rechnern verweigert
     # schtasks die Aufgabe; HKCU braucht dafuer keine Rechte und keinen Dienst.
     $vorher = $ErrorActionPreference
     $ErrorActionPreference = "SilentlyContinue"
     try {
+        # Erst aufraeumen: ein alter Eintrag aus dem jeweils anderen Pfad wuerde sonst einen
+        # zweiten Agenten starten (genau das ist zweimal passiert).
+        Remove-AutostartRunEntries
+
         & schtasks.exe /Create /TN "$TaskName" /TR "$TaskCmd" /SC ONLOGON /RL LIMITED /F 2>&1 | Out-Null
         if ($LASTEXITCODE -eq 0) {
             Write-Ok "Autostart: Aufgabe '$TaskName' (bei Anmeldung)."
@@ -127,7 +159,7 @@ function Set-Autostart {
 if ($Uninstall) {
     Write-Step "Entfernen"
     Stop-Agent
-    Remove-Item "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run" -Name "CoMeshAgent" -ErrorAction SilentlyContinue
+    Remove-AutostartRunEntries
     if (Test-Path $Root) { Remove-Item -LiteralPath $Root -Recurse -Force -ErrorAction SilentlyContinue }
     Write-Ok "Aufgabe und $Root entfernt. Die Node im Portal bleibt registriert und kann dort geloescht werden."
     return
@@ -490,29 +522,13 @@ try {
 # ---------------------------------------------------------------------------
 Write-Step "Autostart"
 Stop-Agent
-$angelegt = $false
-# Auch hier: ein refusal von schtasks (verwaltete Rechner) darf nicht abbrechen, wir haben
-# einen Rueckfall ueber den Run-Schluessel.
-$vorher = $ErrorActionPreference
-$ErrorActionPreference = "SilentlyContinue"
-$taskRc = 1
-try { & schtasks.exe /Create /TN "$TaskName" /TR "$TaskCmd" /SC ONLOGON /RL LIMITED /F 2>&1 | Out-Null; $taskRc = $LASTEXITCODE }
-catch { $taskRc = 1 }
-finally { $ErrorActionPreference = $vorher }
-if ($taskRc -eq 0) {
-    $angelegt = $true
-    Write-Ok "Aufgabe '$TaskName' angelegt (bei Anmeldung)."
-} else {
-    # Verwaltete Rechner verweigern schtasks haeufig - Run-Schluessel braucht nie Adminrechte.
-    try {
-        New-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run" -Name "CoMeshAgent" `
-            -Value $TaskCmd -PropertyType String -Force | Out-Null
-        $angelegt = $true
-        Write-Ok "Autostart ueber HKCU\...\Run eingetragen (schtasks war nicht erlaubt)."
-    } catch {
-        Write-Warn "Autostart liess sich nicht einrichten. Von Hand starten:"
-        Write-Host "    `"$PythonW`" `"$(Join-Path $AgentDir 'agent.py')`""
-    }
+# Eine Stelle fuer den Autostart. Der frueher hier eingebaute zweite Pfad schrieb einen anderen
+# Namen in den Run-Schluessel ("CoMeshAgent" statt "CoMesh Agent") und liess den jeweils anderen
+# Eintrag stehen - beim naechsten Login starteten zwei Agenten.
+$angelegt = Set-Autostart
+if (-not $angelegt) {
+    Write-Warn "Autostart liess sich nicht einrichten. Von Hand starten:"
+    Write-Host "    `"$PythonW`" `"$(Join-Path $AgentDir 'agent.py')`""
 }
 
 # ---------------------------------------------------------------------------

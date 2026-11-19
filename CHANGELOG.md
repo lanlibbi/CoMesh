@@ -1,3 +1,19 @@
+## 0.6.33
+
+### Behoben
+
+- **Zwei Agenten nach der Installation (Autostart doppelt eingetragen).** Auf einer Kundenmaschine
+  starteten nach dem naechsten Login zwei Agenten. Ursache: der Quelltext-Installer hatte **zwei
+  Autostart-Pfade mit drei Namen** — `Set-Autostart` (von `-KeyOnly` benutzt) schrieb den
+  Run-Wert `CoMesh Agent`, der Block in Schritt 8 schrieb `CoMeshAgent`, und die Deinstallation
+  entfernte nur `CoMeshAgent`. Ein Eintrag des jeweils anderen Pfades blieb stehen und startete
+  zusaetzlich zur Aufgabe `CoMesh Agent` einen zweiten Prozess.
+  Jetzt: eine Funktion `Remove-AutostartRunEntries`, die **beide** Schreibweisen raeumt, aufgerufen
+  vor jedem Anlegen und bei der Deinstallation; Schritt 8 benutzt `Set-Autostart` statt einer
+  eigenen Kopie. Der Installer schreibt den Run-Schluessel damit an genau einer Stelle.
+  `tests/test_installer_autostart.py` haelt die Struktur fest (gegen den alten Stand nachweislich
+  rot: 5 von 6 Faellen).
+
 ## 0.6.31
 
 ### Neu
