@@ -340,4 +340,30 @@ KEYS = {
         "es": "Sustituir el marcador por la clave de tu cuenta de la página de perfil.",
         "fr": "Remplacer le texte par la clé de votre compte depuis la page de profil.",
     },
+
+    "alias-ziele-titel": {
+        "en": "Which model each Claude name uses",
+        "de": "Welches Modell hinter welchem Claude-Namen steckt",
+        "es": "Qué modelo usa cada nombre de Claude",
+        "fr": "Quel modèle se cache derrière chaque nom Claude",
+    },
+    "alias-ziele-hilfe": {
+        "en": "Claude only offers claude-sonnet-4-5, claude-opus-4-1 and Haiku 4.5 in its picker — the readable identifiers never appear there. Give each name its own model here, otherwise all three lead to the same one.",
+        "de": "Claude bietet in der Auswahl nur claude-sonnet-4-5, claude-opus-4-1 und Haiku 4.5 an — die lesbaren Kennungen erscheinen dort nie. Gib jedem Namen hier ein eigenes Modell, sonst landen alle drei beim selben.",
+        "es": "Claude solo ofrece claude-sonnet-4-5, claude-opus-4-1 y Haiku 4.5 en su selector — los identificadores legibles nunca aparecen ahí. Asigna aquí un modelo propio a cada nombre, si no los tres acaban en el mismo.",
+        "fr": "Claude ne propose que claude-sonnet-4-5, claude-opus-4-1 et Haiku 4.5 dans son sélecteur — les identifiants lisibles n'y apparaissent jamais. Donnez ici un modèle propre à chaque nom, sinon les trois aboutissent au même.",
+    },
+    "alias-ziele-speichern": {
+        "en": "Save", "de": "Speichern", "es": "Guardar", "fr": "Enregistrer",
+    },
+    "alias-ziele-leer": {
+        "en": "Same as default", "de": "Wie Standard", "es": "Como predeterminado",
+        "fr": "Comme par défaut",
+    },
+    "alias-ziele-nicht-im-katalog": {
+        "en": "(not in catalogue)",
+        "de": "(nicht im Katalog)",
+        "es": "(no está en el catálogo)",
+        "fr": "(absent du catalogue)",
+    },
 }

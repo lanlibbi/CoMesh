@@ -1,3 +1,14 @@
+## 0.6.47
+
+### Neu
+
+- **Je Claude-Alias ein eigenes Zielmodell.** Claude zeigt in seiner Modellauswahl ausschliesslich
+  ,  und "Haiku 4.5" — die lesbaren Kennungen erscheinen dort
+  nie. Solange alle drei Aliase auf dasselbe Modell zeigten, war die Auswahl in Claude wirkungs-
+  los. Jetzt laesst sich pro Name ein Modell einstellen (Dashboard, Karte "Zugang", nur Admin)
+  oder per ; ohne eigene Angabe gilt weiter das gemeinsame Ziel.
+- Die Uebersetzungstabelle zeigt das Ziel **je Alias**, nicht mehr dreimal dasselbe.
+
 ## 0.6.46
 
 ### Neu

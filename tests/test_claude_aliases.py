@@ -178,3 +178,35 @@ def test_lesbare_kennung_wird_aufgeloest():
     # Alte base64-Kennung funktioniert weiter (Clients haben sie evtl. gespeichert).
     alt = "claude-custom-cXdlbjIuNS1jb2Rlcjo3Yg"
     assert anthropic_api.modell_aufloesen(alt, "x", modelle, modelle) == "qwen2.5-coder:7b"
+
+# ------------------------------------------------------- eigene Ziele je Alias
+def test_jeder_alias_kann_ein_eigenes_ziel_haben():
+    """Ohne eigene Ziele zeigen alle drei Claude-Namen auf dasselbe Modell - die Auswahl in
+    Claude waere dann wirkungslos."""
+    import anthropic_api
+
+    modelle = ["klein:7b", "mittel:12b", "gross:32b"]
+    gespeichert = {"claude-sonnet-4-5": "mittel:12b", "claude-opus-4-1": "gross:32b"}
+    ziele = anthropic_api.alias_ziele(modelle, "klein:7b", gespeichert)
+    assert ziele["claude-sonnet-4-5"] == "mittel:12b"
+    assert ziele["claude-opus-4-1"] == "gross:32b"
+    # ohne eigene Angabe bleibt es beim gemeinsamen Ziel
+    assert ziele["claude-haiku-4-5"] == "klein:7b"
+
+
+def test_eigenes_ziel_ausserhalb_des_katalogs_faellt_zurueck():
+    import anthropic_api
+
+    ziele = anthropic_api.alias_ziele(["a:1b", "b:2b"], "a:1b",
+                                      {"claude-opus-4-1": "gibtsnicht:99b"})
+    assert ziele["claude-opus-4-1"] == "a:1b"
+
+
+def test_aufruf_landet_beim_eigenen_ziel():
+    """Der Aufruf muss denselben Namen auf dasselbe Modell abbilden wie die Liste."""
+    import anthropic_api
+
+    modelle = ["klein:7b", "gross:32b"]
+    ziele = anthropic_api.alias_ziele(modelle, "klein:7b", {"claude-opus-4-1": "gross:32b"})
+    assert anthropic_api.modell_aufloesen("claude-opus-4-1", "klein:7b", modelle, modelle, ziele) == "gross:32b"
+    assert anthropic_api.modell_aufloesen("claude-sonnet-4-5", "klein:7b", modelle, modelle, ziele) == "klein:7b"

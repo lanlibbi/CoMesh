@@ -750,6 +750,68 @@ def _portal_base_url_for_settings(db: Session):
     return "", "nicht gesetzt"
 
 
+class AliasTargetsRequest(BaseModel):
+    """Zielmodelle je Claude-Alias. Leerer Wert = gemeinsames Ziel."""
+
+    sonnet: Optional[str] = None
+    opus: Optional[str] = None
+    haiku: Optional[str] = None
+
+
+@router.get("/alias-targets")
+def get_alias_targets(admin=Depends(require_admin), db: Session = Depends(get_db)):
+    """Welche Modelle hinter den drei Claude-Namen stecken.
+
+    Claude zeigt in seiner Auswahl nur `claude-sonnet-4-5`, `claude-opus-4-1` und "Haiku 4.5" —
+    die lesbaren Kennungen erscheinen dort nicht. Ohne eigene Ziele waere die Auswahl wirkungslos.
+    """
+    from anthropic_api import ALIAS_SETTINGS
+
+    from main import _alias_ziele_aus_db
+
+    gespeichert = _alias_ziele_aus_db(db)
+    return {
+        "aliases": {alias: gespeichert.get(alias, "") for alias in ALIAS_SETTINGS},
+        "keys": ALIAS_SETTINGS,
+    }
+
+
+@router.put("/alias-targets")
+def put_alias_targets(
+    req: AliasTargetsRequest,
+    admin=Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    """Zielmodelle setzen. Nur Admin, mit Audit-Eintrag."""
+    from anthropic_api import ALIAS_SETTINGS
+    from models import SystemSetting
+
+    from main import _audit
+
+    eingaben = {
+        "claude-sonnet-4-5": (req.sonnet or "").strip(),
+        "claude-opus-4-1": (req.opus or "").strip(),
+        "claude-haiku-4-5": (req.haiku or "").strip(),
+    }
+    for alias, modell in eingaben.items():
+        schluessel = ALIAS_SETTINGS[alias]
+        zeile = db.query(SystemSetting).filter(SystemSetting.key == schluessel).first()
+        if not modell:
+            if zeile:
+                db.delete(zeile)
+            continue
+        if zeile:
+            zeile.value = modell
+        else:
+            db.add(SystemSetting(key=schluessel, value=modell))
+    db.commit()
+    try:
+        _audit(db, admin, "alias_targets", {"gesetzt": eingaben})
+    except Exception:
+        pass
+    return {"aliases": eingaben}
+
+
 @router.put("/portal-settings")
 def put_portal_settings(
     req: PortalSettingsRequest,

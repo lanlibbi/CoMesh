@@ -385,6 +385,31 @@ def _felder(body: Dict[str, Any]) -> Tuple[bool, str, bool]:
 # Namen im Claude-Stil, die Claude Code und Claude Desktop in der Auswahl akzeptieren.
 CLAUDE_ALIASE = ("claude-sonnet-4-5", "claude-opus-4-1", "claude-haiku-4-5")
 
+# Einstellungsschluessel je Alias. Claude zeigt in seiner Auswahl nur diese drei Namen und das
+# aktuelle Modell - die lesbaren Kennungen erscheinen dort nicht. Damit die Auswahl etwas bewirkt,
+# braucht jeder Alias ein eigenes Ziel.
+ALIAS_SETTINGS = {
+    "claude-sonnet-4-5": "alias_target_sonnet_4_5",
+    "claude-opus-4-1": "alias_target_opus_4_1",
+    "claude-haiku-4-5": "alias_target_haiku_4_5",
+}
+
+
+def alias_ziele(verfuegbare_modelle=None, default_modell: str = "", gespeichert=None) -> dict:
+    """Zielmodell je Claude-Alias.
+
+    `gespeichert` kommt aus den Einstellungen (Alias -> Modellname). Ein Eintrag gilt nur, wenn das
+    Modell auch im Katalog steht; sonst faellt der Alias auf das gemeinsame Ziel zurueck, statt ins
+    Leere zu zeigen.
+    """
+    gemeinsam = alias_ziel(verfuegbare_modelle, default_modell)
+    erlaubt = [m for m in (verfuegbare_modelle or []) if (m or "").strip()]
+    ziele = {}
+    for alias in CLAUDE_ALIASE:
+        wahl = str((gespeichert or {}).get(alias) or "").strip()
+        ziele[alias] = wahl if (wahl and (not erlaubt or wahl in erlaubt)) else gemeinsam
+    return ziele
+
 
 def alias_ziel(verfuegbare_modelle=None, default_modell: str = "") -> str:
     """Auf welches echte Modell ein Claude-Alias zeigt.
@@ -477,7 +502,8 @@ def modell_aus_slug(kennung: str, kandidaten=None) -> str:
     return ""
 
 
-def modell_aufloesen(angefragt: str, default_modell: str = "", erlaubte=None, kandidaten=None) -> str:
+def modell_aufloesen(angefragt: str, default_modell: str = "", erlaubte=None, kandidaten=None,
+                     ziele=None) -> str:
     """Claude-Alias -> echtes Modell. Alles andere bleibt unveraendert.
 
     Ohne diese Abbildung schickt das Portal "claude-sonnet-4-5" an Ollama, und das Modell gibt es
@@ -494,7 +520,8 @@ def modell_aufloesen(angefragt: str, default_modell: str = "", erlaubte=None, ka
         ziel = echt
     # 2. Die drei festen Aliase zeigen auf das eingestellte Zielmodell.
     elif name in CLAUDE_ALIASE:
-        ziel = alias_ziel(None, default_modell) or default_modell
+        # Eigenes Ziel des Alias, sonst das gemeinsame. `ziele` kommt aus den Einstellungen.
+        ziel = str((ziele or {}).get(name) or "").strip() or alias_ziel(None, default_modell) or default_modell
     # 3. Alles andere ist ein echter Modellname und bleibt unangetastet.
 
     # Liegt das Ziel nicht in der Freigabeliste des Kontos, das erste freigegebene Modell nehmen.
@@ -559,8 +586,16 @@ def register(app, *, default_modell: str) -> None:
                 _kandidaten = [ (m.get("name") or m.get("model")) for m in await _modell_katalog(user, db) ]
             except Exception:
                 _kandidaten = None
+        # Ziele je Alias aus den Einstellungen; ohne sie zeigen alle drei Aliase auf dasselbe
+        # Modell und die Auswahl in Claude waere wirkungslos.
+        try:
+            from main import _alias_ziele_aus_db
+
+            _ziele = alias_ziele(_kandidaten or _freigaben, default_modell, _alias_ziele_aus_db(db))
+        except Exception:
+            _ziele = None
         modell = modell_aufloesen(_angefragt or default_modell, default_modell,
-                                  _freigaben, _kandidaten) or default_modell
+                                  _freigaben, _kandidaten, _ziele) or default_modell
         if modell:
             offen["model"] = modell
 

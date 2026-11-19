@@ -873,6 +873,8 @@ async def list_models(request: Request, user: User = Depends(anthropic_api.get_c
         except Exception:
             _kandidaten = []
     ziel = _ant.alias_ziel(_kandidaten, DEFAULT_MODEL)
+    # Je Alias kann ein eigenes Modell eingestellt sein; ohne Angabe bleibt es beim gemeinsamen.
+    _ziele = _ant.alias_ziele(_kandidaten, DEFAULT_MODEL, _alias_ziele_aus_db(db))
     if ziel and claude_client:
         vorhanden = vorhanden_ids
         for alias in _ant.CLAUDE_ALIASE:
@@ -883,11 +885,14 @@ async def list_models(request: Request, user: User = Depends(anthropic_api.get_c
                 "object": "model",
                 "created": 0,
                 "owned_by": "comesh",
-                "display_name": alias,
+                # display_name: das echte Modell, das hinter diesem Namen steckt. Claude
+                # ueberschreibt es bei seinen bekannten Namen mit eigener Beschriftung, andere
+                # Clients zeigen es an.
+                "display_name": _ziele.get(alias) or alias,
                 "created_at": "1970-01-01T00:00:00Z",
                 "type": "model",
                 # Zusatzfeld: Clients ignorieren es, Menschen sehen, was dahinter laeuft.
-                "comesh_target": ziel,
+                "comesh_target": _ziele.get(alias) or ziel,
             })
 
     # Eine Antwortform fuer beide Client-Typen. `models` bleibt fuer die Chat-Seite, die
@@ -917,10 +922,12 @@ async def model_aliases(
     modelle = await _modell_katalog(user, db)
     namen = [m.get("name") or m.get("model") for m in modelle if (m.get("name") or m.get("model"))]
 
+    ziele = anthropic_api.alias_ziele(namen, DEFAULT_MODEL, _alias_ziele_aus_db(db))
     ziel = anthropic_api.alias_ziel(namen, DEFAULT_MODEL)
     vergeben = set(anthropic_api.CLAUDE_ALIASE)
     tabelle = [
-        {"alias": alias, "modell": ziel, "art": "fest"} for alias in anthropic_api.CLAUDE_ALIASE
+        {"alias": alias, "modell": ziele.get(alias) or ziel, "art": "fest"}
+        for alias in anthropic_api.CLAUDE_ALIASE
     ]
     for name in namen:
         kennung = anthropic_api.claude_kennung(name, vergeben)
@@ -1093,6 +1100,31 @@ def _setting_public_base_url(db=None) -> str:
                 db.close()
             except Exception:
                 pass
+
+
+def _alias_ziele_aus_db(db) -> dict:
+    """Gespeicherte Zielmodelle je Claude-Alias (alias -> Modellname).
+
+    Die Einstellungen tragen sprechende Schluessel (`alias_target_sonnet_4_5`), damit sie auch in
+    der Datenbank lesbar bleiben. Fehlt etwas oder ist keine Datenbank da, kommt ein leeres dict -
+    dann greift das gemeinsame Ziel.
+    """
+    try:
+        from models import SystemSetting
+
+        schluessel = {v: k for k, v in anthropic_api.ALIAS_SETTINGS.items()}
+        zeilen = (
+            db.query(SystemSetting)
+            .filter(SystemSetting.key.in_(list(schluessel.keys())))
+            .all()
+        )
+        return {
+            schluessel[z.key]: (z.value or "").strip()
+            for z in zeilen
+            if z.key in schluessel and (z.value or "").strip()
+        }
+    except Exception:
+        return {}
 
 
 def _portal_base_url(request: Request) -> tuple:

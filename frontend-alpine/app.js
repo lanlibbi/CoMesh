@@ -546,3 +546,70 @@ async function ladeAliasTabelle(koerperId, containerId) {
   }
 }
 window.ladeAliasTabelle = ladeAliasTabelle;
+
+/**
+ * Zielmodelle je Claude-Namen (nur Admin).
+ *
+ * Hintergrund: Claude zeigt in seiner Modellauswahl ausschliesslich claude-sonnet-4-5,
+ * claude-opus-4-1 und "Haiku 4.5" — die lesbaren Kennungen erscheinen dort nicht. Ohne eigenes
+ * Ziel je Name waere die Auswahl in Claude wirkungslos, weil alle drei dasselbe Modell träfen.
+ */
+async function ladeAliasZiele(containerId, knopfId) {
+  const box = document.getElementById(containerId);
+  if (!box) return;
+  let r;
+  try {
+    r = await fetch(API_BASE + "/admin/alias-targets", {
+      headers: { Authorization: "Bearer " + (LS.get("api_key") || ""), Accept: "application/json" },
+    });
+  } catch (e) {
+    return;
+  }
+  if (!r.ok) return; // kein Admin: Bereich bleibt verborgen
+  const daten = await r.json();
+  let modelle = [];
+  try {
+    const m = await fetch(API_BASE + "/v1/models", {
+      headers: { Authorization: "Bearer " + (LS.get("api_key") || ""), Accept: "application/json" },
+    });
+    if (m.ok) modelle = ((await m.json()).data || []).map((x) => x.id).filter((id) => !id.startsWith("claude-"));
+  } catch (e) { /* dann bleibt die Auswahl leer */ }
+
+  const zeilen = Object.keys(daten.aliases || {});
+  box.innerHTML = zeilen
+    .map((alias) => {
+      const gewaehlt = daten.aliases[alias] || "";
+      const optionen = ['<option value="">' + (window.t ? t("alias-ziele-leer") : "—") + "</option>"]
+        .concat(modelle.map((m) => '<option value="' + m + '"' + (m === gewaehlt ? " selected" : "") + ">" + m + "</option>"));
+      if (gewaehlt && modelle.indexOf(gewaehlt) === -1) {
+        optionen.push('<option value="' + gewaehlt + '" selected>' + gewaehlt + " " + (window.t ? t('alias-ziele-nicht-im-katalog') : '') + "</option>");
+      }
+      return (
+        '<label class="field" style="display:block;margin:6px 0"><span class="label mono">' + alias +
+        '</span><select class="input" data-alias="' + alias + '">' + optionen.join("") + "</select></label>"
+      );
+    })
+    .join("");
+  box.hidden = false;
+
+  const knopf = document.getElementById(knopfId);
+  if (!knopf) return;
+  knopf.hidden = false;
+  knopf.addEventListener("click", async () => {
+    const rumpf = { sonnet: "", opus: "", haiku: "" };
+    box.querySelectorAll("select[data-alias]").forEach((sel) => {
+      const alias = sel.getAttribute("data-alias");
+      if (alias.indexOf("sonnet") !== -1) rumpf.sonnet = sel.value;
+      else if (alias.indexOf("opus") !== -1) rumpf.opus = sel.value;
+      else if (alias.indexOf("haiku") !== -1) rumpf.haiku = sel.value;
+    });
+    const a = await fetch(API_BASE + "/admin/alias-targets", {
+      method: "PUT",
+      headers: { Authorization: "Bearer " + (LS.get("api_key") || ""), "Content-Type": "application/json" },
+      body: JSON.stringify(rumpf),
+    });
+    knopf.textContent = a.ok ? "✓" : "!";
+    if (a.ok) await ladeAliasTabelle("alias-tabelle-koerper", "alias-tabelle");
+  });
+}
+window.ladeAliasZiele = ladeAliasZiele;

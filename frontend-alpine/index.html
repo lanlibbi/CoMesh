@@ -208,6 +208,13 @@
               <tbody id="alias-tabelle-koerper"></tbody>
             </table>
           </details>
+          <!-- Zielmodelle je Claude-Namen: nur fuer Admins sichtbar (die Abfrage antwortet sonst 403). -->
+          <details id="alias-ziele" class="mt-2" style="border:1px solid var(--line);border-radius:10px;padding:10px 12px" hidden>
+            <summary class="label" style="cursor:pointer" data-i18n="alias-ziele-titel">Welches Modell hinter welchem Claude-Namen steckt</summary>
+            <p class="hint" data-i18n="alias-ziele-hilfe">Claude bietet in der Auswahl nur claude-sonnet-4-5, claude-opus-4-1 und Haiku 4.5 an — die lesbaren Kennungen erscheinen dort nie. Gib jedem Namen hier ein eigenes Modell, sonst landen alle drei beim selben.</p>
+            <div id="alias-ziele-form"></div>
+            <button class="btn-ghost btn-sm" id="alias-ziele-speichern" data-i18n="alias-ziele-speichern" hidden>Speichern</button>
+          </details>
                     <p class="hint" data-i18n-html="verbindungsendpunkt-klienten">OpenAI-kompatible Clients bekommen <code class="inline">/v1</code> als Basis-URL. Claude Code und andere Anthropic-Clients hängen <code class="inline">/v1/messages</code> selbst an — dort die Adresse <b>ohne</b> <code class="inline">/v1</code> eintragen.</p>
         </div>
         <div class="row">
@@ -454,6 +461,7 @@
 
       /* Uebersetzungstabelle: gemeinsame Funktion in app.js */
       await ladeAliasTabelle("alias-tabelle-koerper", "alias-tabelle");
+      await ladeAliasZiele("alias-ziele-form", "alias-ziele-speichern");
     })();
   </script>
 </body>
