@@ -4187,6 +4187,30 @@ window.GP_I18N = {
    "es": "Los clientes compatibles con OpenAI usan <code class=\"inline\">/v1</code> como URL base. Claude Code y otros clientes de Anthropic añaden <code class=\"inline\">/v1/messages</code> por su cuenta: ahí se introduce la dirección <b>sin</b> <code class=\"inline\">/v1</code>.",
    "fr": "Les clients compatibles OpenAI prennent <code class=\"inline\">/v1</code> comme URL de base. Claude Code et les autres clients Anthropic ajoutent <code class=\"inline\">/v1/messages</code> eux-mêmes : y saisir l'adresse <b>sans</b> <code class=\"inline\">/v1</code>."
   },
+  "uebersetzungstabelle": {
+   "en": "Name mapping",
+   "de": "Übersetzungstabelle",
+   "es": "Tabla de equivalencias",
+   "fr": "Table de correspondance"
+  },
+  "uebersetzungstabelle-hilfe": {
+   "en": "Which identifier in a Claude client belongs to which model.",
+   "de": "Welche Kennung in einem Claude-Client zu welchem Modell gehört.",
+   "es": "Qué identificador en un cliente Claude corresponde a qué modelo.",
+   "fr": "Quel identifiant dans un client Claude correspond à quel modèle."
+  },
+  "kennung": {
+   "en": "Identifier",
+   "de": "Kennung",
+   "es": "Identificador",
+   "fr": "Identifiant"
+  },
+  "modell-spalte": {
+   "en": "Model",
+   "de": "Modell",
+   "es": "Modelo",
+   "fr": "Modèle"
+  },
   "abbrechen": {
    "en": "Cancel",
    "de": "Abbrechen",

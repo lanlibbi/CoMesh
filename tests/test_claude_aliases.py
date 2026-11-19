@@ -69,22 +69,25 @@ def test_alias_wird_auf_echtes_modell_abgebildet(monkeypatch):
     assert anthropic_api.modell_aufloesen("claude-irgendwas", "x") == "claude-irgendwas"
 
 # --------------------------------------------------------------------------- Kennung je Modell
-def test_kennung_ist_umkehrbar(monkeypatch):
-    """Jedes Modell bekommt eine Claude-Kennung, die sich exakt zurueckuebersetzen laesst.
+def test_kennung_fuehrt_zurueck_zum_modell(monkeypatch):
+    """Jede Kennung laesst sich gegen den Katalog wieder dem richtigen Modell zuordnen.
 
-    Auch krumme Namen (mit Schraegstrichen, Doppelpunkten, Unterstrichen) muessen durchgehen —
-    sonst waere die Kennung fuer reale Ollama-Namen wertlos.
+    Seit 0.6.42 ist die Kennung lesbar (nicht mehr base64) — aufgeloest wird per Slug-Abgleich.
+    Auch krumme Namen (Schraegstriche, Doppelpunkte) muessen durchgehen, sonst waere die Kennung
+    fuer reale Ollama-Namen wertlos.
     """
     import anthropic_api
 
-    for name in ("qwen2.5-coder:7b",
-                 "hf.co/mradermacher/Huihui-Qwen3-Coder-30B-A3B-Instruct-abliterated-GGUF:IQ4_XS",
-                 "gemma4:12b-it-qat",
-                 "aya-expanse:32b"):
+    namen = ("qwen2.5-coder:7b",
+             "hf.co/mradermacher/Huihui-Qwen3-Coder-30B-A3B-Instruct-abliterated-GGUF:IQ4_XS",
+             "gemma4:12b-it-qat",
+             "aya-expanse:32b")
+    for name in namen:
         kennung = anthropic_api.claude_kennung(name)
         assert kennung.startswith("claude-"), kennung
-        assert anthropic_api.modell_aus_kennung(kennung) == name
-        assert anthropic_api.modell_aufloesen(kennung, "ziel") == name
+        # lesbar: der Modellname steckt (normalisiert) in der Kennung
+        assert anthropic_api.modell_slug(name)[:10] in kennung
+        assert anthropic_api.modell_aufloesen(kennung, "ziel", list(namen), list(namen)) == name
 
 
 def test_fremde_namen_bleiben_unangetastet(monkeypatch):

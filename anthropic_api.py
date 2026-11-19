@@ -499,10 +499,13 @@ def modell_aufloesen(angefragt: str, default_modell: str = "", erlaubte=None, ka
 
     # Liegt das Ziel nicht in der Freigabeliste des Kontos, das erste freigegebene Modell nehmen.
     # Sonst scheitert der erste Chat mit 403, obwohl der Client nur einen Alias geschickt hat.
-    # Nur wenn ein Alias oder eine Kennung umgebogen wurde. Ein echter Modellname, der nicht
+    # Nur wenn ein Alias oder eine Kennung im Spiel war. Ein echter Modellname, der nicht
     # freigegeben ist, muss weiter mit 403 scheitern - stillschweigend ein anderes Modell zu
     # liefern waere schlimmer als eine ehrliche Absage.
-    if ziel != name and erlaubte is not None:
+    # `name.startswith(PRAEFIX)` faengt auch die Kennung eines Modells ab, das nicht mehr im
+    # Katalog steht: dann ist sie nicht aufloesbar, und ein Ausweichen ist besser als einen
+    # unbrauchbaren Namen ans Backend zu schicken.
+    if (ziel != name or name.startswith(PRAEFIX)) and erlaubte is not None:
         liste = [x for x in (erlaubte or []) if (x or "").strip()]
         if liste and ziel not in liste:
             return liste[0]
