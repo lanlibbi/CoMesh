@@ -445,7 +445,11 @@ def register(app, *, default_modell: str) -> None:
         offen = to_openai_request(body)
         offen["stream"] = False   # Streaming übersetzen wir selbst aus dem OpenAI-Strom
         # Claude schickt seinen eigenen Modellnamen; dahinter muss ein Modell des Pools laufen.
+        # Wichtig: der Name wird IM KOERPER ersetzt, nicht nur in der Variable - sonst geht
+        # "claude-sonnet-4-5" an das Backend und Ollama antwortet 404.
         modell = modell_aufloesen(offen.get("model") or default_modell, default_modell) or default_modell
+        if modell:
+            offen["model"] = modell
 
         try:
             anfrage = ChatCompletionRequest(**offen)

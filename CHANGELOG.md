@@ -1,3 +1,14 @@
+## 0.6.37
+
+### Behoben
+
+- **Der Claude-Alias wurde nur halb ersetzt.** 0.6.36 setzte den Modellnamen in der Variable, die
+  ins Antwortfeld geht — der Anfragekoerper an das Backend behielt `claude-sonnet-4-5`, und Ollama
+  antwortete mit 404 (`Routing failed: local Ollama HTTP 404: model 'claude-sonnet-4-5' not found`).
+  Jetzt wird der Name **im Koerper** ersetzt, bevor die Anfrage gebaut wird.
+  Nachgeprüft: `POST /v1/messages` mit `claude-sonnet-4-5` → 200, Antwortmodell
+  `qwen2.5-coder:7b`, Inhalt "Ok.".
+
 ## 0.6.36
 
 ### Behoben
