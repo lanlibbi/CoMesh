@@ -50,6 +50,9 @@ document.addEventListener("alpine:init", () => {
     portalBaseUrl: "",
     portalEffective: "",
     portalEndpoint: "",
+    portalSource: "",
+    portalMeldung: "",
+    portalFehler: false,
     ownerEmail: "",
     busyId: null,
 
@@ -65,8 +68,11 @@ document.addEventListener("alpine:init", () => {
         this.portalBaseUrl = d.public_base_url || "";
         this.portalEffective = d.effective_base_url || "";
         this.portalEndpoint = d.connect_endpoint || "";
+        this.portalSource = d.source || "";
       } catch (e) {
         this.portalEffective = "";
+        this.portalMeldung = (e && e.message) || I18n.t("fehler");
+        this.portalFehler = true;
       }
     },
 
@@ -79,8 +85,17 @@ document.addEventListener("alpine:init", () => {
         this.portalBaseUrl = d.public_base_url || "";
         this.portalEffective = d.effective_base_url || "";
         this.portalEndpoint = d.connect_endpoint || "";
+        this.portalSource = d.source || "";
+        // Rueckmeldung direkt in der Karte: der Toast am Bildschirmrand wird leicht uebersehen,
+        // und dann sieht es aus, als waere nichts gespeichert worden.
+        this.portalFehler = false;
+        this.portalMeldung = this.portalEffective
+          ? I18n.t("portal-adresse-gespeichert") + " " + this.portalEffective
+          : I18n.t("portal-adresse-gespeichert");
         toast(I18n.t("portal-adresse-gespeichert"), "ok");
       } catch (e) {
+        this.portalFehler = true;
+        this.portalMeldung = (e && e.message) || I18n.t("fehler");
         toast((e && e.message) || I18n.t("fehler"), "err");
       }
     },

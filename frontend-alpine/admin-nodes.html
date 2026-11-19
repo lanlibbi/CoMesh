@@ -27,27 +27,6 @@
   <div x-html="navHTML('admin-nodes', $store.lang?.code)"></div>
 
   <main class="shell">
-    <div class="card mb-4">
-      <div class="panel-head">
-        <div>
-          <div class="eyebrow" data-i18n="portal-adresse">Portal-Adresse</div>
-          <h3 data-i18n="installationsbefehle-und-verbindungsadresse">Installationsbefehle und Verbindungsadresse</h3>
-          <p class="hint" data-i18n="portal-adresse-hilfe">Die Adresse, unter der andere Rechner dieses Portal erreichen, zum Beispiel https://comesh.example.com. Installationsbefehle und die Verbindungsadresse werden daraus gebaut. Leer heißt: aus der jeweiligen Anfrage abgeleitet — das stimmt nur auf dem Portal-Host selbst.</p>
-        </div>
-      </div>
-      <div class="row" style="gap:8px;align-items:flex-end;flex-wrap:wrap">
-        <div class="grow" style="min-width:280px">
-          <label class="label" for="portal-base-url" data-i18n="portal-adresse">Portal-Adresse</label>
-          <input class="input mono" id="portal-base-url" type="text" x-model="portalBaseUrl"
-                 placeholder="https://comesh.example.com" />
-        </div>
-        <button class="btn-primary btn-sm" @click="savePortalBaseUrl()" data-i18n="speichern">Speichern</button>
-      </div>
-      <p class="hint" x-show="portalEffective">
-        <span data-i18n="wirksam">Wirksam:</span> <span class="mono" x-text="portalEffective"></span><span x-show="portalEndpoint"> · <span class="mono" x-text="portalEndpoint"></span></span>
-      </p>
-    </div>
-
     <div class="page-head">
       <div class="eyebrow">Admin</div>
       <h1 data-i18n="admin_nodes.title">Geräte im Pool</h1>
@@ -86,6 +65,35 @@
       <p class="t-sm text-err mt-2" x-show="error" x-text="error"></p>
       <p class="t-sm text-ok mt-2" x-show="actionOk" x-text="actionOk"></p>
       <p class="t-sm text-err mt-2" x-show="actionError" x-text="actionError"></p>
+    </div>
+
+    <!-- Portal-Adresse: gehoert zu den Geraeten (Installationsbefehle), deshalb hier und nicht
+         im Profil. Steht bewusst NACH dem Seitenkopf und der Filterzeile. -->
+    <div class="card mb-4">
+      <div class="panel-head">
+        <div>
+          <div class="eyebrow" data-i18n="portal-adresse">Portal-Adresse</div>
+          <h3 data-i18n="installationsbefehle-und-verbindungsadresse">Installationsbefehle und Verbindungsadresse</h3>
+          <p class="hint" data-i18n="portal-adresse-hilfe">Die Adresse, unter der andere Rechner dieses Portal erreichen, zum Beispiel https://comesh.example.com. Installationsbefehle und die Verbindungsadresse werden daraus gebaut. Leer heißt: aus der jeweiligen Anfrage abgeleitet — das stimmt nur auf dem Portal-Host selbst.</p>
+        </div>
+      </div>
+      <div class="row" style="gap:8px;align-items:flex-end;flex-wrap:wrap">
+        <div class="grow" style="min-width:280px">
+          <label class="label" for="portal-base-url" data-i18n="portal-adresse">Portal-Adresse</label>
+          <input class="input mono" id="portal-base-url" type="text" x-model="portalBaseUrl"
+                 @keyup.enter="savePortalBaseUrl()"
+                 placeholder="https://comesh.example.com" />
+        </div>
+        <button class="btn-primary btn-sm" @click="savePortalBaseUrl()"
+                data-i18n="speichern">Speichern</button>
+      </div>
+      <p class="hint" x-show="portalMeldung" x-cloak>
+        <span :class="portalFehler ? 'text-err' : 'text-ok'" x-text="portalMeldung"></span>
+      </p>
+      <p class="hint" x-show="portalEffective">
+        <span data-i18n="wirksam">Wirksam:</span> <span class="mono" x-text="portalEffective"></span><span x-show="portalEndpoint"> · <span class="mono" x-text="portalEndpoint"></span></span>
+        <span x-show="portalSource" class="text-dim"> (<span x-text="portalSource"></span>)</span>
+      </p>
     </div>
 
     <div class="card">
