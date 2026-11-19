@@ -24,6 +24,9 @@ books the usage and shows both in a web interface.
 
 - **OpenAI-compatible API** — `GET /v1/models`, `POST /v1/chat/completions`,
   streaming via server-sent events. Any OpenAI client works unchanged.
+- **MCP endpoint for Claude** — Claude Desktop and Claude Code add the pool as a remote tool
+  server (`/mcp`); no download, no local installation. Tools: `list_models`, `ask`, `whoami`.
+  Each of Claude's three model names can point at its own model in the pool.
 - **Many nodes, one address** — selection by free VRAM, the node's model list, the
   account's model list and current load.
 - **Releases per node and per account** — a node offers only what its list allows,
@@ -220,6 +223,10 @@ die Node, rechnet den Verbrauch ab und zeigt beides in einer Web-Oberfläche.
 
 ## Was es kann
 
+- **MCP-Endpunkt für Claude** — Claude Desktop und Claude Code binden den Pool als entfernten
+  Werkzeugserver ein (`/mcp`), ohne Download und ohne lokale Installation. Werkzeuge:
+  `list_models`, `ask`, `whoami`. Jedem der drei Claude-Modellnamen lässt sich ein eigenes
+  Modell aus dem Pool zuordnen.
 - **OpenAI-kompatible API** — `GET /v1/models`, `POST /v1/chat/completions`,
   Streaming über Server-Sent Events. Jeder OpenAI-Client läuft unverändert dagegen.
 - **Mehrere Nodes, eine Adresse** — die Auswahl erfolgt nach freiem VRAM,

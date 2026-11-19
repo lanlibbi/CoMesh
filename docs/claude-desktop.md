@@ -229,3 +229,19 @@ bei einem geschuetzten Endpunkt also nicht. Der uebliche Weg ist `mcp-remote` (s
 Node.js ist Voraussetzung. Das fehlende Leerzeichen nach `Authorization:` ist Absicht — mcp-remote
 stolpert unter Windows darueber, das Leerzeichen steckt in der Umgebungsvariable. Beide Varianten
 stehen fertig zum Kopieren im Portal.
+
+## One model per Claude name
+
+Claude's picker only ever shows `claude-sonnet-4-5`, `claude-opus-4-1` and "Haiku 4.5" (plus the
+currently selected model) — the readable identifiers never appear there, and `display_name` is
+overridden for names Claude recognises. Point each name at its own model, otherwise all three lead
+to the same one and the picker does nothing: dashboard → Access, or `PUT /admin/alias-targets`.
+Fallback order: own target → `ANTHROPIC_ALIAS_TARGET` → account default → first released model.
+
+## Ein Modell je Claude-Name
+
+Claudes Auswahl zeigt immer nur `claude-sonnet-4-5`, `claude-opus-4-1` und „Haiku 4.5" (plus das
+aktuell gewaehlte Modell) — die lesbaren Kennungen erscheinen dort nie, und `display_name` wird bei
+Namen, die Claude kennt, ueberschrieben. Gib jedem Namen ein eigenes Modell, sonst landen alle drei
+beim selben und die Auswahl bewirkt nichts: Dashboard → Zugang oder `PUT /admin/alias-targets`.
+Reihenfolge: eigenes Ziel → `ANTHROPIC_ALIAS_TARGET` → Kontostandard → erstes freigegebenes Modell.

@@ -15,6 +15,11 @@ The portal at the same address (without `/v1`) is the quickest way to try the po
 answer stays in the conversation it belongs to even if you switch tabs. Transcripts live in the
 browser (`localStorage`) only.
 
+Claude Desktop and Claude Code can add the pool as a **remote MCP server** (`/mcp`): no download,
+no installation — just the portal URL and your account key. Tools: `list_models`, `ask`, `whoami`.
+Because Claude's picker only shows its own three model names, each of them can point at a different
+model in your pool (dashboard → Access).
+
 Administrators additionally get **Accounts** (approve registrations, roles, passwords, credits, keys,
 per-account model releases, optional e-mail notice via SMTP) and **Usage (all)** with sortable columns.
 **Devices** lists every contributed machine; agent addresses are masked by default, an owner may choose
@@ -233,6 +238,55 @@ aufgebraucht, antwortet der Dienst mit einer Fehlermeldung statt still weiterzur
 * **Keine Verfügbarkeitsgarantie.** Der Pool besteht aus privaten Rechnern; fällt einer aus, gibt es
   einen Fehler, keine späte Antwort.
 * **Modelle bleiben kontrollierbar** — pro Rechner und pro Konto als Liste.
+
+
+## Claude als Werkzeugserver (MCP)
+
+Claude Desktop und Claude Code koennen einen **entfernten** MCP-Server einbinden. Das Portal ist
+so einer — unter `/mcp` (Streamable HTTP, JSON-RPC). Es wird **nichts installiert** und nichts
+heruntergeladen; gebraucht wird nur die Adresse dieser Instanz und der eigene Konto-Schluessel.
+
+**Claude Code** (Kommandozeile):
+
+```bash
+claude mcp add --transport http comesh https://<portal>/mcp \
+  --header "Authorization: Bearer gpu_..."
+```
+
+**Claude Desktop** kann in der Konnektor-Oberflaeche keine eigenen Kopfzeilen senden. Dort geht es
+ueber das Hilfspaket `mcp-remote` (Voraussetzung: Node.js) in `claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "comesh": {
+      "command": "npx",
+      "args": ["-y", "mcp-remote", "https://<portal>/mcp", "--header", "Authorization:${AUTH_HEADER}"],
+      "env": { "AUTH_HEADER": "Bearer gpu_..." }
+    }
+  }
+}
+```
+
+Das fehlende Leerzeichen nach `Authorization:` ist Absicht — `mcp-remote` stolpert unter Windows
+darueber; das Leerzeichen steckt in der Umgebungsvariable. Beide Varianten stehen fertig zum
+Kopieren im Portal unter **Agent** („Claude als MCP-Werkzeugserver"), mit der Adresse der eigenen
+Instanz.
+
+Werkzeuge: `list_models` (was das Konto nutzen darf), `ask` (Frage an ein Modell, optional mit
+`model`, `system`, `max_tokens`) und `whoami` (Konto, Rolle, Freigaben). Jeder Aufruf geht ueber
+denselben Weg wie die API — Whitelist, Guthaben, Rate-Limit und Abrechnung gelten unveraendert.
+
+### Welches Modell hinter welchem Claude-Namen steckt
+
+Claude zeigt in seiner Modellauswahl **nur** `claude-sonnet-4-5`, `claude-opus-4-1` und
+„Haiku 4.5" plus das aktuell eingestellte Modell. Die lesbaren Kennungen (`claude-custom-...`)
+erscheinen dort nie. Damit die Auswahl etwas bewirkt, laesst sich **je Name ein eigenes Modell**
+einstellen: Dashboard → **Zugang** → „Welches Modell hinter welchem Claude-Namen steckt" (nur
+Admin) oder `PUT /admin/alias-targets`. Ohne eigene Angabe zeigen alle drei auf dasselbe Modell.
+
+In der Uebersetzungstabelle (Dashboard, Karte „Zugang", und auf der Agent-Seite) steht, welche
+Kennung zu welchem Modell gehoert — abrufbar auch ueber `GET /v1/models/aliases`.
 
 ## Node-local models
 
