@@ -574,7 +574,11 @@ def get_node(node_id: int, db: Session = Depends(get_db), user=Depends(optional_
     if not online:
         fields["status"] = "offline"
 
-    if user is not None:
+    # Vollstaendig nur fuer Besitzer und Admin: Adresse, Umsatz, Agent-Selbstauskunft und
+    # Besitzer-Kennung gehen andere Konten nichts an. Sie sehen die oeffentliche Form mit den
+    # freigegebenen Modellen - also genau das, was sie auch nutzen duerfen.
+    if user is not None and (getattr(user, "id", None) == node.owner_id
+                             or getattr(user, "role", "") == "admin"):
         return NodeOut(**fields)
 
     oeffentlich = NodePublicOut(

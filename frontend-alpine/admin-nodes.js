@@ -47,10 +47,63 @@ document.addEventListener("alpine:init", () => {
     actionOk: "",
     actionError: "",
     detail: null,
+    portalBaseUrl: "",
+    portalEffective: "",
+    portalEndpoint: "",
+    ownerEmail: "",
     busyId: null,
 
     async init() {
       await this.load();
+      await this.loadPortalSettings();
+    },
+
+    /** Portal-Adresse laden: im Portal gesetzter Wert und der, der gerade wirklich gilt. */
+    async loadPortalSettings() {
+      try {
+        const d = await api("/admin/settings", { auth: true });
+        this.portalBaseUrl = d.public_base_url || "";
+        this.portalEffective = d.effective_base_url || "";
+        this.portalEndpoint = d.connect_endpoint || "";
+      } catch (e) {
+        this.portalEffective = "";
+      }
+    },
+
+    async savePortalBaseUrl() {
+      try {
+        const d = await api("/admin/settings", {
+          method: "PUT", auth: true,
+          body: { public_base_url: String(this.portalBaseUrl || "").trim() },
+        });
+        this.portalBaseUrl = d.public_base_url || "";
+        this.portalEffective = d.effective_base_url || "";
+        this.portalEndpoint = d.connect_endpoint || "";
+        toast(I18n.t("portal-adresse-gespeichert"), "ok");
+      } catch (e) {
+        toast((e && e.message) || I18n.t("fehler"), "err");
+      }
+    },
+
+    /** Besitzer aendern (nur Admin): Konto per E-Mail suchen, dann die Node umhaengen. */
+    async changeOwner(n) {
+      const email = String(this.ownerEmail || "").trim();
+      if (!email) return;
+      try {
+        const liste = await api("/admin/users?q=" + encodeURIComponent(email), { auth: true });
+        const treffer = (liste.users || []).find(
+          (u) => String(u.email || "").toLowerCase() === email.toLowerCase()
+        ) || (liste.users || [])[0];
+        if (!treffer) { toast(I18n.t("konto-nicht-gefunden") + " " + email, "err"); return; }
+        await api("/admin/nodes/" + n.id + "/owner", {
+          method: "PUT", auth: true, body: { owner_id: treffer.id },
+        });
+        this.ownerEmail = "";
+        toast(I18n.t("besitzer-geaendert"), "ok");
+        await this.load();
+      } catch (e) {
+        toast((e && e.message) || I18n.t("fehler"), "err");
+      }
     },
 
     async load() {

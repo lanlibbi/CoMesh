@@ -34,9 +34,12 @@ Every mutation writes an `admin_audit_log` row (admin, action, target, payload,
 result) so state changes can be traced later.
 """
 import json
+import os
 import logging
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional
+
+from urllib.parse import urlsplit
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Query, status
 from pydantic import BaseModel, Field
@@ -680,6 +683,120 @@ def admin_create_user(
     _admin_email = getattr(admin, "email", None) or "operator"
     log.info(f"admin {_admin_email}: create user {email} (id={result.get('user_id')}, created={result.get('created')})")
     return _build(CreateUserResponse, result)
+
+
+# ---------------------------------------------------------------------------
+# Einstellungen der Instanz (Portal-Adresse)
+# ---------------------------------------------------------------------------
+class PortalSettingsRequest(BaseModel):
+    # Leer heisst: Einstellung entfernen, dann gilt wieder COMESH_PUBLIC_BASE_URL bzw. die
+    # Adresse der Anfrage.
+    public_base_url: Optional[str] = Field(
+        None, max_length=200,
+        description="Adresse dieses Portals, wie andere Rechner sie erreichen (http/https).",
+    )
+
+
+def _pruefe_basis_url(wert: str) -> str:
+    """Nur http/https, kein Pfad, kein Leerzeichen. Gibt die bereinigte Adresse zurueck."""
+    roh = (wert or "").strip().rstrip("/")
+    if not roh:
+        return ""
+    if "://" not in roh:
+        roh = "http://" + roh
+    teile = urlsplit(roh)
+    if (teile.scheme or "").lower() not in ("http", "https"):
+        raise HTTPException(status_code=422, detail="Nur http:// oder https:// ist erlaubt.")
+    if not teile.hostname:
+        raise HTTPException(status_code=422, detail="Die Adresse braucht einen Host.")
+    if teile.path not in ("", "/") or teile.query or teile.fragment:
+        raise HTTPException(
+            status_code=422,
+            detail="Nur Schema, Host und Port - ohne Pfad, Abfrage oder Anker.",
+        )
+    return f"{teile.scheme.lower()}://{teile.netloc}".rstrip("/")
+
+
+@router.get("/settings")
+def get_settings(admin=Depends(require_admin), db: Session = Depends(get_db)):
+    """Was die Instanz ueber sich selbst sagt - und was tatsaechlich gilt.
+
+    `public_base_url` ist die gesetzte Adresse (leer = nicht gesetzt). `effective_base_url` ist
+    die, mit der Installationsbefehle gerade gebaut werden, egal woher sie stammt.
+    """
+    from main import _portal_base_url, _setting_public_base_url  # Laufzeit-Import: Zyklus
+
+    gesetzt = _setting_public_base_url(db)
+    effektiv, herkunft = _portal_base_url_for_settings(db)
+    return {
+        "public_base_url": gesetzt,
+        "effective_base_url": effektiv,
+        "source": herkunft,
+        "env_fallback": (os.environ.get("COMESH_PUBLIC_BASE_URL") or "").strip().rstrip("/"),
+        "connect_endpoint": f"{effektiv}/v1" if effektiv else "",
+    }
+
+
+def _portal_base_url_for_settings(db: Session):
+    """Wie main._portal_base_url, aber ohne Request: gesetzte Adresse, sonst Umgebung."""
+    from main import _setting_public_base_url
+
+    gesetzt = _setting_public_base_url(db)
+    if gesetzt:
+        return gesetzt, "setting"
+    env = (os.environ.get("COMESH_PUBLIC_BASE_URL") or "").strip().rstrip("/")
+    if env:
+        return env, "env"
+    return "", "nicht gesetzt"
+
+
+@router.put("/settings")
+def put_settings(
+    req: PortalSettingsRequest,
+    admin=Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    """Portal-Adresse setzen oder entfernen. Nur Admin.
+
+    Ohne diese Angabe baut das Portal Installationsbefehle aus der jeweiligen Anfrage — auf einem
+    anderen Rechner als dem Portal-Host ist das zwangslaeufig falsch (typisch: "localhost").
+    """
+    from models import SystemSetting
+
+    wert = _pruefe_basis_url(req.public_base_url or "")
+    zeile = (
+        db.query(SystemSetting)
+        .filter(SystemSetting.key == "public_base_url")
+        .first()
+    )
+    if not wert:
+        if zeile is not None:
+            db.delete(zeile)
+        ergebnis = {"public_base_url": "", "entfernt": True}
+    else:
+        if zeile is None:
+            db.add(SystemSetting(key="public_base_url", value=wert))
+        else:
+            zeile.value = wert
+        ergebnis = {"public_base_url": wert, "entfernt": False}
+
+    db.add(AdminAuditLog(
+        admin_user_id=getattr(admin, "id", 0),
+        action="settings.update",
+        target_type="system",
+        target_id="public_base_url",
+        idempotency_key=None,
+        payload=json.dumps({"public_base_url": wert}, default=str),
+        result=json.dumps(ergebnis, default=str),
+    ))
+    db.commit()
+    effektiv, herkunft = _portal_base_url_for_settings(db)
+    return {
+        "public_base_url": wert,
+        "effective_base_url": effektiv,
+        "source": herkunft,
+        "connect_endpoint": f"{effektiv}/v1" if effektiv else "",
+    }
 
 
 @router.get("/users", response_model=UserListResponse)
@@ -1570,6 +1687,48 @@ def admin_list_nodes(
         summary=summary,
         nodes=[_node_out(db, n, now, owners) for n in page],
     )
+
+
+class NodeOwnerRequest(BaseModel):
+    owner_id: int = Field(..., ge=1, description="Konto, dem die Node ab jetzt gehoert.")
+
+
+@router.put("/nodes/{node_id}/owner")
+def set_node_owner(
+    node_id: int,
+    req: NodeOwnerRequest,
+    admin=Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    """Besitzer einer Node aendern. Nur Admin.
+
+    Damit laesst sich ein Knoten auf ein anderes Konto uebertragen (Rechner wechselt die Abteilung,
+    Konto wird ersetzt) - und dieses Konto verwaltet ihn dann wie ein eigener: bearbeiten,
+    pausieren, Freigaben setzen. Bisher blieb die Node fuer immer beim Ersteller.
+    """
+    node = db.query(GpuNode).filter(GpuNode.id == node_id).first()
+    if node is None:
+        raise HTTPException(status_code=404, detail="Node not found.")
+    neuer = db.query(User).filter(User.id == req.owner_id).first()
+    if neuer is None:
+        raise HTTPException(status_code=404, detail="User not found.")
+    alt = node.owner_id
+    if alt == neuer.id:
+        return {"node_id": node.id, "owner_id": node.owner_id, "unveraendert": True}
+    node.owner_id = neuer.id
+    db.commit()
+    db.add(AdminAuditLog(
+        admin_user_id=getattr(admin, "id", 0),
+        action="node.owner",
+        target_type="node",
+        target_id=str(node.id),
+        idempotency_key=None,
+        payload=json.dumps({"owner_id_vorher": alt, "owner_id_neu": neuer.id}, default=str),
+        result=json.dumps({"node_id": node.id, "owner_id": node.owner_id}, default=str),
+    ))
+    db.commit()
+    log.info("admin: node %s owner %s -> %s", node.id, alt, neuer.id)
+    return {"node_id": node.id, "owner_id": node.owner_id, "unveraendert": False}
 
 
 @router.get("/nodes/{node_id}", response_model=AdminNodeDetail)

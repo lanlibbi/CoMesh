@@ -1,3 +1,36 @@
+## 0.6.31
+
+### Neu
+
+- **Portal-Adresse im Adminbereich setzbar.** Bisher ging das nur ueber `COMESH_PUBLIC_BASE_URL` in
+  der `.env` — im Portal gab es kein Feld. Jetzt: Adminbereich -> Geraete im Pool, Karte
+  "Portal-Adresse" (`GET/PUT /admin/settings`, Wert in `system_settings`, geht der Umgebungsvariable
+  vor). Daraus werden Installationsbefehle *und* die Verbindungsadresse gebaut.
+- **Verbindungsadresse im Dashboard.** Die Karte "Zugang" zeigt den Endpunkt, den ein Client
+  eintraegt (`.../v1`, aus `/v1/portal-info`), statt ihn zusammensetzen zu lassen.
+- **Besitzer einer Node aendern** (nur Admin): `PUT /admin/nodes/{id}/owner` haengt eine Node auf
+  ein anderes Konto um — dieses verwaltet sie dann wie eine eigene. Mit Audit-Eintrag.
+- **Node-Einstellungen nachtraeglich aenderbar:** Name, GPU, VRAM, Stundensatz, Beschreibung und
+  Verfuegbarkeit im Bearbeiten-Formular (vorher nur Adresse, Port und Modellliste).
+
+### Behoben
+
+- **https hinter einem Tunnel wurde zu http.** nginx reichte sein eigenes Schema weiter
+  (`X-Forwarded-Proto $scheme`), Cloudflare beendet TLS aber davor. Eine ueber `https://` erreichte
+  Instanz zeigte deshalb `http://…` in Installationsbefehlen und Verbindungsadresse. Jetzt wird das
+  vom Aufrufer gesendete Schema durchgereicht (`map $http_x_forwarded_proto`).
+- **Fremde Konten sahen zu viel von einer Node.** `GET /nodes/{id}` lieferte jedem angemeldeten
+  Konto Adresse, Besitzer-Kennung, Umsatz und Agent-Selbstauskunft. Jetzt bekommen Besitzer und
+  Admin die volle Form, alle anderen die oeffentliche mit den freigegebenen Modellen.
+- **Doppelter Installationsweg:** `nodes.html#beitragen` verweist jetzt auf die vollstaendige Seite
+  `agent.html`, statt die Befehle ein zweites Mal (und abweichend) zu zeigen.
+
+### Tests
+
+`tests/test_portal_settings_owner.py` (9 Faelle): Adresse setzen/entfernen/validieren, nur Admin,
+Besitzerwechsel samt Sichtbarkeit in `/nodes/my`, fremdes Konto sieht keine internen Felder.
+i18n-Gate PASS (842 Schluessel x 4 Sprachen).
+
 ## 0.6.30
 
 ### Neu

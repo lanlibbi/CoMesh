@@ -582,10 +582,10 @@ window.GP_I18N = {
    "fr": "État"
   },
   "zeitweise": {
-   "en": "part-time",
+   "en": "Part time",
    "de": "zeitweise",
-   "es": "a tiempo parcial",
-   "fr": "à temps partiel"
+   "es": "Por temporadas",
+   "fr": "Par intermittence"
   },
   "ausstehend": {
    "en": "Pending",
@@ -3149,6 +3149,12 @@ window.GP_I18N = {
    "es": "Uso",
    "fr": "Utilisation"
   },
+  "stundensatz": {
+   "en": "Hourly rate",
+   "de": "Stundensatz",
+   "es": "Tarifa por hora",
+   "fr": "Tarif horaire"
+  },
   "hardware": {
    "en": "Hardware",
    "de": "Hardware",
@@ -4067,6 +4073,108 @@ window.GP_I18N = {
    "es": "Cuota",
    "fr": "Quota"
   },
+  "portal-adresse": {
+   "en": "Portal address",
+   "de": "Portal-Adresse",
+   "es": "Dirección del portal",
+   "fr": "Adresse du portail"
+  },
+  "portal-adresse-hilfe": {
+   "en": "The address other machines use to reach this portal, for example https://comesh.example.com. Install commands and the client endpoint are built from it. Empty means: derived from the current request, which is only correct on the portal host itself.",
+   "de": "Die Adresse, unter der andere Rechner dieses Portal erreichen, zum Beispiel https://comesh.example.com. Installationsbefehle und die Verbindungsadresse werden daraus gebaut. Leer heißt: aus der jeweiligen Anfrage abgeleitet — das stimmt nur auf dem Portal-Host selbst.",
+   "es": "La dirección con la que otros equipos alcanzan este portal, por ejemplo https://comesh.example.com. Los comandos de instalación y la dirección de conexión se construyen a partir de ella. Vacío significa: derivada de la petición actual, lo que solo es correcto en el propio host del portal.",
+   "fr": "L'adresse avec laquelle d'autres machines atteignent ce portail, par exemple https://comesh.example.com. Les commandes d'installation et l'adresse de connexion en sont dérivées. Vide signifie : dérivée de la requête en cours, ce qui n'est correct que sur l'hôte du portail."
+  },
+  "portal-adresse-gespeichert": {
+   "en": "Portal address saved.",
+   "de": "Portal-Adresse gespeichert.",
+   "es": "Dirección del portal guardada.",
+   "fr": "Adresse du portail enregistrée."
+  },
+  "verbindungsendpunkt": {
+   "en": "Client endpoint",
+   "de": "Verbindungsadresse",
+   "es": "Dirección de conexión",
+   "fr": "Adresse de connexion"
+  },
+  "verbindungsendpunkt-hilfe": {
+   "en": "Enter this address as the base URL in an OpenAI-compatible client.",
+   "de": "Diese Adresse in einem OpenAI-kompatiblen Client als Basis-URL eintragen.",
+   "es": "Introduce esta dirección como URL base en un cliente compatible con OpenAI.",
+   "fr": "Saisissez cette adresse comme URL de base dans un client compatible OpenAI."
+  },
+  "besitzer-aendern": {
+   "en": "Change owner",
+   "de": "Besitzer ändern",
+   "es": "Cambiar propietario",
+   "fr": "Changer de propriétaire"
+  },
+  "besitzer-email": {
+   "en": "New owner (email)",
+   "de": "Neuer Besitzer (E-Mail)",
+   "es": "Nuevo propietario (correo)",
+   "fr": "Nouveau propriétaire (e-mail)"
+  },
+  "besitzer-geaendert": {
+   "en": "Owner changed.",
+   "de": "Besitzer geändert.",
+   "es": "Propietario cambiado.",
+   "fr": "Propriétaire modifié."
+  },
+  "installationsbefehle-und-verbindungsadresse": {
+   "en": "Install commands and client endpoint",
+   "de": "Installationsbefehle und Verbindungsadresse",
+   "es": "Comandos de instalación y dirección de conexión",
+   "fr": "Commandes d'installation et adresse de connexion"
+  },
+  "wirksam": {
+   "en": "In effect:",
+   "de": "Wirksam:",
+   "es": "En vigor:",
+   "fr": "En vigueur :"
+  },
+  "node.contribute.pointer": {
+   "en": "The complete install commands are collected on <a class=\"link\" href=\"agent.html\">Set up the node agent</a> — for Windows, macOS and Linux, including the key, autostart and uninstall. Only what you need for registration is here.",
+   "de": "Die vollständigen Installationsbefehle stehen gesammelt auf <a class=\"link\" href=\"agent.html\">Node-Agent einrichten</a> — für Windows, macOS und Linux, mit Schlüssel, Autostart und Deinstallation. Hier steht nur, was du zur Registrierung brauchst.",
+   "es": "Los comandos de instalación completos están reunidos en <a class=\"link\" href=\"agent.html\">Configurar el node agent</a>: para Windows, macOS y Linux, con clave, arranque automático y desinstalación. Aquí solo está lo necesario para el registro.",
+   "fr": "Les commandes d'installation complètes sont réunies sur <a class=\"link\" href=\"agent.html\">Configurer le node agent</a> — pour Windows, macOS et Linux, avec la clé, le démarrage automatique et la désinstallation. Ici, seul ce qui est nécessaire à l'enregistrement."
+  },
+  "einstellungen-dieser-node": {
+   "en": "Settings of this node",
+   "de": "Einstellungen dieser Node",
+   "es": "Ajustes de este nodo",
+   "fr": "Réglages de ce node"
+  },
+  "verfuegbarkeit": {
+   "en": "Availability",
+   "de": "Verfügbarkeit",
+   "es": "Disponibilidad",
+   "fr": "Disponibilité"
+  },
+  "dauerbetrieb": {
+   "en": "Always on",
+   "de": "Dauerbetrieb",
+   "es": "Funcionamiento continuo",
+   "fr": "En continu"
+  },
+  "beschreibung": {
+   "en": "Description",
+   "de": "Beschreibung",
+   "es": "Descripción",
+   "fr": "Description"
+  },
+  "fehler": {
+   "en": "Error",
+   "de": "Fehler",
+   "es": "Error",
+   "fr": "Erreur"
+  },
+  "konto-nicht-gefunden": {
+   "en": "Account not found:",
+   "de": "Konto nicht gefunden:",
+   "es": "Cuenta no encontrada:",
+   "fr": "Compte introuvable :"
+  },
   "abbrechen": {
    "en": "Cancel",
    "de": "Abbrechen",
@@ -4096,12 +4204,6 @@ window.GP_I18N = {
    "de": "Aufschlüsselung",
    "es": "Desglose",
    "fr": "Détail"
-  },
-  "beschreibung": {
-   "en": "Description",
-   "de": "Beschreibung",
-   "es": "Descripción",
-   "fr": "Description"
   },
   "bestand": {
    "en": "Inventory",

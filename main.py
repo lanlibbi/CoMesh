@@ -924,6 +924,45 @@ def delete_my_key(
     }
 
 
+SETTING_PUBLIC_BASE_URL = "public_base_url"
+
+
+def _setting_public_base_url(db=None) -> str:
+    """Im Portal gesetzte Adresse (Tabelle system_settings), sonst "".
+
+    Bewusst in der Datenbank und nicht nur in der Umgebung: die Adresse gehoert zu den Angaben,
+    die ein Betreiber im Betrieb aendert (Umzug, Tunnel, neuer DNS-Name), und niemand soll dafuer
+    an die .env und den Container.
+    """
+    eigene = db is not None
+    if not eigene:
+        try:
+            from database import SessionLocal
+
+            db = SessionLocal()
+        except Exception:
+            return ""
+    try:
+        from models import SystemSetting
+
+        zeile = (
+            db.query(SystemSetting)
+            .filter(SystemSetting.key == SETTING_PUBLIC_BASE_URL)
+            .first()
+        )
+        if zeile is None:
+            return ""
+        return (zeile.value or "").strip().rstrip("/")
+    except Exception:
+        return ""
+    finally:
+        if not eigene and db is not None:
+            try:
+                db.close()
+            except Exception:
+                pass
+
+
 def _portal_base_url(request: Request) -> tuple:
     """(Basis-URL, Herkunft) — die Adresse, unter der dieses Portal erreichbar ist.
 
@@ -937,6 +976,9 @@ def _portal_base_url(request: Request) -> tuple:
     Ein fest eingebautes `localhost` gibt es nicht mehr: ein Installationsbefehl, der auf dem
     Portal-Host entsteht und auf einem anderen Rechner laeuft, ist damit zwangslaeufig falsch.
     """
+    aus_db = _setting_public_base_url()
+    if aus_db:
+        return aus_db, "setting"
     fest = (os.environ.get("COMESH_PUBLIC_BASE_URL") or "").strip().rstrip("/")
     if fest:
         return fest, "setting"
@@ -957,6 +999,9 @@ def portal_info(request: Request):
     basis, herkunft = _portal_base_url(request)
     return {
         "base_url": basis,
+        # Der Endpunkt, den ein Client eintraegt (OpenAI-kompatibel). Genau das Feld, das die
+        # Oberflaeche im Dashboard anzeigen soll, damit man es nicht zusammensetzen muss.
+        "connect_endpoint": f"{basis}/v1" if basis else "",
         "downloads_url": f"{basis}/downloads" if basis else "",
         "source": herkunft,
         # Ohne diese Angabe baut die Oberflaeche den Befehl aus der Anfrage. Das ist richtig fuer

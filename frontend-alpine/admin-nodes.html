@@ -27,6 +27,27 @@
   <div x-html="navHTML('admin-nodes', $store.lang?.code)"></div>
 
   <main class="shell">
+    <div class="card mb-4">
+      <div class="panel-head">
+        <div>
+          <div class="eyebrow" data-i18n="portal-adresse">Portal-Adresse</div>
+          <h3 data-i18n="installationsbefehle-und-verbindungsadresse">Installationsbefehle und Verbindungsadresse</h3>
+          <p class="hint" data-i18n="portal-adresse-hilfe">Die Adresse, unter der andere Rechner dieses Portal erreichen, zum Beispiel https://comesh.example.com. Installationsbefehle und die Verbindungsadresse werden daraus gebaut. Leer heißt: aus der jeweiligen Anfrage abgeleitet — das stimmt nur auf dem Portal-Host selbst.</p>
+        </div>
+      </div>
+      <div class="row" style="gap:8px;align-items:flex-end;flex-wrap:wrap">
+        <div class="grow" style="min-width:280px">
+          <label class="label" for="portal-base-url" data-i18n="portal-adresse">Portal-Adresse</label>
+          <input class="input mono" id="portal-base-url" type="text" x-model="portalBaseUrl"
+                 placeholder="https://comesh.example.com" />
+        </div>
+        <button class="btn-primary btn-sm" @click="savePortalBaseUrl()" data-i18n="speichern">Speichern</button>
+      </div>
+      <p class="hint" x-show="portalEffective">
+        <span data-i18n="wirksam">Wirksam:</span> <span class="mono" x-text="portalEffective"></span><span x-show="portalEndpoint"> · <span class="mono" x-text="portalEndpoint"></span></span>
+      </p>
+    </div>
+
     <div class="page-head">
       <div class="eyebrow">Admin</div>
       <h1 data-i18n="admin_nodes.title">Geräte im Pool</h1>
@@ -146,7 +167,17 @@
           <p class="t-sm text-dim" x-text="detail ? (detail.description || I18n.t('admin_nodes.no_description')) : ''"></p>
         </div>
         <button class="btn-ghost btn-sm" @click="detail = null" data-i18n="schliessen">Schließen</button>
-      </div>
+      
+        <div class="row" style="gap:8px;align-items:flex-end;flex-wrap:wrap">
+          <div class="grow" style="min-width:240px">
+            <label class="label" for="node-owner-email" data-i18n="besitzer-email">Neuer Besitzer (E-Mail)</label>
+            <input class="input" id="node-owner-email" type="email" x-model="ownerEmail"
+                   placeholder="kollege@firma.de" />
+          </div>
+          <button class="btn-ghost btn-sm" @click="changeOwner(detail)"
+                  data-i18n="besitzer-aendern">Besitzer ändern</button>
+        </div>
+</div>
       <div class="g3" x-show="detail">
         <div>
           <div class="t-xs text-mute" data-i18n="admin_nodes.agent_address">Adresse, unter der das Portal den Agenten erreicht</div>

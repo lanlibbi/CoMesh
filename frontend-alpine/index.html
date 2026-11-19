@@ -192,6 +192,11 @@
           <div class="eyebrow" data-i18n="zugang">Zugang</div>
           <h3>API-Key</h3>
           <p data-i18n-html="fuer-code-class-inline-v1-chat-completions">Für <code class="inline">/v1/chat/completions</code> und <code class="inline">/v1/models</code>.</p>
+          <!-- Die Adresse, die ein Client eintraegt: aus /v1/portal-info, also aus der im
+               Adminbereich gesetzten Portal-Adresse statt aus dem Host dieser Seite. -->
+          <p class="label mt-2" data-i18n="verbindungsendpunkt">Verbindungsadresse</p>
+          <p class="mono" id="portal-endpoint" style="word-break:break-all">…</p>
+          <p class="hint" data-i18n="verbindungsendpunkt-hilfe">Diese Adresse in einem OpenAI-kompatiblen Client als Basis-URL eintragen.</p>
         </div>
         <div class="row">
           <button x-show="isApiKey" class="btn-ghost btn-sm" @click="revealKey = !revealKey"
@@ -422,5 +427,19 @@
     }
   </script>
 <script src="brand-mesh.js"></script>
+  <script>
+    /* Zeigt die Adresse, unter der Clients dieses Portal erreichen. Quelle ist /v1/portal-info:
+       dort steht die im Adminbereich gesetzte Adresse; ohne sie wird sie aus der Anfrage
+       abgeleitet, was auf einem fremden Rechner falsch waere. */
+    (async () => {
+      const ziel = document.getElementById("portal-endpoint");
+      if (!ziel) return;
+      try {
+        const r = await fetch("/api/v1/portal-info", { headers: { Accept: "application/json" } });
+        const d = await r.json();
+        ziel.textContent = d.connect_endpoint || d.base_url || "—";
+      } catch (e) { ziel.textContent = "—"; }
+    })();
+  </script>
 </body>
 </html>

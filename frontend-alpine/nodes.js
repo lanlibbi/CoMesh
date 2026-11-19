@@ -54,6 +54,14 @@ document.addEventListener("alpine:init", () => {
   // falsch eingetragenen Port ist das die einzige Korrektur, die man braucht.
   editUrl: "",
   editPort: 11435,
+  // Die uebrigen Angaben der Node: nach einem Umzug, einem Kartentausch oder einer falsch
+  // eingetragenen Zahl war bisher nur Adresse, Port und die Modellliste korrigierbar.
+  editName: "",
+  editGpu: "",
+  editVram: 1,
+  editRate: 0,
+  editDescription: "",
+  editAvailability: "always",
   selectedIds: [],          // Node-IDs der Auswahl (Bulk-Aktionen)
   bulkBusy: false,
   bulkProgress: "",
@@ -445,6 +453,12 @@ document.addEventListener("alpine:init", () => {
 
     startEdit(n) {
       this.editingId = n.id;
+      this.editName = n.name || "";
+      this.editGpu = n.gpu_type || "";
+      this.editVram = Number(n.vram_gb) || 1;
+      this.editRate = Number(n.hourly_rate) || 0;
+      this.editDescription = n.description || "";
+      this.editAvailability = n.availability || "always";
       this.editAllowed = Array.isArray(n.allowed_models) ? [...n.allowed_models] : [];
       this.editModelsText = this.editAllowed.join(", ");
       this.editUrl = n.node_url || "";
@@ -547,6 +561,25 @@ document.addEventListener("alpine:init", () => {
           : { clear_allowed_models: true };
         // Adresse und Port nur mitschicken, wenn sie sich geaendert haben. Ein leeres Feld
         // heisst "nichts anfassen": der Agent meldet seine Adresse beim Heartbeat selbst.
+        // Die uebrigen Angaben nur mitschicken, wenn sie sich geaendert haben.
+        const name = String(this.editName || "").trim();
+        if (name && name !== String(n.name || "")) body.name = name;
+        const gpu = String(this.editGpu || "").trim();
+        if (gpu && gpu !== String(n.gpu_type || "")) body.gpu_type = gpu;
+        const vram = Number(this.editVram);
+        if (Number.isFinite(vram) && vram >= 1 && vram <= 1024 && vram !== Number(n.vram_gb)) {
+          body.vram_gb = vram;
+        }
+        const rate = Number(this.editRate);
+        if (Number.isFinite(rate) && rate >= 0 && rate <= 10 && rate !== Number(n.hourly_rate)) {
+          body.hourly_rate = rate;
+        }
+        const beschreibung = String(this.editDescription || "").trim();
+        if (beschreibung !== String(n.description || "")) body.description = beschreibung;
+        const verfuegbarkeit = String(this.editAvailability || "");
+        if (verfuegbarkeit && verfuegbarkeit !== String(n.availability || "")) {
+          body.availability = verfuegbarkeit;
+        }
         const url = String(this.editUrl || "").trim();
         if (url && url !== String(n.node_url || "").trim()) body.node_url = url;
         const port = Number(this.editPort);
