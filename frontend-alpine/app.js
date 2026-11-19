@@ -515,3 +515,34 @@ async function apiChatCompletion({ model, messages, stream = false, onChunk = nu
   }
 }
 window.apiChatCompletion = apiChatCompletion;
+
+/**
+ * Fuellt die Uebersetzungstabelle (Kennung -> Modell) in ein <tbody>.
+ *
+ * Gebraucht wird sie an zwei Stellen (Dashboard "Zugang" und die Agent-Seite); die Logik liegt
+ * deshalb hier statt zweimal im Seiten-Skript. Ohne Anmeldung oder ohne Kennungen bleibt die
+ * Tabelle verborgen - sie ist eine Zugabe, kein Pflichtinhalt.
+ */
+async function ladeAliasTabelle(koerperId, containerId) {
+  const koerper = document.getElementById(koerperId);
+  const container = document.getElementById(containerId);
+  if (!koerper || !container) return;
+  try {
+    const roh = LS.get("api_key");
+    if (!roh) return;
+    const r = await fetch(API_BASE + "/v1/models/aliases", {
+      headers: { Authorization: "Bearer " + roh, Accept: "application/json" },
+    });
+    if (!r.ok) return;
+    const d = await r.json();
+    const zeilen = (d.aliase || []).filter((x) => x.art === "modell");
+    if (!zeilen.length) return;
+    koerper.innerHTML = zeilen
+      .map((x) => `<tr><td class="mono">${x.alias}</td><td class="mono">${x.modell}</td></tr>`)
+      .join("");
+    container.hidden = false;
+  } catch (e) {
+    /* still: die Tabelle ist eine Zugabe */
+  }
+}
+window.ladeAliasTabelle = ladeAliasTabelle;

@@ -33,6 +33,14 @@
     <div class="page-head">
       <div class="eyebrow">Provider</div>
       <h1 data-i18n="node-agent-einrichten">Node-Agent einrichten</h1>
+      <details id="agent-alias-tabelle" class="mt-2" style="border:1px solid var(--line);border-radius:10px;padding:10px 12px" hidden>
+        <summary class="label" style="cursor:pointer" data-i18n="uebersetzungstabelle">Übersetzungstabelle</summary>
+        <p class="hint" data-i18n="uebersetzungstabelle-hilfe">Welche Kennung in einem Claude-Client zu welchem Modell gehört.</p>
+        <table class="tbl" style="width:100%">
+          <thead><tr><th data-i18n="kennung">Kennung</th><th data-i18n="modell-spalte">Modell</th></tr></thead>
+          <tbody id="agent-alias-koerper"></tbody>
+        </table>
+      </details>
       <p class="hint" data-i18n-html="agent.installer_hint">Diese Seite beschreibt den Betrieb als Container. Wer den Agenten einfach auf einem Windows-, macOS- oder Linux-Rechner installieren will, nimmt den Installer unter <a class="link" href="nodes.html#beitragen">Meine Nodes &rarr; Beitragen</a>.</p>
       <p class="lede" data-i18n="vier-schritte-node-registrieren-image-bauen">
         Vier Schritte: Node registrieren, Image bauen, Container starten, im Pool
@@ -110,5 +118,11 @@ docker build -t gpu-pool-node-agent .</code></pre>
 <script src="app.js"></script>
   <script src="agent.js"></script>
 <script src="brand-mesh.js"></script>
+  <script>
+    /* Uebersetzungstabelle: zeigt, welche Claude-Kennung zu welchem Modell gehoert. */
+    document.addEventListener("DOMContentLoaded", () => {
+      if (window.ladeAliasTabelle) ladeAliasTabelle("agent-alias-koerper", "agent-alias-tabelle");
+    });
+  </script>
 </body>
 </html>
