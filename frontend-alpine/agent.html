@@ -33,6 +33,24 @@
     <div class="page-head">
       <div class="eyebrow">Provider</div>
       <h1 data-i18n="node-agent-einrichten">Node-Agent einrichten</h1>
+      <div class="card mt-3">
+        <div class="panel-head">
+          <div>
+            <div class="eyebrow">MCP</div>
+            <h3 data-i18n="mcp-titel">Claude als MCP-Werkzeugserver</h3>
+            <p class="hint" data-i18n="mcp-hilfe">Kein Download, keine lokale Installation: Claude verbindet sich mit dieser Portal-Adresse und nutzt die Werkzeuge list_models, ask und whoami. Anmeldung mit deinem Konto-Schlüssel.</p>
+          </div>
+        </div>
+        <!-- Der Befehl wird aus der Portal-Adresse gebaut (/v1/portal-info), damit er auf jeder
+             Instanz stimmt - dieselbe Mechanik wie bei den Installationsbefehlen. -->
+        <pre id="mcp-befehl" class="mono" style="white-space:pre-wrap;word-break:break-all">…</pre>
+        <button class="btn-ghost btn-sm" id="mcp-kopieren" data-i18n="mcp-kopieren">Kopieren</button>
+        <p class="hint" id="mcp-hinweis" style="display:none">
+          Claude Desktop: Einstellungen → Konnektoren → eigenen Konnektor hinzufügen, URL wie oben
+          (ohne den Befehl), denselben Schlüssel als Kopfzeile <code class="inline">Authorization</code>.
+        </p>
+      </div>
+
       <details id="agent-alias-tabelle" class="mt-2" style="border:1px solid var(--line);border-radius:10px;padding:10px 12px" hidden>
         <summary class="label" style="cursor:pointer" data-i18n="uebersetzungstabelle">Übersetzungstabelle</summary>
         <p class="hint" data-i18n="uebersetzungstabelle-hilfe">Welche Kennung in einem Claude-Client zu welchem Modell gehört.</p>
@@ -123,6 +141,28 @@ docker build -t gpu-pool-node-agent .</code></pre>
     document.addEventListener("DOMContentLoaded", () => {
       if (window.ladeAliasTabelle) ladeAliasTabelle("agent-alias-koerper", "agent-alias-tabelle");
     });
+  </script>
+  <script>
+    /* MCP-Befehl: Adresse kommt aus /api/v1/portal-info, damit sie zur jeweiligen Instanz passt. */
+    (async () => {
+      const ziel = document.getElementById("mcp-befehl");
+      if (!ziel) return;
+      try {
+        const r = await fetch("/api/v1/portal-info", { headers: { Accept: "application/json" } });
+        const d = await r.json();
+        const basis = (d.base_url || "").replace(/\/$/, "");
+        if (!basis) return;
+        ziel.textContent =
+          "claude mcp add --transport http comesh " + basis + "/mcp \\\n" +
+          '  --header "Authorization: Bearer <DEIN-KONTO-SCHLUESSEL>"';
+        document.getElementById("mcp-hinweis").style.display = "";
+        const knopf = document.getElementById("mcp-kopieren");
+        knopf.addEventListener("click", async () => {
+          try { await navigator.clipboard.writeText(ziel.textContent); knopf.textContent = "✓"; }
+          catch (e) { /* Clipboard gesperrt: Text steht ja sichtbar da */ }
+        });
+      } catch (e) { /* still */ }
+    })();
   </script>
 </body>
 </html>

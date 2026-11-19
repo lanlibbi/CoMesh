@@ -293,4 +293,20 @@ KEYS = {
     "modell-spalte": {
         "en": "Model", "de": "Modell", "es": "Modelo", "fr": "Modèle",
     },
+
+    "mcp-titel": {
+        "en": "Claude as MCP tool server",
+        "de": "Claude als MCP-Werkzeugserver",
+        "es": "Claude como servidor de herramientas MCP",
+        "fr": "Claude comme serveur d'outils MCP",
+    },
+    "mcp-hilfe": {
+        "en": "No download, no local installation: Claude connects to this portal URL and uses the tools list_models, ask and whoami. Sign in with your account key.",
+        "de": "Kein Download, keine lokale Installation: Claude verbindet sich mit dieser Portal-Adresse und nutzt die Werkzeuge list_models, ask und whoami. Anmeldung mit deinem Konto-Schlüssel.",
+        "es": "Sin descarga ni instalación local: Claude se conecta a esta dirección del portal y usa las herramientas list_models, ask y whoami. Inicia sesión con la clave de tu cuenta.",
+        "fr": "Aucun téléchargement, aucune installation locale : Claude se connecte à cette adresse du portail et utilise les outils list_models, ask et whoami. Connexion avec la clé de votre compte.",
+    },
+    "mcp-kopieren": {
+        "en": "Copy", "de": "Kopieren", "es": "Copiar", "fr": "Copier",
+    },
 }

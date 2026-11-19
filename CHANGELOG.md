@@ -1,3 +1,19 @@
+## 0.6.45
+
+### Neu
+
+- **Der MCP-Befehl steht im Portal.** Auf der Seite „Node-Agent einrichten" gibt es jetzt eine
+  Karte „Claude als MCP-Werkzeugserver" mit dem fertigen Befehl; die Adresse wird aus
+  `/v1/portal-info` gebaut, stimmt also auf jeder Instanz — dieselbe Mechanik wie bei den
+  Installationsbefehlen. Kopieren-Knopf daneben, dazu der Weg fuer Claude Desktop (Konnektoren).
+
+### Behoben
+
+- **`ask` im MCP-Endpunkt scheiterte.** `chat_completions` liefert kein Objekt mit `.body`, sondern
+  ein pydantic-Modell; der Aufruf brach mit `'ChatCompletionResponse' object has no attribute`
+  ab. Jetzt wird beides verstanden — nachgeprueft: `ask` antwortet „ok".
+- `serverInfo.version` meldet die Portal-Version statt der Agent-Version.
+
 ## 0.6.44
 
 ### Neu

@@ -144,7 +144,11 @@ async def _werkzeug_ausfuehren(name: str, argumente: Dict[str, Any], user, db, r
         except Exception as e:  # noqa: BLE001
             return _fehler(f"Fehler beim Aufruf: {e}")
 
-        roh = ergebnis.body if hasattr(ergebnis, "body") else ergebnis
+        # chat_completions liefert je nach Weg ein pydantic-Modell oder ein Response-Objekt.
+        if hasattr(ergebnis, "model_dump"):
+            roh = ergebnis.model_dump()
+        else:
+            roh = ergebnis.body if hasattr(ergebnis, "body") else ergebnis
         if isinstance(roh, (bytes, bytearray)):
             roh = json.loads(roh.decode("utf-8"))
         elif isinstance(roh, str):
@@ -281,7 +285,8 @@ def _version() -> str:
     try:
         import pathlib
 
-        for kandidat in ("AGENT_VERSION", "VERSION"):
+        # Portal-Version zuerst: der MCP-Server laeuft im Portal, nicht im Agenten.
+        for kandidat in ("VERSION", "AGENT_VERSION"):
             p = pathlib.Path(__file__).with_name(kandidat)
             if p.exists():
                 return p.read_text(encoding="utf-8").strip()
