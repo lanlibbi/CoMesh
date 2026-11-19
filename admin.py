@@ -786,8 +786,6 @@ def put_alias_targets(
     from anthropic_api import ALIAS_SETTINGS
     from models import SystemSetting
 
-    from main import _audit
-
     eingaben = {
         "claude-sonnet-4-5": (req.sonnet or "").strip(),
         "claude-opus-4-1": (req.opus or "").strip(),
@@ -804,11 +802,16 @@ def put_alias_targets(
             zeile.value = modell
         else:
             db.add(SystemSetting(key=schluessel, value=modell))
+    db.add(AdminAuditLog(
+        admin_user_id=getattr(admin, "id", 0),
+        action="settings.update",
+        target_type="system",
+        target_id="alias_targets",
+        idempotency_key=None,
+        payload=json.dumps({"alias_targets": eingaben}, default=str),
+        result=json.dumps(eingaben, default=str),
+    ))
     db.commit()
-    try:
-        _audit(db, admin, "alias_targets", {"gesetzt": eingaben})
-    except Exception:
-        pass
     return {"aliases": eingaben}
 
 
