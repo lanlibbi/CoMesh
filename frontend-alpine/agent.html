@@ -36,7 +36,7 @@
       <div class="card mt-3">
         <div class="panel-head">
           <div>
-            <div class="eyebrow">MCP</div>
+            <div class="eyebrow" data-i18n="mcp-eyebrow">MCP</div>
             <h3 data-i18n="mcp-titel">Claude als MCP-Werkzeugserver</h3>
             <p class="hint" data-i18n="mcp-hilfe">Kein Download, keine lokale Installation: Claude verbindet sich mit dieser Portal-Adresse und nutzt die Werkzeuge list_models, ask und whoami. Anmeldung mit deinem Konto-Schlüssel.</p>
           </div>
@@ -45,10 +45,7 @@
              Instanz stimmt - dieselbe Mechanik wie bei den Installationsbefehlen. -->
         <pre id="mcp-befehl" class="mono" style="white-space:pre-wrap;word-break:break-all">…</pre>
         <button class="btn-ghost btn-sm" id="mcp-kopieren" data-i18n="mcp-kopieren">Kopieren</button>
-        <p class="hint" id="mcp-hinweis" style="display:none">
-          Claude Desktop: Einstellungen → Konnektoren → eigenen Konnektor hinzufügen, URL wie oben
-          (ohne den Befehl), denselben Schlüssel als Kopfzeile <code class="inline">Authorization</code>.
-        </p>
+        <p class="hint" id="mcp-hinweis" style="display:none" data-i18n="mcp-desktop-hinweis"></p></p>
       </div>
 
       <details id="agent-alias-tabelle" class="mt-2" style="border:1px solid var(--line);border-radius:10px;padding:10px 12px" hidden>

@@ -309,4 +309,12 @@ KEYS = {
     "mcp-kopieren": {
         "en": "Copy", "de": "Kopieren", "es": "Copiar", "fr": "Copier",
     },
+
+    "mcp-eyebrow": {"en": "MCP", "de": "MCP", "es": "MCP", "fr": "MCP"},
+    "mcp-desktop-hinweis": {
+        "en": "Claude Desktop: Settings -> Connectors -> add a custom connector, same URL (without the command) and the same key as the Authorization header.",
+        "de": "Claude Desktop: Einstellungen -> Konnektoren -> eigenen Konnektor hinzufuegen, dieselbe Adresse (ohne den Befehl) und denselben Schluessel als Kopfzeile Authorization.",
+        "es": "Claude Desktop: Ajustes -> Conectores -> anadir un conector propio, la misma direccion (sin el comando) y la misma clave como cabecera Authorization.",
+        "fr": "Claude Desktop : Reglages -> Connecteurs -> ajouter un connecteur personnalise, la meme adresse (sans la commande) et la meme cle en en-tete Authorization.",
+    },
 }
