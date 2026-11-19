@@ -814,9 +814,28 @@ async def list_models(request: Request, user: User = Depends(anthropic_api.get_c
     # sonst das erste verfuegbare). Die Abbildung passiert in anthropic_api.alias_ziel().
     import anthropic_api as _ant
 
+    # Fuer JEDES Modell eine Claude-Kennung: damit ist ein neu installiertes Modell sofort
+    # auswaehlbar, ohne dass hier etwas nachgetragen werden muss. Der echte Name steht als
+    # display_name daneben.
+    vorhanden_ids = {e["id"] for e in eintraege}
+    for e in list(eintraege):
+        kennung = _ant.claude_kennung(e["id"])
+        if kennung and kennung not in vorhanden_ids:
+            eintraege.append({
+                "id": kennung,
+                "object": "model",
+                "created": e.get("created", 0),
+                "owned_by": "comesh",
+                "display_name": e["id"],
+                "created_at": e.get("created_at", "1970-01-01T00:00:00Z"),
+                "type": "model",
+                "comesh_target": e["id"],
+            })
+            vorhanden_ids.add(kennung)
+
     ziel = _ant.alias_ziel([m.get("name") or m.get("model") for m in modelle], DEFAULT_MODEL)
     if ziel:
-        vorhanden = {e["id"] for e in eintraege}
+        vorhanden = vorhanden_ids
         for alias in _ant.CLAUDE_ALIASE:
             if alias in vorhanden:
                 continue

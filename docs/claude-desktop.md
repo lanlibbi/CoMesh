@@ -148,3 +148,19 @@ Deshalb bietet CoMesh drei Aliase neben den echten Modellen an (`claude-sonnet-4
 `claude-opus-4-1`, `claude-haiku-4-5`). Sie zeigen auf `ANTHROPIC_ALIAS_TARGET`, sonst auf
 `DEFAULT_MODEL`, sonst auf das erste verfuegbare Modell; `POST /v1/messages` loest den Namen vor
 dem Routing auf. Basisadresse fuer Claude: die Portal-Adresse **ohne** `/v1`.
+
+### One entry per model (since 0.6.38)
+
+Next to the three fixed aliases, **every** model gets its own Claude-compatible identifier:
+`claude-custom-<base64url(model name)>`. The encoding is reversible, so a request with that id is
+mapped back to the exact model — no table, no catalogue lookup, and a model installed later works
+immediately without touching any configuration. Each entry carries the real name as `display_name`
+and `comesh_target`, so the picker shows what actually answers.
+
+### Ein Eintrag je Modell (ab 0.6.38)
+
+Neben den drei festen Aliasen bekommt **jedes** Modell eine eigene Claude-taugliche Kennung
+`claude-custom-<base64url(Modellname)>`. Die Kodierung ist umkehrbar, ein Aufruf mit dieser Kennung
+landet also exakt beim richtigen Modell — ohne Tabelle und ohne Katalogabruf. Ein spaeter
+installiertes Modell funktioniert sofort, ohne dass etwas nachgetragen wird. Der echte Name steht
+als `display_name` und `comesh_target` daneben.

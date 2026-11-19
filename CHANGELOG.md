@@ -1,3 +1,21 @@
+## 0.6.38
+
+### Neu
+
+- **Jedes Modell bekommt eine Claude-taugliche Kennung.** Bisher gab es drei feste Aliase, alle auf
+  ein Zielmodell — wer ein anderes lokales Modell nutzen wollte, musste `ANTHROPIC_ALIAS_TARGET`
+  umstellen. Jetzt fuehrt `/v1/models` zusaetzlich zu jedem echten Modell einen Eintrag
+  `claude-custom-<base64url(Modellname)>`. Die Kodierung ist umkehrbar: `POST /v1/messages` loest
+  die Kennung exakt auf das Modell zurueck — ohne Tabelle, ohne Katalogabruf. Ein **spaeter
+  installiertes Modell ist damit sofort auswaehlbar**, ohne Konfiguration. Der echte Name steht als
+  `display_name` und `comesh_target` daneben, damit im Client lesbar bleibt, was antwortet.
+
+  Die drei festen Aliase (`claude-sonnet-4-5`, `claude-opus-4-1`, `claude-haiku-4-5`) bleiben
+  unveraendert und zeigen weiter auf `ANTHROPIC_ALIAS_TARGET` / `DEFAULT_MODEL`.
+
+  Nachgeprueft auf der Referenz: 23 Eintraege (10 Modelle + 10 Kennungen + 3 Aliase),
+  `POST /v1/messages` mit einer Kennung → 200, Antwortmodell `qwen2.5-coder:7b`.
+
 ## 0.6.37
 
 ### Behoben

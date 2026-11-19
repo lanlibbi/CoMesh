@@ -67,3 +67,41 @@ def test_alias_wird_auf_echtes_modell_abgebildet(monkeypatch):
     assert anthropic_api.modell_aufloesen("qwen3-vl:8b", "qwen2.5-coder:7b") == "qwen3-vl:8b"
     # Auch ein fremder "claude"-Name, der kein Alias ist, bleibt stehen.
     assert anthropic_api.modell_aufloesen("claude-irgendwas", "x") == "claude-irgendwas"
+
+# --------------------------------------------------------------------------- Kennung je Modell
+def test_kennung_ist_umkehrbar(monkeypatch):
+    """Jedes Modell bekommt eine Claude-Kennung, die sich exakt zurueckuebersetzen laesst.
+
+    Auch krumme Namen (mit Schraegstrichen, Doppelpunkten, Unterstrichen) muessen durchgehen —
+    sonst waere die Kennung fuer reale Ollama-Namen wertlos.
+    """
+    import anthropic_api
+
+    for name in ("qwen2.5-coder:7b",
+                 "hf.co/mradermacher/Huihui-Qwen3-Coder-30B-A3B-Instruct-abliterated-GGUF:IQ4_XS",
+                 "gemma4:12b-it-qat",
+                 "aya-expanse:32b"):
+        kennung = anthropic_api.claude_kennung(name)
+        assert kennung.startswith("claude-"), kennung
+        assert anthropic_api.modell_aus_kennung(kennung) == name
+        assert anthropic_api.modell_aufloesen(kennung, "ziel") == name
+
+
+def test_fremde_namen_bleiben_unangetastet(monkeypatch):
+    import anthropic_api
+
+    monkeypatch.delenv("ANTHROPIC_ALIAS_TARGET", raising=False)
+    # Echter Modellname: unveraendert
+    assert anthropic_api.modell_aufloesen("qwen3-vl:8b", "x") == "qwen3-vl:8b"
+    # Claude-Name, der keine Kennung und kein fester Alias ist: unveraendert
+    assert anthropic_api.modell_aufloesen("claude-irgendwas", "x") == "claude-irgendwas"
+    # Feste Aliase zeigen weiter auf das Ziel
+    assert anthropic_api.modell_aufloesen("claude-sonnet-4-5", "ziel") == "ziel"
+
+
+def test_leere_kennung_bleibt_leer():
+    import anthropic_api
+
+    assert anthropic_api.claude_kennung("") == ""
+    assert anthropic_api.modell_aus_kennung("qwen3-vl:8b") == ""
+    assert anthropic_api.modell_aus_kennung("claude-custom-!!!") == ""

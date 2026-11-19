@@ -21,6 +21,7 @@ akzeptiert, weil Clients des Pools den letzteren benutzen.
 
 from __future__ import annotations
 
+import base64
 import json
 import os
 import secrets
@@ -402,6 +403,31 @@ def alias_ziel(verfuegbare_modelle=None, default_modell: str = "") -> str:
     return ""
 
 
+PRAEFIX = "claude-custom-"
+
+
+def claude_kennung(modell: str) -> str:
+    """Claude-taugliche Kennung fuer ein echtes Modell (umkehrbar, URL-sicher)."""
+    roh = (modell or "").strip()
+    if not roh:
+        return ""
+    kodiert = base64.urlsafe_b64encode(roh.encode("utf-8")).decode("ascii").rstrip("=")
+    return PRAEFIX + kodiert
+
+
+def modell_aus_kennung(kennung: str) -> str:
+    """Umkehrung von claude_kennung(). Gibt "" zurueck, wenn es keine solche Kennung ist."""
+    name = (kennung or "").strip()
+    if not name.startswith(PRAEFIX):
+        return ""
+    kodiert = name[len(PRAEFIX):]
+    auffuellen = "=" * (-len(kodiert) % 4)
+    try:
+        return base64.urlsafe_b64decode((kodiert + auffuellen).encode("ascii")).decode("utf-8")
+    except Exception:
+        return ""
+
+
 def modell_aufloesen(angefragt: str, default_modell: str = "") -> str:
     """Claude-Alias -> echtes Modell. Alles andere bleibt unveraendert.
 
@@ -410,8 +436,14 @@ def modell_aufloesen(angefragt: str, default_modell: str = "") -> str:
     versehentlich umgebogen wird, das ein echtes Modell gleichen Namens meint.
     """
     name = (angefragt or "").strip()
+    # 1. Kennung eines bestimmten Modells (claude-custom-...): exakt zurueckuebersetzen.
+    echt = modell_aus_kennung(name)
+    if echt:
+        return echt
+    # 2. Die drei festen Aliase zeigen auf das eingestellte Zielmodell.
     if name in CLAUDE_ALIASE:
         return alias_ziel(None, default_modell) or default_modell
+    # 3. Alles andere ist ein echter Modellname und bleibt unangetastet.
     return angefragt
 
 
