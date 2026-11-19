@@ -591,6 +591,10 @@ async function ladeAliasZiele(containerId, knopfId) {
     })
     .join("");
   box.hidden = false;
+  // Der Bereich selbst ist ein <details> und startet verborgen - sonst sieht man die
+  // Auswahl nie, weil nur der innere Block freigegeben wird.
+  const huelle = box.closest('details');
+  if (huelle) huelle.hidden = false;
 
   const knopf = document.getElementById(knopfId);
   if (!knopf) return;
